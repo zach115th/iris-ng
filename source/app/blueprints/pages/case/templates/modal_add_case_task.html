@@ -1,0 +1,404 @@
+<div class="modal-header">
+    <div class="col md-12">
+        <div class="row">
+            <div class="col align-self-center">
+                <h4 class="modal-title mr-4">{% if task.id %} Task ID #{{ task.id }}{% else %} Add task {% endif %}</h4>
+                <small><i class="text-muted">#{{ task.task_uuid }}</i></small>
+            </div>
+            {% include 'modals/modal_attributes_nav.html' %}
+            <div class="col">
+                <div class="row float-right">
+                {% if task.id %}
+                 <div class="dropdown">
+                      <button class="btn bg-transparent pull-right" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                          <span aria-hidden="true"><i class="fas fa-ellipsis-v"></i></span>
+                      </button>
+                      <div class="dropdown-menu pull-right" id="task_modal_quick_actions" aria-labelledby="dropdownMenuButton">
+                          <a class="dropdown-item" href="#" onclick='copy_object_link({{task.id}});return false;'><i class="fa fa-share mr-2"></i>Share</a>
+                          <a class="dropdown-item" href="#" onclick='copy_object_link_md("task", {{task.id}});return false;'><i class="fa-brands fa-markdown mr-2"></i>Markdown Link</a>
+                      </div>
+                 </div>
+                 <button type="button" class="btn bg-transparent btn-xs" onclick="comment_element({{ task.id }}, 'tasks')" title="Comments">
+                        <span class="btn-label">
+                            <i class="fa-solid fa-comments"></i><span class="notification" id="object_comments_number">{{ comments_map|length if comments_map|length > 0 else '' }}</span>
+                        </span>
+                </button>
+                {% endif %}
+                    <button class="float-right btn bg-transparent" title="Minimize" onclick="modal_minimized('modal_add_task', '{% if task.id %} Task ID #{{ task.id }}{% else %} Add task {% endif %}');"> <i class='fa fa-minus'></i> </button>
+                    <button type="button" class="pull-right btn bg-transparent" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true"><i class="fa fa-times"></i></span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-body">
+    <div role="tabpanel">
+          <div class="tab-content">
+                <div class="tab-pane active" id="details">
+                    <div class="container col-md-12">
+                        <form method="post" action="" id="form_new_task">
+                            <div class="col-md-12 col-lg-12 col-sm-12">
+                                {{ form.hidden_tag() }}
+                                <div class="form-group mt-3 row">
+                                    <div class="col-6 col-xs-12">
+                                        <label for="task_assignee_id" class="placeholder">Assigned to *</label>
+                                        {{ form.task_assignees_id(class="selectpicker col-12", data_actions_box="true", data_dropup_auto="false") }}
+
+                                    </div>
+                                    <div class="col-6 col-xs-12">
+                                        <label for="task_status_id" class="placeholder">Status *</label>
+                                        {{ form.task_status_id(class="selectpicker col-12") }}
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="task_title" class="placeholder">{{ form.task_title.label.text }} *</label>
+                                    {{ form.task_title(class='form-control col-md-12 col-sm-12',  autocomplete="off") }}
+                                </div>
+                                <div class="form-group mt-3">
+                                    <label for="task_description" class="placeholder">Description</label>
+                                     <div class="md_description_field">
+                                        <div class="form-group mt--2">
+                                                <button type="button" class="float-right icon-note btn btn-circle btn-sm mt-2" onclick="edit_in_task_desc();">
+                                                </button>
+                                                <button type="button" style="display: none;" class="btn btn-dark btn-sm float-right mr-2 mt-2"
+                                                            onclick="preview_task_description();" id="task_preview_button"><i class="fa-solid fa-eye"></i></button>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col mb--2 ml--2" id="task_edition_btn" style="display:none;">
+                                            </div>
+                                        </div>
+                                        <div class="row" style="margin-left:0px;">
+                                            <div class="col-12" id="container_task_desc_content">
+                                                <div id="task_description" contenteditable="true" spellcheck="true" class="mr-2" data-theme="{% if current_user.in_dark_mode %}dark{% else %}light{% endif %}">{% if task.task_description %}{{ task.task_description  }}{% endif %}</div>
+                                                <textarea id="task_desc_content" rows="10" cols="82" style="display: none"></textarea>
+                                            </div>
+                                            <div class="col-12" id="container_task_description" style="display:none">
+                                                <div id="target_task_desc"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group mt-3">
+                                    <label for="task_tags">Task tags
+                                    </label>
+                                    <input type="text" id="task_tags"
+                                        class="form-control col-md-12" {% if task.task_tags %} value="{{ task.task_tags }}" {% endif %}/>
+                                </div>
+
+                                {% if task.id %}
+                                {# iris-next: Jira-style task-link relationships. Lazy-loaded
+                                   from /api/v2/cases/{case}/tasks/{task}/links once the modal
+                                   is open. Four sections render the same link table from
+                                   different sides. #}
+                                <div class="form-group mt-4" id="iris-task-links-wrap" data-task-id="{{ task.id }}">
+                                    <label class="d-flex align-items-center" style="gap: 8px;">
+                                        <span>Linked tasks</span>
+                                        <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">— Jira-style relationships within this case</span>
+                                    </label>
+                                    <div id="iris-task-links-content" style="background: #15151a; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px;">
+                                        <div id="iris-task-links-loading" style="color: #94a3b8; font-size: 12.5px; font-style: italic;">Loading links…</div>
+                                        <div id="iris-task-links-sections" style="display: none;">
+                                            {# Four sections rendered as a 2x2 grid: forward + inverse for each link type #}
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                                <div data-section="blocks">
+                                                    <div style="font-size: 11.5px; color: #d4c4ff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Blocks</div>
+                                                    <div class="iris-task-link-list" data-bucket="blocks"></div>
+                                                </div>
+                                                <div data-section="is_blocked_by">
+                                                    <div style="font-size: 11.5px; color: #fbbf24; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Is blocked by</div>
+                                                    <div class="iris-task-link-list" data-bucket="is_blocked_by"></div>
+                                                </div>
+                                                <div data-section="depends_on">
+                                                    <div style="font-size: 11.5px; color: #d4c4ff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Depends on</div>
+                                                    <div class="iris-task-link-list" data-bucket="depends_on"></div>
+                                                </div>
+                                                <div data-section="is_depended_on_by">
+                                                    <div style="font-size: 11.5px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Is depended on by</div>
+                                                    <div class="iris-task-link-list" data-bucket="is_depended_on_by"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <hr style="margin: 12px 0; border-color: rgba(255,255,255,0.06);">
+                                        {# Add new link #}
+                                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                            <select id="iris-task-link-relation"
+                                                style="background: #0e0e12; color: #fafafa; border: 1px solid rgba(255,255,255,0.10); border-radius: 6px; padding: 4px 8px; font-size: 12px;">
+                                                <option value="blocks|forward">This task blocks…</option>
+                                                <option value="blocks|inverse">This task is blocked by…</option>
+                                                <option value="depends_on|forward">This task depends on…</option>
+                                                <option value="depends_on|inverse">This task is depended on by…</option>
+                                            </select>
+                                            <select id="iris-task-link-target"
+                                                style="background: #0e0e12; color: #fafafa; border: 1px solid rgba(255,255,255,0.10); border-radius: 6px; padding: 4px 8px; font-size: 12px; flex: 1; min-width: 180px;">
+                                                <option value="">— select task —</option>
+                                            </select>
+                                            <button type="button" id="iris-task-link-add"
+                                                style="background: #8b5cf6; border: 0; color: #fff; padding: 4px 14px; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
+                                                + Add link
+                                            </button>
+                                            <span id="iris-task-link-status" style="font-size: 11px; color: #94a3b8;"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% include 'modals/modal_attributes_tabs.html' %}
+          </div>
+    </div>
+    {% if task.id %}
+        <button type="button" class="btn btn-outline-danger mt-5"
+        onclick="delete_task({{ task.id }});">Delete</button>
+
+        <button type="button" class="btn btn-outline-success ml-4 mt-5 float-right" id="submit_new_task"
+        onclick="update_task({{ task.id }});">Update</button>
+
+    {% else %}
+
+        <button type="button" class="btn btn-outline-success ml-4 mt-5 float-right"
+        id="submit_new_task">Save</button>
+
+    {% endif %}
+</div>
+
+<script>
+
+    var data = [];
+    if (current_users_list.length === 0) {
+            refresh_users(do_list_users, [{% for assignee in task_assignees %} {{ assignee.id }}, {% endfor %}]);
+    } else {
+        do_list_users(current_users_list, [{% for assignee in task_assignees %} {{ assignee.id }}, {% endfor %}]);
+    }
+
+    $('form#form_new_task').validate();
+    set_suggest_tags('task_tags');
+
+    $('#task_status_id').selectpicker({
+        liveSearch: true,
+        title: "Select task status"
+    });
+
+    {% if task.task_status_id %}
+        $('#task_status_id').selectpicker('val', '{{task.task_status_id}}');
+     {% else %}
+        $('#task_status_id').selectpicker('val', 'To do');
+    {% endif %}
+    $('[data-toggle="popover"]').popover();
+</script>
+
+{% if task.id %}
+<script>
+/* Task-link UI (iris-next, Jira-style relationships).
+ * Lazy-loads existing links + populates the picker with the case's other
+ * tasks. Add/remove fire against /api/v2/cases/{case}/tasks/{task}/links.
+ */
+(function () {
+    var wrap = document.getElementById('iris-task-links-wrap');
+    if (!wrap) { return; }
+    var thisTaskId = parseInt(wrap.getAttribute('data-task-id'), 10);
+    var caseId = (window.location.search.match(/[?&]cid=(\d+)/) || [])[1] || null;
+    if (!caseId || !thisTaskId) { return; }
+
+    var loadingEl = document.getElementById('iris-task-links-loading');
+    var sectionsEl = document.getElementById('iris-task-links-sections');
+    var statusEl = document.getElementById('iris-task-link-status');
+    var addBtn = document.getElementById('iris-task-link-add');
+    var relationSel = document.getElementById('iris-task-link-relation');
+    var targetSel = document.getElementById('iris-task-link-target');
+
+    function getCsrf() {
+        var el = document.getElementById('csrf_token');
+        return el ? el.value : '';
+    }
+
+    function statusBadge(name) {
+        if (!name) { return ''; }
+        var color = '#94a3b8';
+        var nameLower = name.toLowerCase();
+        if (nameLower.includes('done')) { color = '#22c55e'; }
+        else if (nameLower.includes('progress')) { color = '#fbbf24'; }
+        else if (nameLower.includes('cancel')) { color = '#fca5a5'; }
+        return '<span style="background: rgba(255,255,255,0.06); border: 1px solid ' + color + '55; color: ' + color + '; font-size: 10px; padding: 1px 6px; border-radius: 999px; margin-left: 6px;">' + name + '</span>';
+    }
+
+    function renderRow(item) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 12.5px;';
+        var label = document.createElement('span');
+        label.style.cssText = 'flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;';
+        label.innerHTML = '<a href="#" data-task-id="' + item.task_id + '" class="iris-task-link-jump" style="color: #d4c4ff; text-decoration: none;">#' + item.task_id + ' ' + escapeHtml(item.task_title || '(untitled)') + '</a>' + statusBadge(item.task_status_name);
+        var rm = document.createElement('button');
+        rm.type = 'button';
+        rm.title = 'Remove this link';
+        rm.textContent = '×';
+        rm.style.cssText = 'background: transparent; border: 1px solid rgba(255,255,255,0.10); color: #94a3b8; width: 20px; height: 20px; border-radius: 4px; cursor: pointer; font-size: 13px; line-height: 1;';
+        rm.addEventListener('click', function () { deleteLink(item.link_id, rm); });
+        row.appendChild(label);
+        row.appendChild(rm);
+        return row;
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+
+    function renderAll(payload) {
+        var buckets = ['blocks', 'is_blocked_by', 'depends_on', 'is_depended_on_by'];
+        buckets.forEach(function (b) {
+            var listEl = sectionsEl.querySelector('[data-bucket="' + b + '"]');
+            listEl.innerHTML = '';
+            var items = (payload && payload[b]) || [];
+            if (!items.length) {
+                var none = document.createElement('div');
+                none.style.cssText = 'color: #5b6573; font-size: 11.5px; font-style: italic;';
+                none.textContent = '— none —';
+                listEl.appendChild(none);
+            } else {
+                items.forEach(function (it) { listEl.appendChild(renderRow(it)); });
+            }
+        });
+        loadingEl.style.display = 'none';
+        sectionsEl.style.display = '';
+    }
+
+    function loadLinks() {
+        return fetch('/api/v2/cases/' + caseId + '/tasks/' + thisTaskId + '/links', {
+            credentials: 'same-origin'
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) { throw new Error((resp.json && resp.json.message) || 'fetch failed'); }
+            renderAll(resp.json);
+        })
+        .catch(function (err) {
+            loadingEl.textContent = 'Failed to load links: ' + (err.message || err);
+            loadingEl.style.color = '#fca5a5';
+        });
+    }
+
+    function loadCandidateTasks() {
+        /* Populate the target dropdown with this case's tasks (minus self).
+         * `tasks_filter` returns paginated rows; we pull a single big page
+         * for v1 — fine until a case has 100+ tasks. */
+        return fetch('/api/v2/cases/' + caseId + '/tasks?per_page=200', {
+            credentials: 'same-origin'
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) { return; }
+            var rows = (resp.json && resp.json.data) || [];
+            rows.sort(function (a, b) {
+                var at = (a.task_title || '').toLowerCase();
+                var bt = (b.task_title || '').toLowerCase();
+                return at < bt ? -1 : at > bt ? 1 : 0;
+            });
+            rows.forEach(function (t) {
+                if (t.id === thisTaskId) { return; }
+                var opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = '#' + t.id + ' ' + (t.task_title || '(untitled)');
+                targetSel.appendChild(opt);
+            });
+        })
+        .catch(function () { /* swallow — picker just stays empty */ });
+    }
+
+    function postLink() {
+        var combined = relationSel.value;  // e.g. 'blocks|forward'
+        var parts = combined.split('|');
+        var linkType = parts[0], direction = parts[1];
+        var targetId = parseInt(targetSel.value, 10);
+        if (!targetId) {
+            statusEl.textContent = 'Pick a target task.';
+            statusEl.style.color = '#fbbf24';
+            return;
+        }
+        addBtn.disabled = true;
+        statusEl.textContent = 'adding…';
+        statusEl.style.color = '#a78bfa';
+        var csrf = getCsrf();
+        fetch('/api/v2/cases/' + caseId + '/tasks/' + thisTaskId + '/links', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                target_task_id: targetId,
+                link_type: linkType,
+                direction: direction,
+                csrf_token: csrf
+            })
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) {
+                throw new Error((resp.json && resp.json.message) || 'add failed');
+            }
+            if (resp.json && resp.json.warning) {
+                /* Advisory cycle warning — link still created, just surface
+                 * the hint so the analyst sees it. Sticks until the next
+                 * action so they have time to read it. */
+                statusEl.textContent = '⚠ ' + resp.json.warning;
+                statusEl.style.color = '#fbbf24';
+                statusEl.title = 'Cycle in the link graph — flagged advisory only, link was still saved.';
+            } else {
+                statusEl.textContent = resp.json && resp.json.duplicate ? 'already linked' : 'linked';
+                statusEl.style.color = '#22c55e';
+                statusEl.title = '';
+            }
+            targetSel.value = '';
+            return loadLinks();
+        })
+        .catch(function (err) {
+            statusEl.textContent = 'error: ' + (err.message || err);
+            statusEl.style.color = '#fca5a5';
+        })
+        .finally(function () { addBtn.disabled = false; });
+    }
+
+    function deleteLink(linkId, btn) {
+        if (!linkId) { return; }
+        btn.disabled = true;
+        var csrf = getCsrf();
+        fetch('/api/v2/cases/' + caseId + '/tasks/' + thisTaskId + '/links/' + linkId, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrf },
+            credentials: 'same-origin'
+        })
+        .then(function (r) {
+            if (!r.ok) { throw new Error('delete failed (HTTP ' + r.status + ')'); }
+            return loadLinks();
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.textContent = '!';
+            btn.style.borderColor = '#fca5a5';
+        });
+    }
+
+    addBtn.addEventListener('click', postLink);
+
+    /* Clicking a linked-task title closes this modal and opens the linked
+     * task. The case_tasks page exposes `view_case_task(id)` from
+     * case.tasks.js — fall back to a refresh if it's not available. */
+    sectionsEl.addEventListener('click', function (ev) {
+        var t = ev.target.closest('.iris-task-link-jump');
+        if (!t) { return; }
+        ev.preventDefault();
+        var tid = parseInt(t.getAttribute('data-task-id'), 10);
+        if (typeof window.view_case_task === 'function' && tid) {
+            $('#modal_add_case_task').modal('hide');
+            setTimeout(function () { window.view_case_task(tid); }, 250);
+        }
+    });
+
+    Promise.all([loadLinks(), loadCandidateTasks()]);
+})();
+</script>
+{% endif %}
+

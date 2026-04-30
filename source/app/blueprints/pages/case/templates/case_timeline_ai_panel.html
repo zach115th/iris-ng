@@ -1,0 +1,601 @@
+{# Iris-next: AI analysis panel (Tier-1 timeline-focused technical analysis).
+
+   Self-contained dark-modern card injected at the top of the case detail page.
+   No Bootstrap dependency — its own scoped styles under `.iris-ai-panel-*`.
+   Inspired by spacewalk.ai's product UI (subtle dot-grid background, AI Generated
+   pill badge, code chips for technical tokens). Visual analysis at
+   docs/fixtures/spacewalk_visual_analysis.md.
+
+   Wired to:  POST/GET /api/v2/cases/{cid}/ai/timeline-analysis
+#}
+<style>
+  .iris-ai-panel {
+    --ai-bg: #0b0b0d;
+    --ai-card-bg: #15151a;
+    --ai-card-border: rgba(255, 255, 255, 0.10);
+    --ai-fg: #fafafa;
+    --ai-muted: rgba(250, 250, 250, 0.62);
+    --ai-accent: #8b5cf6;          /* violet-500 */
+    --ai-accent-bg: rgba(139, 92, 246, 0.12);
+    --ai-success: #10b981;         /* emerald-500 */
+    --ai-success-bg: rgba(16, 185, 129, 0.12);
+    --ai-amber: #f59e0b;           /* amber-500 */
+    --ai-danger: #ef4444;          /* red-500 */
+    --ai-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
+    --ai-radius: 14px;
+
+    margin: 0 0 1.25rem 0;
+    padding: 0;
+    background:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0),
+      var(--ai-bg);
+    background-size: 18px 18px;
+    background-position: 0 0;
+    border-radius: var(--ai-radius);
+    border: 1px solid var(--ai-card-border);
+    color: var(--ai-fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  .iris-ai-panel * { box-sizing: border-box; }
+
+  .iris-ai-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--ai-card-border);
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  .iris-ai-panel-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .iris-ai-panel-eyebrow {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ai-muted);
+  }
+
+  .iris-ai-panel-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ai-fg);
+    line-height: 1.2;
+  }
+
+  .iris-ai-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--ai-accent-bg);
+    color: var(--ai-accent);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+  }
+
+  .iris-ai-pill-success {
+    background: var(--ai-success-bg);
+    color: var(--ai-success);
+    border-color: rgba(16, 185, 129, 0.25);
+  }
+
+  .iris-ai-panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .iris-ai-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ai-fg);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--ai-card-border);
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+    line-height: 1;
+  }
+  .iris-ai-btn:hover { background: rgba(255, 255, 255, 0.10); border-color: rgba(255,255,255,0.18); }
+  .iris-ai-btn:active { transform: translateY(1px); }
+  .iris-ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .iris-ai-btn-primary {
+    background: var(--ai-accent);
+    color: #ffffff;
+    border-color: var(--ai-accent);
+  }
+  .iris-ai-btn-primary:hover { background: #7c3aed; border-color: #7c3aed; }
+
+  .iris-ai-panel-body {
+    padding: 18px 22px;
+    min-height: 80px;
+  }
+
+  .iris-ai-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 36px 18px;
+    color: var(--ai-muted);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .iris-ai-empty-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ai-accent);
+    font-size: 18px;
+  }
+
+  .iris-ai-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ai-muted);
+    margin-bottom: 12px;
+  }
+
+  .iris-ai-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ai-amber);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+  .iris-ai-dot.dot-success { background: var(--ai-success); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
+  .iris-ai-dot.dot-loading { background: var(--ai-accent); animation: iris-ai-pulse 1.4s ease-in-out infinite; }
+
+  @keyframes iris-ai-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .iris-ai-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 8px 0 14px 0;
+    margin-bottom: 14px;
+    border-bottom: 1px dashed var(--ai-card-border);
+    font-size: 11.5px;
+    color: var(--ai-muted);
+  }
+
+  .iris-ai-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .iris-ai-meta-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 10px;
+  }
+
+  .iris-ai-meta-value {
+    color: var(--ai-fg);
+    font-family: var(--ai-mono);
+  }
+
+  .iris-ai-content {
+    color: var(--ai-fg) !important;
+    font-size: 14px;
+    line-height: 1.65;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 18px 22px;
+    border-radius: 10px;
+    border: 1px solid var(--ai-card-border);
+  }
+  .iris-ai-content * { color: inherit; }
+  .iris-ai-content strong { color: #ffffff; font-weight: 600; }
+  .iris-ai-content em { color: var(--ai-fg); font-style: italic; }
+
+  .iris-ai-content h1,
+  .iris-ai-content h2,
+  .iris-ai-content h3,
+  .iris-ai-content h4 {
+    color: var(--ai-fg);
+    margin: 1.4em 0 0.6em 0;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .iris-ai-content h1:first-child,
+  .iris-ai-content h2:first-child,
+  .iris-ai-content h3:first-child { margin-top: 0; }
+  .iris-ai-content h1 { font-size: 19px; }
+  .iris-ai-content h2 { font-size: 16px; color: #ffffff; border-bottom: 1px solid var(--ai-card-border); padding-bottom: 6px; }
+  .iris-ai-content h3 { font-size: 12.5px; color: var(--ai-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .iris-ai-content p  { margin: 0.6em 0; }
+  .iris-ai-content ul, .iris-ai-content ol { margin: 0.4em 0 0.8em 1.4em; padding: 0; }
+  .iris-ai-content li { margin: 0.25em 0; }
+  .iris-ai-content code {
+    font-family: var(--ai-mono);
+    font-size: 12.5px;
+    background: rgba(255, 255, 255, 0.07);
+    padding: 1.5px 6px;
+    border-radius: 4px;
+    color: #e2e2e2;
+  }
+  .iris-ai-content pre {
+    background: rgba(0, 0, 0, 0.55);
+    color: var(--ai-fg);
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    border: 1px solid var(--ai-card-border);
+    font-family: var(--ai-mono);
+  }
+  .iris-ai-content pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+  }
+  .iris-ai-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8em 0;
+    font-size: 13px;
+  }
+  .iris-ai-content th, .iris-ai-content td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--ai-card-border);
+  }
+  .iris-ai-content th { font-weight: 600; color: var(--ai-muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; }
+  .iris-ai-content blockquote {
+    border-left: 2px solid var(--ai-accent);
+    margin: 0.8em 0;
+    padding: 0.4em 1em;
+    background: rgba(139, 92, 246, 0.05);
+    color: var(--ai-muted);
+    font-style: italic;
+  }
+  .iris-ai-content hr {
+    border: 0;
+    border-top: 1px solid var(--ai-card-border);
+    margin: 1.4em 0;
+  }
+  .iris-ai-content a { color: var(--ai-accent); text-decoration: none; }
+  .iris-ai-content a:hover { text-decoration: underline; }
+
+  .iris-ai-error {
+    color: #fda4af;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  /* Override Bootstrap badge / button visual leakage when inside our panel */
+  .iris-ai-panel .btn { box-shadow: none; }
+</style>
+
+<div class="iris-ai-panel" id="iris-ai-tl-panel" data-case-id="{{ case.case_id }}">
+  <div class="iris-ai-panel-header">
+    <div class="iris-ai-panel-title-row">
+      <span class="iris-ai-panel-eyebrow">AI Analysis</span>
+      <span aria-hidden="true" style="color: var(--ai-card-border);">|</span>
+      <h4 class="iris-ai-panel-title">Technical Case Analysis</h4>
+      <span class="iris-ai-pill" id="iris-ai-tl-pill" style="display:none;"><span aria-hidden="true">✨</span> AI Generated</span>
+    </div>
+    <div class="iris-ai-panel-actions">
+      <button type="button" class="iris-ai-btn" id="iris-ai-tl-refresh" title="Re-run the model and bypass the cache">
+        <i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i>
+        Refresh
+      </button>
+      <button type="button" class="iris-ai-btn iris-ai-btn-primary" id="iris-ai-tl-generate">
+        <span aria-hidden="true">✨</span>
+        Generate Analysis
+      </button>
+    </div>
+  </div>
+  <div class="iris-ai-panel-body" id="iris-ai-tl-body">
+    <div class="iris-ai-empty" id="iris-ai-tl-empty">
+      <div class="iris-ai-empty-icon">
+        <span aria-hidden="true">✨</span>
+      </div>
+      <div>No AI analysis yet for this case.</div>
+      <div style="font-size: 11.5px; opacity: 0.7;">Click <b>Generate Analysis</b> to run the local LLM. Output is cached and re-derivable.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var panel = document.getElementById('iris-ai-tl-panel');
+  if (!panel) { return; }
+
+  var caseId  = panel.getAttribute('data-case-id');
+  var bodyEl  = document.getElementById('iris-ai-tl-body');
+  var emptyEl = document.getElementById('iris-ai-tl-empty');
+  var pillEl  = document.getElementById('iris-ai-tl-pill');
+  var genBtn  = document.getElementById('iris-ai-tl-generate');
+  var refBtn  = document.getElementById('iris-ai-tl-refresh');
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleString();
+    } catch (e) { return iso; }
+  }
+
+  function htmlEscape(s) {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  // Minimal Markdown renderer — self-contained, no external dependency.
+  // Handles: ATX headings, bold, italic, inline code, fenced code blocks,
+  // unordered + ordered lists, GFM-style tables, hr, blockquote, links,
+  // paragraphs. The AI summary prompt produces a tightly-scoped subset of
+  // these so we don't need a full CommonMark engine.
+  function renderMarkdown(md) {
+    if (!md) return '';
+    var src = String(md).replace(/\r\n/g, '\n');
+
+    // Pull out fenced code blocks first, replace with placeholders
+    var codeBlocks = [];
+    src = src.replace(/```([\s\S]*?)```/g, function(_, code) {
+      var idx = codeBlocks.length;
+      codeBlocks.push(code.replace(/^[a-zA-Z0-9_-]*\n?/, ''));  // strip language tag
+      return 'CODEBLOCK' + idx + '';
+    });
+
+    var lines = src.split('\n');
+    var out = [];
+    var i = 0;
+
+    function isHr(line) { return /^\s*(---+|\*\*\*+|___+)\s*$/.test(line); }
+    function isHeading(line) { return /^#{1,6}\s+\S/.test(line); }
+    function isUL(line) { return /^\s*[-*+]\s+/.test(line); }
+    function isOL(line) { return /^\s*\d+\.\s+/.test(line); }
+    function isTableSep(line) { return /^\s*\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?\s*$/.test(line); }
+    function isTableRow(line) { return /^\s*\|.*\|\s*$/.test(line); }
+    function isBQ(line) { return /^\s*>\s?/.test(line); }
+
+    function inline(s) {
+      // 1) escape HTML
+      s = s.replace(/[&<>]/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]; });
+      // 2) inline code (single backtick)
+      s = s.replace(/`([^`]+)`/g, function(_, t) { return '<code>' + t + '</code>'; });
+      // 3) bold then italic (run before italic to consume **)
+      s = s.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+      s = s.replace(/(^|[\s(])\*([^\*\n]+)\*/g, '$1<em>$2</em>');
+      s = s.replace(/(^|[\s(])_([^_\n]+)_/g, '$1<em>$2</em>');
+      // 4) links [text](url)
+      s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      return s;
+    }
+
+    function flushParagraph(buf) {
+      if (buf.length === 0) return;
+      out.push('<p>' + inline(buf.join(' ').trim()) + '</p>');
+      buf.length = 0;
+    }
+
+    var paraBuf = [];
+
+    while (i < lines.length) {
+      var line = lines[i];
+      var trimmed = line.trim();
+
+      if (trimmed === '') { flushParagraph(paraBuf); i++; continue; }
+
+      if (isHr(trimmed)) { flushParagraph(paraBuf); out.push('<hr>'); i++; continue; }
+
+      if (isHeading(trimmed)) {
+        flushParagraph(paraBuf);
+        var hm = /^(#{1,6})\s+(.*?)\s*#*\s*$/.exec(trimmed);
+        var lvl = hm[1].length;
+        out.push('<h' + lvl + '>' + inline(hm[2]) + '</h' + lvl + '>');
+        i++; continue;
+      }
+
+      if (isBQ(trimmed)) {
+        flushParagraph(paraBuf);
+        var bqLines = [];
+        while (i < lines.length && isBQ(lines[i].trim())) {
+          bqLines.push(lines[i].replace(/^\s*>\s?/, ''));
+          i++;
+        }
+        out.push('<blockquote>' + inline(bqLines.join(' ')) + '</blockquote>');
+        continue;
+      }
+
+      // GFM table: header row, separator row, body rows
+      if (isTableRow(line) && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+        flushParagraph(paraBuf);
+        var splitRow = function(r) {
+          r = r.trim().replace(/^\|/, '').replace(/\|$/, '');
+          return r.split('|').map(function(c) { return c.trim(); });
+        };
+        var headers = splitRow(line);
+        i += 2;
+        var rows = [];
+        while (i < lines.length && isTableRow(lines[i])) { rows.push(splitRow(lines[i])); i++; }
+        var tbl = '<table><thead><tr>';
+        headers.forEach(function(h) { tbl += '<th>' + inline(h) + '</th>'; });
+        tbl += '</tr></thead><tbody>';
+        rows.forEach(function(r) {
+          tbl += '<tr>';
+          r.forEach(function(c) { tbl += '<td>' + inline(c) + '</td>'; });
+          tbl += '</tr>';
+        });
+        tbl += '</tbody></table>';
+        out.push(tbl);
+        continue;
+      }
+
+      if (isUL(line) || isOL(line)) {
+        flushParagraph(paraBuf);
+        var ordered = isOL(line);
+        var tag = ordered ? 'ol' : 'ul';
+        var items = [];
+        while (i < lines.length && (isUL(lines[i]) || isOL(lines[i]))) {
+          var lm = /^\s*(?:[-*+]|\d+\.)\s+(.*)$/.exec(lines[i]);
+          items.push('<li>' + inline(lm ? lm[1] : lines[i]) + '</li>');
+          i++;
+        }
+        out.push('<' + tag + '>' + items.join('') + '</' + tag + '>');
+        continue;
+      }
+
+      // default: paragraph line
+      paraBuf.push(line);
+      i++;
+    }
+    flushParagraph(paraBuf);
+
+    var html = out.join('\n');
+
+    // Restore code blocks
+    html = html.replace(/CODEBLOCK(\d+)/g, function(_, idx) {
+      var code = codeBlocks[Number(idx)] || '';
+      code = code.replace(/[&<>]/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]; });
+      return '<pre><code>' + code + '</code></pre>';
+    });
+
+    return html;
+  }
+
+  function buildContent(artifact) {
+    var html = '<div class="iris-ai-status">' +
+                 '<span class="iris-ai-dot dot-success"></span>' +
+                 '<span>Cached analysis</span>' +
+               '</div>' +
+               '<div class="iris-ai-meta">' +
+                 '<div class="iris-ai-meta-item"><span class="iris-ai-meta-label">Model</span><span class="iris-ai-meta-value">' + htmlEscape(artifact.model) + '</span></div>' +
+                 '<div class="iris-ai-meta-item"><span class="iris-ai-meta-label">Prompt</span><span class="iris-ai-meta-value">' + htmlEscape(artifact.prompt_id) + '</span></div>' +
+                 '<div class="iris-ai-meta-item"><span class="iris-ai-meta-label">Generated</span><span class="iris-ai-meta-value">' + htmlEscape(fmtTime(artifact.generated_at)) + '</span></div>' +
+                 '<div class="iris-ai-meta-item"><span class="iris-ai-meta-label">Hash</span><span class="iris-ai-meta-value">' + htmlEscape((artifact.input_hash || '').substring(0, 12)) + '…</span></div>' +
+               '</div>' +
+               '<div class="iris-ai-content">' + renderMarkdown(artifact.content) + '</div>';
+    return html;
+  }
+
+  function showLoading(label) {
+    bodyEl.innerHTML = '<div class="iris-ai-empty">' +
+      '<div class="iris-ai-status"><span class="iris-ai-dot dot-loading"></span><span>' + htmlEscape(label || 'Generating…') + '</span></div>' +
+      '<div style="font-size: 11.5px; opacity: 0.7;">First run can take 5–30 seconds while the model warms up.</div>' +
+    '</div>';
+  }
+
+  function showError(msg) {
+    bodyEl.innerHTML = '<div class="iris-ai-error"><b>AI summary failed.</b><br>' + htmlEscape(msg) + '</div>';
+  }
+
+  function showArtifact(artifact) {
+    if (pillEl) pillEl.style.display = '';
+    bodyEl.innerHTML = buildContent(artifact);
+  }
+
+  function readArtifact(payload) {
+    if (!payload) return null;
+    if (payload.content) return payload;
+    if (payload.data && payload.data.content) return payload.data;
+    return null;
+  }
+
+  function getCsrfToken() {
+    // Flask-WTF renders the token via {{ form.hidden_tag() }} as <input id="csrf_token">.
+    var el = document.getElementById('csrf_token');
+    return el ? el.value : '';
+  }
+
+  function fetchCached() {
+    return fetch('/api/v2/cases/' + encodeURIComponent(caseId) + '/ai/timeline-analysis', {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: { 'Accept': 'application/json' }
+    }).then(function(r) {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error('GET failed: HTTP ' + r.status);
+      return r.json().then(readArtifact);
+    });
+  }
+
+  function generate(force) {
+    var url = '/api/v2/cases/' + encodeURIComponent(caseId) + '/ai/timeline-analysis' + (force ? '?force=true' : '');
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      },
+      body: '{}'
+    }).then(function(r) {
+      if (!r.ok) {
+        return r.text().then(function(t) { throw new Error('POST failed: HTTP ' + r.status + ' ' + (t || '').substring(0, 200)); });
+      }
+      return r.json().then(readArtifact);
+    });
+  }
+
+  function setBusy(busy) {
+    genBtn.disabled = busy;
+    refBtn.disabled = busy;
+  }
+
+  genBtn.addEventListener('click', function() {
+    setBusy(true);
+    showLoading('Generating analysis…');
+    generate(false).then(function(artifact) {
+      if (artifact) showArtifact(artifact); else showError('No artifact returned.');
+    }).catch(function(e) {
+      showError(e.message || String(e));
+    }).finally(function() { setBusy(false); });
+  });
+
+  refBtn.addEventListener('click', function() {
+    setBusy(true);
+    showLoading('Re-running model (cache bypass)…');
+    generate(true).then(function(artifact) {
+      if (artifact) showArtifact(artifact); else showError('No artifact returned.');
+    }).catch(function(e) {
+      showError(e.message || String(e));
+    }).finally(function() { setBusy(false); });
+  });
+
+  // Auto-fetch any cached summary on page load
+  fetchCached().then(function(artifact) {
+    if (artifact) showArtifact(artifact);
+  }).catch(function(e) {
+    // silent — leave the empty state visible
+    if (window.console) console.warn('iris-ai-panel: cached fetch failed', e);
+  });
+})();
+</script>

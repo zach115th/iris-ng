@@ -1,0 +1,60 @@
+#  IRIS Source Code
+#  contact@dfir-iris.org
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3 of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+services:
+  rabbitmq:
+    extends:
+      file: docker-compose.base.yml
+      service: rabbitmq
+
+  db:
+    extends:
+      file: docker-compose.base.yml
+      service: db
+    image: ${DB_IMAGE_NAME:-iris-next/db}:${DB_IMAGE_TAG:-latest}
+
+  app:
+    extends:
+      file: docker-compose.base.yml
+      service: app
+    image: ${APP_IMAGE_NAME:-iris-next/app}:${APP_IMAGE_TAG:-latest}
+
+  worker:
+    extends:
+      file: docker-compose.base.yml
+      service: worker
+    image: ${APP_IMAGE_NAME:-iris-next/app}:${APP_IMAGE_TAG:-latest}
+
+  nginx:
+    extends:
+      file: docker-compose.base.yml
+      service: nginx
+    image: ${NGINX_IMAGE_NAME:-iris-next/nginx}:${NGINX_IMAGE_TAG:-latest}
+
+
+volumes:
+  iris-downloads:
+  user_templates:
+  server_data:
+  db_data:
+
+networks:
+  iris_backend:
+    name: iris_backend
+  iris_frontend:
+    name: iris_frontend
+

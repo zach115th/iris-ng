@@ -1,0 +1,249 @@
+<div class="modal" id="escalateModal" tabindex="-1" role="dialog" aria-labelledby="escalateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="escalateModalLabel"></h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <div class="form-group row" id="modalAlertTitleContainer">
+            <div class="col">
+                <label for="modalAlertTitle">Alert title</label>
+                <input type="text" class="form-control" id="modalAlertTitle" readonly>
+            </div>
+          </div>
+
+            <div class="form-group">
+              <label class="form-label">Merge options</label><br/>
+              <div class="selectgroup ml-auto mr-auto">
+
+                <label class="selectgroup-item">
+                  <input type="radio" name="mergeOption" value="new_case" class="selectgroup-input" checked>
+                  <span class="selectgroup-button">Merge into a new case</span>
+                </label>
+
+                <label class="selectgroup-item">
+                  <input type="radio" name="mergeOption" value="existing_case" class="selectgroup-input">
+                  <span class="selectgroup-button">Merge into existing case</span>
+                </label>
+
+              </div>
+            </div>
+
+          <div class="form-group"><span id="escalateModalExplanation"></span></div>
+          <div class="form-group" id="modalEscalateCaseTitleContainer" style="display:none;">
+              <label>New case title *</label>
+             <input type="text" class="form-control" id="modalEscalateCaseTitle" name="new_case_title">
+          </div>
+
+         <div class="form-group" id="mergeAlertCaseSelectSection" style="display:none;">
+             <label for="mergeAlertCaseSelect">Select case to merge into *</label>
+            <select class="selectpicker form-control" data-dropup-auto="false" data-live-search="true" id="mergeAlertCaseSelect">
+            </select>
+         </div>
+         <div class="form-group" id="mergeAlertCaseTemplateSection">
+             <label for="mergeAlertCaseTemplate" class="d-flex align-items-center" style="gap: 8px;">
+                <span id="iris-tplsugg-label">Select case template</span>
+                <span id="iris-tplsugg-chip" style="display: none; background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; padding: 2px 8px; border-radius: 999px;" title="Auto-suggested by AI based on the alert title, description, IOCs, and assets. Change the dropdown to override.">
+                    &#x2728; <span id="iris-tplsugg-chip-text">Suggested by AI</span>
+                </span>
+                <span id="iris-tplsugg-status" style="font-size: 11px; color: #9ca3af;"></span>
+             </label>
+            <select class="selectpicker form-control" data-dropup-auto="false" data-live-search="true" id="mergeAlertCaseTemplateSelect">
+            </select>
+            <div id="iris-tplsugg-reason" style="display: none; font-size: 11.5px; color: #94a3b8; margin-top: 4px; font-style: italic;"></div>
+          </div>
+          <div class="form-group mt-4" id="ioc-container" style="display:none;">
+            <label>IOCs to import</label>
+            <button type="button" class="btn btn-sm btn-light ml-2 float-right" id="toggle-iocs">Deselect All</button>
+            <div class="form-control" id="ioCsList" style="height: auto; overflow-y: scroll; max-height: 150px;"></div>
+          </div>
+          <div class="form-group mt-4" id="asset-container" style="display:none;">
+            <label>Assets to import</label>
+            <button type="button" class="btn btn-sm btn-light ml-2 float-right" id="toggle-assets">Deselect All</button>
+            <div class="form-control" id="assetsList" style="height: auto; overflow-y: scroll; max-height: 150px;"></div>
+          </div>
+          <div class="form-group mt-4">
+            <label for="note">Escalation note</label>
+            <textarea class="form-control" id="note" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="case_tags">Case tags</label>
+            <input type="text" id="case_tags"
+                class="form-control col-md-12"/>
+          </div>
+          <div class="col-md-3 form-group">
+                <div class="form-check">
+                    <label class="form-check-label mt-3">
+                        <input checked="" class="form-check-input" id="importAsEvent" name="import_as_event" type="checkbox" value="y">
+                        <span class="form-check-sign"> Add alert as event in the timeline
+                        </span>
+                    </label>
+                </div>
+            </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-dark" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="escalateOrMergeButton">Merge</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Tier-1 case-template suggester (iris-next).
+ *
+ * UX: when the analyst opens the "Escalate alert to case" modal, fire the
+ * AI in the background. The endpoint reads the alert by id directly
+ * (title / description / IOCs / assets) and returns one CaseTemplate id
+ * with confidence. We auto-select the dropdown and show a violet
+ * "✨ Suggested by AI · <conf>%" chip next to the label. Manual override
+ * dismisses the chip — same pattern as the evidence-type suggester.
+ *
+ * Hook: bootstrap fires `shown.bs.modal` after the modal is visible. The
+ * existing escalate JS (alerts.js → mergeAlertModal) populates the
+ * template <select> ASYNCHRONOUSLY after fetching /manage/case-templates/
+ * list, so we can't fire-and-apply in one shot. Instead we fire the
+ * suggester immediately (it's the slow path — 5-15s on LM Studio) and
+ * apply when both the response AND the dropdown options are ready, using
+ * a MutationObserver on the <select> to know when the options arrive.
+ *
+ * Multi-alert escalation: we skip — there's no single alert id in that
+ * flow, and the prompt assumes a single alert payload. The chip just
+ * stays hidden when no `data-alert-id` is set.
+ */
+(function () {
+    var selectEl = document.getElementById('mergeAlertCaseTemplateSelect');
+    var labelEl = document.getElementById('iris-tplsugg-label');
+    var chipEl = document.getElementById('iris-tplsugg-chip');
+    var chipTextEl = document.getElementById('iris-tplsugg-chip-text');
+    var statusEl = document.getElementById('iris-tplsugg-status');
+    var reasonEl = document.getElementById('iris-tplsugg-reason');
+    if (!selectEl || !labelEl) { return; }
+
+    var lastSuggestionId = null;
+    var suppressOverrideDetect = false;
+    var pendingResult = null;
+    var observer = null;
+
+    function getCsrf() {
+        var el = document.getElementById('csrf_token');
+        return el ? el.value : '';
+    }
+
+    function clearChip() {
+        labelEl.textContent = 'Select case template';
+        chipEl.style.display = 'none';
+        statusEl.textContent = '';
+        reasonEl.style.display = 'none';
+        reasonEl.textContent = '';
+        lastSuggestionId = null;
+    }
+
+    function applySuggestion(s) {
+        // The dropdown may not be populated yet — bail and let the observer
+        // re-call us when the options arrive.
+        var $sel = $(selectEl);
+        var hasOption = $sel.find('option[value="' + String(s.template_id) + '"]').length > 0;
+        if (!hasOption) {
+            pendingResult = s;
+            return;
+        }
+        suppressOverrideDetect = true;
+        $sel.selectpicker('val', String(s.template_id));
+        $sel.trigger('change');
+        setTimeout(function () { suppressOverrideDetect = false; }, 0);
+
+        labelEl.textContent = 'Suggested template';
+        var conf = (typeof s.confidence === 'number') ? Math.round(s.confidence * 100) + '%' : '';
+        chipTextEl.textContent = 'Suggested by AI' + (conf ? ' · ' + conf : '');
+        chipEl.style.display = '';
+        statusEl.textContent = '';
+        if (s.reason) {
+            reasonEl.textContent = s.reason;
+            reasonEl.style.display = '';
+        } else {
+            reasonEl.style.display = 'none';
+        }
+        lastSuggestionId = s.template_id;
+        pendingResult = null;
+    }
+
+    function fireSuggester(alertId) {
+        statusEl.textContent = 'AI suggesting…';
+        statusEl.style.color = '#a78bfa';
+
+        var csrf = getCsrf();
+        fetch('/api/v2/alerts/' + alertId + '/ai/case-template-suggestion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify({ csrf_token: csrf })
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) {
+                throw new Error((resp.json && resp.json.message) || ('HTTP ' + resp.status));
+            }
+            var data = (resp.json && resp.json.data) || resp.json || {};
+            var s = data.suggestion;
+            if (s) {
+                applySuggestion(s);
+            } else {
+                statusEl.textContent = 'no confident match — pick manually';
+                statusEl.style.color = '#fbbf24';
+            }
+        })
+        .catch(function (err) {
+            statusEl.textContent = 'AI error: ' + (err.message || err);
+            statusEl.style.color = '#fca5a5';
+        });
+    }
+
+    function startObserving() {
+        if (observer) { observer.disconnect(); }
+        observer = new MutationObserver(function () {
+            // The select went from empty (or just placeholder) to populated.
+            // If we already have a pending suggestion waiting for the options,
+            // apply it now.
+            if (pendingResult && selectEl.children.length > 1) {
+                applySuggestion(pendingResult);
+            }
+        });
+        observer.observe(selectEl, { childList: true });
+    }
+
+    /* Wire up the modal-open hook. Reset chip state on every open so a
+     * second escalation in the same session starts clean. */
+    $('#escalateModal').on('show.bs.modal', function () {
+        clearChip();
+        var alertId = $('#escalateOrMergeButton').attr('data-alert-id');
+        if (!alertId) {
+            // Multi-alert escalation — no single alert to classify.
+            return;
+        }
+        startObserving();
+        // Slight delay to let mergeAlertModal() set the data-alert-id and
+        // start its own template-list fetch — both happen synchronously in
+        // the open handler, but the alerts.js call sequence is:
+        //   set data-alert-id → fetchAlert → ... → load template list
+        // Firing in the next event-loop tick keeps us safely after step 1.
+        setTimeout(function () { fireSuggester(alertId); }, 0);
+    });
+
+    /* Override-detect: if the analyst manually picks a different template,
+     * drop the chip. selectpicker fires change on the underlying <select>
+     * for both programmatic and user-driven updates, so we filter via the
+     * suppress flag set during applySuggestion(). */
+    $(selectEl).on('change', function () {
+        if (suppressOverrideDetect) { return; }
+        if (lastSuggestionId === null) { return; }
+        var current = $(this).val();
+        if (String(current) !== String(lastSuggestionId)) {
+            clearChip();
+        }
+    });
+})();
+</script>

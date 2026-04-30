@@ -1,0 +1,379 @@
+<div class="modal-header">
+    <div class="col md-12">
+        <div class="row">
+            <div class="col align-self-center">
+                <h4 class="modal-title mr-4">Note #{{ note.note_id }}</h4>
+                <small><i class="text-muted">#{{ note.note_uuid }}</i></small>
+            </div>
+            {% include 'modals/modal_attributes_nav.html' %}
+            <div class="col">
+              <div class="row float-right">
+              <div class="avatar-group-note mt-2 float-right" id="ppl_list_viewing">
+             </div>
+              <button class="btn bg-transparent pull-right" title="Toggle focus mode" id="focus_mode" onclick="toggle_focus_mode();return false;">
+                  <span aria-hidden="true"><i class="fas fas fa-coffee"></i></span>
+                </button>
+                <button type="button" class="btn bg-transparent btn-xs" onclick="comment_element({{ note.note_id }}, 'notes')" title="Comments">
+                    <span class="btn-label">
+                        <i class="fa-solid fa-comments"></i><span class="notification" id="object_comments_number">{{ comments_map|length if comments_map|length > 0 else '' }}</span>
+                    </span>
+                </button>
+                 <div class="dropdown">
+                      <button class="btn bg-transparent pull-right" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                          <span aria-hidden="true"><i class="fas fa-ellipsis-v"></i></span>
+                      </button>
+                      <div class="dropdown-menu pull-right" id="note_modal_quick_actions" aria-labelledby="dropdownMenuButton">
+                          <a class="dropdown-item" href="#" onclick='copy_object_link({{ note.note_id }});return false;'><i class="fa fa-share mr-2"></i>Share</a>
+                          <a class="dropdown-item" href="#" onclick='copy_object_link_md("note",{{ note.note_id }});return false;'><i class="fa-brands fa-markdown mr-2"></i>Markdown Link</a>
+                      </div>
+                 </div>
+                <button class="float-right btn bg-transparent" title="Minimize" onclick="modal_minimized('modal_note_detail', '{{ note.title }}');"> <i class='fa fa-minus'></i> </button>
+                <button type="button" class="pull-right btn bg-transparent" data-dismiss="modal" aria-label="Close"><span
+                    aria-hidden="true"><i class="fa fa-times"></i></span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-body">
+    <div role="tabpanel">
+        <div class="tab-content">
+            <div class="tab-pane active" id="details">
+                <form method="post" action="" id="form_note">
+        <iris_notein style="display: none;">{{ note.note_id }}</iris_notein>
+
+    {{ note.hidden_tag() }}
+        <div class="container col-md-12">
+            <div class="form-group">
+                <label>Note title *</label>
+                {{ note.note_title(class='form-control input') }}
+            </div>
+            <div class="row mb-1 mt-3">
+                <div class="col">
+                    <span class="badge badge-light" id="content_typing"></span>
+                    <span class="badge badge-light" id="content_last_saved_by"></span>
+                </div>
+            </div>
+            <div class="row mb-1 mt-3">
+                <div class="col-10" id="notes_edition_btn">
+                        <div class="btn btn-sm btn-light mr-1 " title="CTRL-S" id="last_saved" onclick="save_note( this );"><i class="fa-solid fa-file-circle-check"></i></div>
+                        <div class="btn btn-sm btn-light mr-1 " title="CTRL-B" onclick="note_editor.insertSnippet('**${1:$SELECTION}**');note_editor.focus();"><i class="fa-solid fa-bold"></i></div>
+                        <div class="btn btn-sm btn-light mr-1" title="CTRL-I" onclick="note_editor.insertSnippet('*${1:$SELECTION}*');note_editor.focus();"><i class="fa-solid fa-italic"></i></div>
+                        <div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-1" onclick="note_editor.insertSnippet('# ${1:$SELECTION}');note_editor.focus();">H1</div>
+                        <div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-2" onclick="note_editor.insertSnippet('## ${1:$SELECTION}');note_editor.focus();">H2</div>
+                        <div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-3" onclick="note_editor.insertSnippet('### ${1:$SELECTION}');note_editor.focus();">H3</div>
+                        <div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-4" onclick="note_editor.insertSnippet('#### ${1:$SELECTION}');note_editor.focus();">H4</div>
+                        <div class="btn btn-sm btn-light mr-1" title="CTRL+\`" onclick="note_editor.insertSnippet('```${1:$SELECTION}```');note_editor.focus();"><i class="fa-solid fa-code"></i></div>
+                        <div class="btn btn-sm btn-light mr-1" title="CTRL-K" onclick="note_editor.insertSnippet('[${1:$SELECTION}](url)');note_editor.focus();"><i class="fa-solid fa-link"></i></div>
+                        <div class="btn btn-sm btn-light mr-1" title="Insert table" onclick="note_editor.insertSnippet('|\t|\t|\t|\n|--|--|--|\n|\t|\t|\t|\n|\t|\t|\t|');note_editor.focus();"><i class="fa-solid fa-table"></i></div>
+                        <div class="btn btn-sm btn-light mr-1" title="Insert bullet list" onclick="note_editor.insertSnippet('\n- \n- \n- ');note_editor.focus();"><i class="fa-solid fa-list"></i></div>
+                        <div class="btn btn-sm btn-light mr-1" title="Insert numbered list" onclick="note_editor.insertSnippet('\n1. a  \n2. b  \n3. c  ');note_editor.focus();"><i class="fa-solid fa-list-ol"></i></div>
+                        <div class="btn btn-sm btn-light mr-1" title="Toggle editor expansion" onclick="toggle_max_editor();"><i class="fa-solid fa-maximize"></i></div>
+                        <div class="btn btn-sm btn-transparent mr-1" title="Help" onclick="get_md_helper_modal();"><i class="fa-solid fa-question-circle"></i></div>
+                        <button type="button" id="iris-ioc-extract-btn"
+                            title="Extract IOCs from this note's text using AI"
+                            style="background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; line-height: 1; padding: 4px 10px; border-radius: 999px; cursor: pointer; margin-left: 4px;">
+                            &#x2728; Extract IOCs
+                        </button>
+                        <span id="iris-ioc-extract-status" style="font-size: 11px; color: #9ca3af; margin-left: 6px;"></span>
+                </div>
+                <div class="col">
+                    <button type="button" class="float-right icon-note btn btn-circle btn-sm" onclick="edit_innote();"></button>
+                </div>
+            </div>
+            <div id="iris-ioc-extract-panel" style="display: none; margin-top: 10px; padding: 10px 12px; background: #15151a; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px; font-size: 12.5px;">
+                <div id="iris-ioc-extract-rationale" style="color: #cbd5e1; margin-bottom: 8px; font-style: italic;"></div>
+                <div id="iris-ioc-extract-list"></div>
+                <div style="display: flex; gap: 8px; margin-top: 10px; align-items: center;">
+                    <button type="button" id="iris-ioc-accept-all"
+                        style="background: #8b5cf6; border: 0; color: #fff; padding: 4px 12px; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
+                        Accept all
+                    </button>
+                    <button type="button" id="iris-ioc-extract-dismiss"
+                        style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; padding: 4px 12px; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
+                        Dismiss
+                    </button>
+                    <span id="iris-ioc-accept-counter" style="font-size: 11px; color: #9ca3af; margin-left: auto;"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6" id="container_note_content">
+                    <div style="display: none" id="fetched_crc"></div>
+                    {{ current_user.in_dark_mode }}
+                    <div id="editor_detail" data-theme="{% if current_user.in_dark_mode %}dark{% else %}light{% endif %}">{{ note.content }}</div>
+                    <textarea id="note_content" rows="10" cols="82" style="display: none"></textarea>
+                </div>
+                <div class="col-md-6" id="ctrd_notesum">
+                    <div id="targetDiv"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+            </div>
+            {% include 'modals/modal_attributes_tabs.html' %}
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-outline-danger mr-auto" onclick="delete_note(this, {{ ncid }});">Delete note</button>
+    <button type="button" class="btn btn-default" onclick="save_note( this, {{ ncid }} );" id="btn_save_note">Save </button>
+</div>
+<script>
+/* AI IOC extraction — Tier-1 feature.
+ * Reads the note's editor content, POSTs to /api/v2/cases/{id}/ai/ioc-extraction,
+ * renders the returned suggestions as click-to-add chips. Each "+ add" call
+ * fires POST /api/v2/cases/{id}/iocs to materialise the IOC in the case.
+ */
+(function () {
+    var btn = document.getElementById('iris-ioc-extract-btn');
+    var status = document.getElementById('iris-ioc-extract-status');
+    var panel = document.getElementById('iris-ioc-extract-panel');
+    var listEl = document.getElementById('iris-ioc-extract-list');
+    var rationaleEl = document.getElementById('iris-ioc-extract-rationale');
+    var acceptAllBtn = document.getElementById('iris-ioc-accept-all');
+    var dismissBtn = document.getElementById('iris-ioc-extract-dismiss');
+    var counter = document.getElementById('iris-ioc-accept-counter');
+    if (!btn) { return; }
+
+    var caseId = (window.location.search.match(/[?&]cid=(\d+)/) || [])[1] || null;
+
+    function getCsrf() {
+        var el = document.getElementById('csrf_token');
+        return el ? el.value : '';
+    }
+
+    function getNoteText() {
+        /* note_editor is the Ace editor instance; getValue() returns the
+         * raw markdown. Fallback to the hidden textarea if Ace isn't ready. */
+        if (typeof window.note_editor !== 'undefined' && window.note_editor) {
+            try { return window.note_editor.getValue() || ''; } catch (e) {}
+        }
+        var ta = document.getElementById('note_content');
+        return ta ? (ta.value || '') : '';
+    }
+
+    /* Accept-all needs to drive each row sequentially. We track each
+     * (ioc, addBtn) pair so the loop can call postIoc() and await the
+     * Promise — using `b.click()` in a forEach would fire N parallel
+     * fetches (the original bug). */
+    var pendingRows = [];
+
+    function renderRow(ioc) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display: flex; gap: 8px; align-items: flex-start; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.06);';
+
+        var typeChip = document.createElement('code');
+        typeChip.textContent = ioc.type;
+        typeChip.style.cssText = 'background: rgba(139, 92, 246, 0.18); color: #d4c4ff; padding: 2px 6px; border-radius: 4px; font-size: 10.5px; flex-shrink: 0; align-self: center; min-width: 70px; text-align: center;';
+
+        var body = document.createElement('div');
+        body.style.cssText = 'flex: 1; min-width: 0;';
+
+        var valueLine = document.createElement('div');
+        valueLine.style.cssText = 'color: #fafafa; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12.5px; word-break: break-all;';
+        valueLine.textContent = ioc.value;
+        body.appendChild(valueLine);
+
+        var meta = document.createElement('div');
+        meta.style.cssText = 'color: #94a3b8; font-size: 11.5px; margin-top: 2px;';
+        var conf = (typeof ioc.confidence === 'number') ? Math.round(ioc.confidence * 100) + '%' : '';
+        meta.textContent = (ioc.reason || '') + (conf ? '  ·  ' + conf : '');
+        body.appendChild(meta);
+
+        if (ioc.noise_flag) {
+            var warn = document.createElement('div');
+            warn.style.cssText = 'color: #fbbf24; font-size: 11.5px; margin-top: 3px;';
+            warn.textContent = '⚠  ' + ioc.noise_flag;
+            body.appendChild(warn);
+        }
+
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.style.cssText = 'background: transparent; border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; padding: 2px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; flex-shrink: 0; align-self: center;';
+        if (ioc.already_in_case) {
+            addBtn.textContent = 'in case';
+            addBtn.disabled = true;
+            addBtn.title = 'This IOC is already on the case — not re-adding.';
+            addBtn.style.opacity = '0.5';
+            addBtn.style.cursor = 'default';
+            row.style.opacity = '0.65';
+        } else {
+            addBtn.textContent = '+ add';
+            addBtn.addEventListener('click', function () {
+                postIoc(ioc, addBtn);
+            });
+            pendingRows.push({ ioc: ioc, addBtn: addBtn });
+        }
+
+        row.appendChild(typeChip);
+        row.appendChild(body);
+        row.appendChild(addBtn);
+        return row;
+    }
+
+    function getCurrentNoteId() {
+        /* Modal editor: <iris_notein> renders the note_id at the top of
+         * the body. Fall back to the inline editor's marker so this
+         * function is interchangeable across surfaces. */
+        var elModal = document.querySelector('iris_notein');
+        if (elModal) {
+            var n = parseInt((elModal.textContent || '').trim(), 10);
+            if (!isNaN(n)) { return n; }
+        }
+        var elInline = document.getElementById('currentNoteIDLabel');
+        if (elInline) {
+            var inlineId = $(elInline).data('note_id');
+            if (typeof inlineId === 'number' && !isNaN(inlineId)) { return inlineId; }
+            var parsed = parseInt(inlineId, 10);
+            if (!isNaN(parsed)) { return parsed; }
+        }
+        return null;
+    }
+
+    function recordSourceNote(caseIdLocal, iocId, csrf) {
+        /* Best-effort provenance write — the IOC is already in the case;
+         * a failed link doesn't fail the user-visible flow. */
+        var noteId = getCurrentNoteId();
+        if (!noteId || !iocId) { return Promise.resolve(); }
+        return fetch('/api/v2/cases/' + caseIdLocal + '/iocs/' + iocId + '/source-notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify({ note_id: noteId, source: 'ai_extractor', csrf_token: csrf })
+        }).catch(function () { /* swallow — link is auxiliary */ });
+    }
+
+    function postIoc(ioc, addBtn) {
+        /* Returns a Promise that resolves whether the POST succeeded or
+         * failed — Accept-all awaits each one sequentially so the IRIS
+         * hook system isn't pummelled with N parallel celery prefork
+         * tasks. After the IOC is created we fire a follow-up POST to
+         * record the source-note link (best-effort; the IOC create is
+         * the load-bearing operation).
+         */
+        if (!caseId) { return Promise.resolve(); }
+        var csrf = getCsrf();
+        addBtn.disabled = true;
+        addBtn.textContent = 'adding…';
+        var body = {
+            ioc_value: ioc.value,
+            ioc_type_id: ioc.type_id,
+            ioc_tlp_id: ioc.tlp_id,
+            ioc_description: ioc.reason || '',
+            ioc_tags: ioc.tags || '',
+            csrf_token: csrf
+        };
+        return fetch('/api/v2/cases/' + caseId + '/iocs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify(body)
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) {
+                var msg = (resp.json && resp.json.message) || 'add failed';
+                throw new Error(msg);
+            }
+            addBtn.textContent = 'added';
+            addBtn.style.opacity = '0.5';
+            bumpCounter();
+            var newIocId = resp.json && (resp.json.ioc_id || resp.json.id);
+            return recordSourceNote(caseId, newIocId, csrf);
+        })
+        .catch(function (err) {
+            addBtn.disabled = false;
+            addBtn.textContent = 'retry';
+            addBtn.style.borderColor = '#fca5a5';
+            addBtn.title = err.message || String(err);
+        });
+    }
+
+    var addedCount = 0;
+    function bumpCounter() {
+        addedCount += 1;
+        counter.textContent = addedCount + ' IOC' + (addedCount === 1 ? '' : 's') + ' added to the case';
+    }
+
+    function render(payload) {
+        listEl.innerHTML = '';
+        pendingRows = [];
+        addedCount = 0;
+        counter.textContent = '';
+        var iocs = (payload && payload.iocs) || [];
+        if (!iocs.length) {
+            var empty = document.createElement('div');
+            empty.style.color = '#9ca3af';
+            empty.textContent = 'No IOCs identified in this note.';
+            listEl.appendChild(empty);
+            acceptAllBtn.style.display = 'none';
+        } else {
+            acceptAllBtn.style.display = '';
+            iocs.forEach(function (ioc) { listEl.appendChild(renderRow(ioc)); });
+        }
+        rationaleEl.textContent = (payload && payload.rationale) || '';
+        rationaleEl.style.display = rationaleEl.textContent ? '' : 'none';
+        panel.style.display = '';
+    }
+
+    btn.addEventListener('click', function () {
+        var text = getNoteText();
+        if (!text || text.trim().length < 10) {
+            status.textContent = 'Note is empty.';
+            return;
+        }
+        if (!caseId) {
+            status.textContent = 'Could not determine case id.';
+            return;
+        }
+        btn.disabled = true;
+        status.textContent = 'thinking…';
+        status.style.color = '#a78bfa';
+        var csrf = getCsrf();
+        fetch('/api/v2/cases/' + caseId + '/ai/ioc-extraction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify({ text: text, csrf_token: csrf })
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) {
+                var msg = (resp.json && resp.json.message) || ('HTTP ' + resp.status);
+                throw new Error(msg);
+            }
+            render(resp.json);
+            status.textContent = '';
+        })
+        .catch(function (err) {
+            status.textContent = 'error: ' + (err.message || err);
+            status.style.color = '#fca5a5';
+        })
+        .finally(function () { btn.disabled = false; });
+    });
+
+    acceptAllBtn.addEventListener('click', async function () {
+        /* Sequential drain — each postIoc resolves before the next
+         * starts. Avoids hammering IRIS's celery worker pool with N
+         * parallel ForkPoolWorker tasks, which used to crash the
+         * iris_misp_sync_module hook on a poisoned forked psycopg2
+         * connection and silently drop IOCs. */
+        acceptAllBtn.disabled = true;
+        var prevText = acceptAllBtn.textContent;
+        var queue = pendingRows.filter(function (p) { return !p.addBtn.disabled; });
+        for (var i = 0; i < queue.length; i++) {
+            acceptAllBtn.textContent = 'adding ' + (i + 1) + '/' + queue.length + '…';
+            try { await postIoc(queue[i].ioc, queue[i].addBtn); } catch (e) {}
+        }
+        acceptAllBtn.disabled = false;
+        acceptAllBtn.textContent = prevText;
+    });
+
+    dismissBtn.addEventListener('click', function () {
+        panel.style.display = 'none';
+        listEl.innerHTML = '';
+        rationaleEl.textContent = '';
+        counter.textContent = '';
+    });
+})();
+</script>

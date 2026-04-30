@@ -1,0 +1,355 @@
+<div class="modal-header">
+    <div class="col md-12">
+        <div class="row">
+            <div class="col align-self-center">
+                <h4 class="modal-title mr-4">{% if rfile.id %}Edit evidence #{{rfile.id}}{% else %}Register evidence{% endif %}</h4>
+                {% if rfile.id %}<small><i class="text-muted">#{{ rfile.file_uuid }}</i></small>{% endif %}
+            </div>
+            {% include 'modals/modal_attributes_nav.html' %}
+            <div class="col">
+                <div class="row float-right">
+                    {% if rfile.id %}
+                     <div class="dropdown">
+                          <button class="btn bg-transparent pull-right" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                              <span aria-hidden="true"><i class="fas fa-ellipsis-v"></i></span>
+                          </button>
+                          <div class="dropdown-menu pull-right" id="evidence_modal_quick_actions" aria-labelledby="dropdownMenuButton">
+                              <a class="dropdown-item" href="#" onclick='copy_object_link({{rfile.id}});return false;'><i class="fa fa-share mr-2"></i>Share</a>
+                              <a class="dropdown-item" href="#" onclick='copy_object_link_md("evidence", {{rfile.id}});return false;'><i class="fa-brands fa-markdown mr-2"></i>Markdown Link</a>
+                          </div>
+                     </div>
+                    <button type="button" class="btn bg-transparent btn-xs" onclick="comment_element({{ rfile.id }}, 'evidences')" title="Comments">
+                        <span class="btn-label">
+                            <i class="fa-solid fa-comments"></i><span class="notification" id="object_comments_number">{{ comments_map|length if comments_map|length > 0 else '' }}</span>
+                        </span>
+                    </button>
+                    {% endif %}
+                        <button class="float-right btn bg-transparent" title="Minimize" onclick="modal_minimized('modal_add_rfiles', 'Edit evidence #{{rfile.id}}');"> <i class='fa fa-minus'></i> </button>
+                        <button type="button" class="pull-right btn bg-transparent" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true"><i class="fa fa-times"></i></span></button>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-body">
+    <div role="tabpanel">
+          <div class="tab-content">
+                <div class="tab-pane active" id="details">
+                    <div class="container col-md-12">
+                        <form method="post" action="" id="form_edit_rfile">
+                            <div class="col-md-12 col-lg-12 col-sm-12">
+                                <div class="form-group">
+                                    <label for="rfile_filename" class="placeholder">Name *</label>
+                                    <input class="form-control" placeholder="Name" id="filename" required name="filename" value="{{rfile.filename }}"/>
+                                </div>
+                                <div class="form-group">
+                                    <label for="rfile_type" class="d-flex align-items-center" style="gap: 8px;">
+                                        <span id="iris-evtype-label">Type</span>
+                                        <span id="iris-evtype-chip" style="display: none; background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; padding: 2px 8px; border-radius: 999px;" title="Auto-suggested by AI based on filename + magic bytes + description. Change the dropdown to override.">
+                                            &#x2728; <span id="iris-evtype-chip-text">Suggested by AI</span>
+                                        </span>
+                                        <span id="iris-evtype-status" style="font-size: 11px; color: #9ca3af;"></span>
+                                    </label>
+                                    <span style="display: none" data-file-type-id="{{rfile.type_id}}" id=store_type_id></span>
+                                    <select class="selectpicker form-control" id="file_type_id"></select>
+                                    <div id="iris-evtype-reason" style="display: none; font-size: 11.5px; color: #94a3b8; margin-top: 4px; font-style: italic;"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="rfile_size" class="placeholder">Size (bytes)</label>
+                                    <input class="form-control" placeholder="Size in bytes" id="file_size" name="file_size" value="{{ rfile.file_size }}"/>
+                                </div>
+                                <div class="form-group">
+                                    <label for="rfile_hash" class="placeholder">Hash</label>
+                                    <input class="form-control" placeholder="Hash" id="file_hash" name="file_hash" value="{{ rfile.file_hash }}"/>
+                                </div>
+                                <div class="form-group" id="dates_details">
+                                    <a class="btn btn-light btn-sm" data-toggle="collapse" href="#collapseAddDates" role="button" aria-expanded="false" aria-controls="collapseAddInfo">> Date time information</a>
+                                    <div class="collapse {% if (rfile.start_date or rfile.end_date) %}show{% endif %}" id="collapseAddDates">
+                                        <label for="start_date" class="placeholder mt-2">Evidence start date time (UTC)</label>
+                                        <div class="row ml-1" id="start_date_inputs">
+                                                <input class="form-control col-6 mr-2" type="date" id="start_date" {% if rfile.start_date %}value="{{ rfile.start_date.strftime('%Y-%m-%d') }}" {% endif %}>
+                                                <span></span>
+                                                <input class="form-control col-5 mr-2" type="time" step="0.001" id="start_time" {% if rfile.start_date %}value="{{ rfile.start_date.strftime('%H:%M:%S.%f')[:-3] }}" {% else %} value="00:00:00.000" {% endif %}>
+                                                <span></span>
+                                                <button class="btn btn-sm btn-outline-white" type="button" onclick="show_x_time_converter('start');return false;"><i class="fas fa-magic"></i></button>
+                                        </div>
+                                        <div class="row ml-1" id="start_date_convert" style="display:none;">
+                                            <div class="input-group ">
+                                                <input class="form-control col-11" type="text" id="start_date_convert_input" placeholder="Enter date in any format and submit to try auto-parsing">
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-sm btn-outline-secondary mr-2" type="button" onclick="time_converter('start');return false;">Submit</button>
+                                                    <button class="btn btn-sm btn-outline" type="button" onclick="hide_x_time_converter('start');return false;"><i class="fas fa-magic"></i></button>
+                                                </div>
+                                            </div>
+                                            <span id="convert_bad_feedback_start" class="text-danger"></span>
+                                        </div>
+                                        <label for="end_date" class="placeholder mt-2">Evidence end date time (UTC)</label>
+                                        <div class="row ml-1" id="end_date_inputs">
+                                                <input class="form-control col-6 mr-2" type="date" id="end_date" {% if rfile.end_date %}value="{{ rfile.end_date.strftime('%Y-%m-%d') }}" {% endif %}>
+                                                <span></span>
+                                                <input class="form-control col-5 mr-2" type="time" step="0.001" id="end_time" {% if rfile.end_date %}value="{{ rfile.end_date.strftime('%H:%M:%S.%f')[:-3] }}" {% else %} value="00:00:00.000" {% endif %}>
+                                                <span></span>
+                                                <button class="btn btn-sm btn-outline-white" type="button" onclick="show_x_time_converter('end');return false;"><i class="fas fa-magic"></i></button>
+                                        </div>
+                                        <div class="row ml-1" id="end_date_convert" style="display:none;">
+                                            <div class="input-group ">
+                                                <input class="form-control col-11" type="text" id="end_date_convert_input" placeholder="Enter date in any format and submit to try auto-parsing">
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-sm btn-outline-secondary mr-2" type="button" onclick="time_converter('end');return false;">Submit</button>
+                                                    <button class="btn btn-sm btn-outline" type="button" onclick="hide_x_time_converter('end');return false;"><i class="fas fa-magic"></i></button>
+                                                </div>
+                                            </div>
+                                            <span id="convert_bad_feedback_end" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="rfile_desc" class="placeholder">Description</label>
+                                     <div class="md_description_field">
+                                        <div class="form-group mt--2">
+                                            <button type="button" class="float-right icon-note btn btn-circle btn-sm mt-2" onclick="edit_in_evidence_desc();" >
+                                            </button>
+                                            <button type="button" style="display: none;" class="btn btn-dark btn-sm float-right mr-2 mt-2"
+                                                    onclick="preview_evidence_description();" id="evidence_preview_button"><i class="fa-solid fa-eye"></i></button>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col mb--2 ml--2" id="evidence_edition_btn" style="display:none;">
+                                            </div>
+                                        </div>
+                                        <div class="row" style="margin-left:0px;">
+                                            <div class="col-12" id="container_evidence_desc_content">
+                                                <div id="evidence_description" contenteditable="true" spellcheck="true" class="mr-2" data-theme="{% if current_user.in_dark_mode %}dark{% else %}light{% endif %}">{% if rfile %}{{ rfile.file_description  }}{% endif %}</div>
+                                                <textarea id="evidence_desc_content" rows="10" cols="82" style="display: none"></textarea>
+                                            </div>
+                                            <div class="col-12" id="container_evidence_description" style="display:none">
+                                                <div id="target_evidence_desc"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <p>Locally compute file information by selecting it below. <span class="text-danger">The file is not be uploaded on the server nor saved.</span></p>
+                                    <input id="input_autofill" type="file">
+                                    <button class="btn btn-sm" type="button" onclick="get_hash()" id="btn_rfile_proc">Process</button>
+                                </div>
+
+                                {% if linked_assets is defined and linked_assets %}
+                                {# iris-next: inverse of the asset modal's "Related Evidence" picker.
+                                   Read-only here; clicking a chip opens the asset modal via the existing
+                                   asset_details() loader on case_assets.html, with `cid` so the legacy
+                                   guard accepts the request. #}
+                                <div class="form-group">
+                                    <label class="d-flex align-items-center" style="gap: 8px;">
+                                        <span>Linked Assets</span>
+                                        <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">— assets this evidence pertains to</span>
+                                    </label>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                    {% for la in linked_assets %}
+                                        <a href="/case/assets?cid={{ rfile.case_id }}&shared={{ la.asset_id }}"
+                                           title="Open {{ la.asset_name }} ({{ la.asset_type_name }})"
+                                           style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); color: #d4c4ff; padding: 4px 10px; border-radius: 999px; font-size: 12px;">
+                                            <i class="fa-solid fa-cube" style="font-size: 11px;"></i>
+                                            <span>{{ la.asset_name }}</span>
+                                            <span style="font-size: 10px; opacity: 0.7;">{{ la.asset_type_name }}</span>
+                                        </a>
+                                    {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+              {% include 'modals/modal_attributes_tabs.html' %}
+          </div>
+        {% if rfile.id %}
+         <button type="button" class="btn btn-outline-danger mt-5"
+                onclick="delete_rfile('{{ rfile.id }}');">Delete</button>
+                <button type="button" class="btn btn-outline-success ml-4 mt-5 float-right"
+                onclick="update_rfile('{{ rfile.id }}');" id="submit_new_rfiles">Update</button>
+        {% else %}
+            <button type="button" class="btn btn-outline-success float-right" onclick="add_rfile();">Register</button>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+/* Evidence-type auto-suggester (iris-next).
+ *
+ * UX: when the analyst clicks "Process" (which already populates filename
+ * / size / hash via case.rfiles.js's get_hash → on_done_hash chain), we
+ * also fire the AI type suggester in parallel. The result is auto-applied
+ * to the dropdown and a violet "✨ Suggested by AI · <conf>%" chip
+ * appears next to the Type label so the analyst sees that the value is
+ * an AI suggestion. Changing the dropdown manually dismisses the chip
+ * (analyst override). No manual button — fully integrated into the
+ * existing local-compute flow.
+ *
+ * Implementation hook: monkey-patch window.get_hash so the existing
+ * `onclick="get_hash()"` on the Process button now also fires the
+ * suggester. The MD5 compute is the slow path (chunked over GB-scale
+ * files); the suggester only needs filename + first 4 KB of magic bytes,
+ * so it returns long before the hash finishes.
+ */
+(function () {
+    var caseId = (window.location.search.match(/[?&]cid=(\d+)/) || [])[1] || null;
+    if (!caseId) { return; }
+
+    var labelEl = document.getElementById('iris-evtype-label');
+    var chipEl = document.getElementById('iris-evtype-chip');
+    var chipTextEl = document.getElementById('iris-evtype-chip-text');
+    var statusEl = document.getElementById('iris-evtype-status');
+    var reasonEl = document.getElementById('iris-evtype-reason');
+
+    var lastSuggestionId = null;
+    var suppressOverrideDetect = false;
+
+    function getCsrf() {
+        var el = document.getElementById('csrf_token');
+        return el ? el.value : '';
+    }
+
+    function readFirst4kHex() {
+        return new Promise(function (resolve) {
+            var fileInput = document.getElementById('input_autofill');
+            if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+                resolve(null);
+                return;
+            }
+            var f = fileInput.files[0];
+            var slice = f.slice(0, 4096);
+            var reader = new FileReader();
+            reader.onload = function () {
+                try {
+                    var bytes = new Uint8Array(reader.result);
+                    var hex = '';
+                    for (var i = 0; i < bytes.length; i++) {
+                        hex += (bytes[i] < 0x10 ? '0' : '') + bytes[i].toString(16);
+                    }
+                    resolve(hex);
+                } catch (e) { resolve(null); }
+            };
+            reader.onerror = function () { resolve(null); };
+            reader.readAsArrayBuffer(slice);
+        });
+    }
+
+    function getDescription() {
+        var el = document.getElementById('evidence_description');
+        if (!el) { return ''; }
+        return (el.innerText || el.textContent || '').trim();
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+
+    function applySuggestion(s) {
+        var $sel = $('#file_type_id');
+        if (!$sel.length || !s) { return; }
+        suppressOverrideDetect = true;
+        $sel.selectpicker('val', String(s.type_id));
+        $sel.trigger('change');
+        // Re-arm override detection on the next event-loop tick — by then
+        // selectpicker's own change handlers have settled.
+        setTimeout(function () { suppressOverrideDetect = false; }, 0);
+
+        labelEl.textContent = 'Suggested type';
+        var conf = (typeof s.confidence === 'number') ? Math.round(s.confidence * 100) + '%' : '';
+        chipTextEl.textContent = 'Suggested by AI' + (conf ? ' · ' + conf : '');
+        chipEl.style.display = '';
+        if (s.reason) {
+            reasonEl.textContent = s.reason;
+            reasonEl.style.display = '';
+        } else {
+            reasonEl.style.display = 'none';
+        }
+        lastSuggestionId = s.type_id;
+    }
+
+    function clearSuggestionChip() {
+        labelEl.textContent = 'Type';
+        chipEl.style.display = 'none';
+        reasonEl.style.display = 'none';
+        reasonEl.textContent = '';
+        lastSuggestionId = null;
+    }
+
+    function fireSuggester() {
+        var fileInput = document.getElementById('input_autofill');
+        var fname = (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : '';
+        var fsize = (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0].size : null;
+        if (!fname) { return; }
+
+        statusEl.textContent = 'analysing…';
+        statusEl.style.color = '#a78bfa';
+
+        readFirst4kHex().then(function (magicHex) {
+            var csrf = getCsrf();
+            return fetch('/api/v2/cases/' + caseId + '/ai/evidence-type-suggestion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    filename: fname,
+                    size_bytes: fsize,
+                    magic_hex: magicHex,
+                    description: getDescription() || null,
+                    csrf_token: csrf
+                })
+            });
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) {
+                throw new Error((resp.json && resp.json.message) || ('HTTP ' + resp.status));
+            }
+            var s = resp.json && resp.json.suggestion;
+            statusEl.textContent = '';
+            if (s) {
+                applySuggestion(s);
+            } else {
+                statusEl.textContent = 'no confident match — pick manually';
+                statusEl.style.color = '#fbbf24';
+            }
+        })
+        .catch(function (err) {
+            statusEl.textContent = 'AI error: ' + (err.message || err);
+            statusEl.style.color = '#fca5a5';
+        });
+    }
+
+    /* Hook the existing Process button by wrapping window.get_hash. The
+     * wrapper fires the AI suggester in parallel with the MD5 compute —
+     * suggester typically returns in 1-2s, MD5 takes minutes on large
+     * files, so the chip appears long before hashing finishes. */
+    var origGetHash = window.get_hash;
+    if (typeof origGetHash === 'function') {
+        window.get_hash = function () {
+            var fileInput = document.getElementById('input_autofill');
+            if (fileInput && fileInput.files && fileInput.files[0]) {
+                fireSuggester();
+            }
+            return origGetHash.apply(this, arguments);
+        };
+    }
+
+    /* Override-detect: if the analyst manually picks a different
+     * dropdown value, drop the "Suggested by AI" chip. selectpicker
+     * fires `change` on the underlying <select> for both programmatic
+     * and user-driven updates, so we filter via the suppress flag set
+     * during applySuggestion(). */
+    $(document).on('change', '#file_type_id', function () {
+        if (suppressOverrideDetect) { return; }
+        if (lastSuggestionId === null) { return; }
+        var current = $(this).val();
+        if (String(current) !== String(lastSuggestionId)) {
+            clearSuggestionChip();
+        }
+    });
+})();
+</script>

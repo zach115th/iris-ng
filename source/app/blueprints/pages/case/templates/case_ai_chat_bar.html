@@ -1,0 +1,548 @@
+{# Iris-next: case-scoped AI assistant chat bar.
+
+   Fixed at the bottom of the viewport. Click to expand the conversation
+   panel. Calls POST /api/v2/cases/{cid}/ai/ask. Spacewalk-inspired chrome:
+   pill input, attachment + sparkle ornaments, dark-modern conversation panel.
+   Self-contained styles + inline Markdown renderer (same one as the case-
+   summary panel — kept simple deliberately).
+#}
+<style>
+  .iris-chat {
+    --c-bg: #0b0b0d;
+    --c-card-bg: #15151a;
+    --c-card-border: rgba(255, 255, 255, 0.10);
+    --c-fg: #fafafa;
+    --c-muted: rgba(250, 250, 250, 0.62);
+    --c-accent: #8b5cf6;
+    --c-accent-bg: rgba(139, 92, 246, 0.15);
+    --c-success: #10b981;
+    --c-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
+    --c-radius: 14px;
+    position: fixed;
+    bottom: 18px;
+    /* Offset by half the sidebar width (~240px expanded → +120px) so the bar
+       is centered within the main content area, not within the full viewport.
+       Without this, the bar reads as visually drifted left because the sidebar
+       takes up the left ~240px and viewport-center is 120px off content-center. */
+    left: calc(50% + 120px);
+    transform: translateX(-50%);
+    width: min(880px, calc(100vw - 320px));
+    z-index: 1040;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--c-fg);
+  }
+  .iris-chat * { box-sizing: border-box; }
+
+  .iris-chat-conversation {
+    display: none;
+    margin-bottom: 10px;
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-card-border);
+    border-radius: var(--c-radius);
+    overflow: hidden;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    max-height: 60vh;
+  }
+  .iris-chat.open .iris-chat-conversation { display: flex; flex-direction: column; }
+
+  .iris-chat-conversation-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--c-card-border);
+    background: rgba(255, 255, 255, 0.02);
+    flex-shrink: 0;
+  }
+  .iris-chat-eyebrow {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+  }
+  .iris-chat-header-actions { display: flex; gap: 6px; }
+
+  .iris-chat-icon-btn {
+    background: transparent;
+    border: 1px solid var(--c-card-border);
+    color: var(--c-muted);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    line-height: 1;
+    transition: background 120ms, color 120ms, border-color 120ms;
+  }
+  .iris-chat-icon-btn:hover {
+    color: var(--c-fg);
+    border-color: rgba(255, 255, 255, 0.20);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .iris-chat-messages {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .iris-chat-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 28px 18px;
+    color: var(--c-muted);
+    text-align: center;
+  }
+  .iris-chat-empty-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px dashed rgba(255, 255, 255, 0.20);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--c-accent);
+    font-size: 16px;
+  }
+  .iris-chat-empty-suggestions {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px;
+  }
+  .iris-chat-suggestion {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--c-card-border);
+    color: var(--c-fg);
+    border-radius: 9999px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 120ms, border-color 120ms;
+  }
+  .iris-chat-suggestion:hover { background: rgba(255, 255, 255, 0.10); border-color: rgba(255, 255, 255, 0.20); }
+
+  .iris-chat-msg { display: flex; flex-direction: column; gap: 4px; max-width: 92%; }
+  .iris-chat-msg.role-user { align-self: flex-end; align-items: flex-end; }
+  .iris-chat-msg.role-assistant { align-self: flex-start; align-items: flex-start; }
+  .iris-chat-msg-meta {
+    font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-muted);
+  }
+  .iris-chat-msg-bubble {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--c-card-border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--c-fg);
+  }
+  .iris-chat-msg.role-user .iris-chat-msg-bubble {
+    background: var(--c-accent-bg);
+    border-color: rgba(139, 92, 246, 0.30);
+  }
+  .iris-chat-msg-bubble * { color: inherit; }
+  .iris-chat-msg-bubble strong { color: #ffffff; font-weight: 600; }
+  .iris-chat-msg-bubble code {
+    font-family: var(--c-mono);
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.07);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .iris-chat-msg-bubble pre {
+    background: rgba(0, 0, 0, 0.55);
+    color: var(--c-fg);
+    padding: 10px 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12px;
+    border: 1px solid var(--c-card-border);
+    font-family: var(--c-mono);
+  }
+  .iris-chat-msg-bubble pre code { background: transparent; padding: 0; }
+  .iris-chat-msg-bubble h1, .iris-chat-msg-bubble h2, .iris-chat-msg-bubble h3, .iris-chat-msg-bubble h4 {
+    color: var(--c-fg); margin: 0.6em 0 0.3em 0; font-weight: 600;
+  }
+  .iris-chat-msg-bubble h1:first-child, .iris-chat-msg-bubble h2:first-child, .iris-chat-msg-bubble h3:first-child { margin-top: 0; }
+  .iris-chat-msg-bubble h1 { font-size: 15px; }
+  .iris-chat-msg-bubble h2 { font-size: 14px; }
+  .iris-chat-msg-bubble h3 { font-size: 13px; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .iris-chat-msg-bubble p { margin: 0.4em 0; }
+  .iris-chat-msg-bubble ul, .iris-chat-msg-bubble ol { margin: 0.3em 0 0.5em 1.4em; padding: 0; }
+  .iris-chat-msg-bubble li { margin: 0.15em 0; }
+  .iris-chat-msg-bubble table { border-collapse: collapse; margin: 0.5em 0; font-size: 12.5px; width: 100%; }
+  .iris-chat-msg-bubble th, .iris-chat-msg-bubble td { padding: 6px 9px; text-align: left; border-bottom: 1px solid var(--c-card-border); }
+  .iris-chat-msg-bubble th { color: var(--c-muted); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.06em; font-weight: 600; }
+  .iris-chat-msg-bubble a { color: var(--c-accent); text-decoration: none; }
+  .iris-chat-msg-bubble a:hover { text-decoration: underline; }
+
+  .iris-chat-msg-bubble.error {
+    color: #fda4af;
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.30);
+  }
+
+  .iris-chat-typing {
+    display: inline-flex; gap: 3px; padding: 10px 14px; align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--c-card-border);
+    border-radius: 12px;
+    align-self: flex-start;
+  }
+  .iris-chat-typing span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--c-muted);
+    animation: iris-chat-bounce 1.2s infinite;
+  }
+  .iris-chat-typing span:nth-child(2) { animation-delay: 0.15s; }
+  .iris-chat-typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes iris-chat-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40%           { transform: translateY(-4px); opacity: 1; }
+  }
+
+  .iris-chat-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-card-border);
+    border-radius: 9999px;
+    padding: 6px 8px 6px 16px;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+  }
+  .iris-chat-spark { color: var(--c-accent); font-size: 14px; }
+  .iris-chat-input {
+    flex: 1 1 auto;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--c-fg);
+    font-size: 14px;
+    padding: 8px 4px;
+    font-family: inherit;
+  }
+  .iris-chat-input::placeholder { color: var(--c-muted); }
+
+  .iris-chat-send {
+    border: none;
+    background: var(--c-accent);
+    color: #ffffff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+    transition: background 120ms, transform 80ms;
+  }
+  .iris-chat-send:hover { background: #7c3aed; }
+  .iris-chat-send:active { transform: scale(0.94); }
+  .iris-chat-send:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .iris-chat-toggle {
+    background: transparent;
+    border: none;
+    color: var(--c-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 6px 8px;
+    border-radius: 50%;
+    line-height: 1;
+  }
+  .iris-chat-toggle:hover { color: var(--c-fg); background: rgba(255, 255, 255, 0.05); }
+</style>
+
+{# Per-tab chat bar customization. The parent template can pass a variant +
+   eyebrow / placeholder / suggestion-list to specialize the assistant for
+   the tab it's mounted on. Defaults below give a generic case-scoped chat
+   that works on any tab without configuration. Variant-specific system
+   prompts live at source/app/resources/ai_prompts/case_chat_<variant>.md. #}
+{% set _chat_variant = chat_variant | default('') %}
+{% set _chat_eyebrow = chat_eyebrow | default('✨ Case Assistant') %}
+{% set _chat_placeholder = chat_placeholder | default('Ask about this case…  (e.g. what are the initial access vectors?)') %}
+{% set _chat_blurb = chat_blurb | default("Grounded in this case's timeline, IOCs, assets, and notes — not the wider web.") %}
+{% set _chat_suggestions = chat_suggestions | default([
+    "What's the most suspicious event so far?",
+    "Summarise the timeline in 3 sentences.",
+    "What are the open investigative gaps?",
+    "What should I investigate next?"
+]) %}
+<div class="iris-chat" id="iris-chat" data-case-id="{{ case.case_id }}" data-variant="{{ _chat_variant }}">
+  <div class="iris-chat-conversation" id="iris-chat-conv">
+    <div class="iris-chat-conversation-header">
+      <span class="iris-chat-eyebrow">{{ _chat_eyebrow }}</span>
+      <div class="iris-chat-header-actions">
+        <button type="button" class="iris-chat-icon-btn" id="iris-chat-clear" title="Clear conversation">Clear</button>
+        <button type="button" class="iris-chat-icon-btn" id="iris-chat-collapse" title="Collapse">— Collapse</button>
+      </div>
+    </div>
+    <div class="iris-chat-messages" id="iris-chat-msgs">
+      <div class="iris-chat-empty-state" id="iris-chat-empty">
+        <div class="iris-chat-empty-icon"><span aria-hidden="true">✨</span></div>
+        <div>Ask anything about this case.</div>
+        <div style="font-size: 11.5px; opacity: 0.75;">{{ _chat_blurb }}</div>
+        <div class="iris-chat-empty-suggestions" id="iris-chat-suggestions">
+          {% for suggestion in _chat_suggestions %}
+          <button type="button" class="iris-chat-suggestion">{{ suggestion }}</button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <form class="iris-chat-input-row" id="iris-chat-form" autocomplete="off">
+    <span class="iris-chat-spark" aria-hidden="true">✨</span>
+    <input type="text" class="iris-chat-input" id="iris-chat-input"
+           placeholder="{{ _chat_placeholder }}"
+           autocomplete="off" />
+    <button type="button" class="iris-chat-toggle" id="iris-chat-toggle" title="Show / hide conversation">▾</button>
+    <button type="submit" class="iris-chat-send" id="iris-chat-send" title="Send (Enter)">▲</button>
+  </form>
+</div>
+
+<script>
+(function() {
+  var root = document.getElementById('iris-chat');
+  if (!root) return;
+
+  var caseId    = root.getAttribute('data-case-id');
+  var variant   = root.getAttribute('data-variant') || '';
+  var convEl    = document.getElementById('iris-chat-conv');
+  var msgsEl    = document.getElementById('iris-chat-msgs');
+  var emptyEl   = document.getElementById('iris-chat-empty');
+  var inputEl   = document.getElementById('iris-chat-input');
+  var formEl    = document.getElementById('iris-chat-form');
+  var sendBtn   = document.getElementById('iris-chat-send');
+  var toggleBtn = document.getElementById('iris-chat-toggle');
+  var collapse  = document.getElementById('iris-chat-collapse');
+  var clearBtn  = document.getElementById('iris-chat-clear');
+  var suggBox   = document.getElementById('iris-chat-suggestions');
+
+  // Conversation state lives only in memory — refreshing the page resets it.
+  // Each entry is {role: 'user'|'assistant', content: str}.
+  var history = [];
+
+  function getCsrfToken() {
+    var el = document.getElementById('csrf_token');
+    return el ? el.value : '';
+  }
+
+  function htmlEscape(s) {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  // Same minimal Markdown renderer as the AI panel — kept inline so we
+  // don't depend on Showdown loading order.
+  function renderMarkdown(md) {
+    if (!md) return '';
+    var src = String(md).replace(/\r\n/g, '\n');
+    var codeBlocks = [];
+    src = src.replace(/```([\s\S]*?)```/g, function(_, code) {
+      var idx = codeBlocks.length;
+      codeBlocks.push(code.replace(/^[a-zA-Z0-9_-]*\n?/, ''));
+      return 'CODEBLOCK' + idx + '';
+    });
+    var lines = src.split('\n'); var out = []; var i = 0;
+    function isHr(l)       { return /^\s*(---+|\*\*\*+|___+)\s*$/.test(l); }
+    function isHeading(l)  { return /^#{1,6}\s+\S/.test(l); }
+    function isUL(l)       { return /^\s*[-*+]\s+/.test(l); }
+    function isOL(l)       { return /^\s*\d+\.\s+/.test(l); }
+    function isTableSep(l) { return /^\s*\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?\s*$/.test(l); }
+    function isTableRow(l) { return /^\s*\|.*\|\s*$/.test(l); }
+    function isBQ(l)       { return /^\s*>\s?/.test(l); }
+    function inline(s) {
+      s = s.replace(/[&<>]/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]; });
+      s = s.replace(/`([^`]+)`/g, function(_, t) { return '<code>' + t + '</code>'; });
+      s = s.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+      s = s.replace(/(^|[\s(])\*([^\*\n]+)\*/g, '$1<em>$2</em>');
+      s = s.replace(/(^|[\s(])_([^_\n]+)_/g, '$1<em>$2</em>');
+      s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      return s;
+    }
+    var paraBuf = [];
+    function flushP() { if (paraBuf.length) { out.push('<p>' + inline(paraBuf.join(' ').trim()) + '</p>'); paraBuf.length = 0; } }
+    while (i < lines.length) {
+      var line = lines[i]; var trimmed = line.trim();
+      if (trimmed === '') { flushP(); i++; continue; }
+      if (isHr(trimmed)) { flushP(); out.push('<hr>'); i++; continue; }
+      if (isHeading(trimmed)) {
+        flushP();
+        var hm = /^(#{1,6})\s+(.*?)\s*#*\s*$/.exec(trimmed);
+        out.push('<h' + hm[1].length + '>' + inline(hm[2]) + '</h' + hm[1].length + '>');
+        i++; continue;
+      }
+      if (isBQ(trimmed)) {
+        flushP();
+        var bq = [];
+        while (i < lines.length && isBQ(lines[i].trim())) { bq.push(lines[i].replace(/^\s*>\s?/, '')); i++; }
+        out.push('<blockquote>' + inline(bq.join(' ')) + '</blockquote>');
+        continue;
+      }
+      if (isTableRow(line) && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+        flushP();
+        var splitR = function(r) { r = r.trim().replace(/^\|/, '').replace(/\|$/, ''); return r.split('|').map(function(c) { return c.trim(); }); };
+        var headers = splitR(line); i += 2; var rows = [];
+        while (i < lines.length && isTableRow(lines[i])) { rows.push(splitR(lines[i])); i++; }
+        var tbl = '<table><thead><tr>' + headers.map(function(h){return '<th>'+inline(h)+'</th>';}).join('') + '</tr></thead><tbody>';
+        rows.forEach(function(r) { tbl += '<tr>' + r.map(function(c){return '<td>'+inline(c)+'</td>';}).join('') + '</tr>'; });
+        out.push(tbl + '</tbody></table>');
+        continue;
+      }
+      if (isUL(line) || isOL(line)) {
+        flushP();
+        var ordered = isOL(line); var tag = ordered ? 'ol' : 'ul'; var items = [];
+        while (i < lines.length && (isUL(lines[i]) || isOL(lines[i]))) {
+          var lm = /^\s*(?:[-*+]|\d+\.)\s+(.*)$/.exec(lines[i]);
+          items.push('<li>' + inline(lm ? lm[1] : lines[i]) + '</li>'); i++;
+        }
+        out.push('<' + tag + '>' + items.join('') + '</' + tag + '>');
+        continue;
+      }
+      paraBuf.push(line); i++;
+    }
+    flushP();
+    var html = out.join('\n');
+    html = html.replace(/CODEBLOCK(\d+)/g, function(_, idx) {
+      var code = codeBlocks[Number(idx)] || '';
+      code = code.replace(/[&<>]/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]; });
+      return '<pre><code>' + code + '</code></pre>';
+    });
+    return html;
+  }
+
+  function openConv() {
+    root.classList.add('open');
+    toggleBtn.textContent = '▴';
+  }
+  function closeConv() {
+    root.classList.remove('open');
+    toggleBtn.textContent = '▾';
+  }
+  function toggleConv() { (root.classList.contains('open') ? closeConv : openConv)(); }
+
+  function scrollMsgs() {
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  }
+
+  function appendMessage(role, content, opts) {
+    if (emptyEl && emptyEl.parentNode) emptyEl.parentNode.removeChild(emptyEl);
+    opts = opts || {};
+    var wrap = document.createElement('div');
+    wrap.className = 'iris-chat-msg role-' + role;
+    var meta = document.createElement('div');
+    meta.className = 'iris-chat-msg-meta';
+    meta.textContent = role === 'user' ? 'You' : 'Assistant';
+    var bubble = document.createElement('div');
+    bubble.className = 'iris-chat-msg-bubble' + (opts.error ? ' error' : '');
+    if (opts.error) {
+      bubble.textContent = content;
+    } else if (role === 'user') {
+      bubble.textContent = content;
+    } else {
+      bubble.innerHTML = renderMarkdown(content);
+    }
+    wrap.appendChild(meta);
+    wrap.appendChild(bubble);
+    msgsEl.appendChild(wrap);
+    scrollMsgs();
+    return bubble;
+  }
+
+  function appendTyping() {
+    if (emptyEl && emptyEl.parentNode) emptyEl.parentNode.removeChild(emptyEl);
+    var t = document.createElement('div');
+    t.className = 'iris-chat-typing';
+    t.id = 'iris-chat-typing';
+    t.innerHTML = '<span></span><span></span><span></span>';
+    msgsEl.appendChild(t);
+    scrollMsgs();
+    return t;
+  }
+  function removeTyping() {
+    var t = document.getElementById('iris-chat-typing');
+    if (t && t.parentNode) t.parentNode.removeChild(t);
+  }
+
+  function setBusy(busy) {
+    sendBtn.disabled = busy;
+    inputEl.disabled = busy;
+  }
+
+  function sendQuestion(question) {
+    if (!question || !question.trim()) return;
+    question = question.trim();
+
+    openConv();
+    appendMessage('user', question);
+    history.push({ role: 'user', content: question });
+    inputEl.value = '';
+    setBusy(true);
+    appendTyping();
+
+    var csrf = getCsrfToken();
+    fetch('/api/v2/cases/' + encodeURIComponent(caseId) + '/ai/ask', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrf
+      },
+      body: JSON.stringify({
+        question: question,
+        history: history.slice(0, -1),
+        variant: variant || undefined,
+        csrf_token: csrf
+      })
+    }).then(function(r) {
+      if (!r.ok) {
+        return r.text().then(function(t) {
+          throw new Error('HTTP ' + r.status + ' ' + (t || '').substring(0, 240));
+        });
+      }
+      return r.json();
+    }).then(function(payload) {
+      removeTyping();
+      var data = payload && (payload.answer ? payload : (payload.data || {}));
+      var answer = (data && data.answer) || '(no answer returned)';
+      appendMessage('assistant', answer);
+      history.push({ role: 'assistant', content: answer });
+    }).catch(function(e) {
+      removeTyping();
+      appendMessage('assistant', 'AI request failed: ' + (e.message || String(e)), { error: true });
+    }).finally(function() {
+      setBusy(false);
+      inputEl.focus();
+    });
+  }
+
+  formEl.addEventListener('submit', function(e) {
+    e.preventDefault();
+    sendQuestion(inputEl.value);
+  });
+  toggleBtn.addEventListener('click', toggleConv);
+  collapse.addEventListener('click', closeConv);
+  clearBtn.addEventListener('click', function() {
+    history = [];
+    msgsEl.innerHTML = '';
+    msgsEl.appendChild(emptyEl);
+  });
+  if (suggBox) {
+    suggBox.addEventListener('click', function(e) {
+      if (e.target && e.target.classList.contains('iris-chat-suggestion')) {
+        sendQuestion(e.target.textContent);
+      }
+    });
+  }
+
+  // Auto-focus the input when the conversation opens
+  inputEl.addEventListener('focus', openConv);
+})();
+</script>

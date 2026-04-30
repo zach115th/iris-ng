@@ -1,0 +1,523 @@
+{% extends "layouts/default_ext.html" %} {% block title %} Case notes {% endblock title %} {% block stylesheets %}
+{% include 'includes/header_case.html' %}
+<link rel="stylesheet" href="/static/assets/css/bootstrap-select.min.css">
+{% endblock stylesheets %}
+{% block content %}
+{% include 'includes/navigation_ext.html' %}
+
+{% include 'includes/sidenav.html' %}
+<div class="main-panel">
+
+    <div class="content">
+
+        <div class="page-inner page-inner-fill">
+            <div class="page-with-aside  bg-white">
+                <div class="page-aside bg-grey1">
+                    <div class="aside-header mt--2">
+						<div class="row mt-1">
+							<div class="col">
+								<div class="input-group">
+									<input type="text" placeholder="Search in notes" class="form-control" id="search-input">
+									  <div class="input-group-append">
+										<button class="btn btn-sm btn-light" type="button" id="clear-search">
+										  &times;
+										</button>
+									  </div>
+								</div>
+							</div>
+						</div>
+						<div class="row mt-2">
+							<div class="col">
+								<button class="btn btn-light btn-sm" title="Add folder" onclick="add_folder();return false;">
+									<i class="fa fa-folder-plus"></i>
+								</button>
+								<button class="btn btn-light btn-sm" title="Fold/unfold directories" onclick="toggleDirectories();return false;">
+									<i class="fa-solid fa-folder-tree"></i>
+								</button>
+								<button class="btn btn-light btn-sm" title="Refresh list" onclick="refresh_folders();return false;">
+									<i class="fa fa-refresh"></i>
+								</button>
+							</div>
+						</div>
+
+                    </div>
+					<div class="aside-nav" id="notes-nav">
+						<ul class="nav" id="directoriesListing">
+						</ul>
+					</div>
+				</div>
+				{{ form.csrf_token }}
+				<div class="page-content" id="emptyNoteDisplay">
+					<div class="mt-4">
+						<h4 class="text-dark text-sm text-center ml-mr-auto">It looks pretty empty <i class="fa-solid fa-mug-hot ml-2"></i></h4>
+						<h4 class="text-dark text-sm text-center ml-mr-auto"><a href="#" onclick="add_folder();return false;">Select a note on the left pane or click here to add a directory</a></h4>
+						<h4 class="text-dark text-sm text-center ml-mr-auto">Right-click on a directory to add a note</h4>
+
+					</div>
+				</div>
+				<div class="page-content note-content" id="currentNoteContent" style="display: none;">
+					<div class="mt-2 ml-2 mr-2 d-lg-flex d-block">
+						<div class="col">
+							<h4 class="page-title mb-0" id="currentNoteTitle"></h4>
+							<small>
+								<i class="text-muted" id="currentNoteIDLabel"></i>
+								<i class="fa fa-cloud-upload-alt ml-2" title="Auto saving enabled"></i>
+								<a class="bg-transparent" onclick="load_note_revisions()"><i class="fa-solid fa-clock-rotate-left ml-2 mt-2" style="cursor: pointer;" title="Modifications history"></i></a>
+							</small>
+
+						</div>
+						<div class="col">
+							<div class="row float-right">
+								<span class="float-right mr-2 mt-1" id="content_typing"></span>
+								<span class="float-right mr-2 mt-2 pt-1" id="content_last_saved_by"></span>
+								<div class="avatar-group-note mt-1 mr-2 float-right" id="ppl_list_viewing">
+								</div>
+								  <button type="button" class="btn bg-transparent btn-xs" onclick="proxy_comment_element();" title="Comments">
+									<span class="btn-label">
+										<i class="fa-solid fa-comments mr-2"></i><span class="notification" id="object_comments_number"></span>
+									</span>
+								</button>
+								<button type="button" class="btn bg-transparent btn-xs" onclick="proxy_copy_object_link();return false;" title="Copy shared link">
+									<span class="btn-label">
+										<i class="fa fa-share mr-2"></i>
+									</span>
+								</button>
+								<button type="button" class="btn bg-transparent btn-xs" onclick="proxy_copy_object_link_md();return false;" title="Copy MD link">
+									<span class="btn-label">
+										<i class="fa-brands fa-markdown mr-2"></i>
+									</span>
+								</button>
+								<button type="button" class="btn bg-transparent btn-xs" onclick="download_note();return false;" title="Download as MD">
+									<span class="btn-label">
+										<i class="fa-solid fa-download mr-2"></i>
+									</span>
+								</button>
+								<button type="button" class="btn bg-transparent btn-xs" onclick="delete_note();return false;" title="Delete note">
+									<span class="btn-label">
+										<i class="fa-solid fa-trash mr-2 text-danger"></i>
+									</span>
+								</button>
+								<div class="dropdown">
+									  <button class="btn bg-transparent" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+										  <span aria-hidden="true"><i class="fas fa-ellipsis-v"></i></span>
+									  </button>
+									  <div class="dropdown-menu pull-right" id="note_quick_actions" aria-labelledby="dropdownMenuButton">
+									  </div>
+								 </div>
+						  	</div>
+						</div>
+					</div>
+					<div class="note-body">
+						<div class="row mb-1 mt-3 ml-2">
+							<div class="col-10" id="notes_edition_btn">
+									<div class="btn btn-sm btn-light mr-1 " title="CTRL-S" id="last_saved" onclick="save_note();"><i class="fa-solid fa-file-circle-check"></i></div>
+									<div class="btn btn-sm btn-light mr-1 " title="CTRL-B" onclick="note_editor.insertSnippet('**${1:$SELECTION}**');note_editor.focus();"><i class="fa-solid fa-bold"></i></div>
+									<div class="btn btn-sm btn-light mr-1" title="CTRL-I" onclick="note_editor.insertSnippet('*${1:$SELECTION}*');note_editor.focus();"><i class="fa-solid fa-italic"></i></div>
+									<div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-1" onclick="note_editor.insertSnippet('# ${1:$SELECTION}');note_editor.focus();">H1</div>
+									<div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-2" onclick="note_editor.insertSnippet('## ${1:$SELECTION}');note_editor.focus();">H2</div>
+									<div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-3" onclick="note_editor.insertSnippet('### ${1:$SELECTION}');note_editor.focus();">H3</div>
+									<div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-4" onclick="note_editor.insertSnippet('#### ${1:$SELECTION}');note_editor.focus();">H4</div>
+									<div class="btn btn-sm btn-light mr-1" title="CTRL+\`" onclick="note_editor.insertSnippet('```${1:$SELECTION}```');note_editor.focus();"><i class="fa-solid fa-code"></i></div>
+									<div class="btn btn-sm btn-light mr-1" title="CTRL-K" onclick="note_editor.insertSnippet('[${1:$SELECTION}](url)');note_editor.focus();"><i class="fa-solid fa-link"></i></div>
+									<div class="btn btn-sm btn-light mr-1" title="Insert table" onclick="note_editor.insertSnippet('|\t|\t|\t|\n|--|--|--|\n|\t|\t|\t|\n|\t|\t|\t|');note_editor.focus();"><i class="fa-solid fa-table"></i></div>
+									<div class="btn btn-sm btn-light mr-1" title="Insert bullet list" onclick="note_editor.insertSnippet('\n- \n- \n- ');note_editor.focus();"><i class="fa-solid fa-list"></i></div>
+									<div class="btn btn-sm btn-light mr-1" title="Insert numbered list" onclick="note_editor.insertSnippet('\n1. a  \n2. b  \n3. c  ');note_editor.focus();"><i class="fa-solid fa-list-ol"></i></div>
+									<div class="btn btn-sm btn-light mr-1" title="Toggle editor expansion" onclick="toggle_max_editor();" id="btn_max_editor"><i class="fa-solid fa-maximize"></i></div>
+									<div class="btn btn-sm btn-transparent mr-1" title="Help" onclick="get_md_helper_modal();"><i class="fa-solid fa-question-circle"></i></div>
+									<button type="button" id="iris-ioc-extract-btn"
+										title="Extract IOCs from this note's text using AI"
+										style="background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; line-height: 1; padding: 4px 10px; border-radius: 999px; cursor: pointer; margin-left: 4px;">
+										&#x2728; Extract IOCs
+									</button>
+									<span id="iris-ioc-extract-status" style="font-size: 11px; color: #9ca3af; margin-left: 6px;"></span>
+							</div>
+							<div class="col">
+								<button type="button" class="float-right icon-note btn btn-light btn-circle btn-sm mr-2" onclick="edit_innote();"></button>
+								<button type="button" class="float-right btn btn-light btn-sm mr-2" onclick="save_note();return false;" title="Save note">
+									<span class="btn-label">
+										<i class="fa fa-save mr-2"></i>Save note
+									</span>
+								</button>
+							</div>
+						</div>
+						<div id="iris-ioc-extract-panel" style="display: none; margin-top: 10px; padding: 10px 12px; background: #15151a; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px; font-size: 12.5px;">
+							<div id="iris-ioc-extract-rationale" style="color: #cbd5e1; margin-bottom: 8px; font-style: italic;"></div>
+							<div id="iris-ioc-extract-list"></div>
+							<div style="display: flex; gap: 8px; margin-top: 10px; align-items: center;">
+								<button type="button" id="iris-ioc-accept-all"
+									style="background: #8b5cf6; border: 0; color: #fff; padding: 4px 12px; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
+									Accept all
+								</button>
+								<button type="button" id="iris-ioc-extract-dismiss"
+									style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; padding: 4px 12px; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
+									Dismiss
+								</button>
+								<span id="iris-ioc-accept-counter" style="font-size: 11px; color: #9ca3af; margin-left: auto;"></span>
+							</div>
+						</div>
+						<div class="row" id="noteContentScroll">
+							<div class="col-md-12 col-lg-6" id="container_note_content">
+								<div style="display: none" id="fetched_crc"></div>
+								<div id="editor_detail" contenteditable="true" spellcheck="true" data-theme="{% if current_user.in_dark_mode %}dark{% else %}light{% endif %}"></div>
+								<textarea id="note_content" rows="10" cols="82" style="display: none"></textarea>
+							</div>
+							<div class="col-md-12 col-lg-6" id="ctrd_notesum">
+								<div id="targetDiv"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+    </div>
+	<div class="modal" id="moveFolderModal" tabindex="-1" role="dialog" aria-labelledby="moveFolderModalLabel" aria-hidden="true">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="moveFolderModalLabel">Move item</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col">
+							<span>Select the directory to move the item to.</span>
+						</div>
+					</div>
+					<div class="row mt-2">
+						<div class="col">
+							<div id="dirListingMove">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal" id="noteModificationHistoryModal" tabindex="-1" role="dialog" aria-labelledby="moveFolderModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" >Note revisions</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div class="row mt-2">
+						<div class="col">
+							<div id="revisionList" class="list-group-lg">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal bg-dark-gradient" id="notePreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+		<div class="modal-dialog modal-xxl " role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" >Preview of revision <span id="previewRevisionID"></span></h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div class="row mt-2 mb-2">
+						<div class="col">
+							<h3 id="notePreviewModalTitle"></h3>
+							<div id="notePreviewModalContent">
+							</div>
+						</div>
+					</div>
+					<div class="row mt-2">
+						<div class="col">
+							<button class="btn btn-light float-right" onclick="note_revision_revert();">Revert to this revision</button>
+							<button class="btn btn-outline-danger float-right mr-2" onclick="note_revision_delete();">Delete revision</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+    {% include 'includes/footer.html' %}
+</div>
+
+{% set chat_variant = 'notes' %}
+{% set chat_eyebrow = '✨ Notes Assistant' %}
+{% set chat_placeholder = 'Ask about these notes…  (e.g. what gaps are missing?)' %}
+{% set chat_blurb = 'Focused on this case\'s notes. Cross-references the timeline / IOCs / assets when needed.' %}
+{% set chat_suggestions = [
+    "Summarise all the notes",
+    "Which note has the weakest evidence backing?",
+    "What gaps would a peer reviewer flag?",
+    "Are any notes contradicting the timeline?"
+] %}
+{% include 'case_ai_chat_bar.html' %}
+
+{% endblock content %}
+{% block javascripts %}
+{% include 'includes/footer_case.html' %}
+<script src="/static/assets/js/plugin/sortable/sortable.js "></script>
+<script src="/static/assets/js/core/socket.io.js"></script>
+<script src="/static/assets/js/iris/case.notes.js "></script>
+
+<script>
+/* AI IOC extraction — Tier-1 feature (inline notes editor variant).
+ * Mirrors the button in modal_note_edit.html. Reads the active note's
+ * editor content, POSTs to /api/v2/cases/{id}/ai/ioc-extraction, renders
+ * suggestions as click-to-add chips. Each "+ add" fires
+ * POST /api/v2/cases/{id}/iocs to materialise the IOC in the case.
+ */
+(function () {
+    var btn = document.getElementById('iris-ioc-extract-btn');
+    var status = document.getElementById('iris-ioc-extract-status');
+    var panel = document.getElementById('iris-ioc-extract-panel');
+    var listEl = document.getElementById('iris-ioc-extract-list');
+    var rationaleEl = document.getElementById('iris-ioc-extract-rationale');
+    var acceptAllBtn = document.getElementById('iris-ioc-accept-all');
+    var dismissBtn = document.getElementById('iris-ioc-extract-dismiss');
+    var counter = document.getElementById('iris-ioc-accept-counter');
+    if (!btn) { return; }
+
+    var caseId = (window.location.search.match(/[?&]cid=(\d+)/) || [])[1] || null;
+
+    function getCsrf() {
+        var el = document.getElementById('csrf_token');
+        return el ? el.value : '';
+    }
+
+    function getNoteText() {
+        if (typeof window.note_editor !== 'undefined' && window.note_editor) {
+            try { return window.note_editor.getValue() || ''; } catch (e) {}
+        }
+        var ta = document.getElementById('note_content');
+        return ta ? (ta.value || '') : '';
+    }
+
+    /* Accept-all needs to drive each row sequentially. Track each (ioc,
+     * addBtn) pair so the loop can call postIoc() and await the Promise. */
+    var pendingRows = [];
+
+    function renderRow(ioc) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display: flex; gap: 8px; align-items: flex-start; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.06);';
+
+        var typeChip = document.createElement('code');
+        typeChip.textContent = ioc.type;
+        typeChip.style.cssText = 'background: rgba(139, 92, 246, 0.18); color: #d4c4ff; padding: 2px 6px; border-radius: 4px; font-size: 10.5px; flex-shrink: 0; align-self: center; min-width: 70px; text-align: center;';
+
+        var body = document.createElement('div');
+        body.style.cssText = 'flex: 1; min-width: 0;';
+
+        var valueLine = document.createElement('div');
+        valueLine.style.cssText = 'color: #fafafa; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12.5px; word-break: break-all;';
+        valueLine.textContent = ioc.value;
+        body.appendChild(valueLine);
+
+        var meta = document.createElement('div');
+        meta.style.cssText = 'color: #94a3b8; font-size: 11.5px; margin-top: 2px;';
+        var conf = (typeof ioc.confidence === 'number') ? Math.round(ioc.confidence * 100) + '%' : '';
+        meta.textContent = (ioc.reason || '') + (conf ? '  ·  ' + conf : '');
+        body.appendChild(meta);
+
+        if (ioc.noise_flag) {
+            var warn = document.createElement('div');
+            warn.style.cssText = 'color: #fbbf24; font-size: 11.5px; margin-top: 3px;';
+            warn.textContent = '⚠  ' + ioc.noise_flag;
+            body.appendChild(warn);
+        }
+
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.style.cssText = 'background: transparent; border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; padding: 2px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; flex-shrink: 0; align-self: center;';
+        if (ioc.already_in_case) {
+            addBtn.textContent = 'in case';
+            addBtn.disabled = true;
+            addBtn.title = 'This IOC is already on the case — not re-adding.';
+            addBtn.style.opacity = '0.5';
+            addBtn.style.cursor = 'default';
+            row.style.opacity = '0.65';
+        } else {
+            addBtn.textContent = '+ add';
+            addBtn.addEventListener('click', function () { postIoc(ioc, addBtn); });
+            pendingRows.push({ ioc: ioc, addBtn: addBtn });
+        }
+
+        row.appendChild(typeChip);
+        row.appendChild(body);
+        row.appendChild(addBtn);
+        return row;
+    }
+
+    function getCurrentNoteId() {
+        /* Inline editor: $('#currentNoteIDLabel').data('note_id') is the
+         * canonical source per case.notes.js. Fall back to <iris_notein>
+         * for symmetry with the modal editor. */
+        var elInline = document.getElementById('currentNoteIDLabel');
+        if (elInline) {
+            var inlineId = $(elInline).data('note_id');
+            if (typeof inlineId === 'number' && !isNaN(inlineId)) { return inlineId; }
+            var parsed = parseInt(inlineId, 10);
+            if (!isNaN(parsed)) { return parsed; }
+        }
+        var elModal = document.querySelector('iris_notein');
+        if (elModal) {
+            var n = parseInt((elModal.textContent || '').trim(), 10);
+            if (!isNaN(n)) { return n; }
+        }
+        return null;
+    }
+
+    function recordSourceNote(caseIdLocal, iocId, csrf) {
+        /* Best-effort provenance write — IOC is already in the case;
+         * a failed link doesn't fail the user-visible flow. */
+        var noteId = getCurrentNoteId();
+        if (!noteId || !iocId) { return Promise.resolve(); }
+        return fetch('/api/v2/cases/' + caseIdLocal + '/iocs/' + iocId + '/source-notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify({ note_id: noteId, source: 'ai_extractor', csrf_token: csrf })
+        }).catch(function () { /* swallow — link is auxiliary */ });
+    }
+
+    function postIoc(ioc, addBtn) {
+        /* Returns a Promise so Accept-all can await each POST sequentially.
+         * Parallel POSTs used to crash iris_misp_sync_module's hook on a
+         * forked psycopg2 connection and silently drop IOCs.
+         * After the IOC is created, fires a follow-up POST that records
+         * the current note as the source — best-effort; if the link fails
+         * the IOC create still wins. */
+        if (!caseId) { return Promise.resolve(); }
+        var csrf = getCsrf();
+        addBtn.disabled = true;
+        addBtn.textContent = 'adding…';
+        var body = {
+            ioc_value: ioc.value,
+            ioc_type_id: ioc.type_id,
+            ioc_tlp_id: ioc.tlp_id,
+            ioc_description: ioc.reason || '',
+            ioc_tags: ioc.tags || '',
+            csrf_token: csrf
+        };
+        return fetch('/api/v2/cases/' + caseId + '/iocs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify(body)
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) {
+                var msg = (resp.json && resp.json.message) || 'add failed';
+                throw new Error(msg);
+            }
+            addBtn.textContent = 'added';
+            addBtn.style.opacity = '0.5';
+            bumpCounter();
+            var newIocId = resp.json && (resp.json.ioc_id || resp.json.id);
+            return recordSourceNote(caseId, newIocId, csrf);
+        })
+        .catch(function (err) {
+            addBtn.disabled = false;
+            addBtn.textContent = 'retry';
+            addBtn.style.borderColor = '#fca5a5';
+            addBtn.title = err.message || String(err);
+        });
+    }
+
+    var addedCount = 0;
+    function bumpCounter() {
+        addedCount += 1;
+        counter.textContent = addedCount + ' IOC' + (addedCount === 1 ? '' : 's') + ' added to the case';
+    }
+
+    function render(payload) {
+        listEl.innerHTML = '';
+        pendingRows = [];
+        addedCount = 0;
+        counter.textContent = '';
+        var iocs = (payload && payload.iocs) || [];
+        if (!iocs.length) {
+            var empty = document.createElement('div');
+            empty.style.color = '#9ca3af';
+            empty.textContent = 'No IOCs identified in this note.';
+            listEl.appendChild(empty);
+            acceptAllBtn.style.display = 'none';
+        } else {
+            acceptAllBtn.style.display = '';
+            iocs.forEach(function (ioc) { listEl.appendChild(renderRow(ioc)); });
+        }
+        rationaleEl.textContent = (payload && payload.rationale) || '';
+        rationaleEl.style.display = rationaleEl.textContent ? '' : 'none';
+        panel.style.display = '';
+    }
+
+    btn.addEventListener('click', function () {
+        var text = getNoteText();
+        if (!text || text.trim().length < 10) {
+            status.textContent = 'Note is empty.';
+            return;
+        }
+        if (!caseId) {
+            status.textContent = 'Could not determine case id.';
+            return;
+        }
+        btn.disabled = true;
+        status.textContent = 'thinking…';
+        status.style.color = '#a78bfa';
+        var csrf = getCsrf();
+        fetch('/api/v2/cases/' + caseId + '/ai/ioc-extraction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            credentials: 'same-origin',
+            body: JSON.stringify({ text: text, csrf_token: csrf })
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) {
+                var msg = (resp.json && resp.json.message) || ('HTTP ' + resp.status);
+                throw new Error(msg);
+            }
+            render(resp.json);
+            status.textContent = '';
+        })
+        .catch(function (err) {
+            status.textContent = 'error: ' + (err.message || err);
+            status.style.color = '#fca5a5';
+        })
+        .finally(function () { btn.disabled = false; });
+    });
+
+    acceptAllBtn.addEventListener('click', async function () {
+        /* Sequential drain — same defense as the modal variant. Avoids
+         * pummelling celery's prefork pool which used to crash the
+         * iris_misp_sync hook on poisoned forked psycopg2 connections. */
+        acceptAllBtn.disabled = true;
+        var prevText = acceptAllBtn.textContent;
+        var queue = pendingRows.filter(function (p) { return !p.addBtn.disabled; });
+        for (var i = 0; i < queue.length; i++) {
+            acceptAllBtn.textContent = 'adding ' + (i + 1) + '/' + queue.length + '…';
+            try { await postIoc(queue[i].ioc, queue[i].addBtn); } catch (e) {}
+        }
+        acceptAllBtn.disabled = false;
+        acceptAllBtn.textContent = prevText;
+    });
+
+    dismissBtn.addEventListener('click', function () {
+        panel.style.display = 'none';
+        listEl.innerHTML = '';
+        rationaleEl.textContent = '';
+        counter.textContent = '';
+    });
+})();
+</script>
+
+{% endblock javascripts %}
