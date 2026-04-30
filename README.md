@@ -1,4 +1,4 @@
-# iris-next
+# iris-ng
 
 > **Working name.** This is a private fork of [DFIR-IRIS](https://github.com/dfir-iris/iris-web)
 > v2.5.0-beta.1, maintained by Zachary Carter for internal use. The name `iris-next` is
