@@ -119,7 +119,7 @@ def alerts_list_route() -> Response:
     if fields:
         try:
             alert_schema = AlertSchema(only=fields)
-        except Exception as e:
+        except Exception:
             alert_schema = AlertSchema()
     else:
         alert_schema = AlertSchema()

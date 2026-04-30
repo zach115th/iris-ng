@@ -5,7 +5,6 @@
 #  client times out, the artifact is still persisted and a follow-up GET
 #  retrieves it.
 
-import datetime
 from flask import Blueprint
 from flask import request
 
@@ -16,7 +15,6 @@ from app.blueprints.rest.endpoints import response_api_not_found
 from app.blueprints.rest.endpoints import response_api_success
 from app.blueprints.rest.parsing import parse_boolean
 from app.iris_engine.access_control.utils import ac_fast_check_current_user_has_case_access
-from app.iris_engine.ai.case_summary import CASE_SUMMARY_KIND
 from app.iris_engine.ai.case_summary import CaseSummaryError
 from app.iris_engine.ai.case_summary import generate_case_summary
 from app.iris_engine.ai.case_summary import get_cached_summary

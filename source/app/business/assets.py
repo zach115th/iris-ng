@@ -40,7 +40,6 @@ from app.datamgmt.case.case_assets_db import create_asset
 from app.datamgmt.case.case_assets_db import set_ioc_links
 from app.datamgmt.case.case_assets_db import set_evidence_links
 from app.datamgmt.case.case_assets_db import get_linked_iocs_finfo_from_asset
-from app.datamgmt.case.case_assets_db import get_linked_evidence_finfo_from_asset
 from app.datamgmt.case.case_assets_db import delete_asset
 from app.iris_engine.module_handler.module_handler import call_modules_hook
 from app.iris_engine.utils.tracker import track_activity
