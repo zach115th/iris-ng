@@ -9,12 +9,6 @@
 A collaborative incident-response platform. Forked from DFIR-IRIS because upstream paused
 feature development in late 2024 and stranded `v2.5.0-beta.1` in beta.
 
-## Compatibility goal
-
-- **Drop-in compatible with IRIS v2.5.0-beta.1** (API + database) until forced to change.
-- Existing n8n workflows and IRIS API clients should continue to work unchanged.
-- Upstream bugfixes can be cherry-picked into the `upstream-fixes` branch when they land.
-
 ## What's new vs upstream
 
 - Native MISP sync module (`source/iris_misp_sync_module/`) — case ↔ MISP event,
