@@ -1,0 +1,5515 @@
+{
+  "version": 1,
+  "namespace": "death-possibilities",
+  "description": "Taxonomy of Death Possibilities",
+  "predicates": [
+    {
+      "value": "(001-009) Intestinal infectious diseases",
+      "uuid": "1ac6466d-d752-5a3b-907d-7f0013f1b8ad"
+    },
+    {
+      "value": "(010-018) Tuberculosis",
+      "uuid": "de802d89-8a82-5d7e-a296-33ae94616b1e"
+    },
+    {
+      "value": "(020-027) Zoonotic bacterial diseases",
+      "uuid": "115f8d19-3752-5da9-8549-af8a3fb59ee2"
+    },
+    {
+      "value": "(030-041) Other bacterial diseases",
+      "uuid": "5ab8c288-ec0c-5d41-9d79-c63e63e03de0"
+    },
+    {
+      "value": "(042-042) Human immunodeficiency virus [HIV] infection",
+      "uuid": "01daac76-37ef-5be7-a9a9-7c101e7ab023"
+    },
+    {
+      "value": "(045-049) Poliomyelitis and other non-arthropod-borne viral diseases of central nervous system",
+      "uuid": "90c987f1-79fe-5364-a64e-8ee8ea94c31d"
+    },
+    {
+      "value": "(050-057) Viral diseases accompanied by exanthem",
+      "uuid": "072fd0b4-8047-557c-87fd-83213bfdc49c"
+    },
+    {
+      "value": "(060-066) Arthropod-borne viral diseases",
+      "uuid": "ffeaaea6-98d7-57da-861a-16ce30110fd3"
+    },
+    {
+      "value": "(070-079) Other diseases due to viruses and Chlamydiae",
+      "uuid": "f843dc5b-60bd-5967-8464-509c43a67351"
+    },
+    {
+      "value": "(080-088) Rickettsioses and other arthropod-borne diseases",
+      "uuid": "cebf63f2-a914-5599-b161-6adf4f9fade0"
+    },
+    {
+      "value": "(090-099) Syphilis and other venereal diseases",
+      "uuid": "7ffdd24b-8a79-521f-9766-227c60f3271e"
+    },
+    {
+      "value": "(100-104) Other spirochaetal diseases",
+      "uuid": "54897577-dabd-5feb-8e95-35321b021b41"
+    },
+    {
+      "value": "(110-118) Mycoses",
+      "uuid": "d5b73867-5c82-51a8-84ab-c4ab94d17e75"
+    },
+    {
+      "value": "(120-129) Helminthiases",
+      "uuid": "10f53eb4-9c97-5df3-a49e-577022557e6d"
+    },
+    {
+      "value": "(130-136) Other infectious and parasitic diseases",
+      "uuid": "a81b14d5-f8b6-5dba-81d1-7d81b521218a"
+    },
+    {
+      "value": "(137-139) Late effects of infectious and parasitic diseases",
+      "uuid": "a0483410-cf95-571d-9d0d-ec362769b406"
+    },
+    {
+      "value": "(140-149) Malignant neoplasm of lip, oral cavity and pharynx",
+      "uuid": "5039f7d8-d60e-5427-8bc7-58fa615f7593"
+    },
+    {
+      "value": "(150-159) Malignant neoplasm of digestive organs and peritoneum",
+      "uuid": "6fcda83c-0512-5123-96a6-3c57065a43de"
+    },
+    {
+      "value": "(160-165) Malignant neoplasm of respiratory and intrathoracic organs",
+      "uuid": "7b39f939-fcdb-5c29-93e6-56860b86e976"
+    },
+    {
+      "value": "(170-176) Malignant neoplasm of bone, connective tissue, skin and breast",
+      "uuid": "66d2ecf6-7a3d-5e79-8228-f2f3e68bac56"
+    },
+    {
+      "value": "(179-189) Malignant neoplasm of genito-urinary organs",
+      "uuid": "33a43314-9e32-5486-91e3-9d3c45347832"
+    },
+    {
+      "value": "(190-199) Malignant neoplasm of other and unspecified sites",
+      "uuid": "63ed497e-70c1-58ed-ae06-e527adeff4dc"
+    },
+    {
+      "value": "(200-208) Malignant neoplasm of lymphatic and haematopoietic tissue",
+      "uuid": "fdd69d38-1b09-5596-b9c9-fd1dea6f74aa"
+    },
+    {
+      "value": "(210-229) Benign neoplasms",
+      "uuid": "496271b2-1d0c-5356-b871-56b359fee90d"
+    },
+    {
+      "value": "(230-234) Carcinoma in situ",
+      "uuid": "93b9d4dc-98b0-5235-acb1-6dec3d4e93de"
+    },
+    {
+      "value": "(235-238) Neoplasms of uncertain behaviour",
+      "uuid": "6a9932d2-6a03-5791-9fa1-2ce46e7fcbfd"
+    },
+    {
+      "value": "(239-239) Neoplasms of unspecified nature",
+      "uuid": "25eaabe6-50ce-5db0-8d13-f3e1a30931a8"
+    },
+    {
+      "value": "(240-246) Disorders of thyroid gland",
+      "uuid": "1af833d5-752b-50a4-b9ac-f5f8d44c16fb"
+    },
+    {
+      "value": "(250-259) Diseases of other endocrine glands",
+      "uuid": "acaa4e01-48a1-5bc0-a963-e2c0be5f8ea8"
+    },
+    {
+      "value": "(260-269) Nutritional deficiencies",
+      "uuid": "68a78697-dd12-5861-b318-492ddd0665d7"
+    },
+    {
+      "value": "(270-279) Other metabolic disorders and immunity disorders",
+      "uuid": "9b3f0994-a7d8-5fcb-84a0-e961acf48616"
+    },
+    {
+      "value": "(280-289) Diseases of blood and blood-forming organs",
+      "uuid": "261272f1-a144-552a-b540-5448977043ad"
+    },
+    {
+      "value": "(290-294) Organic psychotic conditions",
+      "uuid": "59c099dc-e0d3-5aa0-a3f7-0d763822fe97"
+    },
+    {
+      "value": "(295-299) Other psychoses",
+      "uuid": "3bc5fce7-8803-58bf-a195-a41008d95fe0"
+    },
+    {
+      "value": "(300-316) Neurotic disorders, personality disorders and other nonpsychotic mental disorders",
+      "uuid": "aec7c3b8-9f74-5cd1-8d90-5b76a4aadb36"
+    },
+    {
+      "value": "(317-319) Mental retardation",
+      "uuid": "adb1a736-fe2e-5ba0-b731-e6ffc01ccb1f"
+    },
+    {
+      "value": "(320-326) Inflammatory diseases of the central nervous system",
+      "uuid": "d1463190-571c-5d72-b48a-8ce2c3298aa7"
+    },
+    {
+      "value": "(330-337) Hereditary and degenerative diseases of the central nervous system",
+      "uuid": "28258ecf-341e-58fd-8d9e-3804b71e90d3"
+    },
+    {
+      "value": "(340-349) Other disorders of the central nervous system",
+      "uuid": "0483fa7b-7db5-5c6f-a734-60a87d0e6e9c"
+    },
+    {
+      "value": "(350-359) Disorders of the peripheral nervous system",
+      "uuid": "00419473-081b-54c5-88fe-7048f1352505"
+    },
+    {
+      "value": "(360-379) Disorders of the eye and adnexa",
+      "uuid": "6554b3e1-9b10-5453-b96e-31097493f4e3"
+    },
+    {
+      "value": "(380-389) Diseases of the ear and mastoid process",
+      "uuid": "52b10672-15fe-5085-b5f6-fc8d80668e1d"
+    },
+    {
+      "value": "(390-392) Acute rheumatic fever",
+      "uuid": "1c8cc17e-4cca-576e-b31d-47f2efd30199"
+    },
+    {
+      "value": "(393-398) Chronic rheumatic heart disease",
+      "uuid": "9a3736fe-2d66-5fd0-9aba-90ee24df03cf"
+    },
+    {
+      "value": "(401-405) Hypertensive disease",
+      "uuid": "0e25c8e9-bd65-56e5-96fa-4570e28205fb"
+    },
+    {
+      "value": "(410-414) Ischaemic heart disease",
+      "uuid": "0c3330ee-ec25-5593-8472-17fe465a8739"
+    },
+    {
+      "value": "(415-417) Diseases of pulmonary circulation",
+      "uuid": "5e22e2c1-3932-536c-ba9e-8c39407b4ac2"
+    },
+    {
+      "value": "(420-429) Other forms of heart disease",
+      "uuid": "fa21d48a-eb5f-5f58-ac05-3dd9a59effe7"
+    },
+    {
+      "value": "(430-438) Cerebrovascular disease",
+      "uuid": "b0890645-72a3-5eee-8398-4eca6b0867e2"
+    },
+    {
+      "value": "(440-448) Diseases of arteries, arterioles and capillaries",
+      "uuid": "2c4e9de8-f00c-5dd0-adab-289ea9a05ca9"
+    },
+    {
+      "value": "(451-459) Diseases of veins and lymphatics, and other diseases of circulatory system",
+      "uuid": "c04f5cb5-5962-561f-bc86-440cd5f77d39"
+    },
+    {
+      "value": "(460-466) Acute respiratory infections",
+      "uuid": "1d497933-1936-556e-8545-7e4be2a3e692"
+    },
+    {
+      "value": "(470-478) Other diseases of upper respiratory tract",
+      "uuid": "c890d943-f335-5196-874b-d5e192a27412"
+    },
+    {
+      "value": "(480-487) Pneumonia and influenza",
+      "uuid": "998e9311-18f0-5dd5-ae46-9c2111d87175"
+    },
+    {
+      "value": "(490-496) Chronic obstructive pulmonary disease and allied conditions",
+      "uuid": "2a4fad9d-f7e8-59c7-b1fe-b95c59c4ef8d"
+    },
+    {
+      "value": "(500-508) Pneumoconioses and other lung diseases due to external agents",
+      "uuid": "3863c2a3-54f4-520e-8646-3751c3056d5c"
+    },
+    {
+      "value": "(510-519) Other diseases of respiratory system",
+      "uuid": "00aa2775-6054-5127-9bf6-122085f37c88"
+    },
+    {
+      "value": "(520-529) Diseases of oral cavity, salivary glands and jaws",
+      "uuid": "46fcb100-3d06-5c57-9da5-bfa202721a3b"
+    },
+    {
+      "value": "(530-537) Diseases of oesophagus, stomach and duodenum",
+      "uuid": "becf31b7-1034-554a-95ec-10291432245e"
+    },
+    {
+      "value": "(540-543) Appendicitis",
+      "uuid": "dd6de855-6135-5f54-a4fe-af1034b1f7b5"
+    },
+    {
+      "value": "(550-553) Hernia of abdominal cavity",
+      "uuid": "6ad8be96-bc5b-543f-855f-ac4466c20a8f"
+    },
+    {
+      "value": "(555-558) Non-infective enteritis and colitis",
+      "uuid": "10fbc238-4de2-5bf2-86b2-f8569229297d"
+    },
+    {
+      "value": "(560-569) Other diseases of intestines and peritoneum",
+      "uuid": "8d035434-3225-51cd-b834-6499f66499f3"
+    },
+    {
+      "value": "(570-579) Other diseases of digestive system",
+      "uuid": "11a3b91f-c186-5630-99bd-50571efb9114"
+    },
+    {
+      "value": "(580-589) Nephritis, nephrotic syndrome and nephrosis",
+      "uuid": "d31fd7e8-5487-59c0-b305-2a4188f7a73b"
+    },
+    {
+      "value": "(590-599) Other diseases of urinary system",
+      "uuid": "b30c1ed5-7a7f-5aba-bf70-571a827ab499"
+    },
+    {
+      "value": "(600-608) Diseases of male genital organs",
+      "uuid": "617699b2-b6df-543a-b4de-bb29d6157203"
+    },
+    {
+      "value": "(610-611) Disorders of breast",
+      "uuid": "c74c0df5-5028-5d2e-b325-898dcdc539aa"
+    },
+    {
+      "value": "(614-616) Inflammatory disease of female pelvic organs",
+      "uuid": "14e1f77b-8715-5a15-9156-76a226c9db2d"
+    },
+    {
+      "value": "(617-629) Other disorders of female genital tract",
+      "uuid": "1fd40a25-9aee-5ee0-bdc9-bf92e35c8aff"
+    },
+    {
+      "value": "(630-633) Ectopic and molar pregnancy",
+      "uuid": "7067ac1b-63b0-59c6-959a-9894311d1086"
+    },
+    {
+      "value": "(634-639) Other pregnancy with abortive outcome",
+      "uuid": "ea8cd7b1-842c-5ada-b4cc-2b40ddc8d996"
+    },
+    {
+      "value": "(640-648) Complications mainly related to pregnancy",
+      "uuid": "74e812a8-8e72-5f19-a964-f3dfc10e6eb9"
+    },
+    {
+      "value": "(650-659) Normal delivery and other indications for care in pregnancy, labour and delivery",
+      "uuid": "5ddb21b4-6e35-54cb-9d6e-b2b65a241a8d"
+    },
+    {
+      "value": "(660-669) Complications occurring mainly in the course of labour and delivery",
+      "uuid": "caa099fc-5a3f-5cf1-bcd9-c68e82eceee0"
+    },
+    {
+      "value": "(670-677) Complications of the puerperium",
+      "uuid": "6e87f070-0ce8-54ab-b184-70fd76a2dd81"
+    },
+    {
+      "value": "(680-686) Infections of skin and subcutaneous tissue",
+      "uuid": "bf6ed3a1-0a58-544b-b875-905bba4fead5"
+    },
+    {
+      "value": "(690-698) Other inflammatory conditions of skin and subcutaneous tissue",
+      "uuid": "192eafeb-0d7d-51e1-8aa6-c73e42e4f3b0"
+    },
+    {
+      "value": "(700-709) Other diseases of skin and subcutaneous tissue",
+      "uuid": "6e704a67-8f19-5e5a-bca2-35ce81925c34"
+    },
+    {
+      "value": "(710-719) Arthropathies and related disorders",
+      "uuid": "d771ff78-ac18-5530-8b72-f0b7cb72688c"
+    },
+    {
+      "value": "(720-724) Dorsopathies",
+      "uuid": "4e162704-816b-5bbc-94f5-68bd62448300"
+    },
+    {
+      "value": "(725-729) Rheumatism, excluding the back",
+      "uuid": "5a6929bd-28ba-5dca-9534-ec2c899f555b"
+    },
+    {
+      "value": "(730-739) Osteopathies, chondropathies and acquired musculoskeletal deformities",
+      "uuid": "05c68029-2168-568f-8c71-418070d6ab81"
+    },
+    {
+      "value": "(740-759) Congenital anomalies",
+      "uuid": "acaa2b2b-febb-5f54-9d0e-043162916e6c"
+    },
+    {
+      "value": "(760-763) Maternal causes of perinatal morbidity and mortality",
+      "uuid": "c7753f09-f2db-5727-b613-14e171326e02"
+    },
+    {
+      "value": "(764-779) Other conditions originating in the perinatal period",
+      "uuid": "841cb0f0-0da0-533c-ae89-a33976381150"
+    },
+    {
+      "value": "(780-789) Symptoms",
+      "uuid": "11342dac-3dc0-5b84-a3fb-ea4f95b72514"
+    },
+    {
+      "value": "(790-796) Nonspecific abnormal findings",
+      "uuid": "dd04097e-7e41-596d-92a7-3e7b4b3b0ab5"
+    },
+    {
+      "value": "(797-799) Ill-defined and unknown causes of morbidity and mortality",
+      "uuid": "eaa5aa20-2037-5e4a-85c5-e470f6b654d1"
+    },
+    {
+      "value": "(800-804) Fracture of skull",
+      "uuid": "b3e76970-86e9-5ed1-aaba-8f89b3ac5ccd"
+    },
+    {
+      "value": "(805-809) Fracture of neck and trunk",
+      "uuid": "97c04a65-ef22-53cf-9617-5c7b115fd75e"
+    },
+    {
+      "value": "(810-819) Fracture of upper limb",
+      "uuid": "c568fb3f-bb5d-522c-a5f8-76a0a3a2420e"
+    },
+    {
+      "value": "(820-829) Fracture of lower limb",
+      "uuid": "44b8fe99-cbb2-5e11-b671-f35acbe683b2"
+    },
+    {
+      "value": "(830-839) Dislocation",
+      "uuid": "5b58a2b4-305d-5186-afaa-09506656da6f"
+    },
+    {
+      "value": "(840-848) Sprains and strains of joints and adjacent muscles",
+      "uuid": "52df81e5-837a-5543-a2e9-d759126cf838"
+    },
+    {
+      "value": "(850-854) Intracranial injury, excluding those with skull fracture",
+      "uuid": "48891c0c-add3-5d83-982a-f14d7a4915cf"
+    },
+    {
+      "value": "(860-869) Internal injury of chest, abdomen and pelvis",
+      "uuid": "a1578f63-74ac-56e5-a6bd-ee4c880a464a"
+    },
+    {
+      "value": "(870-879) Open wound of head, neck and trunk",
+      "uuid": "caac4708-dee1-5be5-9fd2-91d844c8b192"
+    },
+    {
+      "value": "(880-887) Open wound of upper limb",
+      "uuid": "7c4abeec-a0be-5d8b-a723-94da90f13d47"
+    },
+    {
+      "value": "(890-897) Open wound of lower limb",
+      "uuid": "1d0a460b-3188-52cc-84af-1d515a83071b"
+    },
+    {
+      "value": "(900-904) Injury to blood vessels",
+      "uuid": "e2e11010-2ea5-5fd1-8942-5b7a6a08fdaf"
+    },
+    {
+      "value": "(905-909) Late effects of injuries, poisonings, toxic effects and other external causes",
+      "uuid": "84a1e63c-37c5-5930-ba03-7d196c91eab4"
+    },
+    {
+      "value": "(910-919) Superficial injury",
+      "uuid": "6ab2e3c0-b922-5319-a372-34dd72a90c0a"
+    },
+    {
+      "value": "(920-924) Contusion with intact skin surface",
+      "uuid": "38d97cc4-cb7d-56c5-b819-8f93395f3bdd"
+    },
+    {
+      "value": "(925-929) Crushing injury",
+      "uuid": "71fb648f-c071-5eba-9dc2-6790951137fd"
+    },
+    {
+      "value": "(930-939) Effects of foreign body entering through orifice",
+      "uuid": "c02f0d44-3481-5716-8382-72941b88734d"
+    },
+    {
+      "value": "(940-949) Burns",
+      "uuid": "028fa991-576b-5309-9a4f-c7b7a7aa84a2"
+    },
+    {
+      "value": "(950-957) Injury to nerves and spinal cord",
+      "uuid": "254522bc-c06c-5382-80b9-ddb7aa7c8a6b"
+    },
+    {
+      "value": "(958-959) Certain traumatic complications and unspecified injuries",
+      "uuid": "9ff72354-8d38-5eab-8243-44f09525f132"
+    },
+    {
+      "value": "(960-979) Poisoning by drugs, medicaments and biological substances",
+      "uuid": "8653e6d1-eecb-5e43-b8ca-b1a5d088a719"
+    },
+    {
+      "value": "(980-989) Toxic effects of substances chiefly nonmedicinal as to source",
+      "uuid": "c07cbedc-614b-5755-a3ef-20f798d504f6"
+    },
+    {
+      "value": "(990-995) Other and unspecified effects of external causes",
+      "uuid": "86ecfc2d-295a-5065-8c6c-01996619b4d6"
+    },
+    {
+      "value": "(996-999) Complications of surgical and medical care, not elsewhere classified",
+      "uuid": "a6f1dd9d-73f8-556a-9f61-4c23815925d7"
+    },
+    {
+      "value": "(E800-E807) Railway accidents",
+      "uuid": "3ab92b9e-5cd9-5b04-a82d-c426587b0262"
+    },
+    {
+      "value": "(E810-E819) Motor vehicle traffic accidents",
+      "uuid": "725108ae-0abc-5a56-8526-ddb9e071584f"
+    },
+    {
+      "value": "(E820-E825) Motor vehicle nontraffic accidents",
+      "uuid": "9bdd87ec-7a0d-5850-a456-d8d1c50c9581"
+    },
+    {
+      "value": "(E826-E829) Other road vehicle accidents",
+      "uuid": "521200e0-c237-5f3d-86ad-05cd3f08a638"
+    },
+    {
+      "value": "(E830-E838) Water transport accidents",
+      "uuid": "f418df21-bf18-5971-ace5-ebcb82e7f89a"
+    },
+    {
+      "value": "(E840-E845) Air and space transport accidents",
+      "uuid": "aa28acdf-9b79-53ea-abc7-044a30bd1ea2"
+    },
+    {
+      "value": "(E846-E848) Vehicle accidents not elsewhere classifiable",
+      "uuid": "99ce8f81-5c82-51fb-9577-6988ad0d058a"
+    },
+    {
+      "value": "(E849-E858) Accidental poisoning by drugs, medicaments and biologicals",
+      "uuid": "71a0163b-6765-5662-8aa0-2077987f39db"
+    },
+    {
+      "value": "(E860-E869) Accidental poisoning by other solid and liquid substances, gases and vapours",
+      "uuid": "47774f0a-409f-59c9-aacb-791d550999b1"
+    },
+    {
+      "value": "(E870-E876) Misadventures to patients during surgical and medical care",
+      "uuid": "cdaea7f7-4137-5d28-abfb-b56e05abfbed"
+    },
+    {
+      "value": "(E878-E879) Surgical and medical procedures as the cause of abnormal reaction of patient or later complication, without mention of misadventure at the time of procedure",
+      "uuid": "3ce7904d-aef3-566a-816a-f92040f22c2a"
+    },
+    {
+      "value": "(E880-E888) Accidental falls",
+      "uuid": "e6abe439-7479-57df-a785-e8a6b43a1322"
+    },
+    {
+      "value": "(E890-E899) Accidents caused by fire and flames",
+      "uuid": "710dcbd5-6dd3-5161-bd63-49d1d0302a92"
+    },
+    {
+      "value": "(E900-E909) Accidents due to natural and environmental factors",
+      "uuid": "116259cb-a649-58f8-a3de-93cf2c28b03f"
+    },
+    {
+      "value": "(E910-E915) Accidents caused by submersion, suffocation and foreign bodies",
+      "uuid": "31ae3830-b6b2-56c7-a76f-94e30f3b561d"
+    },
+    {
+      "value": "(E916-E928) Other accidents",
+      "uuid": "2f53e139-bdcc-502f-ad2a-5391acaac770"
+    },
+    {
+      "value": "(E929-E929) Late effects of accidental injury",
+      "uuid": "8f7be2b5-75ff-5c71-afd0-dd91a5a35345"
+    },
+    {
+      "value": "(E930-E949) Drugs, medicaments and biological substances causing adverse effects in therapeutic use",
+      "uuid": "29749e23-22f1-5ba6-9c42-c4a107c067c5"
+    },
+    {
+      "value": "(E950-E959) Suicide and self-inflicted injury",
+      "uuid": "d909cb28-488a-51c9-922c-25e873f1247f"
+    },
+    {
+      "value": "(E960-E969) Homicide and injury purposely inflicted by other persons",
+      "uuid": "a56541fd-7e96-583c-84cc-7ba29887cc5c"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "(001-009) Intestinal infectious diseases",
+      "entry": [
+        {
+          "value": "001 Cholera",
+          "uuid": "4b35926a-d524-53e6-99ce-d89dd619232b"
+        },
+        {
+          "value": "002 Typhoid and paratyphoid fevers",
+          "uuid": "c02b251e-b548-5903-b435-0d73c8b3c651"
+        },
+        {
+          "value": "003 Other Salmonella infections",
+          "uuid": "3a50c42a-3e94-5013-a76e-f4a2bf9f3d3d"
+        },
+        {
+          "value": "004 Shigellosis",
+          "uuid": "c4427817-9c4d-5658-bc6f-599cea29bb52"
+        },
+        {
+          "value": "005 Other food poisoning (bacterial)",
+          "uuid": "c41f5de9-908e-53f7-bc17-19472e8d6277"
+        },
+        {
+          "value": "006 Amoebiasis",
+          "uuid": "bba800a6-e4bc-5e30-a85a-4d960669c54c"
+        },
+        {
+          "value": "007 Other protozoal intestinal diseases",
+          "uuid": "a783719f-a88e-5dcd-97a7-a1febfb78595"
+        },
+        {
+          "value": "008 Intestinal infections due to other organisms",
+          "uuid": "2f0904f9-ba39-505e-bf0c-4bcd66816115"
+        },
+        {
+          "value": "009 Ill-defined intestinal infections",
+          "uuid": "cce6dffd-f64e-511e-a9c4-a3c6aa04d29f"
+        }
+      ]
+    },
+    {
+      "predicate": "(010-018) Tuberculosis",
+      "entry": [
+        {
+          "value": "010 Primary tuberculous infection",
+          "uuid": "e79aa29e-cc22-5055-bee6-1311b3837b31"
+        },
+        {
+          "value": "011 Pulmonary tuberculosis",
+          "uuid": "98eecfa7-2459-588e-a929-765856023309"
+        },
+        {
+          "value": "012 Other respiratory tuberculosis",
+          "uuid": "fe30e605-51da-5922-8547-a5369a211b57"
+        },
+        {
+          "value": "013 Tuberculosis of meninges and central nervous system",
+          "uuid": "d379d33d-dba4-5f20-a6cc-68497cdaf932"
+        },
+        {
+          "value": "014 Tuberculosis of intestines, peritoneum and mesenteric glands",
+          "uuid": "31d4f70a-cee9-5f97-8178-2ad0e8c4fcbb"
+        },
+        {
+          "value": "015 Tuberculosis of bones and joints",
+          "uuid": "45601adb-059f-509a-ad5b-0e317fcb7998"
+        },
+        {
+          "value": "016 Tuberculosis of genito-urinary system",
+          "uuid": "f67048c6-f95d-5f1e-b358-fa31338745bf"
+        },
+        {
+          "value": "017 Tuberculosis of other organs",
+          "uuid": "67ba3211-e25d-5915-8007-bd0f5fa46df8"
+        },
+        {
+          "value": "018 Miliary tuberculosis",
+          "uuid": "03928b97-a591-5fcf-99cb-35a16157dffe"
+        }
+      ]
+    },
+    {
+      "predicate": "(020-027) Zoonotic bacterial diseases",
+      "entry": [
+        {
+          "value": "020 Plague",
+          "uuid": "ca00e6f1-58ca-58cb-b68f-a2df19cc75f6"
+        },
+        {
+          "value": "021 Tularaemia",
+          "uuid": "0a8198e0-1d41-530c-8624-23ade1885bb7"
+        },
+        {
+          "value": "022 Anthrax",
+          "uuid": "1acdff20-3b76-5812-a866-26587944c333"
+        },
+        {
+          "value": "023 Brucellosis",
+          "uuid": "cb74f5c7-6521-56c0-a90b-ea3fff2d20ac"
+        },
+        {
+          "value": "024 Glanders",
+          "uuid": "58cb5830-2ea2-5953-889f-fdead242cd0a"
+        },
+        {
+          "value": "025 Melioidosis",
+          "uuid": "09baf8a9-92a0-58df-8ec3-da095b52b47b"
+        },
+        {
+          "value": "026 Rat-bite fever",
+          "uuid": "9ef33096-6952-57b6-a95f-afd60904f1c9"
+        },
+        {
+          "value": "027 Other zoonotic bacterial diseases",
+          "uuid": "d3c166df-6338-5472-8d12-2389971688e9"
+        }
+      ]
+    },
+    {
+      "predicate": "(030-041) Other bacterial diseases",
+      "entry": [
+        {
+          "value": "030 Leprosy",
+          "uuid": "066740b0-c3c8-551b-a71d-7c5a854b272a"
+        },
+        {
+          "value": "031 Diseases due to other mycobacteria",
+          "uuid": "bcc961a6-c5e0-5fae-8752-6286431ba68a"
+        },
+        {
+          "value": "032 Diphtheria",
+          "uuid": "ed11d3a8-7059-59a3-9367-92c5843df8a0"
+        },
+        {
+          "value": "033 Whooping cough",
+          "uuid": "be1e0699-d1c4-57ef-8626-f11c653ca63d"
+        },
+        {
+          "value": "034 Streptococcal sore throat and scarlatina",
+          "uuid": "3377debc-29f3-5457-874a-81ea201c93b2"
+        },
+        {
+          "value": "035 Erysipelas",
+          "uuid": "38fdc046-b440-5ba3-87a1-316695f17eb7"
+        },
+        {
+          "value": "036 Meningococcal infection",
+          "uuid": "38bf276c-dd09-5b60-b7f9-058dbbdf4cda"
+        },
+        {
+          "value": "037 Tetanus",
+          "uuid": "5bf7c4eb-d90b-5291-904e-96a646c02a17"
+        },
+        {
+          "value": "038 Septicaemia",
+          "uuid": "55b46bfb-6092-58ca-848c-ab1cebfba785"
+        },
+        {
+          "value": "039 Actinomycotic infections",
+          "uuid": "31df1580-82e8-5190-a487-36024f924f4f"
+        },
+        {
+          "value": "040 Other bacterial diseases",
+          "uuid": "76b209f9-95f8-58ae-a2b2-add7deb882bd"
+        },
+        {
+          "value": "041 Bacterial infection in conditions classified elsewhere and of unspecified site",
+          "uuid": "dce26699-02a5-5c22-b4e6-3377e9012009"
+        }
+      ]
+    },
+    {
+      "predicate": "(042-042) Human immunodeficiency virus [HIV] infection",
+      "entry": [
+        {
+          "value": "042 Human immunodeficiency virus [HIV] disease",
+          "uuid": "271bb058-d47a-5858-bd68-f508ecd61c5b"
+        }
+      ]
+    },
+    {
+      "predicate": "(045-049) Poliomyelitis and other non-arthropod-borne viral diseases of central nervous system",
+      "entry": [
+        {
+          "value": "045 Acute poliomyelitis",
+          "uuid": "f281fc4d-7248-5ca6-8de3-1eeb3289b365"
+        },
+        {
+          "value": "046 Slow virus infection of central nervous system",
+          "uuid": "181257fe-7d41-5b90-b59a-f9c9da4f9e81"
+        },
+        {
+          "value": "047 Meningitis due to enterovirus",
+          "uuid": "23690a65-738e-5afb-8e4d-2eee2c3665cf"
+        },
+        {
+          "value": "048 Other enterovirus diseases of central nervous system",
+          "uuid": "fee2e5e0-3438-5032-98ab-17ef532d99b4"
+        },
+        {
+          "value": "049 Other non-arthropod-borne viral diseases of central nervous system",
+          "uuid": "e8fd564d-61bd-5e09-9a81-26861a50bf85"
+        }
+      ]
+    },
+    {
+      "predicate": "(050-057) Viral diseases accompanied by exanthem",
+      "entry": [
+        {
+          "value": "050 Smallpox",
+          "uuid": "a2f2569e-1ac9-5b6a-b728-67e8c945912b"
+        },
+        {
+          "value": "051 Cowpox and paravaccinia",
+          "uuid": "bb155d3e-1edf-5662-92a7-2b9a13c7de66"
+        },
+        {
+          "value": "052 Chickenpox",
+          "uuid": "a5166aab-c4fd-541c-b853-53030e8c7418"
+        },
+        {
+          "value": "053 Herpes zoster",
+          "uuid": "f21436f2-56a8-5448-afc6-d3c8ef43afe7"
+        },
+        {
+          "value": "054 Herpes simplex",
+          "uuid": "5271b514-5168-521c-bea2-315a620fd81a"
+        },
+        {
+          "value": "055 Measles",
+          "uuid": "1e4a7ca7-d46b-5d6b-ad25-434022f42173"
+        },
+        {
+          "value": "056 Rubella",
+          "uuid": "7e8b6aec-05df-58f8-9db4-e98682046200"
+        },
+        {
+          "value": "057 Other viral exanthemata",
+          "uuid": "2dd5d40a-f1d1-552d-acd5-f4b34428c180"
+        }
+      ]
+    },
+    {
+      "predicate": "(060-066) Arthropod-borne viral diseases",
+      "entry": [
+        {
+          "value": "060 Yellow fever",
+          "uuid": "04bba07f-defa-5796-ae8a-91f116c57861"
+        },
+        {
+          "value": "061 Dengue",
+          "uuid": "dc52fec8-a5e6-58a8-a4f0-fb3015eebcc9"
+        },
+        {
+          "value": "062 Mosquito-borne viral encephalitis",
+          "uuid": "2ca70915-c507-50a9-ae50-cf4e71098e66"
+        },
+        {
+          "value": "063 Tick-borne viral encephalitis",
+          "uuid": "fc617d82-2e4c-5213-8269-d2e593755fea"
+        },
+        {
+          "value": "064 Viral encephalitis transmitted by other and unspecified arthropods",
+          "uuid": "906fa774-55a4-56c5-9690-9916edc419cd"
+        },
+        {
+          "value": "065 Arthropod-borne haemorrhagic fever",
+          "uuid": "47f456bb-c201-5403-8899-bebf7bf5b19b"
+        },
+        {
+          "value": "066 Other arthropod-borne viral diseases",
+          "uuid": "74756eeb-261f-53db-8d0c-3163dcb8e0e6"
+        }
+      ]
+    },
+    {
+      "predicate": "(070-079) Other diseases due to viruses and Chlamydiae",
+      "entry": [
+        {
+          "value": "070 Viral hepatitis",
+          "uuid": "2d3ffa19-7bdb-5c79-a1d3-3380d91cfdcd"
+        },
+        {
+          "value": "071 Rabies",
+          "uuid": "1e321a2f-a4bc-55b9-9be1-11852ae16f23"
+        },
+        {
+          "value": "072 Mumps",
+          "uuid": "029cd1a6-3057-5952-878b-896adce4aa14"
+        },
+        {
+          "value": "073 Ornithosis",
+          "uuid": "01ffdca2-4267-51bd-84c9-4280bb5776ab"
+        },
+        {
+          "value": "074 Specific diseases due to Coxsackie virus",
+          "uuid": "ee0ba398-6034-51e1-9e99-00810b520782"
+        },
+        {
+          "value": "075 Infectious mononucleosis",
+          "uuid": "e88a60c8-dc05-5f55-8415-28f15a40f890"
+        },
+        {
+          "value": "076 Trachoma",
+          "uuid": "6f961c56-9f27-5369-81c7-a8ea16dadbe3"
+        },
+        {
+          "value": "077 Other diseases of conjunctiva due to viruses and Chlamydiae",
+          "uuid": "2d5073fa-49fb-5556-9b12-ff9d9a3556bd"
+        },
+        {
+          "value": "078 Other diseases due to viruses and Chlamydiae",
+          "uuid": "d604d67c-4d05-54d2-a24f-6699483a8076"
+        },
+        {
+          "value": "079 Viral and chlamydial infection in conditions classified elsewhere and of unspecified site",
+          "uuid": "2d7756a4-c293-5290-bd99-6ed1601bc59d"
+        }
+      ]
+    },
+    {
+      "predicate": "(080-088) Rickettsioses and other arthropod-borne diseases",
+      "entry": [
+        {
+          "value": "080 Louse-borne [epidemic] typhus",
+          "uuid": "f51bf2b7-358a-5568-9672-87866b0939ac"
+        },
+        {
+          "value": "081 Other typhus",
+          "uuid": "e7897c21-9594-525e-ad55-9787a9357969"
+        },
+        {
+          "value": "082 Tick-borne rickettsioses",
+          "uuid": "37242585-c16e-5533-86b5-44c1d872d69b"
+        },
+        {
+          "value": "083 Other rickettsioses",
+          "uuid": "b60163a1-a21e-578b-9ea5-e330695f1863"
+        },
+        {
+          "value": "084 Malaria",
+          "uuid": "9ebdc446-00a9-529d-b19f-7c3ca259f87a"
+        },
+        {
+          "value": "085 Leishmaniasis",
+          "uuid": "c307af89-3ca6-5966-9858-5d0cc289bf78"
+        },
+        {
+          "value": "086 Trypanosomiasis",
+          "uuid": "94292278-ffa9-5830-a559-f29bab22086a"
+        },
+        {
+          "value": "087 Relapsing fever",
+          "uuid": "0ba681ed-2b45-5888-9fd7-80232bc8dae4"
+        },
+        {
+          "value": "088 Other arthropod-borne diseases",
+          "uuid": "1e878e56-a2b7-59b1-96ea-b2cdbb4b01a9"
+        }
+      ]
+    },
+    {
+      "predicate": "(090-099) Syphilis and other venereal diseases",
+      "entry": [
+        {
+          "value": "090 Congenital syphilis",
+          "uuid": "99f1f9cb-467d-5d1b-94b2-fe3b4b8437cc"
+        },
+        {
+          "value": "091 Early syphilis, symptomatic",
+          "uuid": "d6ccf961-5a1c-5b55-9af2-255d36dd2813"
+        },
+        {
+          "value": "092 Early syphilis, latent",
+          "uuid": "8a32506a-c655-5ad0-bcb8-8dc2e892f825"
+        },
+        {
+          "value": "093 Cardiovascular syphilis",
+          "uuid": "9aff136d-b0a8-54f7-83fd-ff7de3312227"
+        },
+        {
+          "value": "094 Neurosyphilis",
+          "uuid": "21887a67-c5ad-5c66-8cca-f38bd27beb00"
+        },
+        {
+          "value": "095 Other forms of late syphilis, with symptoms",
+          "uuid": "94f4e8a8-15b6-5f2a-8f40-92385ac07a06"
+        },
+        {
+          "value": "096 Late syphilis, latent",
+          "uuid": "6ada352c-4ff9-5758-bd08-7cf6ead47bbe"
+        },
+        {
+          "value": "097 Other and unspecified syphilis",
+          "uuid": "daa20c67-02ef-53fe-886a-081dd80ac97f"
+        },
+        {
+          "value": "098 Gonococcal infections",
+          "uuid": "4b30d64e-445e-5d35-b645-ab77bd6145ea"
+        },
+        {
+          "value": "099 Other venereal diseases",
+          "uuid": "6de7a207-b10c-582f-8265-b061208cfb7e"
+        }
+      ]
+    },
+    {
+      "predicate": "(100-104) Other spirochaetal diseases",
+      "entry": [
+        {
+          "value": "100 Leptospirosis",
+          "uuid": "407939ff-b1fb-520e-9d04-fa4546a2cb91"
+        },
+        {
+          "value": "101 Vincent's angina",
+          "uuid": "3bc1f032-1266-5e93-8bb3-0a2e05c8cb37"
+        },
+        {
+          "value": "102 Yaws",
+          "uuid": "22066152-5088-5229-a0cc-f9e3d187cc9b"
+        },
+        {
+          "value": "103 Pinta",
+          "uuid": "7b720af9-56b3-5307-bdab-c9a611f13529"
+        },
+        {
+          "value": "104 Other spirochaetal infection",
+          "uuid": "d508bfb4-c1f3-5d55-b5ad-481a347150bf"
+        }
+      ]
+    },
+    {
+      "predicate": "(110-118) Mycoses",
+      "entry": [
+        {
+          "value": "110 Dermatophytosis",
+          "uuid": "5e7db85c-7947-52cc-ba97-8ecdf994bc8a"
+        },
+        {
+          "value": "111 Dermatomycosis, other and unspecified",
+          "uuid": "50610526-3a06-51e0-9aeb-befa38e4d83f"
+        },
+        {
+          "value": "112 Candidiasis",
+          "uuid": "f4ab9765-8695-569b-a698-81dc7aac65bb"
+        },
+        {
+          "value": "113 Actinomycosis",
+          "uuid": "635b73cc-eff5-5983-83fb-066d433a5ac5"
+        },
+        {
+          "value": "114 Coccidioidomycosis",
+          "uuid": "71ec6914-644f-5b31-b9f7-7dc6a772e337"
+        },
+        {
+          "value": "115 Histoplasmosis",
+          "uuid": "8177d115-c905-5c39-a061-62657a9310df"
+        },
+        {
+          "value": "116 Blastomycotic infection",
+          "uuid": "693f3122-0a59-5773-8181-5877d0889bee"
+        },
+        {
+          "value": "117 Other mycoses",
+          "uuid": "9a9f92f2-9a89-562e-81a1-2f1bd0df364b"
+        },
+        {
+          "value": "118 Opportunistic mycoses",
+          "uuid": "7e82ff24-d3a3-5902-929c-e3062b1b0556"
+        }
+      ]
+    },
+    {
+      "predicate": "(120-129) Helminthiases",
+      "entry": [
+        {
+          "value": "120 Schistosomiasis [bilharziasis]",
+          "uuid": "18ad1912-ed4e-5bc7-b5a8-170b49428753"
+        },
+        {
+          "value": "121 Other trematode infections",
+          "uuid": "b1bd9012-21c7-509e-81d4-f1b57c67b404"
+        },
+        {
+          "value": "122 Echinococcosis",
+          "uuid": "67d2215a-66dc-5f9a-b571-47bcb3473205"
+        },
+        {
+          "value": "123 Other cestode infection",
+          "uuid": "b556a856-93f9-58b0-89cc-3495a630e6f2"
+        },
+        {
+          "value": "124 Trichinosis",
+          "uuid": "4a537170-d56d-5f6f-9374-1213f50e4b07"
+        },
+        {
+          "value": "125 Filarial infection and dracontiasis",
+          "uuid": "84eea510-ecdf-5bdb-8233-e219d5b27a66"
+        },
+        {
+          "value": "126 Ankylostomiasis and necatoriasis",
+          "uuid": "a417a0c1-05a5-56b1-b6c9-247b683086ad"
+        },
+        {
+          "value": "127 Other intestinal helminthiases",
+          "uuid": "a52ff1b2-5c62-5378-838d-95d540b0dfc3"
+        },
+        {
+          "value": "128 Other and unspecified helminthiases",
+          "uuid": "56965b44-bbb1-5e0f-a679-45ee39e32fd5"
+        },
+        {
+          "value": "129 Intestinal parasitism, unspecified",
+          "uuid": "952bb0d7-2691-5a79-a609-526dfc13672b"
+        }
+      ]
+    },
+    {
+      "predicate": "(130-136) Other infectious and parasitic diseases",
+      "entry": [
+        {
+          "value": "130 Toxoplasmosis",
+          "uuid": "36f3b436-d668-5ad9-9726-e7b64b5889fb"
+        },
+        {
+          "value": "131 Trichomoniasis",
+          "uuid": "d6898780-6103-598c-b649-23d9318be307"
+        },
+        {
+          "value": "132 Pediculosis and phthirus infestation",
+          "uuid": "b8eea883-8451-5f71-aeb9-4a2c2cc23bb1"
+        },
+        {
+          "value": "133 Acariasis",
+          "uuid": "ada20424-e289-5297-af14-21ed0966b2e3"
+        },
+        {
+          "value": "134 Other infestation",
+          "uuid": "424c7a17-b281-5616-8b68-33b8745fd666"
+        },
+        {
+          "value": "135 Sarcoidosis",
+          "uuid": "03fda20a-94a5-5433-824f-88db9d80c2db"
+        },
+        {
+          "value": "136 Other and unspecified infectious and parasitic diseases",
+          "uuid": "7bfbcd0d-9b3a-5d85-b417-65cd31df1873"
+        }
+      ]
+    },
+    {
+      "predicate": "(137-139) Late effects of infectious and parasitic diseases",
+      "entry": [
+        {
+          "value": "137 Late effects of tuberculosis",
+          "uuid": "58915d21-d2a8-5087-bda0-4de9bbc86a8c"
+        },
+        {
+          "value": "138 Late effects of acute poliomyelitis",
+          "uuid": "8950605a-217f-5e92-a32c-7dae5297ecbf"
+        },
+        {
+          "value": "139 Late effects of other infectious and parasitic diseases",
+          "uuid": "f606c38d-e239-52c1-b804-5d9d065ace85"
+        }
+      ]
+    },
+    {
+      "predicate": "(140-149) Malignant neoplasm of lip, oral cavity and pharynx",
+      "entry": [
+        {
+          "value": "140 Malignant neoplasm of lip",
+          "uuid": "d886104f-96b8-52ee-8ad5-c718a3118deb"
+        },
+        {
+          "value": "141 Malignant neoplasm of tongue",
+          "uuid": "ede45c3a-bb5a-5e05-90f0-b1dd5c5be794"
+        },
+        {
+          "value": "142 Malignant neoplasm of major salivary glands",
+          "uuid": "54d2ed36-e1cb-540e-9419-4068b1722e77"
+        },
+        {
+          "value": "143 Malignant neoplasm of gum",
+          "uuid": "4e33c089-3198-5e50-aaf8-37e11d30715b"
+        },
+        {
+          "value": "144 Malignant neoplasm of floor of mouth",
+          "uuid": "dfefd68f-4570-5f42-b254-135a393c3dfc"
+        },
+        {
+          "value": "145 Malignant neoplasm of other and unspecified parts of mouth",
+          "uuid": "2b7a7b37-278d-5aed-bc46-17fca77a072a"
+        },
+        {
+          "value": "146 Malignant neoplasm of oropharynx",
+          "uuid": "79863d82-8eab-5c95-aecc-270c738e88db"
+        },
+        {
+          "value": "147 Malignant neoplasm of nasopharynx",
+          "uuid": "a6c71726-a4c7-551e-ae3d-44a2cee238f1"
+        },
+        {
+          "value": "148 Malignant neoplasm of hypopharynx",
+          "uuid": "b00b766f-baf2-5e9a-83fb-46e348f0ea07"
+        },
+        {
+          "value": "149 Malignant neoplasm of other and ill-defined sites within the lip, oral cavity and pharynx",
+          "uuid": "2b91e30d-5b1a-5ad3-9bbf-535ea8b88bc4"
+        }
+      ]
+    },
+    {
+      "predicate": "(150-159) Malignant neoplasm of digestive organs and peritoneum",
+      "entry": [
+        {
+          "value": "150 Malignant neoplasm of oesophagus",
+          "uuid": "7ef89b26-80be-5cad-bce4-c44ab50ebc24"
+        },
+        {
+          "value": "151 Malignant neoplasm of stomach",
+          "uuid": "0050ee94-9db5-53cb-b37b-1fed5568abec"
+        },
+        {
+          "value": "152 Malignant neoplasm of small intestine, including duodenum",
+          "uuid": "c9eea92a-38b8-53d6-bc2d-934bac178852"
+        },
+        {
+          "value": "153 Malignant neoplasm of colon",
+          "uuid": "690b8103-f005-57f9-b38a-3322809871d6"
+        },
+        {
+          "value": "154 Malignant neoplasm of rectum, rectosigmoid junction and anus",
+          "uuid": "2a6b4c94-b6cf-5330-b70d-6ac02871d78b"
+        },
+        {
+          "value": "155 Malignant neoplasm of liver and intrahepatic bile ducts",
+          "uuid": "cd1415c6-0320-5834-802c-710ccd90475b"
+        },
+        {
+          "value": "156 Malignant neoplasm of gallbladder and extrahepatic bile ducts",
+          "uuid": "750bfe34-a6ef-5102-92bb-aa59a788c43d"
+        },
+        {
+          "value": "157 Malignant neoplasm of pancreas",
+          "uuid": "127a5e7f-df8a-5d70-bdec-22069c93ebb9"
+        },
+        {
+          "value": "158 Malignant neoplasm of retroperitoneum and peritoneum",
+          "uuid": "234c3764-65c4-59f9-9939-d70a2f45c623"
+        },
+        {
+          "value": "159 Malignant neoplasm of other and ill-defined sites within the digestive organs and peritoneum",
+          "uuid": "13ab2132-0d44-50c9-9718-2b871951bd72"
+        }
+      ]
+    },
+    {
+      "predicate": "(160-165) Malignant neoplasm of respiratory and intrathoracic organs",
+      "entry": [
+        {
+          "value": "160 Malignant neoplasm of nasal cavities, middle ear and accessory sinuses",
+          "uuid": "be7ddc13-6e3f-5c9a-ada5-55523acfaffa"
+        },
+        {
+          "value": "161 Malignant neoplasm of larynx",
+          "uuid": "aab62f16-bca0-50f1-8572-66b204107bc4"
+        },
+        {
+          "value": "162 Malignant neoplasm of trachea, bronchus and lung",
+          "uuid": "12d70648-413c-5e37-93b4-1bdb6e175f51"
+        },
+        {
+          "value": "163 Malignant neoplasm of pleura",
+          "uuid": "77825310-9453-52da-938f-08c817cdcb1f"
+        },
+        {
+          "value": "164 Malignant neoplasm of thymus, heart and mediastinum",
+          "uuid": "f1fa99d8-a5f0-53e3-b198-357aca913ec4"
+        },
+        {
+          "value": "165 Malignant neoplasm of other and ill-defined sites within the respiratory system and intrathoracic organs",
+          "uuid": "d0277f37-5484-5595-8f55-de46871f52fe"
+        }
+      ]
+    },
+    {
+      "predicate": "(170-176) Malignant neoplasm of bone, connective tissue, skin and breast",
+      "entry": [
+        {
+          "value": "170 Malignant neoplasm of bone and articular cartilage",
+          "uuid": "0e238d72-37a7-56e6-b098-8abf2e3d9270"
+        },
+        {
+          "value": "171 Malignant neoplasm of connective and other soft tissue",
+          "uuid": "29ad37db-a58b-5475-b3f1-59714d042d52"
+        },
+        {
+          "value": "172 Malignant melanoma of skin",
+          "uuid": "abad2fa5-fcb1-59d9-8c76-55cab23d0507"
+        },
+        {
+          "value": "173 Other malignant neoplasm of skin",
+          "uuid": "cbf446a3-ad18-5fe3-91b5-b839dfa9556f"
+        },
+        {
+          "value": "174 Malignant neoplasm of female breast",
+          "uuid": "15eb043d-f545-51dc-ba6b-a94ae2d4a52e"
+        },
+        {
+          "value": "175 Malignant neoplasm of male breast",
+          "uuid": "e1380e3d-d24a-58e9-9c68-2b36e98d8f34"
+        },
+        {
+          "value": "176 Kaposi's sarcoma",
+          "uuid": "bd0c8ee7-a9e8-563d-841b-148c190f3eab"
+        }
+      ]
+    },
+    {
+      "predicate": "(179-189) Malignant neoplasm of genito-urinary organs",
+      "entry": [
+        {
+          "value": "179 Malignant neoplasm of uterus, part unspecified",
+          "uuid": "a6ea4fac-9f16-5fc8-ae61-2b1ed46ba346"
+        },
+        {
+          "value": "180 Malignant neoplasm of cervix uteri",
+          "uuid": "3ffbde68-9410-569f-972a-243648a6272d"
+        },
+        {
+          "value": "181 Malignant neoplasm of placenta",
+          "uuid": "49316063-4f5a-5c3d-9fda-b131a897c579"
+        },
+        {
+          "value": "182 Malignant neoplasm of body of uterus",
+          "uuid": "fb850a30-8282-5c6c-8a2b-65ef7c0d3161"
+        },
+        {
+          "value": "183 Malignant neoplasm of ovary and other uterine adnexa",
+          "uuid": "63b40597-e33f-5f63-899c-fdd1acd41e08"
+        },
+        {
+          "value": "184 Malignant neoplasm of other and unspecified female genital organs",
+          "uuid": "31f2aea3-912f-5041-b0ba-7a13b9f6e1a4"
+        },
+        {
+          "value": "185 Malignant neoplasm of prostate",
+          "uuid": "cdcdf557-85a4-5db2-a835-9cd1c0d74668"
+        },
+        {
+          "value": "186 Malignant neoplasm of testis",
+          "uuid": "835496de-fe28-5607-9bf9-c4776b0714ac"
+        },
+        {
+          "value": "187 Malignant neoplasm of penis and other male genital organs",
+          "uuid": "bfac36a6-657f-54ed-a440-2f6405334d7a"
+        },
+        {
+          "value": "188 Malignant neoplasm of bladder",
+          "uuid": "fb124be9-2179-509a-bac3-761d8050ee44"
+        },
+        {
+          "value": "189 Malignant neoplasm of kidney and other and unspecified urinary organs",
+          "uuid": "8ad4e51b-c52e-5cda-be81-628c4b7a99dd"
+        }
+      ]
+    },
+    {
+      "predicate": "(190-199) Malignant neoplasm of other and unspecified sites",
+      "entry": [
+        {
+          "value": "190 Malignant neoplasm of eye",
+          "uuid": "a57f7358-f69b-533c-945d-b944f34e4648"
+        },
+        {
+          "value": "191 Malignant neoplasm of brain",
+          "uuid": "f795c2c3-e960-55d0-a969-029f610d435a"
+        },
+        {
+          "value": "192 Malignant neoplasm of other and unspecified parts of nervous system",
+          "uuid": "2309a9a9-ee5e-55f6-bca1-2d4e0cf59cd0"
+        },
+        {
+          "value": "193 Malignant neoplasm of thyroid gland",
+          "uuid": "39a0cb80-447b-5406-98d6-d0bf6a1e4be8"
+        },
+        {
+          "value": "194 Malignant neoplasm of other endocrine glands and related structures",
+          "uuid": "c70b9599-4e82-5a29-954c-a7a172e6423b"
+        },
+        {
+          "value": "195 Malignant neoplasm of other and ill-defined sites",
+          "uuid": "20d4650b-50e5-5db0-a4e0-b0520a789ba7"
+        },
+        {
+          "value": "196 Secondary and unspecified malignant neoplasm of lymph nodes",
+          "uuid": "9f74145c-6b7d-50d2-b89b-cbeab6e25401"
+        },
+        {
+          "value": "197 Secondary malignant neoplasm of respiratory and digestive systems",
+          "uuid": "7db9a7a7-78a6-59fa-bf7d-78ccd55ce50a"
+        },
+        {
+          "value": "198 Secondary malignant neoplasm of other specified sites",
+          "uuid": "fca9b133-00fa-521d-a1fa-2ae63f981f12"
+        },
+        {
+          "value": "199 Malignant neoplasm without specification of site",
+          "uuid": "3a6f76cd-bd7f-543c-bd56-06377d9539ed"
+        }
+      ]
+    },
+    {
+      "predicate": "(200-208) Malignant neoplasm of lymphatic and haematopoietic tissue",
+      "entry": [
+        {
+          "value": "200 Lymphosarcoma and reticulosarcoma",
+          "uuid": "bfb4d2c0-0a4c-5667-b670-a9ae2d9df7bd"
+        },
+        {
+          "value": "201 Hodgkin's disease",
+          "uuid": "71623db8-844a-5443-bdda-bc0c3ba5a9ea"
+        },
+        {
+          "value": "202 Other malignant neoplasm of lymphoid and histiocytic tissue",
+          "uuid": "d81f5333-42a4-5175-a3d0-6b476607d5a9"
+        },
+        {
+          "value": "203 Multiple myeloma and immunoproliferative neoplasms",
+          "uuid": "0d8eae5d-aa85-5951-812c-bda68307c0ce"
+        },
+        {
+          "value": "204 Lymphoid leukaemia",
+          "uuid": "455db844-ed4c-5430-9ab9-c70c11958617"
+        },
+        {
+          "value": "205 Myeloid leukaemia",
+          "uuid": "f7a2020b-7fcf-5668-a479-934da3d81ac7"
+        },
+        {
+          "value": "206 Monocytic leukaemia",
+          "uuid": "528d5193-3247-59c4-acd9-176071d20b68"
+        },
+        {
+          "value": "207 Other specified leukaemia",
+          "uuid": "4a5e8f13-1a30-5035-85e0-cf8d8c7a058d"
+        },
+        {
+          "value": "208 Leukaemia of unspecified cell type",
+          "uuid": "26ea936d-ba25-5414-a5ff-b1abe4c0257f"
+        }
+      ]
+    },
+    {
+      "predicate": "(210-229) Benign neoplasms",
+      "entry": [
+        {
+          "value": "210 Benign neoplasm of lip, oral cavity and pharynx",
+          "uuid": "deac735c-f34a-5d62-b442-d4349b88a732"
+        },
+        {
+          "value": "211 Benign neoplasm of other parts of digestive system",
+          "uuid": "77d8c6ab-823f-5e6a-aae6-25a6892f6630"
+        },
+        {
+          "value": "212 Benign neoplasm of respiratory and intrathoracic organs",
+          "uuid": "22722ed8-c2af-5ffe-a222-9580c3379836"
+        },
+        {
+          "value": "213 Benign neoplasm of bone and articular cartilage",
+          "uuid": "56dbef13-ba12-57d3-b355-9c7ede56a1a4"
+        },
+        {
+          "value": "214 Lipoma",
+          "uuid": "27e8de89-8c51-5cfe-ad73-1a0d7cdb2884"
+        },
+        {
+          "value": "215 Other benign neoplasm of connective and other soft tissue",
+          "uuid": "1fd53faf-4553-5ed1-aa32-8dea9190cef1"
+        },
+        {
+          "value": "216 Benign neoplasm of skin",
+          "uuid": "47b79c80-71df-52e4-8d1c-7c50964c5779"
+        },
+        {
+          "value": "217 Benign neoplasm of breast",
+          "uuid": "a29427c7-1555-5034-9810-8f7bf95fe9ad"
+        },
+        {
+          "value": "218 Uterine leiomyoma",
+          "uuid": "ece119b5-a0b7-57c6-918b-201e2a18b0ed"
+        },
+        {
+          "value": "219 Other benign neoplasm of uterus",
+          "uuid": "1fc89db7-a7d9-5224-83e8-e11e8c02bf7b"
+        },
+        {
+          "value": "220 Benign neoplasm of ovary",
+          "uuid": "4718f67c-2ec9-550f-b4ea-15929adeece5"
+        },
+        {
+          "value": "221 Benign neoplasm of other female genital organs",
+          "uuid": "88f0cd3b-8139-5113-95b1-0dd2ed5aa9b9"
+        },
+        {
+          "value": "222 Benign neoplasm of male genital organs",
+          "uuid": "726ded34-4f73-5653-934e-933e67a4f1ce"
+        },
+        {
+          "value": "223 Benign neoplasm of kidney and other urinary organs",
+          "uuid": "11acb937-9c92-52ba-b25c-ee427ee621f0"
+        },
+        {
+          "value": "224 Benign neoplasm of eye",
+          "uuid": "22e7a538-7037-53ab-8332-3da05d8983b4"
+        },
+        {
+          "value": "225 Benign neoplasm of brain and other parts of nervous system",
+          "uuid": "e7b66f9b-f950-5688-b9da-d79f4585695d"
+        },
+        {
+          "value": "226 Benign neoplasm of thyroid gland",
+          "uuid": "e9e51d41-cebf-5431-8b40-19c1e050b2e2"
+        },
+        {
+          "value": "227 Benign neoplasm of other endocrine glands and related structures",
+          "uuid": "e62667dd-fc1e-584e-9855-bcef757ef97c"
+        },
+        {
+          "value": "228 Haemangioma and lymphangioma, any site",
+          "uuid": "1deb6934-aa4a-5a97-a7da-5775ab8ba09c"
+        },
+        {
+          "value": "229 Benign neoplasm of other and unspecified sites",
+          "uuid": "756034af-99da-5755-9c25-ced8199ae223"
+        }
+      ]
+    },
+    {
+      "predicate": "(230-234) Carcinoma in situ",
+      "entry": [
+        {
+          "value": "230 Carcinoma in situ of digestive organs",
+          "uuid": "f502d2dd-8fc1-5f8f-bfe5-95df6c652653"
+        },
+        {
+          "value": "231 Carcinoma in situ of respiratory system",
+          "uuid": "8e7c8354-f16d-53c8-9210-0a5720e578cb"
+        },
+        {
+          "value": "232 Carcinoma in situ of skin",
+          "uuid": "d1023cdc-fddd-55af-8b9a-9ed10816d413"
+        },
+        {
+          "value": "233 Carcinoma in situ of breast and genito-urinary system",
+          "uuid": "b6c61b69-b2c4-514c-954c-9736e607ca60"
+        },
+        {
+          "value": "234 Carcinoma in situ of other and unspecified sites",
+          "uuid": "08d0e578-35ac-50dd-af3d-1187ce293198"
+        }
+      ]
+    },
+    {
+      "predicate": "(235-238) Neoplasms of uncertain behaviour",
+      "entry": [
+        {
+          "value": "235 Neoplasm of uncertain behaviour of digestive and respiratory systems",
+          "uuid": "822b699c-d7bd-5638-ac73-cf9f13e2e432"
+        },
+        {
+          "value": "236 Neoplasm of uncertain behaviour of genito-urinary organs",
+          "uuid": "b4737ad0-9ae1-5ce8-aedc-7483ab9086b1"
+        },
+        {
+          "value": "237 Neoplasm of uncertain behaviour of endocrine glands and nervous system",
+          "uuid": "2763cbf6-2514-5b83-ad45-55c61f8fb7e4"
+        },
+        {
+          "value": "238 Neoplasm of uncertain behaviour of other and unspecified sites and tissues",
+          "uuid": "a9405378-dee1-5f89-b9a5-358ed96090d3"
+        }
+      ]
+    },
+    {
+      "predicate": "(239-239) Neoplasms of unspecified nature",
+      "entry": [
+        {
+          "value": "239 Neoplasm of unspecified nature",
+          "uuid": "8f983c02-ca58-575a-acb9-e54e5f3e15b0"
+        }
+      ]
+    },
+    {
+      "predicate": "(240-246) Disorders of thyroid gland",
+      "entry": [
+        {
+          "value": "240 Simple and unspecified goitre",
+          "uuid": "c7c5fa5f-660f-5f95-bc18-e8d46d12bb70"
+        },
+        {
+          "value": "241 Non-toxic nodular goitre",
+          "uuid": "5103fbaa-b74f-5d04-b872-dd45d499f3fb"
+        },
+        {
+          "value": "242 Thyrotoxicosis with or without goitre",
+          "uuid": "f3cd4a5c-2b67-512a-9e52-307f96844309"
+        },
+        {
+          "value": "243 Congenital hypothyroidism",
+          "uuid": "1ed2ea3e-c9b8-5146-9003-a05e81262e35"
+        },
+        {
+          "value": "244 Acquired hypothyroidism",
+          "uuid": "7af867ed-acf1-520a-b2d3-9fe9f3997dbe"
+        },
+        {
+          "value": "245 Thyroiditis",
+          "uuid": "e5e8a6fb-3b7e-54ba-aaeb-4f61c62d5d2d"
+        },
+        {
+          "value": "246 Other disorders of thyroid",
+          "uuid": "1c32cd68-5cfd-5b67-98fa-0f59108cee30"
+        }
+      ]
+    },
+    {
+      "predicate": "(250-259) Diseases of other endocrine glands",
+      "entry": [
+        {
+          "value": "250 Diabetes mellitus",
+          "uuid": "873151ab-a75d-542d-ab1f-9b12157c37f2"
+        },
+        {
+          "value": "251 Other disorders of pancreatic internal secretion",
+          "uuid": "d8fca2c0-217d-5bd6-93e5-3e430a4bb269"
+        },
+        {
+          "value": "252 Disorders of parathyroid gland",
+          "uuid": "f8dc5023-b350-5ed7-9783-79391a80f788"
+        },
+        {
+          "value": "253 Disorders of the pituitary gland and its hypothalamic control",
+          "uuid": "61ba08fb-d603-5444-971b-8c9fa6bd4bce"
+        },
+        {
+          "value": "254 Diseases of thymus gland",
+          "uuid": "57b3c316-6231-5afb-85b7-44696b838dd7"
+        },
+        {
+          "value": "255 Disorders of adrenal glands",
+          "uuid": "54592b0d-407d-58ce-ace4-42466448496e"
+        },
+        {
+          "value": "256 Ovarian dysfunction",
+          "uuid": "52aa1d1b-39e3-5fc9-9c4a-b73e59d50f1a"
+        },
+        {
+          "value": "257 Testicular dysfunction",
+          "uuid": "69063a7f-f81f-5b24-b259-f2d948723dca"
+        },
+        {
+          "value": "258 Polyglandular dysfunction and related disorders",
+          "uuid": "9382bb09-0992-51d8-a751-216e3b24fe65"
+        },
+        {
+          "value": "259 Other endocrine disorders",
+          "uuid": "d3771fb8-8a12-5279-a6db-282a56a48870"
+        }
+      ]
+    },
+    {
+      "predicate": "(260-269) Nutritional deficiencies",
+      "entry": [
+        {
+          "value": "260 Kwashiorkor",
+          "uuid": "7570329a-61df-51ce-bd96-138fe742f129"
+        },
+        {
+          "value": "261 Nutritional marasmus",
+          "uuid": "069696fe-5258-5f38-85fe-41c34ec088a5"
+        },
+        {
+          "value": "262 Other severe protein-calorie malnutrition",
+          "uuid": "62d139fe-ed24-598e-a4fe-daf6d538c21e"
+        },
+        {
+          "value": "263 Other and unspecified protein-calorie malnutrition",
+          "uuid": "83b14764-59ff-5527-9334-4e4ff6a8e6fb"
+        },
+        {
+          "value": "264 Vitamin A deficiency",
+          "uuid": "33b4dcee-d402-51e7-9d2b-9da24dddb231"
+        },
+        {
+          "value": "265 Thiamine and niacin deficiency states",
+          "uuid": "e6c75b5e-5150-5232-aedf-1542456b57cf"
+        },
+        {
+          "value": "266 Deficiency of B-complex components",
+          "uuid": "9d6cf586-8e3a-5e3a-9f4b-5080a6f8d4e0"
+        },
+        {
+          "value": "267 Ascorbic acid deficiency",
+          "uuid": "0be29feb-a65e-5637-8a9f-f824a7dac2be"
+        },
+        {
+          "value": "268 Vitamin D deficiency",
+          "uuid": "659a3776-e748-5455-b441-5537e9b32aa6"
+        },
+        {
+          "value": "269 Other nutritional deficiencies",
+          "uuid": "9ea3a4a4-cac4-51c0-91a3-3d2d7777b359"
+        }
+      ]
+    },
+    {
+      "predicate": "(270-279) Other metabolic disorders and immunity disorders",
+      "entry": [
+        {
+          "value": "270 Disorders of amino-acid transport and metabolism",
+          "uuid": "b282a06a-d011-59d0-a7d7-55175e250acb"
+        },
+        {
+          "value": "271 Disorders of carbohydrate transport and metabolism",
+          "uuid": "714635a8-6db1-5652-8bac-729e56d44cd6"
+        },
+        {
+          "value": "272 Disorders of lipoid metabolism",
+          "uuid": "cd2560b6-592b-5809-95d5-c4075ef6a5ce"
+        },
+        {
+          "value": "273 Disorders of plasma protein metabolism",
+          "uuid": "5590f6fc-b4a5-50e2-8546-04049a329bd1"
+        },
+        {
+          "value": "274 Gout",
+          "uuid": "1f67281b-07e2-5528-9c99-f9bcfeac41b2"
+        },
+        {
+          "value": "275 Disorders of mineral metabolism",
+          "uuid": "8cb0bec0-9e42-5339-9023-97a6ed7473b6"
+        },
+        {
+          "value": "276 Disorders of fluid, electrolyte and acid-base balance",
+          "uuid": "ea8d055f-8e83-52df-bc4c-31742173ee3d"
+        },
+        {
+          "value": "277 Other and unspecified disorders of metabolism",
+          "uuid": "f4e003b2-62a4-57bd-bf95-50d47443ad70"
+        },
+        {
+          "value": "278 Obesity and other hyperalimentation",
+          "uuid": "eb3b5f99-0347-54f5-8887-7e5b2c895f7c"
+        },
+        {
+          "value": "279 Disorders involving the immune mechanism",
+          "uuid": "1ed40d77-f3e7-51f6-90b2-b1f216c5ab17"
+        }
+      ]
+    },
+    {
+      "predicate": "(280-289) Diseases of blood and blood-forming organs",
+      "entry": [
+        {
+          "value": "280 Iron deficiency anaemias",
+          "uuid": "37a730a2-36bb-5b47-ad4b-6249c621661d"
+        },
+        {
+          "value": "281 Other deficiency anaemias",
+          "uuid": "f503bf0c-852b-5703-824f-a3a237348d8e"
+        },
+        {
+          "value": "282 Hereditary haemolytic anaemias",
+          "uuid": "f482e897-ca62-5694-9535-08fba3b54e65"
+        },
+        {
+          "value": "283 Acquired haemolytic anaemias",
+          "uuid": "d4da61b3-9750-5669-a1fc-b0476647d75d"
+        },
+        {
+          "value": "284 Aplastic anaemia",
+          "uuid": "4bb1b471-b897-567b-8dcd-265312f590d8"
+        },
+        {
+          "value": "285 Other and unspecified anaemias",
+          "uuid": "b42d7883-7008-5cb6-b346-4f471e613169"
+        },
+        {
+          "value": "286 Coagulation defects",
+          "uuid": "2b92051d-1c5c-5d7a-9e82-8ecddadfc825"
+        },
+        {
+          "value": "287 Purpura and other haemorrhagic conditions",
+          "uuid": "2b39f5bf-577f-5a0e-8202-0ded1986928a"
+        },
+        {
+          "value": "288 Diseases of white blood cells",
+          "uuid": "c3af6027-e59e-5e28-983a-870a1ed8a669"
+        },
+        {
+          "value": "289 Other diseases of blood and blood-forming organs",
+          "uuid": "ee31c3ae-fbe0-574a-b073-b67830ab2294"
+        }
+      ]
+    },
+    {
+      "predicate": "(290-294) Organic psychotic conditions",
+      "entry": [
+        {
+          "value": "290 Senile and presenile organic psychotic conditions",
+          "uuid": "94858ac6-58e7-5f50-9509-96824298e334"
+        },
+        {
+          "value": "291 Alcoholic psychoses",
+          "uuid": "efdeb4b3-0e51-5eca-9e3a-7604fdc1bfe8"
+        },
+        {
+          "value": "292 Drug psychoses",
+          "uuid": "15d2d3f8-0b35-50f9-9bab-1223a238fa81"
+        },
+        {
+          "value": "293 Transient organic psychotic conditions",
+          "uuid": "d002a7cb-95b6-5580-be61-5b4444f909e6"
+        },
+        {
+          "value": "294 Other organic psychotic conditions (chronic)",
+          "uuid": "c1b861e8-88bf-56f3-b14f-df01518b2745"
+        }
+      ]
+    },
+    {
+      "predicate": "(295-299) Other psychoses",
+      "entry": [
+        {
+          "value": "295 Schizophrenic psychoses",
+          "uuid": "16b87939-c739-538b-954f-f7fc5ac19b0f"
+        },
+        {
+          "value": "296 Affective psychoses",
+          "uuid": "6e32f33c-b78f-524c-8ad7-7fa6d3a52113"
+        },
+        {
+          "value": "297 Paranoid states",
+          "uuid": "0ffde178-b917-5cc8-bbb6-863122492069"
+        },
+        {
+          "value": "298 Other nonorganic psychoses",
+          "uuid": "41b015d9-2cd0-54aa-a24f-57a5ed7b8e88"
+        },
+        {
+          "value": "299 Psychoses with origin specific to childhood",
+          "uuid": "15f67b33-3e45-5834-81b4-be22846693d1"
+        }
+      ]
+    },
+    {
+      "predicate": "(300-316) Neurotic disorders, personality disorders and other nonpsychotic mental disorders",
+      "entry": [
+        {
+          "value": "300 Neurotic disorders",
+          "uuid": "eb418972-cf34-5b4f-a34b-134a4bf28d17"
+        },
+        {
+          "value": "301 Personality disorders",
+          "uuid": "22a3bf27-176e-597e-8739-06edb0025d42"
+        },
+        {
+          "value": "302 Sexual deviations and disorders",
+          "uuid": "e24c734e-a76d-50f8-b8ea-d94b6562d02d"
+        },
+        {
+          "value": "303 Alcohol dependence syndrome",
+          "uuid": "54da2c67-fe9b-59f4-983e-6abbe5f23f46"
+        },
+        {
+          "value": "304 Drug dependence",
+          "uuid": "eced3651-6b61-5559-a5e2-6b7aeb1a29df"
+        },
+        {
+          "value": "305 Nondependent abuse of drugs",
+          "uuid": "c65d1f51-3f90-5bb2-8339-119eef64e4bb"
+        },
+        {
+          "value": "306 Physiological malfunction arising from mental factors",
+          "uuid": "319ee54b-d069-5cc0-8c4f-56e258792731"
+        },
+        {
+          "value": "307 Special symptoms or syndromes not elsewhere classified",
+          "uuid": "dde4b1dd-8496-5488-bf51-0cbb465acbf9"
+        },
+        {
+          "value": "308 Acute reaction to stress",
+          "uuid": "4a587e32-7a79-5cf0-8168-654f0cef2f24"
+        },
+        {
+          "value": "309 Adjustment reaction",
+          "uuid": "ca25dca0-706b-5438-a610-9bf378ea1646"
+        },
+        {
+          "value": "310 Specific nonpsychotic mental disorders following organic brain damage",
+          "uuid": "25b4ea13-fbf6-5603-b6c4-45ac2f7965f4"
+        },
+        {
+          "value": "311 Depressive disorder, not elsewhere classified",
+          "uuid": "3e92d38d-e2c5-530e-8fa9-cd0b31cc1b4d"
+        },
+        {
+          "value": "312 Disturbance of conduct not elsewhere classified",
+          "uuid": "8c0370db-0f4e-5684-9597-2ea90e2d6845"
+        },
+        {
+          "value": "313 Disturbance of emotions specific to childhood and adolescence",
+          "uuid": "387f96a6-6d84-524c-acb1-4eded482e04a"
+        },
+        {
+          "value": "314 Hyperkinetic syndrome of childhood",
+          "uuid": "23325716-2821-53ed-8f2b-8fe9fb3f58bb"
+        },
+        {
+          "value": "315 Specific delays in development",
+          "uuid": "7acc7a11-bc1b-5e80-aa44-7cb65d5d479a"
+        },
+        {
+          "value": "316 Psychic factors associated with diseases classified elsewhere",
+          "uuid": "1c00245d-7491-5b49-b165-99510bceae9f"
+        }
+      ]
+    },
+    {
+      "predicate": "(317-319) Mental retardation",
+      "entry": [
+        {
+          "value": "317 Mild mental retardation",
+          "uuid": "1f976dac-d2b2-5589-868b-3f0b7ad1bced"
+        },
+        {
+          "value": "318 Other specified mental retardation",
+          "uuid": "7d529e4f-d67a-5e89-9872-96ac09cc94f2"
+        },
+        {
+          "value": "319 Unspecified mental retardation",
+          "uuid": "ab5899a4-2b64-5cd0-9847-4bb37052e980"
+        }
+      ]
+    },
+    {
+      "predicate": "(320-326) Inflammatory diseases of the central nervous system",
+      "entry": [
+        {
+          "value": "320 Bacterial meningitis",
+          "uuid": "676e99f6-26a8-55df-91c9-9a62f629fa0e"
+        },
+        {
+          "value": "321 Meningitis due to other organisms",
+          "uuid": "60588604-c132-5e2c-a0fc-5aa2de4e007d"
+        },
+        {
+          "value": "322 Meningitis of unspecified cause",
+          "uuid": "dc485e00-9051-58e4-b80b-841d699ea8dc"
+        },
+        {
+          "value": "323 Encephalitis, myelitis and encephalomyelitis",
+          "uuid": "efe668d6-80c4-578a-8653-c2aa41665699"
+        },
+        {
+          "value": "324 Intracranial and intraspinal abscess",
+          "uuid": "f393b372-d9cc-5eda-a50f-a92614fd8f8b"
+        },
+        {
+          "value": "325 Phlebitis and thrombophlebitis of intracranial venous sinuses",
+          "uuid": "2696a683-c04c-5447-ab01-08285fe2c9fa"
+        },
+        {
+          "value": "326 Late effects of intracranial abscess or pyogenic infection",
+          "uuid": "37c8b757-95e1-5c44-8728-6df367d8c325"
+        }
+      ]
+    },
+    {
+      "predicate": "(330-337) Hereditary and degenerative diseases of the central nervous system",
+      "entry": [
+        {
+          "value": "330 Cerebral degenerations usually manifest in childhood",
+          "uuid": "947671bd-af9e-581b-9fab-fc07dfb84214"
+        },
+        {
+          "value": "331 Other cerebral degenerations",
+          "uuid": "ec250135-c38e-5f27-ad24-d390001eb3e5"
+        },
+        {
+          "value": "332 Parkinson's disease",
+          "uuid": "96ab6152-54a8-5682-bc2b-3c2f70e95d49"
+        },
+        {
+          "value": "333 Other extrapyramidal disease and abnormal movement disorders",
+          "uuid": "e76110ee-fbfc-50af-a782-1b0805898d74"
+        },
+        {
+          "value": "334 Spinocerebellar disease",
+          "uuid": "432d37d7-abf6-5a09-8e49-c675facc084c"
+        },
+        {
+          "value": "335 Anterior horn cell disease",
+          "uuid": "31970f97-9f67-58ac-9715-1684400fb196"
+        },
+        {
+          "value": "336 Other diseases of spinal cord",
+          "uuid": "7f2ee3cc-4f09-5511-89cc-47b4376dbe7b"
+        },
+        {
+          "value": "337 Disorders of the autonomic nervous system",
+          "uuid": "34dd7423-b99e-5308-94ef-73685728c6fe"
+        }
+      ]
+    },
+    {
+      "predicate": "(340-349) Other disorders of the central nervous system",
+      "entry": [
+        {
+          "value": "340 Multiple sclerosis",
+          "uuid": "c5ca2a61-7c1e-5eac-8356-44fe752dfd3c"
+        },
+        {
+          "value": "341 Other demyelinating diseases of central nervous system",
+          "uuid": "a3b53324-fc55-5dc9-a313-dc5741e54da5"
+        },
+        {
+          "value": "342 Hemiplegia",
+          "uuid": "53a12ef1-6605-56f1-afc8-6138f768b564"
+        },
+        {
+          "value": "343 Infantile cerebral palsy",
+          "uuid": "782db8c5-c7c9-5016-bf0f-b8ec949c0b35"
+        },
+        {
+          "value": "344 Other paralytic syndromes",
+          "uuid": "c7475a01-dfdc-59e5-a8c2-cc60a396f26b"
+        },
+        {
+          "value": "345 Epilepsy",
+          "uuid": "faf86696-b39a-5c5c-a465-3ea145d72bd1"
+        },
+        {
+          "value": "346 Migraine",
+          "uuid": "0d1465a5-4149-5972-80ae-6be338c3abc3"
+        },
+        {
+          "value": "347 Cataplexy and narcolepsy",
+          "uuid": "a0853a2e-5ddd-51d0-badc-ec3bd5d7153d"
+        },
+        {
+          "value": "348 Other conditions of brain",
+          "uuid": "8c19d91f-0a22-5387-86c1-3ad3f9cb3b76"
+        },
+        {
+          "value": "349 Other and unspecified disorders of the nervous system",
+          "uuid": "7cb2a5a8-aae2-574a-a2cc-52f7c2b32683"
+        }
+      ]
+    },
+    {
+      "predicate": "(350-359) Disorders of the peripheral nervous system",
+      "entry": [
+        {
+          "value": "350 Trigeminal nerve disorders",
+          "uuid": "57dc3e74-1241-5aa7-96fd-1578399063db"
+        },
+        {
+          "value": "351 Facial nerve disorders",
+          "uuid": "c1453c52-f27c-5ef1-bd19-97b69d2204e8"
+        },
+        {
+          "value": "352 Disorders of other cranial nerves",
+          "uuid": "4877a8c0-7bcb-5e99-883b-f2ed444f8529"
+        },
+        {
+          "value": "353 Nerve root and plexus disorders",
+          "uuid": "65c0b39d-1685-5a8a-b27a-0c411e814119"
+        },
+        {
+          "value": "354 Mononeuritis of upper limb and mononeuritis multiplex",
+          "uuid": "73f99cbb-94e9-5bae-b76b-674997b127c8"
+        },
+        {
+          "value": "355 Mononeuritis of lower limb",
+          "uuid": "b3779628-b75a-5fa8-9487-4c39a20c9346"
+        },
+        {
+          "value": "356 Hereditary and idiopathic peripheral neuropathy",
+          "uuid": "63705b1d-085e-52a7-9443-7a8c8c86fe41"
+        },
+        {
+          "value": "357 Inflammatory and toxic neuropathy",
+          "uuid": "b1c085a2-71a7-56af-965e-3857c99a0436"
+        },
+        {
+          "value": "358 Myoneural disorders",
+          "uuid": "74ba0d85-b8a3-5f82-942b-0ddaefff3cf8"
+        },
+        {
+          "value": "359 Muscular dystrophies and other myopathies",
+          "uuid": "ec878ca8-efe0-5913-9cec-aa4bc8ae9257"
+        }
+      ]
+    },
+    {
+      "predicate": "(360-379) Disorders of the eye and adnexa",
+      "entry": [
+        {
+          "value": "360 Disorders of the globe",
+          "uuid": "d6c09079-6b9f-5ad6-b5e6-d6e2cd2f8493"
+        },
+        {
+          "value": "361 Retinal detachments and defects",
+          "uuid": "d7483801-3e4b-5e22-b77e-fa1b9bdc2bbf"
+        },
+        {
+          "value": "362 Other retinal disorders",
+          "uuid": "ccfc33c8-53f3-5fcb-9fc7-82e219129e33"
+        },
+        {
+          "value": "363 Chorioretinal inflammations and scars and other disorders of choroid",
+          "uuid": "d3634645-996b-5936-8320-e82fee7ef1fd"
+        },
+        {
+          "value": "364 Disorders of iris and ciliary body",
+          "uuid": "e17447db-01c8-5860-8f49-0b6d6fa32edc"
+        },
+        {
+          "value": "365 Glaucoma",
+          "uuid": "db4d467c-a375-5fcd-82b2-6373fecf6b6c"
+        },
+        {
+          "value": "366 Cataract",
+          "uuid": "e11b46c8-d98c-51a7-810f-ffcab71903a6"
+        },
+        {
+          "value": "367 Disorders of refraction and accommodation",
+          "uuid": "4894e02a-5ec5-5a98-bb98-7413c82b73cd"
+        },
+        {
+          "value": "368 Visual disturbances",
+          "uuid": "3bae27c2-a7b5-582c-a14d-36a8ca7e03ce"
+        },
+        {
+          "value": "369 Blindness and low vision",
+          "uuid": "db1d9a96-3048-5710-88ac-1d6bbf339134"
+        },
+        {
+          "value": "370 Keratitis",
+          "uuid": "5c893b28-edc8-5270-b67a-f6003bfc7863"
+        },
+        {
+          "value": "371 Corneal opacity and other disorders of cornea",
+          "uuid": "868b9ea0-6626-563c-bf58-2f5344c96d47"
+        },
+        {
+          "value": "372 Disorders of conjunctiva",
+          "uuid": "d1146dec-ac8c-5002-866c-55928cc59ec4"
+        },
+        {
+          "value": "373 Inflammation of eyelids",
+          "uuid": "73462e3c-97eb-5ce6-bff7-ff087c74d01d"
+        },
+        {
+          "value": "374 Other disorders of eyelids",
+          "uuid": "92c41661-7eff-5d3f-9764-32541b003279"
+        },
+        {
+          "value": "375 Disorders of lachrymal system",
+          "uuid": "807e77cc-0926-5172-b6e1-d02f9bd34646"
+        },
+        {
+          "value": "376 Disorders of the orbit",
+          "uuid": "8393c0ff-dbeb-5824-953d-4614fca2cd62"
+        },
+        {
+          "value": "377 Disorders of optic nerve and visual pathways",
+          "uuid": "fcb7a933-e786-5ac5-901c-240253b1ec81"
+        },
+        {
+          "value": "378 Strabismus and other disorders of binocular eye movements",
+          "uuid": "f7d02692-1e07-5628-8ef1-b2b0a391728c"
+        },
+        {
+          "value": "379 Other disorders of eye",
+          "uuid": "7b7e2dc9-d343-51b6-9b1e-4490baa871b0"
+        }
+      ]
+    },
+    {
+      "predicate": "(380-389) Diseases of the ear and mastoid process",
+      "entry": [
+        {
+          "value": "380 Disorders of external ear",
+          "uuid": "e02cf06e-f902-59cd-bca6-21f54595d6fe"
+        },
+        {
+          "value": "381 Nonsuppurative otitis media and Eustachian tube disorders",
+          "uuid": "efe7da6c-3ddc-56f0-b36f-615cff8ce271"
+        },
+        {
+          "value": "382 Suppurative and unspecified otitis media",
+          "uuid": "6cb75297-3eb2-5ad8-8eed-35ce49d3d1bd"
+        },
+        {
+          "value": "383 Mastoiditis and related conditions",
+          "uuid": "b4192314-152a-5517-ab1f-2b238c39fc12"
+        },
+        {
+          "value": "384 Other disorders of tympanic membrane",
+          "uuid": "1cea0c8b-f2b9-545c-9475-2589cdc3812c"
+        },
+        {
+          "value": "385 Other disorders of middle ear and mastoid",
+          "uuid": "3aa1e523-da64-5ecc-af8a-088c84e6e801"
+        },
+        {
+          "value": "386 Vertiginous syndromes and other disorders of vestibular system",
+          "uuid": "237070f4-ed85-525d-8e6d-96c100c89096"
+        },
+        {
+          "value": "387 Otosclerosis",
+          "uuid": "cc0d4dcc-f354-5316-a871-9a0c73c471bd"
+        },
+        {
+          "value": "388 Other disorders of ear",
+          "uuid": "14206c06-9a18-5846-93b7-fea073f818bd"
+        },
+        {
+          "value": "389 Deafness",
+          "uuid": "4a63776f-ca4a-503b-939b-3639a5c11904"
+        }
+      ]
+    },
+    {
+      "predicate": "(390-392) Acute rheumatic fever",
+      "entry": [
+        {
+          "value": "390 Rheumatic fever without mention of heart involvement",
+          "uuid": "11e46e15-abde-5e98-9a44-fa83a8927dbb"
+        },
+        {
+          "value": "391 Rheumatic fever with heart involvement",
+          "uuid": "7e64ba49-b9b0-51aa-9d94-7346895ed6a6"
+        },
+        {
+          "value": "392 Rheumatic chorea",
+          "uuid": "37431f73-630b-5b6c-ac1e-257ff6274cfe"
+        }
+      ]
+    },
+    {
+      "predicate": "(393-398) Chronic rheumatic heart disease",
+      "entry": [
+        {
+          "value": "393 Chronic rheumatic pericarditis",
+          "uuid": "a689516b-bb70-52e9-9dcc-4a4ef8c8f487"
+        },
+        {
+          "value": "394 Diseases of mitral valve",
+          "uuid": "29a14c6e-0cfc-5204-b606-4b36972ba19c"
+        },
+        {
+          "value": "395 Diseases of aortic valve",
+          "uuid": "2d8d3213-84e2-5f52-bac6-5c315a14f2f8"
+        },
+        {
+          "value": "396 Diseases of mitral and aortic valves",
+          "uuid": "1c8ad8aa-fd8e-5cb7-8785-3993a800d36d"
+        },
+        {
+          "value": "397 Diseases of other endocardial structures",
+          "uuid": "8bc9346c-a0e7-5e7e-acb4-72fbea2cec05"
+        },
+        {
+          "value": "398 Other rheumatic heart disease",
+          "uuid": "ea65f691-e78b-5091-93a8-0a24e633552e"
+        }
+      ]
+    },
+    {
+      "predicate": "(401-405) Hypertensive disease",
+      "entry": [
+        {
+          "value": "401 Essential hypertension",
+          "uuid": "f4a9c8f0-c221-5bef-86d5-d4b40b314615"
+        },
+        {
+          "value": "402 Hypertensive heart disease",
+          "uuid": "3dbc7d03-c4f8-5f39-863e-877154da738c"
+        },
+        {
+          "value": "403 Hypertensive renal disease",
+          "uuid": "5f6c8299-9a39-5864-b80b-7b05ea86f137"
+        },
+        {
+          "value": "404 Hypertensive heart and renal disease",
+          "uuid": "8fc2fd91-47b8-5d85-86a5-c02953171e93"
+        },
+        {
+          "value": "405 Secondary hypertension",
+          "uuid": "046948cc-3742-5bdb-ae3d-71bea331facf"
+        }
+      ]
+    },
+    {
+      "predicate": "(410-414) Ischaemic heart disease",
+      "entry": [
+        {
+          "value": "410 Acute myocardial infarction",
+          "uuid": "d747902d-c509-52b5-8718-a6dd95230e5c"
+        },
+        {
+          "value": "411 Other acute and subacute forms of ischaemic heart disease",
+          "uuid": "5357368f-7726-5e77-975e-0c823aa94a63"
+        },
+        {
+          "value": "412 Old myocardial infarction",
+          "uuid": "c4b93308-65fb-5093-b5d0-29204d656351"
+        },
+        {
+          "value": "413 Angina pectoris",
+          "uuid": "6547b6fe-31fc-5140-8591-14e7e2b47b38"
+        },
+        {
+          "value": "414 Other forms of chronic ischaemic heart disease",
+          "uuid": "e65a9b1a-3f4e-5054-9e22-272cdf5f212a"
+        }
+      ]
+    },
+    {
+      "predicate": "(415-417) Diseases of pulmonary circulation",
+      "entry": [
+        {
+          "value": "415 Acute pulmonary heart disease",
+          "uuid": "5cb0b160-d2f4-59d7-b8b1-e63a610d2576"
+        },
+        {
+          "value": "416 Chronic pulmonary heart disease",
+          "uuid": "f1d8818d-d87f-5032-91f9-b7019e841c73"
+        },
+        {
+          "value": "417 Other diseases of pulmonary circulation",
+          "uuid": "813543a6-201a-5cfe-a903-6a9410e611f1"
+        }
+      ]
+    },
+    {
+      "predicate": "(420-429) Other forms of heart disease",
+      "entry": [
+        {
+          "value": "420 Acute pericarditis",
+          "uuid": "2b06e806-e5b0-5154-a458-c943583d5ef3"
+        },
+        {
+          "value": "421 Acute and subacute endocarditis",
+          "uuid": "cea72656-a533-5b1c-9180-e3a92c9c9362"
+        },
+        {
+          "value": "422 Acute myocarditis",
+          "uuid": "a1776f09-6594-53f1-a4c3-9547c3543a23"
+        },
+        {
+          "value": "423 Other diseases of pericardium",
+          "uuid": "41901b03-eb9a-513a-bf4a-e349a455fea4"
+        },
+        {
+          "value": "424 Other diseases of endocardium",
+          "uuid": "237699d7-840f-5096-b570-67bbbf7311d0"
+        },
+        {
+          "value": "425 Cardiomyopathy",
+          "uuid": "7adee61d-043d-5376-9987-ee32649b6475"
+        },
+        {
+          "value": "426 Conduction disorders",
+          "uuid": "d8f3afd6-0d2b-57a1-b2fa-435a1c63e980"
+        },
+        {
+          "value": "427 Cardiac dysrhythmias",
+          "uuid": "b5187258-a879-5631-8176-0d27a6307933"
+        },
+        {
+          "value": "428 Heart failure",
+          "uuid": "a77b0293-86ca-5e4b-8caa-85edc1cb90e6"
+        },
+        {
+          "value": "429 Ill-defined descriptions and complications of heart disease",
+          "uuid": "4d29a783-2b9d-5ed7-9eaf-3bc86879047d"
+        }
+      ]
+    },
+    {
+      "predicate": "(430-438) Cerebrovascular disease",
+      "entry": [
+        {
+          "value": "430 Subarachnoid haemorrhage",
+          "uuid": "678fd38e-f824-57c2-a061-afb38b9028c9"
+        },
+        {
+          "value": "431 Intracerebral haemorrhage",
+          "uuid": "65b87f6b-74e3-5683-a3fa-8cd81180890d"
+        },
+        {
+          "value": "432 Other and unspecified intracranial haemorrhage",
+          "uuid": "d5fe263d-1be8-5442-8b4d-f241d4e3a3e2"
+        },
+        {
+          "value": "433 Occlusion and stenosis of precerebral arteries",
+          "uuid": "768bd40e-173e-5bc9-a8e1-903a726b5335"
+        },
+        {
+          "value": "434 Occlusion of cerebral arteries",
+          "uuid": "fc965081-4531-54fb-90e3-2005ff89f692"
+        },
+        {
+          "value": "435 Transient cerebral ischaemia",
+          "uuid": "eac733cc-2c14-5c8b-b2d5-a7c08a6670e4"
+        },
+        {
+          "value": "436 Acute but ill-defined cerebrovascular disease",
+          "uuid": "dfd60c29-5da9-5568-af94-252d282e10b6"
+        },
+        {
+          "value": "437 Other and ill-defined cerebrovascular disease",
+          "uuid": "b1d6554e-a4d1-5782-bc98-aaf2068f53b5"
+        },
+        {
+          "value": "438 Late effects of cerebrovascular disease",
+          "uuid": "91d4c53b-cce5-577d-af4f-a589b296fc45"
+        }
+      ]
+    },
+    {
+      "predicate": "(440-448) Diseases of arteries, arterioles and capillaries",
+      "entry": [
+        {
+          "value": "440 Atherosclerosis",
+          "uuid": "f12e65aa-4c21-59f8-8ce1-a879bf0ed963"
+        },
+        {
+          "value": "441 Aortic aneurysm",
+          "uuid": "428c6077-a700-5821-9c85-f403710c76e4"
+        },
+        {
+          "value": "442 Other aneurysm",
+          "uuid": "95a7eb78-0b8d-5860-b31b-8ad5c1ff536b"
+        },
+        {
+          "value": "443 Other peripheral vascular disease",
+          "uuid": "cbd8777a-4d5d-548d-8962-f4fc5c3636aa"
+        },
+        {
+          "value": "444 Arterial embolism and thrombosis",
+          "uuid": "4c833b76-2dc8-5c62-8fa2-f9aff7115e3a"
+        },
+        {
+          "value": "446 Polyarteritis nodosa and allied conditions",
+          "uuid": "1f6c766a-66a2-5afc-9a59-53ac673ea336"
+        },
+        {
+          "value": "447 Other disorders of arteries and arterioles",
+          "uuid": "9dd7a319-0fe1-52b5-b011-61fb60e82199"
+        },
+        {
+          "value": "448 Diseases of capillaries",
+          "uuid": "f4b57079-c64f-529e-b3aa-4ff4905fbde4"
+        }
+      ]
+    },
+    {
+      "predicate": "(451-459) Diseases of veins and lymphatics, and other diseases of circulatory system",
+      "entry": [
+        {
+          "value": "451 Phlebitis and thrombophlebitis",
+          "uuid": "e83ae207-705e-59b2-afc9-228e427a6312"
+        },
+        {
+          "value": "452 Portal vein thrombosis",
+          "uuid": "7d338605-2586-595a-afa9-de60aac819f1"
+        },
+        {
+          "value": "453 Other venous embolism and thrombosis",
+          "uuid": "4bcad27c-b1bc-5459-ae59-dc7524a1dd21"
+        },
+        {
+          "value": "454 Varicose veins of lower extremities",
+          "uuid": "a27d4c1c-c9f5-5c6e-849e-4d54575ea110"
+        },
+        {
+          "value": "455 Haemorrhoids",
+          "uuid": "2e4734f2-f92e-5d9a-bc7d-20cde0d3aa24"
+        },
+        {
+          "value": "456 Varicose veins of other sites",
+          "uuid": "decfbf15-407d-5508-ad7e-663fe61d5004"
+        },
+        {
+          "value": "457 Non-infective disorders of lymphatic channels",
+          "uuid": "a80fb971-2c7d-5945-8571-ca5fc30ad120"
+        },
+        {
+          "value": "458 Hypotension",
+          "uuid": "c653d9e7-f6b5-5f60-bffd-f26529894b40"
+        },
+        {
+          "value": "459 Other disorders of circulatory system",
+          "uuid": "76a26f01-3ac5-5cbc-a4a8-7af8f2ab851c"
+        }
+      ]
+    },
+    {
+      "predicate": "(460-466) Acute respiratory infections",
+      "entry": [
+        {
+          "value": "460 Acute nasopharyngitis [common cold]",
+          "uuid": "32c6af1f-426a-560e-afe1-bb041b9a4bdb"
+        },
+        {
+          "value": "461 Acute sinusitis",
+          "uuid": "1449056c-ef01-5322-9ab1-323d24fb64be"
+        },
+        {
+          "value": "462 Acute pharyngitis",
+          "uuid": "57b0f915-a9a6-511d-be8d-bfa91fcb2bf0"
+        },
+        {
+          "value": "463 Acute tonsillitis",
+          "uuid": "8a210ab6-59fb-5457-acaa-e8f81de2d38c"
+        },
+        {
+          "value": "464 Acute laryngitis and tracheitis",
+          "uuid": "9d77b1b9-8bd1-57e2-9f15-243b711f728a"
+        },
+        {
+          "value": "465 Acute upper respiratory infections of multiple or unspecified sites",
+          "uuid": "755cb6a7-7e84-5bb0-acd2-89fcb9bd9c18"
+        },
+        {
+          "value": "466 Acute bronchitis and bronchiolitis",
+          "uuid": "f0f067d2-ba71-54d6-ba65-4f983273c986"
+        }
+      ]
+    },
+    {
+      "predicate": "(470-478) Other diseases of upper respiratory tract",
+      "entry": [
+        {
+          "value": "470 Deflected nasal septum",
+          "uuid": "b3ea62ab-4c11-591f-b1e6-e8c82d04b054"
+        },
+        {
+          "value": "471 Nasal polyps",
+          "uuid": "ab4a01e9-978d-5449-a9e6-e326b75d5211"
+        },
+        {
+          "value": "472 Chronic pharyngitis and nasopharyngitis",
+          "uuid": "0fefcb9b-fc8c-5fd9-85d0-ca1c33dbb33d"
+        },
+        {
+          "value": "473 Chronic sinusitis",
+          "uuid": "4cb1e4b3-a03e-5fb7-80ad-350831ce6fab"
+        },
+        {
+          "value": "474 Chronic disease of tonsils and adenoids",
+          "uuid": "23ff05e8-c350-5069-98b7-03c57a119b21"
+        },
+        {
+          "value": "475 Peritonsillar abscess",
+          "uuid": "5be89a91-a985-5dda-8f0e-1fc188490f99"
+        },
+        {
+          "value": "476 Chronic laryngitis and laryngotracheitis",
+          "uuid": "3edd782e-b741-50d0-86ae-43c03bf904a5"
+        },
+        {
+          "value": "477 Allergic rhinitis",
+          "uuid": "418d4633-ca6e-5b3e-a720-bb439a8fa166"
+        },
+        {
+          "value": "478 Other diseases of upper respiratory tract",
+          "uuid": "e2fb49be-b824-5b25-945b-6d04135e82bc"
+        }
+      ]
+    },
+    {
+      "predicate": "(480-487) Pneumonia and influenza",
+      "entry": [
+        {
+          "value": "480 Viral pneumonia",
+          "uuid": "454634a8-0ab8-5786-b42d-2cf3f78b2ca3"
+        },
+        {
+          "value": "481 Pneumococcal pneumonia",
+          "uuid": "82b9a25a-2d0f-5fc2-b1dc-3aa85a1ec36f"
+        },
+        {
+          "value": "482 Other bacterial pneumonia",
+          "uuid": "10779cd4-d37e-5441-868c-3c46411bd12f"
+        },
+        {
+          "value": "483 Pneumonia due to other specified organism",
+          "uuid": "9ea7ced2-59c9-5c23-a2fd-f9cf1cec63b2"
+        },
+        {
+          "value": "484 Pneumonia in infectious diseases classified elsewhere",
+          "uuid": "8f477a50-b087-5326-b2e6-6f1464325c24"
+        },
+        {
+          "value": "485 Bronchopneumonia, organism unspecified",
+          "uuid": "485e75c0-f437-57ae-b159-1db1583b3ceb"
+        },
+        {
+          "value": "486 Pneumonia, organism unspecified",
+          "uuid": "50b43538-7076-5a82-9925-e1007c964327"
+        },
+        {
+          "value": "487 Influenza",
+          "uuid": "d1f6de10-89c9-528c-a368-de24fbf6ce74"
+        }
+      ]
+    },
+    {
+      "predicate": "(490-496) Chronic obstructive pulmonary disease and allied conditions",
+      "entry": [
+        {
+          "value": "490 Bronchitis, not specified as acute or chronic",
+          "uuid": "9217acc0-56fa-556b-920e-43f0e10e2958"
+        },
+        {
+          "value": "491 Chronic bronchitis",
+          "uuid": "fd40c75f-5168-53f5-9428-416b1b23b423"
+        },
+        {
+          "value": "492 Emphysema",
+          "uuid": "b5cdc39d-3bab-5001-ae8c-ee1871463d54"
+        },
+        {
+          "value": "493 Asthma",
+          "uuid": "d9721bc7-b9e1-51c1-af7e-0a4f4719b91b"
+        },
+        {
+          "value": "494 Bronchiectasis",
+          "uuid": "e1cf6ac9-ae98-547d-9e2e-d67a1e5a339a"
+        },
+        {
+          "value": "495 Extrinsic allergic alveolitis",
+          "uuid": "39fada08-255d-5ba2-9b91-6da4f24ad100"
+        },
+        {
+          "value": "496 Chronic airways obstruction, not elsewhere classified",
+          "uuid": "72540264-4a09-5226-af05-32e373628074"
+        }
+      ]
+    },
+    {
+      "predicate": "(500-508) Pneumoconioses and other lung diseases due to external agents",
+      "entry": [
+        {
+          "value": "500 Coalworkers' pneumoconiosis",
+          "uuid": "d40a8514-2dd9-5ed0-8d94-1160f8c92ca6"
+        },
+        {
+          "value": "501 Asbestosis",
+          "uuid": "6d66a8fc-82b7-5126-a5f8-daa4f8a5f51f"
+        },
+        {
+          "value": "502 Pneumoconiosis due to other silica or silicates",
+          "uuid": "3cc20bc9-b71e-585d-9642-00df8291ed78"
+        },
+        {
+          "value": "503 Pneumoconiosis due to other inorganic dust",
+          "uuid": "69934f09-04f0-57f0-9ab1-2fff3f3ff95b"
+        },
+        {
+          "value": "504 Pneumopathy due to inhalation of other dust",
+          "uuid": "caad0fff-dfc7-52ef-a0a1-d2923f29f894"
+        },
+        {
+          "value": "505 Pneumoconiosis, unspecified",
+          "uuid": "4513feab-0851-59cd-bf2d-b6a186b9a6e8"
+        },
+        {
+          "value": "506 Respiratory conditions due to chemical fumes and vapours",
+          "uuid": "0cdc8f1c-66a2-522e-af65-2f60286a78f3"
+        },
+        {
+          "value": "507 Pneumonitis due to solids and liquids",
+          "uuid": "1acc21c8-8419-5ee3-9912-cd4edeac2108"
+        },
+        {
+          "value": "508 Respiratory conditions due to other and unspecified external agents",
+          "uuid": "551015a9-f510-59d8-b943-f19d2d17d55c"
+        }
+      ]
+    },
+    {
+      "predicate": "(510-519) Other diseases of respiratory system",
+      "entry": [
+        {
+          "value": "510 Empyema",
+          "uuid": "9fd5dd93-acdf-518e-a4a0-af5fc01898c6"
+        },
+        {
+          "value": "511 Pleurisy",
+          "uuid": "2d830211-49c4-5851-9b2f-bd11bbf549ef"
+        },
+        {
+          "value": "512 Pneumothorax",
+          "uuid": "6cf833d7-83e6-5a9d-8525-bb229454e196"
+        },
+        {
+          "value": "513 Abscess of lung and mediastinum",
+          "uuid": "ef5880da-6baa-5627-a305-f8dfed4fce67"
+        },
+        {
+          "value": "514 Pulmonary congestion and hypostasis",
+          "uuid": "46a53fa5-6e10-5fab-8af9-76061fcdfed6"
+        },
+        {
+          "value": "515 Postinflammatory pulmonary fibrosis",
+          "uuid": "57f0faad-23cb-55b2-8e5d-e6ddb7953b56"
+        },
+        {
+          "value": "516 Other alveolar and parietoalveolar pneumopathy",
+          "uuid": "4d36b2ae-b4e1-55c9-b7a1-e74331c3f0cd"
+        },
+        {
+          "value": "517 Lung involvement in conditions classified elsewhere",
+          "uuid": "46829a8f-1eb8-5a50-9a38-dc1819277805"
+        },
+        {
+          "value": "518 Other diseases of lung",
+          "uuid": "2dbcc227-803f-5f62-910d-11b0df389e79"
+        },
+        {
+          "value": "519 Other diseases of respiratory system",
+          "uuid": "8b9df125-0dc4-56f2-8bc3-96046561bd71"
+        }
+      ]
+    },
+    {
+      "predicate": "(520-529) Diseases of oral cavity, salivary glands and jaws",
+      "entry": [
+        {
+          "value": "520 Disorders of tooth development and eruption",
+          "uuid": "7bcc1531-502d-5b83-ac49-fdee3ddae7fa"
+        },
+        {
+          "value": "521 Diseases of hard tissues of teeth",
+          "uuid": "10de4763-f435-5eb0-97f0-d7435d6aaf40"
+        },
+        {
+          "value": "522 Diseases of pulp and periapical tissues",
+          "uuid": "345a2e88-9b2f-54bd-b77d-5b09eaf0e372"
+        },
+        {
+          "value": "523 Gingival and periodontal diseases",
+          "uuid": "4ac2b169-dfe3-5f63-906d-7e5aac6feb1b"
+        },
+        {
+          "value": "524 Dentofacial anomalies, including malocclusion",
+          "uuid": "f1d0a4ec-ba8e-5deb-9d11-2699f2fc2513"
+        },
+        {
+          "value": "525 Other diseases and conditions of the teeth and supporting structures",
+          "uuid": "762818d0-8476-57a6-9ba4-b5703464376a"
+        },
+        {
+          "value": "526 Diseases of the jaws",
+          "uuid": "de34b97d-1263-56bf-8a70-6d232dfe9952"
+        },
+        {
+          "value": "527 Diseases of the salivary glands",
+          "uuid": "e4f99e3b-5a34-5242-9bc6-25bcb1623bbe"
+        },
+        {
+          "value": "528 Diseases of the oral soft tissues, excluding lesions specific for gingiva and tongue",
+          "uuid": "8a2936be-30c4-545c-b4ce-33042ef3c7b6"
+        },
+        {
+          "value": "529 Diseases and other conditions of the tongue",
+          "uuid": "60d0bc3c-f82e-5d17-a6e2-b3b08a5f64d8"
+        }
+      ]
+    },
+    {
+      "predicate": "(530-537) Diseases of oesophagus, stomach and duodenum",
+      "entry": [
+        {
+          "value": "530 Diseases of oesophagus",
+          "uuid": "eaceb224-3809-5221-b64e-7a4603502dd5"
+        },
+        {
+          "value": "531 Gastric ulcer",
+          "uuid": "d31772ad-abda-5291-b3ff-d26437e88b78"
+        },
+        {
+          "value": "532 Duodenal ulcer",
+          "uuid": "bf2ec592-f673-5f92-96fb-67b2dcf1a0cf"
+        },
+        {
+          "value": "533 Peptic ulcer, site unspecified",
+          "uuid": "93c34dbf-c9ca-5613-8915-bf99a859822a"
+        },
+        {
+          "value": "534 Gastrojejunal ulcer",
+          "uuid": "c741a1d7-2fb7-5cfa-a136-a80401dcd507"
+        },
+        {
+          "value": "535 Gastritis and duodenitis",
+          "uuid": "4ba797e4-6b56-521b-add9-245c47e839fd"
+        },
+        {
+          "value": "536 Disorders of function of stomach",
+          "uuid": "d7d8805c-bef4-5ee5-a2d7-062e68fdfa35"
+        },
+        {
+          "value": "537 Other disorders of stomach and duodenum",
+          "uuid": "32b50a30-d118-5677-845b-7b3159eb3861"
+        }
+      ]
+    },
+    {
+      "predicate": "(540-543) Appendicitis",
+      "entry": [
+        {
+          "value": "540 Acute appendicitis",
+          "uuid": "68bbc5da-4c72-594d-849f-58f9cc1d7a05"
+        },
+        {
+          "value": "541 Appendicitis, unqualified",
+          "uuid": "d50de913-fe3d-5228-975c-79f4f7431860"
+        },
+        {
+          "value": "542 Other appendicitis",
+          "uuid": "4651fa8e-800a-58bb-9309-f41860722af3"
+        },
+        {
+          "value": "543 Other diseases of appendix",
+          "uuid": "5cc00aa6-8e25-5dad-a792-642bb78476a0"
+        }
+      ]
+    },
+    {
+      "predicate": "(550-553) Hernia of abdominal cavity",
+      "entry": [
+        {
+          "value": "550 Inguinal hernia",
+          "uuid": "240de198-d1b1-5052-baf4-b69856f728e6"
+        },
+        {
+          "value": "551 Other hernia of abdominal cavity, with gangrene",
+          "uuid": "f452d584-cb51-5563-99c2-12141463fdbd"
+        },
+        {
+          "value": "552 Other hernia of abdominal cavity with obstruction, without mention of gangrene",
+          "uuid": "744b5540-fa62-5d8e-bdba-5938c6bc203d"
+        },
+        {
+          "value": "553 Other hernia of abdominal cavity without mention of obstruction or gangrene",
+          "uuid": "4bdd4f38-f324-5f55-a578-868b61cf1d94"
+        }
+      ]
+    },
+    {
+      "predicate": "(555-558) Non-infective enteritis and colitis",
+      "entry": [
+        {
+          "value": "555 Regional enteritis",
+          "uuid": "be8cd47c-2d31-560c-9330-2b7d210a8df8"
+        },
+        {
+          "value": "556 Idiopathic proctocolitis",
+          "uuid": "6de50958-3795-5d66-bc91-ec65494f1b42"
+        },
+        {
+          "value": "557 Vascular insufficiency of intestine",
+          "uuid": "e54ec6cf-ab73-5f56-a2fc-dbb8af5a2235"
+        },
+        {
+          "value": "558 Other non-infective gastro-enteritis and colitis",
+          "uuid": "0bd3eada-f2aa-5743-8e30-20eb77122160"
+        }
+      ]
+    },
+    {
+      "predicate": "(560-569) Other diseases of intestines and peritoneum",
+      "entry": [
+        {
+          "value": "560 Intestinal obstruction without mention of hernia",
+          "uuid": "b25a4e20-ca42-5cc8-a9e8-8b8ab1a702bd"
+        },
+        {
+          "value": "562 Diverticula of intestine",
+          "uuid": "0da97451-01c3-54e9-930d-c6334b3336c8"
+        },
+        {
+          "value": "564 Functional digestive disorders, not elsewhere classified",
+          "uuid": "e96480a1-ea6b-57ac-94e6-3a9ea85af03d"
+        },
+        {
+          "value": "565 Anal fissure and fistula",
+          "uuid": "95ea3218-aabe-5d5e-abba-0f20faed7f5f"
+        },
+        {
+          "value": "566 Abscess of anal and rectal regions",
+          "uuid": "facdd972-52c6-5e7d-b733-58603dddd7c2"
+        },
+        {
+          "value": "567 Peritonitis",
+          "uuid": "2aa6688a-cff7-5a63-bcdb-b42f827ecb57"
+        },
+        {
+          "value": "568 Other disorders of peritoneum",
+          "uuid": "cc7dceb5-fbc7-5bac-922a-79dcaa9f0a8e"
+        },
+        {
+          "value": "569 Other disorders of intestine",
+          "uuid": "0a73b58c-0bb6-57e7-afde-21cca6be6c1b"
+        }
+      ]
+    },
+    {
+      "predicate": "(570-579) Other diseases of digestive system",
+      "entry": [
+        {
+          "value": "570 Acute and subacute necrosis of liver",
+          "uuid": "2790ebc8-06d1-55be-93df-3983b99d5405"
+        },
+        {
+          "value": "571 Chronic liver disease and cirrhosis",
+          "uuid": "707e6382-e821-5746-8b12-4651362d2759"
+        },
+        {
+          "value": "572 Liver abscess and sequelae of chronic liver disease",
+          "uuid": "4020ec2e-3548-5472-88fd-c992e669ab14"
+        },
+        {
+          "value": "573 Other disorders of liver",
+          "uuid": "8dbc4d02-257b-5418-82e9-0a5edd6abcec"
+        },
+        {
+          "value": "574 Cholelithiasis",
+          "uuid": "4bf1136f-c155-56ee-8f03-0b6afcec21f2"
+        },
+        {
+          "value": "575 Other disorders of gallbladder",
+          "uuid": "bd9d39b8-8523-5e19-9390-8fb1c59952a2"
+        },
+        {
+          "value": "576 Other disorders of biliary tract",
+          "uuid": "870e96ec-acb9-59b9-96d1-ba71d995897a"
+        },
+        {
+          "value": "577 Diseases of pancreas",
+          "uuid": "c76da5b0-5007-57d1-a657-171e53ff9718"
+        },
+        {
+          "value": "578 Gastro-intestinal haemorrhage",
+          "uuid": "ea299a48-d2da-50a7-80a5-291c0f8dd3cc"
+        },
+        {
+          "value": "579 Intestinal malabsorption",
+          "uuid": "2dfffe5d-ab7b-5510-a0f7-20a1c989c4e4"
+        }
+      ]
+    },
+    {
+      "predicate": "(580-589) Nephritis, nephrotic syndrome and nephrosis",
+      "entry": [
+        {
+          "value": "580 Acute glomerulonephritis",
+          "uuid": "a1a078df-7b49-5d03-a7cb-53f293b70be8"
+        },
+        {
+          "value": "581 Nephrotic syndrome",
+          "uuid": "9662eac0-f0b3-5cf4-9ea0-102e8a4a0226"
+        },
+        {
+          "value": "582 Chronic glomerulonephritis",
+          "uuid": "0546f079-d6c7-53e0-9fed-7c84727eb4ae"
+        },
+        {
+          "value": "583 Nephritis and nephropathy, not specified as acute or chronic",
+          "uuid": "e780c2ec-88e7-591e-a05f-dcc71de61d98"
+        },
+        {
+          "value": "584 Acute renal failure",
+          "uuid": "c052222b-226c-5562-a742-167b9620b14f"
+        },
+        {
+          "value": "585 Chronic renal failure",
+          "uuid": "f64dee4d-9417-593b-b312-79cc545ce522"
+        },
+        {
+          "value": "586 Renal failure, unspecified",
+          "uuid": "c04f3e49-d680-5888-b699-4de24f040d89"
+        },
+        {
+          "value": "587 Renal sclerosis, unspecified",
+          "uuid": "18362285-c3a0-5f75-8d05-847bafd85c52"
+        },
+        {
+          "value": "588 Disorders resulting from impaired renal function",
+          "uuid": "f199fdcf-6e0f-5988-ab89-343726b220fd"
+        },
+        {
+          "value": "589 Small kidney of unknown cause",
+          "uuid": "2b0011c0-1919-5802-bc9c-065889792b63"
+        }
+      ]
+    },
+    {
+      "predicate": "(590-599) Other diseases of urinary system",
+      "entry": [
+        {
+          "value": "590 Infections of kidney",
+          "uuid": "487a5d6b-a94a-5fbb-9e6b-b758db1901cb"
+        },
+        {
+          "value": "591 Hydronephrosis",
+          "uuid": "8c7271a9-9c97-5470-bb79-26e4bca6c8bd"
+        },
+        {
+          "value": "592 Calculus of kidney and ureter",
+          "uuid": "deb560c2-527e-5949-a8a4-4fd85eccd498"
+        },
+        {
+          "value": "593 Other disorders of kidney and ureter",
+          "uuid": "a38448d3-23f8-56d9-bbfb-e2cb5ab6c400"
+        },
+        {
+          "value": "594 Calculus of lower urinary tract",
+          "uuid": "352fd795-d0df-58a7-b820-d68f1b5a08be"
+        },
+        {
+          "value": "595 Cystitis",
+          "uuid": "bba173c7-e6ee-5b80-a2a1-11dd1e21575f"
+        },
+        {
+          "value": "596 Other disorders of bladder",
+          "uuid": "f7391e76-3cfb-5fe8-93ba-5d8283ee8312"
+        },
+        {
+          "value": "597 Urethritis, not sexually transmitted, and urethral syndrome",
+          "uuid": "cac3c29b-a049-58b8-bca4-2bb393cc52ff"
+        },
+        {
+          "value": "598 Urethral stricture",
+          "uuid": "47a4b0ef-72ec-5d37-90d4-f2dd89247eed"
+        },
+        {
+          "value": "599 Other disorders of urethra and urinary tract",
+          "uuid": "cf636b09-8276-523f-8684-a033bbcfbb3a"
+        }
+      ]
+    },
+    {
+      "predicate": "(600-608) Diseases of male genital organs",
+      "entry": [
+        {
+          "value": "600 Hyperplasia of prostate",
+          "uuid": "f20adf87-ce7d-552f-991a-b3a361aa174c"
+        },
+        {
+          "value": "601 Inflammatory diseases of prostate",
+          "uuid": "c1602ad0-a50e-52be-8641-6021b6b4cc6d"
+        },
+        {
+          "value": "602 Other disorders of prostate",
+          "uuid": "ffcfd7ec-be0b-5c7b-b636-f08d3cd66c76"
+        },
+        {
+          "value": "603 Hydrocele",
+          "uuid": "550ccce4-5f4c-5ad3-ae1c-9f2dfee4f8de"
+        },
+        {
+          "value": "604 Orchitis and epididymitis",
+          "uuid": "b36c18a0-dd10-53e9-a4e5-d0d14757b6d4"
+        },
+        {
+          "value": "605 Redundant prepuce and phimosis",
+          "uuid": "edf8d7f5-8dc3-5f9f-ae19-35c5ccd3aa06"
+        },
+        {
+          "value": "606 Infertility, male",
+          "uuid": "5ef61c18-95d5-5349-811f-e55985b710a6"
+        },
+        {
+          "value": "607 Disorders of penis",
+          "uuid": "3333fd43-1828-56a8-bd7b-0b36c3ae4157"
+        },
+        {
+          "value": "608 Other disorders of male genital organs",
+          "uuid": "cf0ecada-6e92-5616-8a13-45cb2f176148"
+        }
+      ]
+    },
+    {
+      "predicate": "(610-611) Disorders of breast",
+      "entry": [
+        {
+          "value": "610 Benign mammary dysplasias",
+          "uuid": "cc807c54-52c5-5fae-ad02-acf778dc70e4"
+        },
+        {
+          "value": "611 Other disorders of breast",
+          "uuid": "6ac26e69-96c3-5c6b-b961-49d019d3ee37"
+        }
+      ]
+    },
+    {
+      "predicate": "(614-616) Inflammatory disease of female pelvic organs",
+      "entry": [
+        {
+          "value": "614 Inflammatory disease of ovary, Fallopian tube, pelvic cellular tissue and peritoneum",
+          "uuid": "fa9fabba-c376-585e-ab9d-4a453a765f44"
+        },
+        {
+          "value": "615 Inflammatory diseases of uterus, except cervix",
+          "uuid": "4ba2f9f3-b832-5b78-afb5-7434a0a6c343"
+        },
+        {
+          "value": "616 Inflammatory disease of cervix, vagina and vulva",
+          "uuid": "9919b9de-f677-5f7f-9838-b58ae41b5a50"
+        }
+      ]
+    },
+    {
+      "predicate": "(617-629) Other disorders of female genital tract",
+      "entry": [
+        {
+          "value": "617 Endometriosis",
+          "uuid": "413b1b8c-52cc-54bf-a229-40b772ccedea"
+        },
+        {
+          "value": "618 Genital prolapse",
+          "uuid": "2c991b3e-86a5-593d-97c4-8ddb5caba5f2"
+        },
+        {
+          "value": "619 Fistulae involving female genital tract",
+          "uuid": "bd664753-3456-5ea7-b816-e83df12a0a57"
+        },
+        {
+          "value": "620 Noninflammatory disorders of ovary, Fallopian tube and broad ligament",
+          "uuid": "0ddbd0aa-bdaf-5d5e-8ff9-9f7450fc0574"
+        },
+        {
+          "value": "621 Disorders of uterus, not elsewhere classified",
+          "uuid": "ac19c9e2-3bdd-544d-930c-92710606b38c"
+        },
+        {
+          "value": "622 Noninflammatory disorders of cervix",
+          "uuid": "62bc849c-6d06-5b7f-9807-eaf4024c9817"
+        },
+        {
+          "value": "623 Noninflammatory disorders of vagina",
+          "uuid": "0b95abd1-449a-52c8-bdef-6e7ac6e4198a"
+        },
+        {
+          "value": "624 Noninflammatory disorders of vulva and perineum",
+          "uuid": "dd63b11b-6866-5ab1-9a7a-01af98b8b438"
+        },
+        {
+          "value": "625 Pain and other symptoms associated with female genital organs",
+          "uuid": "889d3ab1-7f0b-57c7-a5c3-397277ea5597"
+        },
+        {
+          "value": "626 Disorders of menstruation and other abnormal bleeding from female genital tract",
+          "uuid": "ea03f588-3db3-5359-a9bd-32f3ac436d9d"
+        },
+        {
+          "value": "627 Menopausal and postmenopausal disorders",
+          "uuid": "62aa4564-43d0-5899-b207-2d4ccb06b6b7"
+        },
+        {
+          "value": "628 Infertility, female",
+          "uuid": "474114ab-a693-5010-9747-6a7362cd6320"
+        },
+        {
+          "value": "629 Other disorders of female genital organs",
+          "uuid": "ac508821-50a9-565f-941b-7550d1028c39"
+        }
+      ]
+    },
+    {
+      "predicate": "(630-633) Ectopic and molar pregnancy",
+      "entry": [
+        {
+          "value": "630 Hydatidiform mole",
+          "uuid": "5ca11857-f764-5ff3-8d77-111ab59b492d"
+        },
+        {
+          "value": "631 Other abnormal product of conception",
+          "uuid": "f2bac461-1471-5b64-84b9-281cc21722b9"
+        },
+        {
+          "value": "632 Missed abortion",
+          "uuid": "9e1994e8-cc70-562a-b5fa-6b503c636d0b"
+        },
+        {
+          "value": "633 Ectopic pregnancy",
+          "uuid": "95699d0c-a02f-5ffc-ac12-afd1923231aa"
+        }
+      ]
+    },
+    {
+      "predicate": "(634-639) Other pregnancy with abortive outcome",
+      "entry": [
+        {
+          "value": "634 Spontaneous abortion",
+          "uuid": "b813458e-480d-5b0b-b3cd-ac4ddb1ae006"
+        },
+        {
+          "value": "635 Legally induced abortion",
+          "uuid": "757439f9-b558-5d3e-9c09-52de545ddbc7"
+        },
+        {
+          "value": "636 Illegally induced abortion",
+          "uuid": "d46dea7a-6e12-52ec-9142-6da02e1f3868"
+        },
+        {
+          "value": "637 Unspecified abortion",
+          "uuid": "589dd003-bbdf-5ee1-91d5-fb48e4da557d"
+        },
+        {
+          "value": "638 Failed attempted abortion",
+          "uuid": "f8aacf78-295e-5997-9a8a-37343306331b"
+        },
+        {
+          "value": "639 Complications following abortion and ectopic and molar pregnancies",
+          "uuid": "b7ea434d-d990-527d-9807-949dc72757f9"
+        }
+      ]
+    },
+    {
+      "predicate": "(640-648) Complications mainly related to pregnancy",
+      "entry": [
+        {
+          "value": "640 Haemorrhage in early pregnancy",
+          "uuid": "cfadf425-d61f-54e0-bbdc-70591401d2d5"
+        },
+        {
+          "value": "641 Antepartum haemorrhage, abruptio placentae and placenta praevia",
+          "uuid": "ecc627b5-1bf9-51d7-9750-87c5f96110d9"
+        },
+        {
+          "value": "642 Hypertension complicating pregnancy, childbirth and the puerperium",
+          "uuid": "28957e51-45a6-537b-9c62-59845645052b"
+        },
+        {
+          "value": "643 Excessive vomiting in pregnancy",
+          "uuid": "bca5fb55-418e-530f-a68a-51815f4df16d"
+        },
+        {
+          "value": "644 Early or threatened labour",
+          "uuid": "0741db26-39de-5691-80c4-4a62e22e34fd"
+        },
+        {
+          "value": "645 Prolonged pregnancy",
+          "uuid": "60188c36-afd8-52c7-8809-c6f6edfa1ae5"
+        },
+        {
+          "value": "646 Other complications of pregnancy, not elsewhere classified",
+          "uuid": "688c62c9-a4b5-5e03-b59a-4a1516cb441a"
+        },
+        {
+          "value": "647 Infective and parasitic conditions in the mother classifiable elsewhere but complicating pregnancy, childbirth and the puerperium",
+          "uuid": "b994153e-4f1c-5354-bb8b-db0a8f8e962c"
+        },
+        {
+          "value": "648 Other current conditions in the mother classifiable elsewhere but complicating pregnancy, childbirth and the puerperium",
+          "uuid": "99c34e7a-1636-553f-b3d2-246695865d53"
+        }
+      ]
+    },
+    {
+      "predicate": "(650-659) Normal delivery and other indications for care in pregnancy, labour and delivery",
+      "entry": [
+        {
+          "value": "650 Delivery in a completely normal case",
+          "uuid": "45f4da3d-1181-5afb-8ac0-df71b671e425"
+        },
+        {
+          "value": "651 Multiple gestation",
+          "uuid": "49478c8b-2925-5beb-8232-61dd7996c929"
+        },
+        {
+          "value": "652 Malposition and malpresentation of foetus",
+          "uuid": "11c5f260-acca-5e79-ac5b-779022141c51"
+        },
+        {
+          "value": "653 Disproportion",
+          "uuid": "f29b4c5b-dd87-5535-9217-6977ac47ec3e"
+        },
+        {
+          "value": "654 Abnormality of organs and soft tissues of pelvis",
+          "uuid": "53c9084a-6807-5e88-b4dc-a4e82e6e3be0"
+        },
+        {
+          "value": "655 Known or suspected foetal abnormality affecting management of mother",
+          "uuid": "b05e4fcf-3225-52bc-85c5-b50d0c9083c0"
+        },
+        {
+          "value": "656 Other foetal and placental problems affecting management of mother",
+          "uuid": "79d22757-74fa-5d90-a745-fc04ab1ad64c"
+        },
+        {
+          "value": "657 Polyhydramnios",
+          "uuid": "49622429-cd4f-52e5-8d94-5f9531b7d456"
+        },
+        {
+          "value": "658 Other problems associated with amniotic cavity and membranes",
+          "uuid": "0f01d52c-8150-5fd7-b3f2-387447939666"
+        },
+        {
+          "value": "659 Other indications for care or intervention related to labour and delivery and not elsewhere classified",
+          "uuid": "c6207c4a-684a-5aea-9caa-b848c073a4e4"
+        }
+      ]
+    },
+    {
+      "predicate": "(660-669) Complications occurring mainly in the course of labour and delivery",
+      "entry": [
+        {
+          "value": "660 Obstructed labour",
+          "uuid": "9cc44512-6673-5fad-80d8-bf0f47313b14"
+        },
+        {
+          "value": "661 Abnormality of forces of labour",
+          "uuid": "b9b8bb94-500d-5c26-a609-69dadfebe052"
+        },
+        {
+          "value": "662 Long labour",
+          "uuid": "ce840e6f-0fb1-5acb-bbff-978217108c37"
+        },
+        {
+          "value": "663 Umbilical cord complications",
+          "uuid": "bbb0236e-eaaa-5de9-95a3-0e3479ebdd5b"
+        },
+        {
+          "value": "664 Trauma to perineum and vulva during delivery",
+          "uuid": "0d001cd4-766b-5990-90f0-95efca5248f0"
+        },
+        {
+          "value": "665 Other obstetrical trauma",
+          "uuid": "c925fb46-3e0c-5b57-9522-c29ee6e35aa2"
+        },
+        {
+          "value": "666 Postpartum haemorrhage",
+          "uuid": "afc0c63a-2520-5272-b91e-68f2bc946015"
+        },
+        {
+          "value": "667 Retained placenta or membranes, without haemorrhage",
+          "uuid": "b76cd254-29a3-58b9-aef9-1e939be937cb"
+        },
+        {
+          "value": "668 Complications of the administration of anaesthetic or other sedation in labour and delivery",
+          "uuid": "eb723ea7-0105-53ce-9db4-de98176e0306"
+        },
+        {
+          "value": "669 Other complications of labour and delivery, not elsewhere classified",
+          "uuid": "0711ec50-8473-550f-b36f-4e11be4cea0a"
+        }
+      ]
+    },
+    {
+      "predicate": "(670-677) Complications of the puerperium",
+      "entry": [
+        {
+          "value": "670 Major puerperal infection",
+          "uuid": "0560aacb-ce4b-5509-b552-2deeef521543"
+        },
+        {
+          "value": "671 Venous complications in pregnancy and the puerperium",
+          "uuid": "08b12c76-1011-5538-9b22-68deb9123573"
+        },
+        {
+          "value": "672 Pyrexia of unknown origin during the puerperium",
+          "uuid": "c573ed24-bf1e-5091-ae2b-48135527c76c"
+        },
+        {
+          "value": "673 Obstetrical pulmonary embolism",
+          "uuid": "5aec920b-8534-5b9f-a1b1-74671274a1d3"
+        },
+        {
+          "value": "674 Other and unspecified complications of the puerperium, not elsewhere classified",
+          "uuid": "ee2b3948-d79d-5f11-892c-a3d09be8cf74"
+        },
+        {
+          "value": "675 Infections of the breast and nipple associated with childbirth",
+          "uuid": "6846ff1c-de51-51a4-bd81-4a372e50402f"
+        },
+        {
+          "value": "676 Other disorders of the breast associated with childbirth, and disorders of lactation",
+          "uuid": "79ff05ae-911a-511e-9990-7f9665fce41f"
+        },
+        {
+          "value": "677 Late effect of complication of pregnancy, childbirth and the puerperium",
+          "uuid": "bb902672-2537-5f2b-94c2-b4d652ea3d1d"
+        }
+      ]
+    },
+    {
+      "predicate": "(680-686) Infections of skin and subcutaneous tissue",
+      "entry": [
+        {
+          "value": "680 Carbuncle and furuncle",
+          "uuid": "c7be40c1-ff45-5c15-aed6-39458244b74d"
+        },
+        {
+          "value": "681 Cellulitis and abscess of finger and toe",
+          "uuid": "c7ab8c4d-c1f4-50be-8b80-956286664c85"
+        },
+        {
+          "value": "682 Other cellulitis and abscess",
+          "uuid": "1716c723-cdd7-5625-8d5f-bfbe0af3ad9d"
+        },
+        {
+          "value": "683 Acute lymphadenitis",
+          "uuid": "69da2e4a-7c02-51e4-9e16-8ac9585557da"
+        },
+        {
+          "value": "684 Impetigo",
+          "uuid": "b7d39b9f-936b-5032-a90d-2ea4e74b49b4"
+        },
+        {
+          "value": "685 Pilonidal cyst",
+          "uuid": "4995dac3-dce3-59f6-a307-d682b23a79e0"
+        },
+        {
+          "value": "686 Other local infections of skin and subcutaneous tissue",
+          "uuid": "4054fe61-9c91-5019-bb35-783825ecd2a4"
+        }
+      ]
+    },
+    {
+      "predicate": "(690-698) Other inflammatory conditions of skin and subcutaneous tissue",
+      "entry": [
+        {
+          "value": "690 Erythematosquamous dermatosis",
+          "uuid": "fee65f91-7e40-5239-8613-88ad9e685138"
+        },
+        {
+          "value": "691 Atopic dermatitis and related conditions",
+          "uuid": "cdba82dc-b7f3-5c82-afa3-8088d7d0bf2f"
+        },
+        {
+          "value": "692 Contact dermatitis and other eczema",
+          "uuid": "ac8e5f8b-6608-599c-a24d-d28cef3b347f"
+        },
+        {
+          "value": "693 Dermatitis due to substances taken internally",
+          "uuid": "9026395c-7446-5863-9115-ffb328319b59"
+        },
+        {
+          "value": "694 Bullous dermatoses",
+          "uuid": "cd6a2c16-5de8-50c0-8441-9cc521b583a2"
+        },
+        {
+          "value": "695 Erythematous conditions",
+          "uuid": "87ea1830-b192-5481-8b02-78a9323bdd4a"
+        },
+        {
+          "value": "696 Psoriasis and similar disorders",
+          "uuid": "fead9f9f-56b5-5b54-9c5d-8f00b4b645cb"
+        },
+        {
+          "value": "697 Lichen",
+          "uuid": "f2435621-c426-51d9-8b92-807a32fe72cd"
+        },
+        {
+          "value": "698 Pruritus and related conditions",
+          "uuid": "26503ffb-1a93-515d-ab7e-6e3f2b9af4cb"
+        }
+      ]
+    },
+    {
+      "predicate": "(700-709) Other diseases of skin and subcutaneous tissue",
+      "entry": [
+        {
+          "value": "700 Corns and callosities",
+          "uuid": "35b4040e-4b45-527b-8905-6f28bedd268f"
+        },
+        {
+          "value": "701 Other hypertrophic and atrophic conditions of skin",
+          "uuid": "67b2bb7e-ea11-5fae-9f18-48e1b4c58e3d"
+        },
+        {
+          "value": "702 Other dermatoses",
+          "uuid": "e0662e5b-6e47-5b45-8a84-76d52a4330fc"
+        },
+        {
+          "value": "703 Diseases of nail",
+          "uuid": "1b55b519-0de4-5b53-a5d5-3361cf858ba6"
+        },
+        {
+          "value": "704 Diseases of hair and hair follicles",
+          "uuid": "6e1cb4a6-c4ab-5548-ae6d-a38df5633bbb"
+        },
+        {
+          "value": "705 Disorders of sweat glands",
+          "uuid": "9c3f425a-dd5a-569e-ba10-6d6eeeb974d4"
+        },
+        {
+          "value": "706 Diseases of sebaceous glands",
+          "uuid": "90bbc536-8800-57e7-b498-16512162c7be"
+        },
+        {
+          "value": "707 Chronic ulcer of skin",
+          "uuid": "dfed2e39-67fa-5028-9581-1057c6a2bf0a"
+        },
+        {
+          "value": "708 Urticaria",
+          "uuid": "ed2e297f-49bc-58d6-9434-ea8932e55250"
+        },
+        {
+          "value": "709 Other disorders of skin and subcutaneous tissue",
+          "uuid": "5f6130b7-568e-5cc3-90a0-0fdfb417d9be"
+        }
+      ]
+    },
+    {
+      "predicate": "(710-719) Arthropathies and related disorders",
+      "entry": [
+        {
+          "value": "710 Diffuse diseases of connective tissue",
+          "uuid": "7b313435-9e91-513e-b965-128fad120352"
+        },
+        {
+          "value": "711 Arthropathy associated with infections",
+          "uuid": "9e66bc00-4db7-5bc1-8892-412ffe671255"
+        },
+        {
+          "value": "712 Crystal arthropathies",
+          "uuid": "7a737331-a90d-5b97-bb3e-dc9cc2349a9a"
+        },
+        {
+          "value": "713 Arthropathy associated with other disorders classified elsewhere",
+          "uuid": "8ae02328-3501-5f25-bb5f-f642adb0ce39"
+        },
+        {
+          "value": "714 Rheumatoid arthritis and other inflammatory polyarthropathies",
+          "uuid": "473dbec1-4238-5a32-84bc-9224b56579df"
+        },
+        {
+          "value": "715 Osteo-arthrosis and allied disorders",
+          "uuid": "055850ff-0096-505a-928c-c8dddf5abd8e"
+        },
+        {
+          "value": "716 Other and unspecified arthropathies",
+          "uuid": "e68dd70a-0d86-5a01-928e-977686b57c6e"
+        },
+        {
+          "value": "717 Internal derangement of knee",
+          "uuid": "3f00bfcd-8c5c-5d8a-9afe-073e18995a45"
+        },
+        {
+          "value": "718 Other derangement of joint",
+          "uuid": "b498ac09-cb0d-5205-b396-fcdea4e98ec4"
+        },
+        {
+          "value": "719 Other and unspecified disorder of joint",
+          "uuid": "912d5131-e238-580d-8ed3-abc72d7f4967"
+        }
+      ]
+    },
+    {
+      "predicate": "(720-724) Dorsopathies",
+      "entry": [
+        {
+          "value": "720 Ankylosing spondylitis and other inflammatory spondylopathies",
+          "uuid": "cf791020-d16d-5db4-86b7-b11eb96a3fe6"
+        },
+        {
+          "value": "721 Spondylosis and allied disorders",
+          "uuid": "8a915290-7081-5d69-9065-1687dd52a6f8"
+        },
+        {
+          "value": "722 Intervertebral disk disorders",
+          "uuid": "0dc95a64-a74a-5a7d-8343-8fedf31cff78"
+        },
+        {
+          "value": "723 Other disorders of cervical region",
+          "uuid": "c9014377-b933-59e1-b936-cc6a2a9e9ed9"
+        },
+        {
+          "value": "724 Other and unspecified disorders of back",
+          "uuid": "5839eea2-e738-5f89-887b-9475f3741b39"
+        }
+      ]
+    },
+    {
+      "predicate": "(725-729) Rheumatism, excluding the back",
+      "entry": [
+        {
+          "value": "725 Polymyalgia rheumatica",
+          "uuid": "dbc49663-7590-54cd-957a-a6dc6f7d4ba6"
+        },
+        {
+          "value": "726 Peripheral enthesopathies and allied syndromes",
+          "uuid": "19ce8e3d-bbce-5d7b-b215-0f946bab2925"
+        },
+        {
+          "value": "727 Other disorders of synovium, tendon and bursa",
+          "uuid": "6925db3a-3761-5795-9f65-b7deb4788cd5"
+        },
+        {
+          "value": "728 Disorders of muscle, ligament and fascia",
+          "uuid": "c0574a93-a730-5469-9a60-9d2da990ef85"
+        },
+        {
+          "value": "729 Other disorders of soft tissues",
+          "uuid": "3713bc51-c6e2-54b5-8294-7839afd19076"
+        }
+      ]
+    },
+    {
+      "predicate": "(730-739) Osteopathies, chondropathies and acquired musculoskeletal deformities",
+      "entry": [
+        {
+          "value": "730 Osteomyelitis, periostitis and other infections involving bone",
+          "uuid": "f70be596-e08e-5fe3-9998-f1cdaf511b7d"
+        },
+        {
+          "value": "731 Osteitis deformans and osteopathies associated with other disorders classified elsewhere",
+          "uuid": "df0933c2-29a5-508a-8983-9d456d10bc06"
+        },
+        {
+          "value": "732 Osteochondropathies",
+          "uuid": "22aef257-1e67-53a3-a14d-d86276ef9b04"
+        },
+        {
+          "value": "733 Other disorders of bone and cartilage",
+          "uuid": "5dd969cc-7394-55fb-b02d-aa36a72ed8f6"
+        },
+        {
+          "value": "734 Flat foot",
+          "uuid": "5e4b1223-5ffe-555b-aa69-443bf427e488"
+        },
+        {
+          "value": "735 Acquired deformities of toe",
+          "uuid": "aca32da9-c1a7-5b3b-a0a7-111b0016c3e9"
+        },
+        {
+          "value": "736 Other acquired deformities of limbs",
+          "uuid": "16cbb550-8d06-5984-be17-c768380589d0"
+        },
+        {
+          "value": "737 Curvature of spine",
+          "uuid": "e238a412-7d5b-5b8c-bbc2-ac885e24b541"
+        },
+        {
+          "value": "738 Other acquired deformity",
+          "uuid": "c5d844ad-1707-58d5-8333-a9bf2a914e63"
+        },
+        {
+          "value": "739 Nonallopathic lesions, not elsewhere classified",
+          "uuid": "033c02f2-0c0e-57f9-a169-9405f52162c9"
+        }
+      ]
+    },
+    {
+      "predicate": "(740-759) Congenital anomalies",
+      "entry": [
+        {
+          "value": "740 Anencephalus and similar anomalies",
+          "uuid": "227475de-b8d8-5e1c-b838-12071f6fc864"
+        },
+        {
+          "value": "741 Spina bifida",
+          "uuid": "f9310af6-3168-59b1-a0de-251250281aee"
+        },
+        {
+          "value": "742 Other congenital anomalies of nervous system",
+          "uuid": "513f8c0a-ce22-5dd9-95c5-8f5e1007c407"
+        },
+        {
+          "value": "743 Congenital anomalies of eye",
+          "uuid": "307908d5-89dd-5c25-801a-fe9ba9abe958"
+        },
+        {
+          "value": "744 Congenital anomalies of ear, face and neck",
+          "uuid": "c8ccbd8a-48be-5dea-a06a-c5f98df93f25"
+        },
+        {
+          "value": "745 Bulbus cordis anomalies and anomalies of cardiac septal closure",
+          "uuid": "2d7c5ee4-7b98-5081-843d-951c6f0672c2"
+        },
+        {
+          "value": "746 Other congenital anomalies of heart",
+          "uuid": "d6d7932e-281f-5161-9b6f-bd436917b5cd"
+        },
+        {
+          "value": "747 Other congenital anomalies of circulatory system",
+          "uuid": "58c46244-c594-5b01-88a9-6a405d5538bd"
+        },
+        {
+          "value": "748 Congenital anomalies of respiratory system",
+          "uuid": "977ca7a0-1a48-5318-9330-2e5c16fddbeb"
+        },
+        {
+          "value": "749 Cleft palate and cleft lip",
+          "uuid": "95f3c788-df8e-5f9d-af83-48fa6700e1b7"
+        },
+        {
+          "value": "750 Other congenital anomalies of upper alimentary tract",
+          "uuid": "2f370e49-c554-55b5-8eb2-4901233d3aa0"
+        },
+        {
+          "value": "751 Other congenital anomalies of digestive system",
+          "uuid": "acf91534-fa27-55ce-b942-df65480fac66"
+        },
+        {
+          "value": "752 Congenital anomalies of genital organs",
+          "uuid": "6113fa24-2413-53a2-af6c-9e0830d8f641"
+        },
+        {
+          "value": "753 Congenital anomalies of urinary system",
+          "uuid": "76567cfa-0d0d-56a9-9f70-ba649a7ba1d3"
+        },
+        {
+          "value": "754 Certain congenital musculoskeletal deformities",
+          "uuid": "4647f496-3f2a-52f2-bc25-19040236f63b"
+        },
+        {
+          "value": "755 Other congenital anomalies of limbs",
+          "uuid": "cf875749-4042-59be-85c7-503ca6df997f"
+        },
+        {
+          "value": "756 Other congenital musculoskeletal anomalies",
+          "uuid": "b1e19832-1dc2-599f-a891-7e79b64565dc"
+        },
+        {
+          "value": "757 Congenital anomalies of the integument",
+          "uuid": "4af33383-7309-50f6-9ae5-2aebbf2c09f4"
+        },
+        {
+          "value": "758 Chromosomal anomalies",
+          "uuid": "a2e94f4e-10c3-5d9c-922b-7ae408c61583"
+        },
+        {
+          "value": "759 Other and unspecified congenital anomalies",
+          "uuid": "11d2ba4a-c679-5eaa-bbaa-b8a4d13ab06e"
+        }
+      ]
+    },
+    {
+      "predicate": "(760-763) Maternal causes of perinatal morbidity and mortality",
+      "entry": [
+        {
+          "value": "760 Foetus or newborn affected by maternal conditions which may be unrelated to present pregnancy",
+          "uuid": "2aec25a0-938c-5402-88d6-903914ff55e5"
+        },
+        {
+          "value": "761 Foetus or newborn affected by maternal complications of pregnancy",
+          "uuid": "d7611a23-ab37-5d7d-b92f-5a533d43be9c"
+        },
+        {
+          "value": "762 Foetus or newborn affected by complications of placenta, cord and membranes",
+          "uuid": "2bc94947-03d1-58e0-9de2-4a3617bd07e4"
+        },
+        {
+          "value": "763 Foetus or newborn affected by other complications of labour and delivery",
+          "uuid": "4b776bda-4b20-5e64-8f48-66954ba6be48"
+        }
+      ]
+    },
+    {
+      "predicate": "(764-779) Other conditions originating in the perinatal period",
+      "entry": [
+        {
+          "value": "764 Slow foetal growth and foetal malnutrition",
+          "uuid": "d7979984-10a5-5a97-a449-1579117c04df"
+        },
+        {
+          "value": "765 Disorders relating to short gestation and unspecified low birthweight",
+          "uuid": "021b1699-a76f-55ff-8955-85b322ec8247"
+        },
+        {
+          "value": "766 Disorders relating to long gestation and high birthweight",
+          "uuid": "9a1a3112-a8e5-55cb-840a-6af6fd4ec556"
+        },
+        {
+          "value": "767 Birth trauma",
+          "uuid": "1eac226e-5384-52a6-8502-fc0bbc4fdfcd"
+        },
+        {
+          "value": "768 Intra-uterine hypoxia and birth asphyxia",
+          "uuid": "444c1b2f-9bb2-5689-9bf8-8f4080031295"
+        },
+        {
+          "value": "769 Respiratory distress syndrome",
+          "uuid": "0179ddab-6456-5cc6-840c-314f9091cca6"
+        },
+        {
+          "value": "770 Other respiratory conditions of foetus and newborn",
+          "uuid": "794120dd-8fb8-5cc4-a534-c6f48084f92e"
+        },
+        {
+          "value": "771 Infections specific to the perinatal period",
+          "uuid": "d7268d32-7013-57c9-9d5c-b3d6c4009ee5"
+        },
+        {
+          "value": "772 Foetal and neonatal haemorrhage",
+          "uuid": "a2a37262-dbf8-5b11-9d26-9a32efd3dcb8"
+        },
+        {
+          "value": "773 Haemolytic disease of foetus or newborn, due to isoimmunisation",
+          "uuid": "635d077a-bd1e-5a5a-86e9-c1c633255734"
+        },
+        {
+          "value": "774 Other perinatal jaundice",
+          "uuid": "abf28007-4f95-5246-9fa0-4e46ace8a2c8"
+        },
+        {
+          "value": "775 Endocrine and metabolic disturbances specific to the foetus and newborn",
+          "uuid": "7517f6ed-34dc-5822-aa34-19d0aca6e123"
+        },
+        {
+          "value": "776 Haematological disorders of foetus and newborn",
+          "uuid": "f98988c3-acd4-50c9-aca0-b4026d347ad7"
+        },
+        {
+          "value": "777 Perinatal disorders of digestive system",
+          "uuid": "0902c434-7197-527a-9b10-e3c34769db89"
+        },
+        {
+          "value": "778 Conditions involving the integument and temperature regulation of foetus and newborn",
+          "uuid": "93f93108-97a5-5468-9f78-ea22e0f21fe1"
+        },
+        {
+          "value": "779 Other and ill-defined conditions originating in the perinatal period",
+          "uuid": "91803331-e11e-57cb-ab36-d59f0349afa8"
+        }
+      ]
+    },
+    {
+      "predicate": "(780-789) Symptoms",
+      "entry": [
+        {
+          "value": "780 General symptoms",
+          "uuid": "8f3d75e0-e94a-58bb-b4ea-13fe25c4b6ea"
+        },
+        {
+          "value": "781 Symptoms involving nervous and musculoskeletal systems",
+          "uuid": "18960bd6-eca7-5191-b0c0-17ec31275aa9"
+        },
+        {
+          "value": "782 Symptoms involving skin and other integumentary tissue",
+          "uuid": "37fec125-550d-5097-8bf0-4e50db20b5d2"
+        },
+        {
+          "value": "783 Symptoms concerning nutrition, metabolism and development",
+          "uuid": "8115f5d8-269a-5f3c-8da6-2414383b3289"
+        },
+        {
+          "value": "784 Symptoms involving head and neck",
+          "uuid": "e7b3f6ab-89e9-5073-93dc-be170280d80c"
+        },
+        {
+          "value": "785 Symptoms involving cardiovascular system",
+          "uuid": "9ce64c4a-1979-5d52-a9d3-f7986de59bc0"
+        },
+        {
+          "value": "786 Symptoms involving respiratory system and other chest symptoms",
+          "uuid": "cdc9f362-4b00-5b3d-9f2b-55306f153736"
+        },
+        {
+          "value": "787 Symptoms involving digestive system",
+          "uuid": "6212c5e9-d50b-55ab-b874-2124c7cffd96"
+        },
+        {
+          "value": "788 Symptoms involving urinary system",
+          "uuid": "ce5fba4d-7d14-5747-834f-4e8ff0172ded"
+        },
+        {
+          "value": "789 Other symptoms involving abdomen and pelvis",
+          "uuid": "bb804793-9a41-57a4-9f2d-405208736b11"
+        }
+      ]
+    },
+    {
+      "predicate": "(790-796) Nonspecific abnormal findings",
+      "entry": [
+        {
+          "value": "790 Nonspecific findings on examination of blood",
+          "uuid": "0bb48c96-0ece-57a2-8805-4d47c1821189"
+        },
+        {
+          "value": "791 Nonspecific findings on examination of urine",
+          "uuid": "b86249a9-8cbd-59d5-8e8f-2b22bd061158"
+        },
+        {
+          "value": "792 Nonspecific abnormal findings in other body substances",
+          "uuid": "d1b240e6-51cb-554b-ac85-f60f38bbb7f0"
+        },
+        {
+          "value": "793 Nonspecific abnormal findings on radiological and other examination of body structure",
+          "uuid": "fec5253e-3119-554c-b8c3-c471f8c565fc"
+        },
+        {
+          "value": "794 Nonspecific abnormal results of function studies",
+          "uuid": "5c9b6ffa-e10b-5299-8091-07b526460b22"
+        },
+        {
+          "value": "795 Nonspecific abnormal histological and immunological findings",
+          "uuid": "6e875870-76bb-59b6-837d-d2f4b45422d1"
+        },
+        {
+          "value": "796 Other nonspecific abnormal findings",
+          "uuid": "ce4fc7d9-f4c3-5789-af0e-afb0e478c676"
+        }
+      ]
+    },
+    {
+      "predicate": "(797-799) Ill-defined and unknown causes of morbidity and mortality",
+      "entry": [
+        {
+          "value": "797 Senility without mention of psychosis",
+          "uuid": "f72e860c-0b09-518f-b2a0-4fb580a4ba8c"
+        },
+        {
+          "value": "798 Sudden death, cause unknown",
+          "uuid": "10b3c71f-65f0-5170-978f-2e552d61c202"
+        },
+        {
+          "value": "799 Other ill-defined and unknown causes of morbidity and mortality",
+          "uuid": "711b6cd0-01df-5d61-bdbf-625ad176e2e1"
+        }
+      ]
+    },
+    {
+      "predicate": "(800-804) Fracture of skull",
+      "entry": [
+        {
+          "value": "800 Fracture of vault of skull",
+          "uuid": "008860a8-0611-5581-a9e1-6ef34097eda0"
+        },
+        {
+          "value": "801 Fracture of base of skull",
+          "uuid": "f8b0169a-7b51-5fd5-9d21-68e41540444e"
+        },
+        {
+          "value": "802 Fracture of face bones",
+          "uuid": "acc21602-a6df-50fb-9dc8-a9c01c3f3405"
+        },
+        {
+          "value": "803 Other and unqualified skull fractures",
+          "uuid": "4ae4d47a-ca7e-551f-987d-5a5297d8a3d4"
+        },
+        {
+          "value": "804 Multiple fractures involving skull or face with other bones",
+          "uuid": "f84070a3-5218-5a0f-930f-9895ac169e66"
+        }
+      ]
+    },
+    {
+      "predicate": "(805-809) Fracture of neck and trunk",
+      "entry": [
+        {
+          "value": "805 Fracture of vertebral column without mention of spinal cord lesion",
+          "uuid": "5fca0321-31d5-5ca4-b6ec-f5021a80d70a"
+        },
+        {
+          "value": "806 Fracture of vertebral column with spinal cord lesion",
+          "uuid": "61f71cdf-6108-5a45-9c6f-95d9f24a6948"
+        },
+        {
+          "value": "807 Fracture of rib(s), sternum, larynx and trachea",
+          "uuid": "56d67baa-944e-534f-b63a-30f980bd66da"
+        },
+        {
+          "value": "808 Fracture of pelvis",
+          "uuid": "03fd5411-1d15-5167-b8bd-0ae17c0b8d86"
+        },
+        {
+          "value": "809 Ill-defined fractures of trunk",
+          "uuid": "a820d350-f3e3-5596-b206-75ebe1742afe"
+        }
+      ]
+    },
+    {
+      "predicate": "(810-819) Fracture of upper limb",
+      "entry": [
+        {
+          "value": "810 Fracture of clavicle",
+          "uuid": "9678b056-d6bd-546c-ad1a-3e0bc535d01a"
+        },
+        {
+          "value": "811 Fracture of scapula",
+          "uuid": "814b59f2-f290-54f2-9921-a08a8c498c72"
+        },
+        {
+          "value": "812 Fracture of humerus",
+          "uuid": "2be95df6-13c6-54a2-855c-fc9c18396801"
+        },
+        {
+          "value": "813 Fracture of radius and ulna",
+          "uuid": "52923841-6041-57d9-9dd0-8846b31fcbae"
+        },
+        {
+          "value": "814 Fracture of carpal bone(s)",
+          "uuid": "22614a5e-eb8e-5237-a33e-d3e6662f638d"
+        },
+        {
+          "value": "815 Fracture of metacarpal bone(s)",
+          "uuid": "548f06b9-1f60-5f0e-b4b0-17728aa1beeb"
+        },
+        {
+          "value": "816 Fracture of one or more phalanges of hand",
+          "uuid": "c5e4c83a-9405-5943-98f8-668d718574ce"
+        },
+        {
+          "value": "817 Multiple fractures of hand bones",
+          "uuid": "2d330a18-647d-5b5e-955a-07da8bc651c1"
+        },
+        {
+          "value": "818 Ill-defined fractures of upper limb",
+          "uuid": "881ca143-17cb-524a-a1a3-d26ff52777fb"
+        },
+        {
+          "value": "819 Multiple fractures involving both upper limbs and upper limb with rib(s) and sternum",
+          "uuid": "309deeba-d9af-5dca-bf00-67a5f2298589"
+        }
+      ]
+    },
+    {
+      "predicate": "(820-829) Fracture of lower limb",
+      "entry": [
+        {
+          "value": "820 Fracture of neck of femur",
+          "uuid": "90faf919-e65e-5753-b099-bcce05e9006c"
+        },
+        {
+          "value": "821 Fracture of other and unspecified parts of femur",
+          "uuid": "e7f6048a-0ab5-5578-a197-311fe36ad292"
+        },
+        {
+          "value": "822 Fracture of patella",
+          "uuid": "16c4b76a-53de-555c-9e11-49b865daad0a"
+        },
+        {
+          "value": "823 Fracture of tibia and fibula",
+          "uuid": "be6d5415-b832-5634-a19f-a64dbc373fdd"
+        },
+        {
+          "value": "824 Fracture of ankle",
+          "uuid": "4cf3457b-ae2d-5920-9256-5929f3c45ee6"
+        },
+        {
+          "value": "825 Fracture of one or more tarsal and metatarsal bones",
+          "uuid": "2268a109-8404-5da6-aeee-c1deea9d5d44"
+        },
+        {
+          "value": "826 Fracture of one or more phalanges of foot",
+          "uuid": "e2f3477b-0a30-5a65-a466-9890d4e0656a"
+        },
+        {
+          "value": "827 Other, multiple and ill-defined fractures of lower limb",
+          "uuid": "9ed05aed-e2aa-505f-aaab-29283050b847"
+        },
+        {
+          "value": "828 Multiple fractures involving both lower limbs, lower with upper limb and lower limb(s) with rib(s) and sternum",
+          "uuid": "459182e9-27cb-55d5-8b37-f73283718593"
+        },
+        {
+          "value": "829 Fracture of unspecified bones",
+          "uuid": "22435a1e-4f27-5454-8950-52fadef69d77"
+        }
+      ]
+    },
+    {
+      "predicate": "(830-839) Dislocation",
+      "entry": [
+        {
+          "value": "830 Dislocation of jaw",
+          "uuid": "b9977790-d1e8-52f9-8caf-bf718b15fb0c"
+        },
+        {
+          "value": "831 Dislocation of shoulder",
+          "uuid": "7a43e0fd-e69a-5fa3-b3e9-c2ca43445cf4"
+        },
+        {
+          "value": "832 Dislocation of elbow",
+          "uuid": "2253dd78-2d51-58de-8a28-f6a36df7ccf7"
+        },
+        {
+          "value": "833 Dislocation of wrist",
+          "uuid": "d82869b8-7b9f-52ee-abb9-557d33ff7421"
+        },
+        {
+          "value": "834 Dislocation of finger",
+          "uuid": "191b35b7-c411-5aa0-bc03-570385b03179"
+        },
+        {
+          "value": "835 Dislocation of hip",
+          "uuid": "35113a61-ba91-5507-b442-85456ee43a30"
+        },
+        {
+          "value": "836 Dislocation of knee",
+          "uuid": "a59af0f7-2d65-5423-a93c-ddc7d5fbd507"
+        },
+        {
+          "value": "837 Dislocation of ankle",
+          "uuid": "520cd70f-b36b-5f2f-916d-5476e9bcdab6"
+        },
+        {
+          "value": "838 Dislocation of foot",
+          "uuid": "476fe860-9dc8-5e37-a867-24b941069f9c"
+        },
+        {
+          "value": "839 Other, multiple and ill-defined dislocations",
+          "uuid": "36c0c65b-1b25-5b12-b6af-f6d6d97e08ea"
+        }
+      ]
+    },
+    {
+      "predicate": "(840-848) Sprains and strains of joints and adjacent muscles",
+      "entry": [
+        {
+          "value": "840 Sprains and strains of shoulder and upper arm",
+          "uuid": "9222b5a3-ca6a-5932-9f8b-5ab5c2daf779"
+        },
+        {
+          "value": "841 Sprains and strains of elbow and forearm",
+          "uuid": "d2f79ad5-824f-5b67-bbeb-2d635046d150"
+        },
+        {
+          "value": "842 Sprains and strains of wrist and hand",
+          "uuid": "413fd15c-ef43-5355-ad1f-871fe20d3b79"
+        },
+        {
+          "value": "843 Sprains and strains of hip and thigh",
+          "uuid": "a0af05e2-8996-551e-a263-ce861e1f9bc7"
+        },
+        {
+          "value": "844 Sprains and strains of knee and leg",
+          "uuid": "fe5a7da2-8e35-592b-8668-bb666f562575"
+        },
+        {
+          "value": "845 Sprains and strains of ankle and foot",
+          "uuid": "8200d574-c1a2-5a75-9162-4f9bda2839d8"
+        },
+        {
+          "value": "846 Sprains and strains of sacro-iliac region",
+          "uuid": "3a18d83c-e5b7-5311-b59f-6684d4fa0737"
+        },
+        {
+          "value": "847 Sprains and strains of other and unspecified parts of back",
+          "uuid": "fc431573-35e1-5d95-b9a8-44d2ab828ab0"
+        },
+        {
+          "value": "848 Other and ill-defined sprains and strains",
+          "uuid": "8e3ce408-90ee-55a5-a9a8-3d4a7e3a551f"
+        }
+      ]
+    },
+    {
+      "predicate": "(850-854) Intracranial injury, excluding those with skull fracture",
+      "entry": [
+        {
+          "value": "850 Concussion",
+          "uuid": "493a50b0-3c3b-5125-80ed-cfa147bd4622"
+        },
+        {
+          "value": "851 Cerebral laceration and contusion",
+          "uuid": "f01e7995-d822-5341-80ad-46a0a5e07249"
+        },
+        {
+          "value": "852 Subarachnoid, subdural and extradural haemorrhage, following injury",
+          "uuid": "4f1d87c4-781c-5255-bfff-ae0a4c94f542"
+        },
+        {
+          "value": "853 Other and unspecified intracranial haemorrhage following injury",
+          "uuid": "307b6274-c824-5532-a480-b62a8570df64"
+        },
+        {
+          "value": "854 Intracranial injury of other and unspecified nature",
+          "uuid": "a398c196-e137-5325-90fe-f84d64474a35"
+        }
+      ]
+    },
+    {
+      "predicate": "(860-869) Internal injury of chest, abdomen and pelvis",
+      "entry": [
+        {
+          "value": "860 Traumatic pneumothorax and haemothorax",
+          "uuid": "30abfb62-8e7c-5efa-910c-76917a41b426"
+        },
+        {
+          "value": "861 Injury to heart and lung",
+          "uuid": "a76e706a-f795-530f-bef6-6a0e6f4b0389"
+        },
+        {
+          "value": "862 Injury to other and unspecified intrathoracic organs",
+          "uuid": "db1df0eb-7cd1-550d-ac8b-33f6cec0bd54"
+        },
+        {
+          "value": "863 Injury to gastro-intestinal tract",
+          "uuid": "c9a81fef-287c-52e2-9172-b887c242b376"
+        },
+        {
+          "value": "864 Injury to liver",
+          "uuid": "81f98c61-a4b7-57f4-bd72-c186abf4686a"
+        },
+        {
+          "value": "865 Injury to spleen",
+          "uuid": "e0b06fae-e79d-5134-b759-fc9999cace43"
+        },
+        {
+          "value": "866 Injury to kidney",
+          "uuid": "03b5c454-64ce-51c9-9989-5f30d164d886"
+        },
+        {
+          "value": "867 Injury to pelvic organs",
+          "uuid": "0a2c2611-4112-5e65-8864-0f92d5c3b591"
+        },
+        {
+          "value": "868 Injury to other intra-abdominal organs",
+          "uuid": "a05df302-7ab5-5a91-9919-7b5043e70be1"
+        },
+        {
+          "value": "869 Internal injury to unspecified or ill-defined organs",
+          "uuid": "40329936-0b7c-5098-a1b6-845dc1179022"
+        }
+      ]
+    },
+    {
+      "predicate": "(870-879) Open wound of head, neck and trunk",
+      "entry": [
+        {
+          "value": "870 Open wound of ocular adnexa",
+          "uuid": "ddc257db-f97b-5c67-8058-b728376da6ab"
+        },
+        {
+          "value": "871 Open wound of eyeball",
+          "uuid": "92560126-8f59-586d-b527-7df3b49110d9"
+        },
+        {
+          "value": "872 Open wound of ear",
+          "uuid": "0fa870e7-64e0-545e-ae8c-12a879c1778d"
+        },
+        {
+          "value": "873 Other open wound of head",
+          "uuid": "c595e4e2-48fb-5e16-85fa-513af8eefc21"
+        },
+        {
+          "value": "874 Open wound of neck",
+          "uuid": "ad4692ae-f371-54cb-8022-22ebbaed17c9"
+        },
+        {
+          "value": "875 Open wound of chest (wall)",
+          "uuid": "9f527162-dbda-5663-9443-66d790c81d1d"
+        },
+        {
+          "value": "876 Open wound of back",
+          "uuid": "83cb2214-5360-5a94-91d1-d2fdadd057b1"
+        },
+        {
+          "value": "877 Open wound of buttock",
+          "uuid": "a10fe738-5ca9-5311-a1a2-27435c1fc9e5"
+        },
+        {
+          "value": "878 Open wound of genital organs (external), including traumatic amputation",
+          "uuid": "8796eb71-8735-50c6-af8d-dde2170e03e8"
+        },
+        {
+          "value": "879 Open wound of other and unspecified sites, except limbs",
+          "uuid": "2cbfb954-c126-592b-81e2-bb375ca000a8"
+        }
+      ]
+    },
+    {
+      "predicate": "(880-887) Open wound of upper limb",
+      "entry": [
+        {
+          "value": "880 Open wound of shoulder and upper arm",
+          "uuid": "143ce716-a666-5427-86e9-679caeb1c73d"
+        },
+        {
+          "value": "881 Open wound of elbow, forearm and wrist",
+          "uuid": "1e671c94-d988-5d39-a2a5-0fa019b746a6"
+        },
+        {
+          "value": "882 Open wound of hand except finger(s) alone",
+          "uuid": "6327f2b7-b01c-55ac-91ef-3bda39a5544f"
+        },
+        {
+          "value": "883 Open wound of finger(s)",
+          "uuid": "a660349d-ffac-5265-a4e5-19c68a8719e6"
+        },
+        {
+          "value": "884 Multiple and unspecified open wound of upper limb",
+          "uuid": "17d75990-97b9-5b65-bd5d-197e40cf6e5f"
+        },
+        {
+          "value": "885 Traumatic amputation of thumb (complete) (partial)",
+          "uuid": "3ba86a0e-638f-5201-a44a-7b414a344104"
+        },
+        {
+          "value": "886 Traumatic amputation of other finger(s) (complete) (partial)",
+          "uuid": "24cbc096-ed43-5711-adad-0ea18c59cbd8"
+        },
+        {
+          "value": "887 Traumatic amputation of arm and hand (complete) (partial)",
+          "uuid": "ffcc2eab-95e7-5d4a-bc47-244560db1f12"
+        }
+      ]
+    },
+    {
+      "predicate": "(890-897) Open wound of lower limb",
+      "entry": [
+        {
+          "value": "890 Open wound of hip and thigh",
+          "uuid": "df9c9605-ba56-5816-97d8-1ae7a2b4fbe9"
+        },
+        {
+          "value": "891 Open wound of knee, leg [except thigh] and ankle",
+          "uuid": "bd1b8251-63c2-5e63-9803-97b8ce581902"
+        },
+        {
+          "value": "892 Open wound of foot except toe(s) alone",
+          "uuid": "2122a7f6-b155-5dbc-b198-946a6db27f4b"
+        },
+        {
+          "value": "893 Open wound of toe(s)",
+          "uuid": "926bb0a7-bc8f-5d46-b9ae-f8107c566e07"
+        },
+        {
+          "value": "894 Multiple and unspecified open wound of lower limb",
+          "uuid": "676784c8-3632-5e69-a9aa-53aff1bff6b0"
+        },
+        {
+          "value": "895 Traumatic amputation of toe(s) (complete) (partial)",
+          "uuid": "b8744ca0-1b6f-58cf-a84a-265234eaad7c"
+        },
+        {
+          "value": "896 Traumatic amputation of foot (complete) (partial)",
+          "uuid": "f57baabc-9766-5ff3-aee0-e5fa6886de66"
+        },
+        {
+          "value": "897 Traumatic amputation of leg(s) (complete) (partial)",
+          "uuid": "1d779004-31bb-54ac-9fc1-4454187aa24c"
+        }
+      ]
+    },
+    {
+      "predicate": "(900-904) Injury to blood vessels",
+      "entry": [
+        {
+          "value": "900 Injury to blood vessels of head and neck",
+          "uuid": "16e04d3a-c54c-5c42-9c3a-5455ea591756"
+        },
+        {
+          "value": "901 Injury to blood vessels of thorax",
+          "uuid": "df3d1dff-9219-5c88-ba61-0ea5565ca9a7"
+        },
+        {
+          "value": "902 Injury to blood vessels of abdomen and pelvis",
+          "uuid": "de81cc1e-0ba3-5dc8-b8de-bc21da56ad77"
+        },
+        {
+          "value": "903 Injury to blood vessels of upper extremity",
+          "uuid": "284ef1f1-d7a0-5fe1-a84b-20c7326b33e4"
+        },
+        {
+          "value": "904 Injury to blood vessels of lower extremity and unspecified sites",
+          "uuid": "d29b7abe-93fe-5f67-94f1-ece209066874"
+        }
+      ]
+    },
+    {
+      "predicate": "(905-909) Late effects of injuries, poisonings, toxic effects and other external causes",
+      "entry": [
+        {
+          "value": "905 Late effects of musculoskeletal and connective tissue injuries",
+          "uuid": "bbad0301-466b-5fef-be21-97a8cc15dd64"
+        },
+        {
+          "value": "906 Late effects of injuries to skin and subcutaneous tissues",
+          "uuid": "a5187dad-78ca-5f17-b182-1602f819ea30"
+        },
+        {
+          "value": "907 Late effects of injuries to the nervous system",
+          "uuid": "37320f07-f3e9-571a-8980-7db27d49df3e"
+        },
+        {
+          "value": "908 Late effects of other and unspecified injuries",
+          "uuid": "5ee2df0d-dd17-5a82-b7c2-723323b3c230"
+        },
+        {
+          "value": "909 Late effects of other and unspecified external causes",
+          "uuid": "59f6d56a-edcd-51f8-a48d-28f564aa523a"
+        }
+      ]
+    },
+    {
+      "predicate": "(910-919) Superficial injury",
+      "entry": [
+        {
+          "value": "910 Superficial injury of face, neck and scalp except eye",
+          "uuid": "4dfe4c24-71b2-5e96-8fb4-6ca843b1ab20"
+        },
+        {
+          "value": "911 Superficial injury of trunk",
+          "uuid": "1b2d0867-ec36-581e-a8d7-7a34cc0f198a"
+        },
+        {
+          "value": "912 Superficial injury of shoulder and upper arm",
+          "uuid": "040097ba-4f43-52a1-a819-1213f953bacc"
+        },
+        {
+          "value": "913 Superficial injury of elbow, forearm and wrist",
+          "uuid": "c0ceaeb7-a9e4-5463-aed9-f0afe2f27264"
+        },
+        {
+          "value": "914 Superficial injury of hand(s) except finger(s) alone",
+          "uuid": "fb3e9ab7-1ec0-53db-8e81-da357daf9399"
+        },
+        {
+          "value": "915 Superficial injury of finger(s)",
+          "uuid": "1427a5a5-2d3a-5a05-ae33-628b77f795bd"
+        },
+        {
+          "value": "916 Superficial injury of hip, thigh, leg and ankle",
+          "uuid": "70e41a20-2488-5a7f-b80c-d76810543e7c"
+        },
+        {
+          "value": "917 Superficial injury of foot and toe(s)",
+          "uuid": "3bdd00ed-e331-552c-b247-692da61befc0"
+        },
+        {
+          "value": "918 Superficial injury of eye and adnexa",
+          "uuid": "e04e0bd9-d05a-5524-9cfe-536f9fa4b51c"
+        },
+        {
+          "value": "919 Superficial injury of other, multiple and unspecified sites",
+          "uuid": "eca97615-44a2-5c83-aa66-50c83fcb0e5e"
+        }
+      ]
+    },
+    {
+      "predicate": "(920-924) Contusion with intact skin surface",
+      "entry": [
+        {
+          "value": "920 Contusion of face, scalp and neck except eye(s)",
+          "uuid": "d5a7bac0-6b2b-5465-b00a-89ee1c554553"
+        },
+        {
+          "value": "921 Contusion of eye and adnexa",
+          "uuid": "7dbda09c-8349-59da-a13a-4eb9735bf2e6"
+        },
+        {
+          "value": "922 Contusion of trunk",
+          "uuid": "76b78e58-6655-5485-a102-711fe8fcf63c"
+        },
+        {
+          "value": "923 Contusion of upper limb",
+          "uuid": "d4080b1e-8323-562a-b824-ccef18449f91"
+        },
+        {
+          "value": "924 Contusion of lower limb and of other and unspecified sites",
+          "uuid": "ea4449ab-2d3c-5c80-909a-9a93e3c68dbf"
+        }
+      ]
+    },
+    {
+      "predicate": "(925-929) Crushing injury",
+      "entry": [
+        {
+          "value": "925 Crushing injury of face, scalp and neck",
+          "uuid": "c9f8119a-4d3d-58a8-a796-f48f5b41a2f4"
+        },
+        {
+          "value": "926 Crushing injury of trunk",
+          "uuid": "908163ad-531b-5590-890e-358dd0ade98a"
+        },
+        {
+          "value": "927 Crushing injury of upper limb",
+          "uuid": "5e8c4f2c-b175-5a83-8807-2af885f72b36"
+        },
+        {
+          "value": "928 Crushing injury of lower limb",
+          "uuid": "0f8445ae-dc3e-56bd-ad81-1615fcf9c070"
+        },
+        {
+          "value": "929 Crushing injury of multiple and unspecified sites",
+          "uuid": "83f860fc-5e74-53d0-a9e9-ee49b362adc2"
+        }
+      ]
+    },
+    {
+      "predicate": "(930-939) Effects of foreign body entering through orifice",
+      "entry": [
+        {
+          "value": "930 Foreign body on external eye",
+          "uuid": "e77c4d21-1510-5842-ab6d-79a5f22b6edc"
+        },
+        {
+          "value": "931 Foreign body in ear",
+          "uuid": "06e5ca3a-75b8-5520-bc76-a08b60d0629c"
+        },
+        {
+          "value": "932 Foreign body in nose",
+          "uuid": "e5fa7e50-37ae-5df7-9c4a-7058e3f5d36c"
+        },
+        {
+          "value": "933 Foreign body in pharynx and larynx",
+          "uuid": "9a80bb9d-438d-51fc-9fe0-bee262d496d3"
+        },
+        {
+          "value": "934 Foreign body in trachea, bronchus and lung",
+          "uuid": "0818b04e-430a-585f-879c-5c4ea203e788"
+        },
+        {
+          "value": "935 Foreign body in mouth, oesophagus and stomach",
+          "uuid": "ae62bd9e-7ac4-56ef-8e67-a04b50d18b92"
+        },
+        {
+          "value": "936 Foreign body in intestine and colon",
+          "uuid": "7344a026-05c8-570d-97e0-e5865bf14158"
+        },
+        {
+          "value": "937 Foreign body in anus and rectum",
+          "uuid": "02b3908b-43c7-5b36-b95e-8f7e29084415"
+        },
+        {
+          "value": "938 Foreign body in digestive system, unspecified",
+          "uuid": "7e9294f7-821b-58c0-9a13-7da667ca12b6"
+        },
+        {
+          "value": "939 Foreign body in genito-urinary tract",
+          "uuid": "fb2a0c3e-5d70-5317-875e-e13636295959"
+        }
+      ]
+    },
+    {
+      "predicate": "(940-949) Burns",
+      "entry": [
+        {
+          "value": "940 Burn confined to eye and adnexa",
+          "uuid": "9061818f-eb76-5afe-954a-cd17fc7baa5a"
+        },
+        {
+          "value": "941 Burn of face, head and neck",
+          "uuid": "b9daa010-7184-5e14-8740-83eb0fbdc792"
+        },
+        {
+          "value": "942 Burn of trunk",
+          "uuid": "eaae2658-c8d2-5db1-950a-d0b4e4e7e3c1"
+        },
+        {
+          "value": "943 Burn of upper limb, except wrist and hand",
+          "uuid": "de72f288-cbb0-59dd-98b1-68d744541371"
+        },
+        {
+          "value": "944 Burn of wrist(s) and hand(s)",
+          "uuid": "ab02da42-b412-5f1f-a6b2-2e6bff8479c6"
+        },
+        {
+          "value": "945 Burn of lower limb(s)",
+          "uuid": "0c9b7b85-1983-564b-af5d-2e737a9d2ecf"
+        },
+        {
+          "value": "946 Burns of multiple specified sites",
+          "uuid": "d6c81fc1-c33b-5f6d-b101-1f4692098921"
+        },
+        {
+          "value": "947 Burn of internal organs",
+          "uuid": "594103aa-3a85-531b-b4a9-56a1a4de67b6"
+        },
+        {
+          "value": "948 Burns classified according to extent of body surface involved",
+          "uuid": "fa8b270a-8099-5915-9dad-79b4846439c5"
+        },
+        {
+          "value": "949 Burn, unspecified",
+          "uuid": "d0461b15-cf1f-535d-b9bd-dd1e6570ec5e"
+        }
+      ]
+    },
+    {
+      "predicate": "(950-957) Injury to nerves and spinal cord",
+      "entry": [
+        {
+          "value": "950 Injury to optic nerve and pathways",
+          "uuid": "f2905d1c-cdeb-538f-ac4d-c11794ed4100"
+        },
+        {
+          "value": "951 Injury to other cranial nerve(s)",
+          "uuid": "2371a369-de29-57f0-9c25-b7498ed87484"
+        },
+        {
+          "value": "952 Spinal cord lesion without evidence of spinal bone injury",
+          "uuid": "b6840f72-a040-51db-8936-5a45c2694d49"
+        },
+        {
+          "value": "953 Injury to nerve roots and spinal plexus",
+          "uuid": "c90290aa-f5b9-534c-89ee-250c7462c52b"
+        },
+        {
+          "value": "954 Injury to other nerve(s) of trunk excluding shoulder and pelvic girdles",
+          "uuid": "61672897-7604-537a-b057-aef8ea2d5a28"
+        },
+        {
+          "value": "955 Injury to peripheral nerve(s) of shoulder girdle and upper limb",
+          "uuid": "72ac371d-4be9-56b3-9ffd-3640fceee89d"
+        },
+        {
+          "value": "956 Injury to peripheral nerve(s) of pelvic girdle and lower limb",
+          "uuid": "ca85d9b4-d810-50f5-b2b1-1ecfb7211608"
+        },
+        {
+          "value": "957 Injury to other and unspecified nerves",
+          "uuid": "01d0c523-6100-5990-a068-e04f60b6fe34"
+        }
+      ]
+    },
+    {
+      "predicate": "(958-959) Certain traumatic complications and unspecified injuries",
+      "entry": [
+        {
+          "value": "958 Certain early complications of trauma",
+          "uuid": "edd33180-6b89-5ec4-a00f-0871fb176189"
+        },
+        {
+          "value": "959 Injury, other and unspecified",
+          "uuid": "27178d56-2529-54ff-b947-04d9c7fb8e03"
+        }
+      ]
+    },
+    {
+      "predicate": "(960-979) Poisoning by drugs, medicaments and biological substances",
+      "entry": [
+        {
+          "value": "960 Poisoning by antibiotics",
+          "uuid": "6224d3a8-2a06-52a2-aa8d-93948dba6bab"
+        },
+        {
+          "value": "961 Poisoning by other anti-infectives",
+          "uuid": "d848f795-7720-5211-bb76-3fc40fe0f011"
+        },
+        {
+          "value": "962 Poisoning by hormones and synthetic substitutes",
+          "uuid": "0c59a8fe-341d-59eb-b188-309b680ab115"
+        },
+        {
+          "value": "963 Poisoning by primarily systemic agents",
+          "uuid": "e866820c-232c-55b2-9e27-7ed0987a51ce"
+        },
+        {
+          "value": "964 Poisoning by agents primarily affecting blood constituents",
+          "uuid": "e2e8d7ed-4271-5e69-b4d3-bcecef3b8613"
+        },
+        {
+          "value": "965 Poisoning by analgesics, antipyretics and antirheumatics",
+          "uuid": "572a965a-0c14-5369-a425-fc702b62308e"
+        },
+        {
+          "value": "966 Poisoning by anticonvulsants and anti-Parkinsonism drugs",
+          "uuid": "d9b1dbe5-f57f-55ed-a535-e39dfa7f4725"
+        },
+        {
+          "value": "967 Poisoning by sedatives and hypnotics",
+          "uuid": "212e4981-925c-5535-9776-b2a5efaca5c5"
+        },
+        {
+          "value": "968 Poisoning by other central nervous system depressants and anaesthetics",
+          "uuid": "6618fe99-36c0-5dde-851e-dca04749ec6e"
+        },
+        {
+          "value": "969 Poisoning by psychotropic agents",
+          "uuid": "7bb60ab6-6bfb-5017-bf7a-499c694a021e"
+        },
+        {
+          "value": "970 Poisoning by central nervous system stimulants",
+          "uuid": "64b6b3ba-c2ec-5b16-92df-3647bffa4b21"
+        },
+        {
+          "value": "971 Poisoning by drugs primarily affecting the autonomic nervous system",
+          "uuid": "f5dff0ef-b20c-512d-a76d-d0bf71487636"
+        },
+        {
+          "value": "972 Poisoning by agents primarily affecting the cardiovascular system",
+          "uuid": "ffb14469-267a-5652-9c75-f3b6f0644084"
+        },
+        {
+          "value": "973 Poisoning by agents primarily affecting the gastro-intestinal system",
+          "uuid": "29accf80-4f53-5116-866f-25840fb79f3e"
+        },
+        {
+          "value": "974 Poisoning by water, mineral and uric acid metabolism drugs",
+          "uuid": "ba785ffd-d842-55d9-8ecd-acc37a0458b7"
+        },
+        {
+          "value": "975 Poisoning by agents primarily acting on the smooth and skeletal muscles and respiratory system",
+          "uuid": "0841beca-9fae-565f-ae66-ad20b561d19e"
+        },
+        {
+          "value": "976 Poisoning by agents primarily affecting skin and mucous membrane, ophthalmological, otorhinolaryngological and dental drugs",
+          "uuid": "2d83cd34-4cca-5abb-9e24-1705b48adb90"
+        },
+        {
+          "value": "977 Poisoning by other and unspecified drugs and medicaments",
+          "uuid": "1dc8a7b6-8159-5e50-b6dd-339000dc7a72"
+        },
+        {
+          "value": "978 Poisoning by bacterial vaccines",
+          "uuid": "7a2984f8-6c91-5293-b7a8-e436e4de5014"
+        },
+        {
+          "value": "979 Poisoning by other vaccines and biological substances",
+          "uuid": "f3b1a439-ea33-549c-a1ec-6f2861dd128f"
+        }
+      ]
+    },
+    {
+      "predicate": "(980-989) Toxic effects of substances chiefly nonmedicinal as to source",
+      "entry": [
+        {
+          "value": "980 Toxic effect of alcohol",
+          "uuid": "6e2993f1-16bc-5eea-8e99-1d35a3f2997d"
+        },
+        {
+          "value": "981 Toxic effect of petroleum products",
+          "uuid": "8e525109-c0f3-5ec4-b987-2f69a13a36c5"
+        },
+        {
+          "value": "982 Toxic effect of solvents other than petroleum-based",
+          "uuid": "755c3616-0f0b-518e-82f3-ed2cea8a03fa"
+        },
+        {
+          "value": "983 Toxic effect of corrosive aromatics, acids and caustic alkalis",
+          "uuid": "ce4bbb9e-80f0-5511-99c1-b948546a31fc"
+        },
+        {
+          "value": "984 Toxic effect of lead and its compounds (including fumes)",
+          "uuid": "2577ccdd-de65-51c4-94b6-7531c8655d15"
+        },
+        {
+          "value": "985 Toxic effect of other metals",
+          "uuid": "679a23aa-a8e0-5368-b2aa-83bc000914a5"
+        },
+        {
+          "value": "986 Toxic effect of carbon monoxide",
+          "uuid": "c0c170b6-cb84-55f6-a999-73e3e5bcf78e"
+        },
+        {
+          "value": "987 Toxic effect of other gases, fumes or vapours",
+          "uuid": "88cddcf5-3aaf-546e-9580-c2221925df24"
+        },
+        {
+          "value": "988 Toxic effect of noxious substances eaten as food",
+          "uuid": "82ff3c54-16a7-53d6-a6ce-3eeb1422b40e"
+        },
+        {
+          "value": "989 Toxic effect of other substances, chiefly nonmedicinal as to source",
+          "uuid": "51d90f95-d74a-5a02-976a-ef62c08cd127"
+        }
+      ]
+    },
+    {
+      "predicate": "(990-995) Other and unspecified effects of external causes",
+      "entry": [
+        {
+          "value": "990 Effects of radiation, unspecified",
+          "uuid": "af5d32db-b10d-5dad-815b-c02ed4db7404"
+        },
+        {
+          "value": "991 Effects of reduced temperature",
+          "uuid": "ecc1c5a9-9105-5951-ab36-7f494f9b465f"
+        },
+        {
+          "value": "992 Effects of heat and light",
+          "uuid": "6fa0c5c2-c372-5cca-886a-4896774ee5dc"
+        },
+        {
+          "value": "993 Effects of air pressure",
+          "uuid": "c5ab5230-9ebc-5dde-a8a1-c9d9eff83e24"
+        },
+        {
+          "value": "994 Effects of other external causes",
+          "uuid": "f215fe5e-f18f-5444-88d2-3b5d3de77f87"
+        },
+        {
+          "value": "995 Certain adverse effects not elsewhere classified",
+          "uuid": "ce894906-fe75-5888-a0f3-05477ed088b3"
+        }
+      ]
+    },
+    {
+      "predicate": "(996-999) Complications of surgical and medical care, not elsewhere classified",
+      "entry": [
+        {
+          "value": "996 Complications peculiar to certain specified procedures",
+          "uuid": "d8ef9180-0e9a-5463-a558-e8dd40323315"
+        },
+        {
+          "value": "997 Complications affecting specified body systems, not elsewhere classified",
+          "uuid": "ce09658e-2047-55c3-88fb-5bc7574552d4"
+        },
+        {
+          "value": "998 Other complications of procedures, not elsewhere classified",
+          "uuid": "6eb2f1fa-94e5-50b6-b80b-8879425852d4"
+        },
+        {
+          "value": "999 Complications of medical care, not elsewhere classified",
+          "uuid": "9a93d421-e32d-5a39-b814-cb11630d3c91"
+        }
+      ]
+    },
+    {
+      "predicate": "(E800-E807) Railway accidents",
+      "entry": [
+        {
+          "value": "E800 Railway accident involving collision with rolling stock",
+          "uuid": "b423ba4c-f907-55b8-af60-1339deceeec9"
+        },
+        {
+          "value": "E801 Railway accident involving collision with other object",
+          "uuid": "aa24669a-9759-59e4-a5eb-58f3c69a928c"
+        },
+        {
+          "value": "E802 Railway accident involving derailment without antecedent collision",
+          "uuid": "ceb3f576-36b2-5d03-a68f-a39bf243f32b"
+        },
+        {
+          "value": "E803 Railway accident involving explosion, fire or burning",
+          "uuid": "692d55b1-2268-5a6b-ba63-cb6ff8811b62"
+        },
+        {
+          "value": "E804 Fall in, on or from railway train",
+          "uuid": "17e310f9-af85-524f-847b-1f3cd8cef7d1"
+        },
+        {
+          "value": "E805 Hit by rolling stock",
+          "uuid": "301da896-6726-564f-8540-db27694dd98e"
+        },
+        {
+          "value": "E806 Other specified railway accident",
+          "uuid": "ae8072ce-6eec-5683-adde-2015cc9d1d5b"
+        },
+        {
+          "value": "E807 Railway accident of unspecified nature",
+          "uuid": "4cc8da98-f4aa-591d-ae31-f4c73e05da97"
+        }
+      ]
+    },
+    {
+      "predicate": "(E810-E819) Motor vehicle traffic accidents",
+      "entry": [
+        {
+          "value": "E810 Motor vehicle traffic accident involving collision with train",
+          "uuid": "2b6a49d7-f86d-5df8-a057-5f0ddcd14ce9"
+        },
+        {
+          "value": "E811 Motor vehicle traffic accident involving re-entrant collision with another motor vehicle",
+          "uuid": "e3bd5a27-4eaf-5588-a764-14e35dfba144"
+        },
+        {
+          "value": "E812 Other motor vehicle traffic accident involving collision with another motor vehicle",
+          "uuid": "99b41306-9003-5b47-9487-a76fa9e6b881"
+        },
+        {
+          "value": "E813 Motor vehicle traffic accident involving collision with other vehicle",
+          "uuid": "acbfae78-8d3d-556a-b6f6-bf9074208ddc"
+        },
+        {
+          "value": "E814 Motor vehicle traffic accident involving collision with pedestrian",
+          "uuid": "35fc1057-0202-51ed-8069-1e4b8dfe71fd"
+        },
+        {
+          "value": "E815 Other motor vehicle traffic accident involving collision on the highway",
+          "uuid": "207a34b8-93a6-5a89-a454-6357f8713d52"
+        },
+        {
+          "value": "E816 Motor vehicle traffic accident due to loss of control, without collision on the highway",
+          "uuid": "a5820636-dad0-5c31-b7a2-a0be1b7a5c4e"
+        },
+        {
+          "value": "E817 Noncollision motor vehicle traffic accident while boarding or alighting",
+          "uuid": "ef5b4fa7-4c21-572c-8aa6-6d648cde1d70"
+        },
+        {
+          "value": "E818 Other noncollision motor vehicle traffic accident",
+          "uuid": "7fc8b47d-adb3-52eb-93c7-22cd2a4e240b"
+        },
+        {
+          "value": "E819 Motor vehicle traffic accident of unspecified nature",
+          "uuid": "838babb0-4c33-53e8-9ada-26c4352b8cb8"
+        }
+      ]
+    },
+    {
+      "predicate": "(E820-E825) Motor vehicle nontraffic accidents",
+      "entry": [
+        {
+          "value": "E820 Nontraffic accident involving motor-driven snow vehicle",
+          "uuid": "166b49e8-dbde-5f68-bf82-46e17d6d1104"
+        },
+        {
+          "value": "E821 Nontraffic accident involving other off-road motor vehicle",
+          "uuid": "1f0ef48e-1684-57d9-bdcf-8547a026e837"
+        },
+        {
+          "value": "E822 Other motor vehicle nontraffic accident involving collision with moving object",
+          "uuid": "86ea600f-f749-52ad-ab2e-c6af2a6be38a"
+        },
+        {
+          "value": "E823 Other motor vehicle nontraffic accident involving collision with stationary object",
+          "uuid": "4b59e527-68ef-5d0d-83ab-bf592b0f5d33"
+        },
+        {
+          "value": "E824 Other motor vehicle nontraffic accident while boarding and alighting",
+          "uuid": "ec4ed9e7-d0f3-5c20-aa88-428124d4e5fe"
+        },
+        {
+          "value": "E825 Other motor vehicle nontraffic accident of other and unspecified nature",
+          "uuid": "5094f45f-c5d3-5a53-9ef2-fea006f185f1"
+        }
+      ]
+    },
+    {
+      "predicate": "(E826-E829) Other road vehicle accidents",
+      "entry": [
+        {
+          "value": "E826 Pedal cycle accident",
+          "uuid": "290fbf96-2b59-5ed9-820e-9d43e45b5386"
+        },
+        {
+          "value": "E827 Animal-drawn vehicle accident",
+          "uuid": "0e14035d-4878-54cb-8c67-b79e21295d54"
+        },
+        {
+          "value": "E828 Accident involving animal being ridden",
+          "uuid": "6c38a3df-5c8d-577a-9e40-9ecf45b8fe74"
+        },
+        {
+          "value": "E829 Other road vehicle accidents",
+          "uuid": "a7f66bc5-532d-5a79-962f-fda26c2f0c6d"
+        }
+      ]
+    },
+    {
+      "predicate": "(E830-E838) Water transport accidents",
+      "entry": [
+        {
+          "value": "E830 Accident to watercraft causing submersion",
+          "uuid": "dd3b3240-3699-50a7-ba74-67816dd11eea"
+        },
+        {
+          "value": "E831 Accident to watercraft causing other injury",
+          "uuid": "8197975f-2a8c-5c75-a6c0-d2424dc21309"
+        },
+        {
+          "value": "E832 Other accidental submersion or drowning in water transport accident",
+          "uuid": "28793bd1-3098-5f3b-9db1-a62fcc699013"
+        },
+        {
+          "value": "E833 Fall on stairs or ladders in water transport",
+          "uuid": "99836fa1-53d9-59e8-82f7-3a4f3b1f3898"
+        },
+        {
+          "value": "E834 Other fall from one level to another in water transport",
+          "uuid": "72bbe921-b103-5d22-b2f1-33701ba43117"
+        },
+        {
+          "value": "E835 Other and unspecified fall in water transport",
+          "uuid": "2b26a33e-d338-590a-9ead-5f0e8940117b"
+        },
+        {
+          "value": "E836 Machinery accident in water transport",
+          "uuid": "94106678-697a-5f98-8715-9b809bb6e78e"
+        },
+        {
+          "value": "E837 Explosion, fire or burning in watercraft",
+          "uuid": "f6e2e8da-3f65-5e67-bd2e-d4b286a82dba"
+        },
+        {
+          "value": "E838 Other and unspecified water transport accident",
+          "uuid": "5e89ea88-3bf1-5d0f-9b80-6e60f09cc1fd"
+        }
+      ]
+    },
+    {
+      "predicate": "(E840-E845) Air and space transport accidents",
+      "entry": [
+        {
+          "value": "E840 Accident to powered aircraft at takeoff or landing",
+          "uuid": "326d0743-af5f-5d24-84eb-5aa240c742db"
+        },
+        {
+          "value": "E841 Accident to powered aircraft, other and unspecified",
+          "uuid": "7b228243-923f-5c32-8e73-08b86e44a9c0"
+        },
+        {
+          "value": "E842 Accident to unpowered aircraft",
+          "uuid": "31aebd91-f6be-5651-9eef-e44b5e0f56ce"
+        },
+        {
+          "value": "E843 Fall in, on or from aircraft",
+          "uuid": "f08da94d-1728-5bde-8249-159c8d2fcf00"
+        },
+        {
+          "value": "E844 Other specified air transport accidents",
+          "uuid": "4e876289-8180-5b5a-ad1e-add43ddfe9cf"
+        },
+        {
+          "value": "E845 Accident involving spacecraft",
+          "uuid": "d66867a9-5803-52b0-93bb-bad4b50a5e75"
+        }
+      ]
+    },
+    {
+      "predicate": "(E846-E848) Vehicle accidents not elsewhere classifiable",
+      "entry": [
+        {
+          "value": "E846 Accidents involving powered vehicles used solely within the buildings and premises of an industrial or commercial establishment",
+          "uuid": "453b647a-a70b-5b85-a1f7-624eaf8e3d3e"
+        },
+        {
+          "value": "E847 Accidents involving cable cars not running on rails",
+          "uuid": "2a1849ac-15bd-50e5-afb6-45bc82fc6136"
+        },
+        {
+          "value": "E848 Accidents involving other vehicles not elsewhere classifiable",
+          "uuid": "89deb3a1-e68f-58bc-9771-bf293819af2f"
+        }
+      ]
+    },
+    {
+      "predicate": "(E849-E858) Accidental poisoning by drugs, medicaments and biologicals",
+      "entry": [
+        {
+          "value": "E849 Place of occurrence",
+          "uuid": "d9abd3da-b7dc-596a-895e-b12ebfd76425"
+        },
+        {
+          "value": "E850 Accidental poisoning by analgesics, antipyretics, antirheumatics",
+          "uuid": "c0ba5fc3-04b9-5111-bf5b-ad8a6f6d9461"
+        },
+        {
+          "value": "E851 Accidental poisoning by barbiturates",
+          "uuid": "6a32a132-c819-5af5-ac92-76cc3ccfdb3f"
+        },
+        {
+          "value": "E852 Accidental poisoning by other sedatives and hypnotics",
+          "uuid": "ee585560-8fe2-5598-8682-82b6d3fb1a31"
+        },
+        {
+          "value": "E853 Accidental poisoning by tranquillisers",
+          "uuid": "e63a40ea-9445-52a2-a9b5-bcf8d85fa2e2"
+        },
+        {
+          "value": "E854 Accidental poisoning by other psychotropic agents",
+          "uuid": "b20f66d8-8557-5b33-840d-1822d2151abe"
+        },
+        {
+          "value": "E855 Accidental poisoning by other drugs acting on central and autonomic nervous systems",
+          "uuid": "0747ee13-b52c-5672-bfd4-62ac20712f2c"
+        },
+        {
+          "value": "E856 Accidental poisoning by antibiotics",
+          "uuid": "10277a57-d684-50ed-98cd-47aa416dc21d"
+        },
+        {
+          "value": "E857 Accidental poisoning by anti-infectives",
+          "uuid": "4fbb106e-7d3f-5aa2-9d79-ea25be8c2379"
+        },
+        {
+          "value": "E858 Accidental poisoning by other drugs",
+          "uuid": "82cabf81-b6c3-5c9b-9cd2-4706a01cd467"
+        }
+      ]
+    },
+    {
+      "predicate": "(E860-E869) Accidental poisoning by other solid and liquid substances, gases and vapours",
+      "entry": [
+        {
+          "value": "E860 Accidental poisoning by alcohol, not elsewhere classified",
+          "uuid": "d9449369-9669-58d5-bc79-1d4fb084e413"
+        },
+        {
+          "value": "E861 Accidental poisoning by cleansing and polishing agents, disinfectants, paints and varnishes",
+          "uuid": "e63d63d3-7d57-551c-9df2-65dcfad4fdee"
+        },
+        {
+          "value": "E862 Accidental poisoning by petroleum products, other solvents and their vapours, not elsewhere classified",
+          "uuid": "aac50c04-97c5-50cc-8a2d-5d268290b025"
+        },
+        {
+          "value": "E863 Accidental poisoning by agricultural and horticultural chemical and pharmaceutical preparations other than plant foods and fertilisers",
+          "uuid": "939bf820-2c4d-5309-b9c2-8146678ae20e"
+        },
+        {
+          "value": "E864 Accidental poisoning by corrosives and caustics, not elsewhere classified",
+          "uuid": "e4f50f18-8a08-5c73-81e4-a6ddf4cc5a50"
+        },
+        {
+          "value": "E865 Accidental poisoning from foodstuffs and poisonous plants",
+          "uuid": "d80c774b-fc53-5813-96e2-3f9e38d3b8bf"
+        },
+        {
+          "value": "E866 Accidental poisoning by other and unspecified solid and liquid substances",
+          "uuid": "9f9c5d74-bf70-55ba-bec8-10d3e6a373b8"
+        },
+        {
+          "value": "E867 Accidental poisoning by gas distributed by pipeline",
+          "uuid": "c19569a4-5e0c-5eb8-a830-1b24d238caa5"
+        },
+        {
+          "value": "E868 Accidental poisoning by other utility gas and other carbon monoxide",
+          "uuid": "f910b518-8127-5383-beff-15915a617d6c"
+        },
+        {
+          "value": "E869 Accidental poisoning by other gases and vapours",
+          "uuid": "bbd463ed-8f6f-560b-8854-8c0ba3ffd8ed"
+        }
+      ]
+    },
+    {
+      "predicate": "(E870-E876) Misadventures to patients during surgical and medical care",
+      "entry": [
+        {
+          "value": "E870 Accidental cut, puncture, perforation or haemorrhage during medical care",
+          "uuid": "f791dab9-4035-5d5e-835f-5ed584a30538"
+        },
+        {
+          "value": "E871 Foreign object left in body during procedure",
+          "uuid": "128aa31d-7a1c-540e-b053-8813d7bec8e4"
+        },
+        {
+          "value": "E872 Failure of sterile precautions during procedure",
+          "uuid": "b11aa310-b5c8-512e-9f39-f49a18824202"
+        },
+        {
+          "value": "E873 Failure in dosage",
+          "uuid": "b2875026-4916-502e-bb12-3cb95b7dcbe3"
+        },
+        {
+          "value": "E874 Mechanical failure of instrument or apparatus during procedure",
+          "uuid": "226025a8-24fe-5aaf-a05c-6267c52a36e4"
+        },
+        {
+          "value": "E875 Contaminated or infected blood, other fluid, drug or biological substance",
+          "uuid": "76016177-c191-5841-b2f4-6c0bacab8380"
+        },
+        {
+          "value": "E876 Other and unspecified misadventures during medical care",
+          "uuid": "1c90a93a-f685-5335-a832-1f3ccd0e7eab"
+        }
+      ]
+    },
+    {
+      "predicate": "(E878-E879) Surgical and medical procedures as the cause of abnormal reaction of patient or later complication, without mention of misadventure at the time of procedure",
+      "entry": [
+        {
+          "value": "E878 Surgical operation and other surgical procedures as the cause of abnormal reaction of patient, or of later complication, without mention of misadventure at the time of operation",
+          "uuid": "ffcdb921-2bc6-5420-bf25-58d731d9b734"
+        },
+        {
+          "value": "E879 Other procedures, without mention of misadventure at the time of procedure, as the cause of abnormal reaction of patient, or of later complication",
+          "uuid": "b1491efb-40ed-5280-8c52-5ae503cde79f"
+        }
+      ]
+    },
+    {
+      "predicate": "(E880-E888) Accidental falls",
+      "entry": [
+        {
+          "value": "E880 Fall on or from stairs or steps",
+          "uuid": "69191f05-9fa2-5757-a3ff-541999d20cf7"
+        },
+        {
+          "value": "E881 Fall on or from ladders or scaffolding",
+          "uuid": "39a6210f-f77a-56a7-9ba9-d09f8c921592"
+        },
+        {
+          "value": "E882 Fall from or out of building or other structure",
+          "uuid": "701909f1-1047-5980-850c-1ac9a404ee62"
+        },
+        {
+          "value": "E883 Fall into hole or other opening in surface",
+          "uuid": "6c1a79dd-66bb-5f22-8ba7-e1e67a705634"
+        },
+        {
+          "value": "E884 Other fall from one level to another",
+          "uuid": "aadd7117-eacf-5031-9b4f-3201f2a38d95"
+        },
+        {
+          "value": "E885 Fall on same level from slipping, tripping or stumbling",
+          "uuid": "bca0047f-ae6c-5bbb-9898-2bf526c83756"
+        },
+        {
+          "value": "E886 Fall on same level from collision, pushing or shoving, by or with other person",
+          "uuid": "7f72079a-2f34-5919-a8b7-f28e9d0277f8"
+        },
+        {
+          "value": "E887 Fracture, cause unspecified",
+          "uuid": "fa6e9510-caec-5247-9070-d9c92d7424ff"
+        },
+        {
+          "value": "E888 Other and unspecified fall",
+          "uuid": "26bef590-5baa-53e8-b461-7ca0cb4b71aa"
+        }
+      ]
+    },
+    {
+      "predicate": "(E890-E899) Accidents caused by fire and flames",
+      "entry": [
+        {
+          "value": "E890 Conflagration in private dwelling",
+          "uuid": "78507805-88ad-578e-9e83-1a68d2d4aeec"
+        },
+        {
+          "value": "E891 Conflagration in other and unspecified building or structure",
+          "uuid": "895d0324-269c-597b-a58e-dd20223d1970"
+        },
+        {
+          "value": "E892 Conflagration not in building or structure",
+          "uuid": "e008c106-0da1-5354-ab5a-d51a58ec45f0"
+        },
+        {
+          "value": "E893 Accident caused by ignition of clothing",
+          "uuid": "768cada8-1393-52cd-a6f9-45181645196b"
+        },
+        {
+          "value": "E894 Ignition of highly inflammable material",
+          "uuid": "9846a404-04fc-5367-a86e-6f893fa0c403"
+        },
+        {
+          "value": "E895 Accident caused by controlled fire in private dwelling",
+          "uuid": "bf0c2ff6-43f9-5990-b6de-555a0ea4eb2c"
+        },
+        {
+          "value": "E896 Accident caused by controlled fire in other and unspecified building or structure",
+          "uuid": "1020f747-5ce5-522d-8b7a-973d123191a9"
+        },
+        {
+          "value": "E897 Accident caused by controlled fire not in building or structure",
+          "uuid": "bca5f8e1-bd05-5560-bda7-ded8326ff135"
+        },
+        {
+          "value": "E898 Accident caused by other specified fire and flames",
+          "uuid": "6cfe9498-2b9f-5d30-b050-b43192922807"
+        },
+        {
+          "value": "E899 Accident caused by unspecified fire",
+          "uuid": "33538927-ae99-5264-9759-e67f67a1fd9c"
+        }
+      ]
+    },
+    {
+      "predicate": "(E900-E909) Accidents due to natural and environmental factors",
+      "entry": [
+        {
+          "value": "E900 Excessive heat",
+          "uuid": "cc921d0c-da2c-5d29-ba0d-7d289c231087"
+        },
+        {
+          "value": "E901 Excessive cold",
+          "uuid": "800306a5-c80b-56cb-a067-51681d7bc446"
+        },
+        {
+          "value": "E902 High and low air pressure and changes in air pressure",
+          "uuid": "704c6b0d-6670-5d6a-afac-0698bf9adb14"
+        },
+        {
+          "value": "E903 Travel and motion",
+          "uuid": "2ca699d3-48fa-5dbd-8814-1c5490ef180d"
+        },
+        {
+          "value": "E904 Hunger, thirst, exposure, neglect",
+          "uuid": "0dddda23-935c-51f9-8f7e-2b51f6942850"
+        },
+        {
+          "value": "E905 Venomous animals and plants as the cause of poisoning and toxic reactions",
+          "uuid": "feb3c712-4d92-527d-824b-9cc2f82b19ea"
+        },
+        {
+          "value": "E906 Other injury caused by animals",
+          "uuid": "bbde5632-2dae-5f03-95fe-72b517750e1a"
+        },
+        {
+          "value": "E907 Lightning",
+          "uuid": "3619640e-4cac-50a4-88f4-e5f29e47041e"
+        },
+        {
+          "value": "E908 Cataclysmic storms and floods resulting from storms",
+          "uuid": "7644a182-6257-5ef2-82d9-594436c22a4f"
+        },
+        {
+          "value": "E909 Cataclysmic earth surface movements and eruptions",
+          "uuid": "4715df5a-0c21-5e55-8de6-b51470817dae"
+        }
+      ]
+    },
+    {
+      "predicate": "(E910-E915) Accidents caused by submersion, suffocation and foreign bodies",
+      "entry": [
+        {
+          "value": "E910 Accidental drowning and submersion",
+          "uuid": "1b3e6deb-f48e-574c-9443-637f17e032b5"
+        },
+        {
+          "value": "E911 Inhalation and ingestion of food causing obstruction of respiratory tract or suffocation",
+          "uuid": "bee0613f-841f-5248-867a-1e73747068bd"
+        },
+        {
+          "value": "E912 Inhalation and ingestion of other object causing obstruction of respiratory tract or suffocation",
+          "uuid": "056540c6-e877-54aa-9e34-22491b6524e2"
+        },
+        {
+          "value": "E913 Accidental mechanical suffocation",
+          "uuid": "8b9979ab-fd61-5b94-ae74-3370fa8f2387"
+        },
+        {
+          "value": "E914 Foreign body accidentally entering eye and adnexa",
+          "uuid": "7ea92fc3-dad2-55bd-b3c6-3a903be086db"
+        },
+        {
+          "value": "E915 Foreign body accidentally entering other orifice",
+          "uuid": "7898b6d1-f2d1-51cd-955d-041240556176"
+        }
+      ]
+    },
+    {
+      "predicate": "(E916-E928) Other accidents",
+      "entry": [
+        {
+          "value": "E916 Struck accidentally by falling object",
+          "uuid": "0ccfac3a-0662-50b9-a126-9d19da38a1ee"
+        },
+        {
+          "value": "E917 Striking against or struck accidentally by objects or persons",
+          "uuid": "fdecea63-5911-5918-82c9-6aee1c398ebf"
+        },
+        {
+          "value": "E918 Caught accidentally in or between objects",
+          "uuid": "f49a9507-6711-5101-b411-220f248a595a"
+        },
+        {
+          "value": "E919 Accidents caused by machinery",
+          "uuid": "5f61f96a-ada9-5dde-a1ad-3540955683f7"
+        },
+        {
+          "value": "E920 Accidents caused by cutting and piercing instruments or objects",
+          "uuid": "ee8647f0-0e45-51f9-b499-7b961e52b9d3"
+        },
+        {
+          "value": "E921 Accident caused by explosion of pressure vessel",
+          "uuid": "2ae9744e-ba0a-56ba-8557-669050d5197e"
+        },
+        {
+          "value": "E922 Accident caused by firearm missile",
+          "uuid": "9748a90a-855a-5d0f-909e-8e757ca8535a"
+        },
+        {
+          "value": "E923 Accident caused by explosive material",
+          "uuid": "9683ac14-97ae-5830-8843-cbbe0a9cf11a"
+        },
+        {
+          "value": "E924 Accident caused by hot substance or object, caustic or corrosive material and steam",
+          "uuid": "49fdca6e-ea4c-5b87-b9f8-5081f41684eb"
+        },
+        {
+          "value": "E925 Accident caused by electric current",
+          "uuid": "eb583129-c2c6-514f-b0ba-85c0938fe52c"
+        },
+        {
+          "value": "E926 Exposure to radiation",
+          "uuid": "4d5ea6d9-1467-5fb2-afff-23ea06c4ebc2"
+        },
+        {
+          "value": "E927 Overexertion and strenuous movements",
+          "uuid": "e01ad733-7c5c-5e86-ad9e-ee3863704d36"
+        },
+        {
+          "value": "E928 Other and unspecified environmental and accidental causes",
+          "uuid": "acd2a9d8-21dd-587a-b430-8a3ba1516dd9"
+        }
+      ]
+    },
+    {
+      "predicate": "(E929-E929) Late effects of accidental injury",
+      "entry": [
+        {
+          "value": "E929 Late effects of accidental injury",
+          "uuid": "5eeea3fb-3f74-566d-9d33-806875a1438c"
+        }
+      ]
+    },
+    {
+      "predicate": "(E930-E949) Drugs, medicaments and biological substances causing adverse effects in therapeutic use",
+      "entry": [
+        {
+          "value": "E930 Antibiotics",
+          "uuid": "999a521c-2543-50a3-88cf-d50492915f02"
+        },
+        {
+          "value": "E931 Other anti-infectives",
+          "uuid": "7971b82b-7f2d-519e-a5d2-461a1ee733a2"
+        },
+        {
+          "value": "E932 Hormones and synthetic substitutes",
+          "uuid": "4d6b2f83-08d7-5ed6-bcaa-c85e8f20602b"
+        },
+        {
+          "value": "E933 Primarily systemic agents",
+          "uuid": "181b7a95-d247-5a6c-944d-820f52e5fc19"
+        },
+        {
+          "value": "E934 Agents primarily affecting blood constituents",
+          "uuid": "37043be6-aa9b-5d12-b0e7-1af1edbc847b"
+        },
+        {
+          "value": "E935 Analgesics, antipyretics and antirheumatics",
+          "uuid": "54c3418b-27d2-5ce5-92f3-d6e323f18e92"
+        },
+        {
+          "value": "E936 Anticonvulsants and anti-Parkinsonism drugs",
+          "uuid": "4a2248fa-41df-5de5-840c-5d8318196197"
+        },
+        {
+          "value": "E937 Sedatives and hypnotics",
+          "uuid": "89778ef2-4b7b-540f-bc08-e431979a576e"
+        },
+        {
+          "value": "E938 Other central nervous system depressants and anaesthetics",
+          "uuid": "ccba080e-379b-5361-9bb3-15a85bbf5647"
+        },
+        {
+          "value": "E939 Psychotropic agents",
+          "uuid": "5419979f-8a54-589c-9f47-f55328c5b6b5"
+        },
+        {
+          "value": "E940 Central nervous system stimulants",
+          "uuid": "01873dd1-b1cd-503f-9f3b-c9da171aa41a"
+        },
+        {
+          "value": "E941 Drugs primarily affecting the autonomic nervous system",
+          "uuid": "934ca835-1261-5169-95e7-f74aeb4e1753"
+        },
+        {
+          "value": "E942 Agents primarily affecting the cardiovascular system",
+          "uuid": "da461def-645c-5f1a-bcb1-a177511e6c17"
+        },
+        {
+          "value": "E943 Agents primarily affecting gastro-intestinal system",
+          "uuid": "bb19a1c3-790e-5a75-90e8-e581fbd4b640"
+        },
+        {
+          "value": "E944 Water, mineral and uric acid metabolism drugs",
+          "uuid": "930a9af1-fac4-5278-ab26-94473812a994"
+        },
+        {
+          "value": "E945 Agents primarily acting on the smooth and skeletal muscles and respiratory system",
+          "uuid": "8c8bdb66-483a-582a-a494-8891167ddcd3"
+        },
+        {
+          "value": "E946 Agents primarily affecting skin and mucous membrane, ophthalmological, otorhinolaryngological and dental drugs",
+          "uuid": "d4e816c3-7f88-5304-a5ce-fff5c514bf3d"
+        },
+        {
+          "value": "E947 Other and unspecified drugs and medicaments",
+          "uuid": "bf0ebd79-951d-5086-ac5d-310ef2b5a3de"
+        },
+        {
+          "value": "E948 Bacterial vaccines",
+          "uuid": "2942a99c-ae42-5b29-a34c-792d9d7ec11a"
+        },
+        {
+          "value": "E949 Other vaccines and biological substances",
+          "uuid": "b986e3fa-e21f-5793-8a77-965c90de6b1f"
+        }
+      ]
+    },
+    {
+      "predicate": "(E950-E959) Suicide and self-inflicted injury",
+      "entry": [
+        {
+          "value": "E950 Suicide and self-inflicted poisoning by solid or liquid substances",
+          "uuid": "133747b3-fc2b-5e70-8a2b-cd790e098227"
+        },
+        {
+          "value": "E951 Suicide and self-inflicted poisoning by gases in domestic use",
+          "uuid": "3671de10-e7b2-503e-9edd-c82485e25518"
+        },
+        {
+          "value": "E952 Suicide and self-inflicted poisoning by other gases and vapours",
+          "uuid": "e0deea01-0c16-578a-8545-5398589d1bf0"
+        },
+        {
+          "value": "E953 Suicide and self-inflicted injury by hanging, strangulation and suffocation",
+          "uuid": "7423e3af-552b-52dd-9337-5a44a96d51d6"
+        },
+        {
+          "value": "E954 Suicide and self-inflicted injury by submersion [drowning]",
+          "uuid": "fb4cf634-d37b-567e-8740-95eb97ec8c1e"
+        },
+        {
+          "value": "E955 Suicide and self-inflicted injury by firearms and explosives",
+          "uuid": "65b71800-2c53-5beb-9508-ca857e65e44d"
+        },
+        {
+          "value": "E956 Suicide and self-inflicted injury by cutting and piercing instruments",
+          "uuid": "0f4caa78-e33e-5f99-add6-10021fbca5de"
+        },
+        {
+          "value": "E957 Suicide and self-inflicted injuries by jumping from high place",
+          "uuid": "c4fd216f-9233-54ef-bfef-df37733bbfdf"
+        },
+        {
+          "value": "E958 Suicide and self-inflicted injury by other and unspecified means",
+          "uuid": "e04830ee-8273-5c66-af0d-3ed0cad64baf"
+        },
+        {
+          "value": "E959 Late effects of self-inflicted injury",
+          "uuid": "c239552a-d0b9-557a-91e3-ef6a3f21d403"
+        }
+      ]
+    },
+    {
+      "predicate": "(E960-E969) Homicide and injury purposely inflicted by other persons",
+      "entry": [
+        {
+          "value": "E960 Fight, brawl, rape",
+          "uuid": "493321dc-31bb-5bbd-ba7d-d723c5d60cc3"
+        },
+        {
+          "value": "E961 Assault by corrosive or caustic substance, except poisoning",
+          "uuid": "ca217b73-ca35-5920-abc8-3c8f369bb10d"
+        },
+        {
+          "value": "E962 Assault by poisoning",
+          "uuid": "9c0adc30-9377-565f-b54e-7005e56b11df"
+        },
+        {
+          "value": "E963 Assault by hanging and strangulation",
+          "uuid": "0df5f625-32f1-5885-a548-fa39dddfe62c"
+        },
+        {
+          "value": "E964 Assault by submersion [drowning]",
+          "uuid": "ae0e3e36-b999-5fce-9cc5-7f3aad95f2d3"
+        },
+        {
+          "value": "E965 Assault by firearms and explosives",
+          "uuid": "1caca18f-547e-5c7c-982f-43faaa13a2b3"
+        },
+        {
+          "value": "E966 Assault by cutting and piercing instrument",
+          "uuid": "18a2b2c9-f7c8-54c0-a81c-3e479ac3dfec"
+        },
+        {
+          "value": "E967 Child battering and other maltreatment",
+          "uuid": "0d080313-f899-59de-a23c-51e5e4993425"
+        },
+        {
+          "value": "E968 Assault by other and unspecified means",
+          "uuid": "baafeb3c-7a04-57fb-bdfa-ecab6c9d7595"
+        },
+        {
+          "value": "E969 Late effects of injury purposely inflicted by other person",
+          "uuid": "c7560286-d7f7-51d2-bc8e-7e0e73449894"
+        }
+      ]
+    }
+  ],
+  "uuid": "d8e541fa-dd32-5435-b23c-df7655284cff"
+}

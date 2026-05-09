@@ -1,0 +1,105 @@
+{
+  "namespace": "dhs-ciip-sectors",
+  "description": "DHS critical sectors as in https://www.dhs.gov/critical-infrastructure-sectors",
+  "version": 2,
+  "predicates": [
+    {
+      "value": "DHS-critical-sectors",
+      "expanded": "DHS critical sectors",
+      "uuid": "9b609d96-9ca0-5a76-99cb-c17a1966d3ce"
+    },
+    {
+      "value": "sector",
+      "expanded": "Sector",
+      "uuid": "b71c46dd-079e-5860-9208-3b13ee034b15"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "DHS-critical-sectors",
+      "entry": [
+        {
+          "value": "chemical",
+          "expanded": "Chemical",
+          "uuid": "70d4d444-e971-5ee2-a843-cbb3c73c9a41"
+        },
+        {
+          "value": "commercial-facilities",
+          "expanded": "Commercial Facilities",
+          "uuid": "7c70ea97-458c-5a23-ab73-6863435aff27"
+        },
+        {
+          "value": "communications",
+          "expanded": "Communications",
+          "uuid": "4f7dae23-1625-5d24-b8dd-6d9659cd6c27"
+        },
+        {
+          "value": "critical-manufacturing",
+          "expanded": "Critical Manufacturing",
+          "uuid": "f796e075-b535-58ba-be49-38b3323c9955"
+        },
+        {
+          "value": "dams",
+          "expanded": "Dams",
+          "uuid": "faad979d-e1b4-5ed9-99c4-da573e3b44f7"
+        },
+        {
+          "value": "dib",
+          "expanded": "Defense Industrial Base",
+          "uuid": "d701244c-b03e-5263-a8a8-57ed73acc159"
+        },
+        {
+          "value": "emergency-services",
+          "expanded": "Emergency services",
+          "uuid": "9a9eca0e-564e-5eb7-9d43-2b58629edf80"
+        },
+        {
+          "value": "energy",
+          "expanded": "energy",
+          "uuid": "3e1959ac-53a2-52e8-8916-d1ccaf54f6b9"
+        },
+        {
+          "value": "financial-services",
+          "expanded": "Financial Services",
+          "uuid": "c9cf7e65-5a68-5194-9bde-759f720c67e8"
+        },
+        {
+          "value": "food-agriculture",
+          "expanded": "Food and Agriculture",
+          "uuid": "6f2ee1e6-5795-5b8c-a509-ff4830e08987"
+        },
+        {
+          "value": "government-facilities",
+          "expanded": "Government Facilities",
+          "uuid": "7b036e98-e980-5d92-80a6-e995eb4b5f20"
+        },
+        {
+          "value": "healthcare-public",
+          "expanded": "Healthcare and Public Health",
+          "uuid": "03fcffe6-d7de-5684-91d5-0e2bd82b1a4b"
+        },
+        {
+          "value": "it",
+          "expanded": "Information Technology",
+          "uuid": "ebe63ed3-7b1d-5756-9540-3e3dc8d008a9"
+        },
+        {
+          "value": "nuclear",
+          "expanded": "Nuclear",
+          "uuid": "2bc4138f-5e70-5110-93f3-0c977c3deec2"
+        },
+        {
+          "value": "transport",
+          "expanded": "Transportation Systems",
+          "uuid": "125eead8-c31b-51e4-98b8-8d3afe875c2d"
+        },
+        {
+          "value": "water",
+          "expanded": "Water and water systems",
+          "uuid": "ed31e64c-310a-5712-8e50-76525b65fd09"
+        }
+      ]
+    }
+  ],
+  "uuid": "263b59a0-268b-5cc5-b4a9-0f32dfa86b66"
+}

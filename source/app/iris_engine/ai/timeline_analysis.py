@@ -23,12 +23,10 @@ from app.iris_engine.ai.openai_client import build_default_client
 from app.models.cases import Cases
 from app.models.cases import CasesEvent
 from app.models.models import CaseAiArtifact
-from app.models.models import CaseAssets
-from app.models.models import Ioc
 
 
 TIMELINE_ANALYSIS_KIND = "timeline_analysis"
-TIMELINE_ANALYSIS_PROMPT_ID = "CaseAnalysisSystemPrompt-v1"
+TIMELINE_ANALYSIS_PROMPT_ID = "TimelineNarrativeSystemPrompt-v3"
 
 PROMPT_PATH = Path(__file__).parent.parent.parent / "resources" / "ai_prompts" / "timeline_analysis.md"
 
@@ -49,9 +47,13 @@ def _truncate(text: str | None, limit: int) -> str | None:
 
 
 def build_timeline_payload(case: Cases) -> dict[str, Any]:
-    """Timeline-centric payload — events first, plus the IOC/asset context
-    they implicate. Smaller than the full case-summary payload because the
-    technical-analysis prompt cares mostly about sequencing and observables.
+    """Timeline-centric payload — strictly the master timeline events plus
+    case metadata. Per user design rule (2026-05-09): the timeline analysis
+    panel must reason ONLY from what's on the timeline, not the broader IOC
+    or asset catalog. Observables referenced in event content/title/tags
+    are still available to the model — they're just not enumerated as a
+    separate top-level section that could pull in IOCs the analyst hasn't
+    yet linked to a timeline event.
     """
     case_id = case.case_id
 
@@ -75,31 +77,6 @@ def build_timeline_payload(case: Cases) -> dict[str, Any]:
         for e in timeline_q
     ]
 
-    iocs_q = Ioc.query.filter(Ioc.case_id == case_id).all()
-    iocs = [
-        {
-            "value": i.ioc_value,
-            "type": getattr(i.ioc_type, "type_name", None) if getattr(i, "ioc_type", None) else None,
-            "tlp": getattr(i.tlp, "tlp_name", None) if getattr(i, "tlp", None) else None,
-            "description": _truncate(i.ioc_description, 400),
-            "tags": i.ioc_tags or None,
-        }
-        for i in iocs_q
-    ]
-
-    assets_q = CaseAssets.query.filter(CaseAssets.case_id == case_id).all()
-    assets = [
-        {
-            "name": a.asset_name,
-            "type": getattr(a.asset_type, "asset_name", None) if getattr(a, "asset_type", None) else None,
-            "ip": a.asset_ip or None,
-            "domain": a.asset_domain or None,
-            "compromise_status_id": a.asset_compromise_status_id,
-            "description": _truncate(a.asset_description, 800),
-        }
-        for a in assets_q
-    ]
-
     return {
         "case": {
             "id": case.case_id,
@@ -110,12 +87,8 @@ def build_timeline_payload(case: Cases) -> dict[str, Any]:
         },
         "counts": {
             "timeline_events": len(timeline),
-            "iocs": len(iocs),
-            "assets": len(assets),
         },
         "timeline": timeline,
-        "iocs": iocs,
-        "assets": assets,
     }
 
 
@@ -180,8 +153,9 @@ def generate_timeline_analysis(case_id: int, *, force: bool = False) -> CaseAiAr
             return cached
 
     user_prompt = (
-        "Produce the technical analysis using the case data below. "
-        "Focus on the timeline narrative, sequencing, observables, and gaps.\n\n"
+        "Write the narrative analysis of the timeline below. Three sections:"
+        " what it tells us, what's still uncertain, where to dig next."
+        " Prose, no tables, no TLP, no risk score.\n\n"
         f"```json\n{json.dumps(payload, indent=2, default=str)}\n```"
     )
 
@@ -191,10 +165,12 @@ def generate_timeline_analysis(case_id: int, *, force: bool = False) -> CaseAiAr
     )
 
     try:
-        response = client.chat([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ])
+        response = client.chat(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
     except AIClientError as exc:
         raise TimelineAnalysisError(f"AI backend call failed: {exc}") from exc
 

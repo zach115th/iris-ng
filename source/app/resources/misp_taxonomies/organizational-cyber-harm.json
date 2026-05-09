@@ -1,0 +1,354 @@
+{
+  "expanded": "organizational cyber- arm",
+  "description": "A taxonomy to classify organizational cyber harms based on categories like physical, economic, psychological, reputational, and social/societal impacts.",
+  "refs": [
+    "https://academic.oup.com/cybersecurity/article/4/1/tyy006/5133288?login=false"
+  ],
+  "version": 1,
+  "namespace": "organizational-cyber-harm",
+  "predicates": [
+    {
+      "value": "physical-digital",
+      "expanded": "Physical digital",
+      "description": "Physical/Digital harm to assets or individuals.",
+      "uuid": "5cb0442b-a091-5f2f-aa81-c689790193e4"
+    },
+    {
+      "value": "economic",
+      "expanded": "Economic",
+      "description": "Economic harm caused by cyber incidents.",
+      "uuid": "64ae5a30-2f9a-5c4d-a181-4ca0cd17cfe7"
+    },
+    {
+      "value": "psychological",
+      "expanded": "Psychological",
+      "description": "Psychological effects of cyber incidents.",
+      "uuid": "14bc1ed5-a795-51d9-be2e-9cda3d8d63fc"
+    },
+    {
+      "value": "reputational",
+      "expanded": "Reputational",
+      "description": "Reputational damage caused by cyber incidents.",
+      "uuid": "34f484c3-35d4-5174-b532-a34ff0ee62e2"
+    },
+    {
+      "value": "social-societal",
+      "expanded": "Social or societal",
+      "description": "Social and societal impacts of cyber incidents.",
+      "uuid": "10b59b33-c18d-59c1-b995-7be54cf2456f"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "physical-digital",
+      "entry": [
+        {
+          "value": "damaged-or-unavailable",
+          "expanded": "damaged or unavailable",
+          "uuid": "6fffe5f0-0769-5de0-90b9-2bcbf48e19f7"
+        },
+        {
+          "value": "destroyed",
+          "expanded": "destroyed",
+          "uuid": "ebf58c41-716c-5ca0-a5ea-1f321c675027"
+        },
+        {
+          "value": "theft",
+          "expanded": "theft",
+          "uuid": "45bba360-e0ae-55fa-9b22-9f9ba3ec62d0"
+        },
+        {
+          "value": "compromised",
+          "expanded": "compromised",
+          "uuid": "6a1dc7da-17ae-5988-997a-f0f18703a8fa"
+        },
+        {
+          "value": "infected",
+          "expanded": "infected",
+          "uuid": "4ade9625-9df2-5969-b9e1-c1f8f793f4a8"
+        },
+        {
+          "value": "exposed-leaked",
+          "expanded": "exposed or leaked",
+          "uuid": "8cda299d-257d-5692-a3dd-60ffa67cb25d"
+        },
+        {
+          "value": "corrupted",
+          "expanded": "corrupted",
+          "uuid": "6527e688-0556-5077-84dd-36170f2d1beb"
+        },
+        {
+          "value": "reduced-performance",
+          "expanded": "reduced performance",
+          "uuid": "44f9f702-94dc-5b8f-8b19-73b1db94f22f"
+        },
+        {
+          "value": "bodily-injury",
+          "expanded": "bodily injury",
+          "uuid": "5017bd4b-75c8-5123-aebe-a2a001b66726"
+        },
+        {
+          "value": "pain",
+          "expanded": "pain",
+          "uuid": "358084d2-cb65-59a4-b266-c4a3a6ed837a"
+        },
+        {
+          "value": "loss-of-life",
+          "expanded": "loss of life",
+          "uuid": "85d89f42-a8ee-59b5-bde5-3e4b163ba415"
+        },
+        {
+          "value": "prosecution",
+          "expanded": "prosecution",
+          "uuid": "27022d3a-02c1-5fdb-99d5-e26441e3c31b"
+        },
+        {
+          "value": "abuse",
+          "expanded": "abuse",
+          "uuid": "82ea1e0c-dc30-5a19-892d-fe3c8501b421"
+        },
+        {
+          "value": "mistreatment",
+          "expanded": "mistreatment",
+          "uuid": "a9f6497a-4499-5e78-a571-49d93f981f1a"
+        },
+        {
+          "value": "identity-theft",
+          "expanded": "identity theft",
+          "uuid": "1c6f5b8d-ba7e-5633-8e77-e7bd5ab47c97"
+        }
+      ]
+    },
+    {
+      "predicate": "economic",
+      "entry": [
+        {
+          "value": "disrupted-operations",
+          "expanded": "disrupted operations",
+          "uuid": "ad2f6813-139a-5ae1-bfb5-7c479faf37a2"
+        },
+        {
+          "value": "disrupted-sales",
+          "expanded": "disrupted sales",
+          "uuid": "f8daf386-f16a-5e20-8a37-c94666009dd2"
+        },
+        {
+          "value": "reduced-customers",
+          "expanded": "reduced customers",
+          "uuid": "ce788f0b-2d3c-5e9e-9abf-1c48888953b1"
+        },
+        {
+          "value": "reduced-profits",
+          "expanded": "reduced profits",
+          "uuid": "fe173078-f141-5c0c-bc71-bb7e08e85477"
+        },
+        {
+          "value": "reduced-growth",
+          "expanded": "reduced growth",
+          "uuid": "6b6809ec-ffee-5509-a72b-1d9e1be3b92a"
+        },
+        {
+          "value": "reduced-investments",
+          "expanded": "reduced investments",
+          "uuid": "26f1b236-1dd0-5aa3-ae94-7033dc7a33aa"
+        },
+        {
+          "value": "fall-in-stock-price",
+          "expanded": "fall in stock price",
+          "uuid": "e0695119-e0c8-5c34-8d96-eda4bfcb0828"
+        },
+        {
+          "value": "theft-of-finances",
+          "expanded": "threft of finances",
+          "uuid": "028fb0b3-eb66-5183-bd23-1d70cce380bd"
+        },
+        {
+          "value": "loss-of-finances",
+          "expanded": "loss of finances",
+          "uuid": "a3060564-07f6-588c-820b-05003147f880"
+        },
+        {
+          "value": "regulatory-fines",
+          "expanded": "regulatory fines",
+          "uuid": "7ff16dac-afbb-5d14-8acc-af7802bf6057"
+        },
+        {
+          "value": "investigation-costs",
+          "expanded": "investigations costs",
+          "uuid": "d7bb2a3f-cdd0-5aa0-8e23-9480b4597549"
+        },
+        {
+          "value": "pr-response-costs",
+          "expanded": "pr response costs",
+          "uuid": "cd7f504b-b0ce-51de-ab2e-10710c56172c"
+        },
+        {
+          "value": "compensation-payments",
+          "expanded": "compensation payments",
+          "uuid": "23a36bfb-0e42-5430-ae07-60d755fad779"
+        },
+        {
+          "value": "extortion-payments",
+          "expanded": "extortion payments",
+          "uuid": "27fdb8f2-45b1-512d-ab46-1b86dd34f358"
+        },
+        {
+          "value": "loss-of-jobs",
+          "expanded": "loss of jobs",
+          "uuid": "a96a20e4-38df-5c41-9db1-da1fe3ded3b8"
+        },
+        {
+          "value": "scammed",
+          "expanded": "scammed",
+          "uuid": "9d1b550e-bb7f-5982-950d-d70f1dadd46b"
+        }
+      ]
+    },
+    {
+      "predicate": "psychological",
+      "entry": [
+        {
+          "value": "confusion",
+          "expanded": "confusion",
+          "uuid": "87a1328b-29a2-5c43-a59e-8c49a40c6197"
+        },
+        {
+          "value": "discomfort",
+          "expanded": "discomfort",
+          "uuid": "7cc8f087-af8a-573e-9176-e377c20dae92"
+        },
+        {
+          "value": "frustration",
+          "expanded": "frustration",
+          "uuid": "515770f1-69cb-593c-9800-a4fd497a3e4e"
+        },
+        {
+          "value": "worry-anxiety",
+          "expanded": "worry or anxiety",
+          "uuid": "c3115093-780b-5628-bb94-844ccb0cef45"
+        },
+        {
+          "value": "feeling-upset",
+          "expanded": "feeling upset",
+          "uuid": "252ac980-5b5d-54b9-82dd-12f529b64aa7"
+        },
+        {
+          "value": "depressed",
+          "expanded": "depressed",
+          "uuid": "1d532d0d-3ba8-5df9-ba25-3588aabb9d08"
+        },
+        {
+          "value": "embarrassed",
+          "expanded": "embarrassed",
+          "uuid": "3dbbfcd7-7a94-530a-9264-2b9c4f46339b"
+        },
+        {
+          "value": "shameful",
+          "expanded": "shameful",
+          "uuid": "9d44b7c1-284a-5a8a-9947-f32597ac28f4"
+        },
+        {
+          "value": "guilty",
+          "expanded": "guilty",
+          "uuid": "423fb6df-c728-5126-bd5a-512dee20e341"
+        },
+        {
+          "value": "loss-of-self-confidence",
+          "expanded": "loss of self-confidence",
+          "uuid": "cbc0b4f3-9848-59af-943e-72ff8a431763"
+        },
+        {
+          "value": "low-satisfaction",
+          "expanded": "low satisfaction",
+          "uuid": "d06cc3f5-5b5b-521d-b971-03f5c057b6fc"
+        },
+        {
+          "value": "negative-changes-in-perception",
+          "expanded": "negative changes in perception",
+          "uuid": "4d2b3d06-3a1e-523f-bc78-1e0edfb3bec8"
+        }
+      ]
+    },
+    {
+      "predicate": "reputational",
+      "entry": [
+        {
+          "value": "damaged-public-perception",
+          "expanded": "damaged public perception",
+          "uuid": "9b693bb8-25e4-5cff-9354-16ab049d1062"
+        },
+        {
+          "value": "reduced-corporate-goodwill",
+          "expanded": "reduced corporate goodwill",
+          "uuid": "966136a2-4eee-59ba-bd12-3622d54dba74"
+        },
+        {
+          "value": "damaged-customer-relationships",
+          "expanded": "damaged customer relationship",
+          "uuid": "f3ae8aae-776b-5c0b-bf4a-5bdbcd8b4b1c"
+        },
+        {
+          "value": "damaged-supplier-relationships",
+          "expanded": "damaged supplier relationship",
+          "uuid": "690b590b-62be-51ad-ba2a-dc95add9d470"
+        },
+        {
+          "value": "reduced-business-opportunities",
+          "expanded": "reduced business opportunities",
+          "uuid": "5b454a5c-3c03-5b3b-89d5-e0bfe3d512fc"
+        },
+        {
+          "value": "inability-to-recruit",
+          "expanded": "inability to recruit",
+          "uuid": "e5b69736-f1cc-5f91-b441-f6543c4375d6"
+        },
+        {
+          "value": "media-scrutiny",
+          "expanded": "media scrutiny",
+          "uuid": "8c65b49d-f23c-5858-853f-22a6d3b19a65"
+        },
+        {
+          "value": "loss-of-key-staff",
+          "expanded": "loss of key staff",
+          "uuid": "d9a31bc9-c2cc-562e-be14-c0a9372fff37"
+        },
+        {
+          "value": "loss-of-accreditations",
+          "expanded": "loss of accreditations",
+          "uuid": "ec5442a6-9edb-5a72-930c-23fe7c8bb3d5"
+        },
+        {
+          "value": "reduced-credit-scores",
+          "expanded": "reduced credit scores",
+          "uuid": "5733f8cb-3f62-5a49-a843-818563540af8"
+        }
+      ]
+    },
+    {
+      "predicate": "social-societal",
+      "entry": [
+        {
+          "value": "negative-changes-in-public-perception",
+          "expanded": "negative changes in public perception",
+          "uuid": "4792ac2b-15e9-57ba-aaad-5c39477db41e"
+        },
+        {
+          "value": "disruption-in-daily-activities",
+          "expanded": "disruption in daily activities",
+          "uuid": "91c8a529-b616-5f25-9c9f-3313b6ae14fb"
+        },
+        {
+          "value": "negative-impact-on-network",
+          "expanded": "negative impact on network",
+          "uuid": "834a68f0-a8fc-5b32-a23c-f1fb86032c72"
+        },
+        {
+          "value": "drop-in-internal-morale",
+          "expanded": "drop-in internal morale",
+          "uuid": "4e38a290-2786-5df0-82d2-ceb80b9a4176"
+        }
+      ]
+    }
+  ],
+  "uuid": "42602a10-a966-53a3-af5f-377e51cbdab4"
+}

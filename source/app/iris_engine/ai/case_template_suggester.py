@@ -33,10 +33,12 @@ from typing import Any
 from app import app
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
+from app.iris_engine.ai.sigma_grounding import aggregate_techniques
+from app.iris_engine.ai.sigma_grounding import find_matching_sigma_rules
 from app.models.alerts import Alert
 from app.models.models import CaseTemplate
 
-CASE_TEMPLATE_SUGGESTER_PROMPT_ID = "CaseTemplateSuggesterSystemPrompt-v1"
+CASE_TEMPLATE_SUGGESTER_PROMPT_ID = "CaseTemplateSuggesterSystemPrompt-v2"  # v2: Sigma-grounded prompt 2026-04-29
 PROMPT_PATH = Path(__file__).parent.parent.parent / "resources" / "ai_prompts" / "case_template_suggester.md"
 
 # Cap how many alert IOCs / assets we send to the model — keeps the prompt
@@ -204,18 +206,65 @@ def suggest_case_template(*, alert: Alert) -> dict[str, Any]:
         )
 
     system_prompt = load_system_prompt()
+    alert_payload = _build_alert_payload(alert)
     payload = {
-        "alert": _build_alert_payload(alert),
+        "alert": alert_payload,
         "catalog": catalog,
     }
+
+    # Sigma RAG grounding — search the Sigma index using the alert's title +
+    # description for matching detection rules. The aggregated technique
+    # votes give the model a "fingerprint" of what behavior the alert
+    # represents (e.g. lots of Sigma rules with credential-access techniques
+    # → intrusion template; ransomware-tagged rules → ransomware template).
+    # Best-effort: empty Sigma block if Pinecone isn't configured or fails.
+    sigma_query = " ".join(
+        s for s in (alert_payload.get("title"), alert_payload.get("description"))
+        if isinstance(s, str) and s.strip()
+    ).strip()
+    sigma_matches = find_matching_sigma_rules(query_text=sigma_query, top_k=5) if sigma_query else []
+    sigma_aggregated = aggregate_techniques(sigma_matches)
+
+    sigma_block = ""
+    if sigma_matches:
+        lines = [
+            "## Sigma evidence (semantic-search matches from the Sigma rule index)",
+            "",
+            "These detection rules match the alert description semantically. The technique IDs are",
+            "what the rule's authors tagged it with — use them as a behavioral fingerprint when",
+            "deciding which template family fits (e.g. lots of credential-access techniques → intrusion;",
+            "encryption / extortion / ransom note techniques → ransomware; phishing-vector + named",
+            "malware family → malware-infection NOT phishing).",
+            "",
+        ]
+        for i, m in enumerate(sigma_matches, 1):
+            techs = ", ".join(m["techniques"]) if m["techniques"] else "(no ATT&CK tags)"
+            title_str = m.get("title") or m.get("id") or "<unknown>"
+            level = f" [{m['level']}]" if m.get("level") else ""
+            score = m.get("score") or 0.0
+            lines.append(f"{i}. score={score:.3f}{level}  {title_str}  →  {techs}")
+        if sigma_aggregated:
+            top_voted = sigma_aggregated[:6]
+            lines.append("")
+            lines.append("**Aggregated technique votes (weight = sum of match scores):**")
+            for t in top_voted:
+                lines.append(
+                    f"  - {t['technique_id']}  weight={t['weight']:.3f}  sources={t['source_count']}"
+                )
+        sigma_block = "\n".join(lines) + "\n\n"
+
     user_prompt = (
+        f"{sigma_block}"
+        "## Alert + catalog\n\n"
         "Pick the single best-fitting `id` from the catalog for the alert below.\n\n"
         f"```json\n{json.dumps(payload, indent=2, ensure_ascii=False)}\n```"
     )
 
     app.logger.info(
         f"CaseTemplateSuggester: requesting suggestion (model={client.model}, "
-        f"alert_id={alert.alert_id}, catalog_size={len(catalog)})"
+        f"alert_id={alert.alert_id}, catalog_size={len(catalog)}, "
+        f"sigma_matches={len(sigma_matches)}, "
+        f"sigma_voted_techniques={len(sigma_aggregated)})"
     )
 
     try:
@@ -255,4 +304,13 @@ def suggest_case_template(*, alert: Alert) -> dict[str, Any]:
         "suggestion": suggestion,
         "model": client.model,
         "catalog_size": len(catalog),
+        "sigma_matches": [
+            {
+                "title": m.get("title"),
+                "score": m.get("score"),
+                "level": m.get("level"),
+                "techniques": m.get("techniques"),
+            }
+            for m in sigma_matches
+        ],
     }

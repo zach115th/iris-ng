@@ -1,0 +1,100 @@
+{
+  "namespace": "eu-marketop-and-publicadmin",
+  "description": "Market operators and public administrations that must comply to some notifications requirements under EU NIS directive",
+  "version": 1,
+  "predicates": [
+    {
+      "value": "critical-infra-operators",
+      "expanded": "Critical Infrastructure Operators",
+      "uuid": "1b15b53f-43ae-549f-9238-e0438838fa78"
+    },
+    {
+      "value": "info-services",
+      "expanded": "Information Society services enablers",
+      "uuid": "20b301e0-763e-5eb9-a3bd-ef36c8bea4cd"
+    },
+    {
+      "value": "public-admin",
+      "expanded": "Public administration",
+      "uuid": "9e35eb6a-d590-5670-a859-f92979e3286c"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "critical-infra-operators",
+      "entry": [
+        {
+          "value": "transport",
+          "expanded": "Transport",
+          "uuid": "237677fa-05e1-5253-806d-3dda35cb0048"
+        },
+        {
+          "value": "energy",
+          "expanded": "Energy",
+          "uuid": "caa9480e-a498-5c5e-80b5-1f287429bc9d"
+        },
+        {
+          "value": "health",
+          "expanded": "Health",
+          "uuid": "62b2c66c-49d1-5cba-871b-46d5e5b8e484"
+        },
+        {
+          "value": "financial",
+          "expanded": "Financial market operators",
+          "uuid": "e532535b-16a6-5944-8909-e83a5af01312"
+        },
+        {
+          "value": "banking",
+          "expanded": "Banking",
+          "uuid": "15148396-4d46-5fa4-9787-00011c72ce31"
+        }
+      ]
+    },
+    {
+      "predicate": "info-services",
+      "entry": [
+        {
+          "value": "e-commerce",
+          "expanded": "e-commerce platforms",
+          "uuid": "cf539b89-369f-59c4-9189-ea7b887cab25"
+        },
+        {
+          "value": "internet-payment",
+          "expanded": "Internet payment",
+          "uuid": "31e0aa7f-9656-5c1d-b251-d4e64ab25744"
+        },
+        {
+          "value": "cloud",
+          "expanded": "cloud computing",
+          "uuid": "dcbf5ea9-d9ec-5972-96f3-f1d71077376b"
+        },
+        {
+          "value": "search-engines",
+          "expanded": "search engines",
+          "uuid": "292a667b-0044-5dae-bdc3-075c314fce1f"
+        },
+        {
+          "value": "socnet",
+          "expanded": "social networks",
+          "uuid": "3a8930c1-861c-57d1-ae10-c705bc7dea3b"
+        },
+        {
+          "value": "app-stores",
+          "expanded": "application stores",
+          "uuid": "cd2ef56f-d26d-520d-b12f-12764ff328ad"
+        }
+      ]
+    },
+    {
+      "predicate": "public-admin",
+      "entry": [
+        {
+          "value": "public-admin",
+          "expanded": "Public Administrations",
+          "uuid": "0fb60577-b422-50cd-85fc-90faaac6a7a6"
+        }
+      ]
+    }
+  ],
+  "uuid": "8b2e0ecb-c289-56a1-9f99-7b624c0e019e"
+}

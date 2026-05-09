@@ -80,3 +80,13 @@ Pick the **most specific** type that fits. If the type isn't in this list, omit 
 ## When the text contains no clear IOCs
 
 Return `{"iocs": [], "rationale": "Note text does not contain identifiable IOCs."}` — empty list is acceptable.
+
+## Sigma-rule grounding (when present)
+
+The user message MAY include a `## Sigma context` section above the note text. When it does:
+
+- **Use the rules' `falsepositives` field as the authoritative noise_flag source.** If a Sigma rule that matches this note says "common false positives include: legitimate admin scripts, software-update endpoints, Cloudflare IPs," then any IOC candidate that matches one of those patterns gets a `noise_flag` quoting the rule's reasoning — e.g. `"noise_flag": "Sigma rule 'Susp PowerShell Encoded Command' lists legitimate admin scripts as a known FP — this command may be benign automation."`
+- **Use the matched-rule techniques to anticipate IOC types.** If the matched rules tag `T1071.004 DNS C2`, expect domain / hostname / `ip-dst` IOCs (the C2 endpoint). If they tag `T1486 Data Encrypted for Impact`, expect file-paths and ransom-note filenames (more likely `filename` / `text` than network IOCs). Don't fabricate IOCs that aren't in the note text — but DO bias the type-classification toward what the rules suggest.
+- **Cite Sigma matches in `reason` when grounding informed the call**, especially noise_flag decisions: `"reason": "Outbound IP mentioned in C2 path. Sigma 'Cloudflare CDN Range' marks this /24 as a known FP for shared hosting."`
+- **The `falsepositives` field is the most valuable signal** — analysts who write Sigma rules have already enumerated the known-noise classes. Trust it more than your generic priors.
+- **When NO Sigma section is present**, behave exactly as before — pure type-and-noise heuristics from the note text alone.

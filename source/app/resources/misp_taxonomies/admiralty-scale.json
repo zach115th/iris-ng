@@ -1,0 +1,122 @@
+{
+  "namespace": "admiralty-scale",
+  "description": "The Admiralty Scale or Ranking (also called the NATO System) is used to rank the reliability of a source and the credibility of an information. Reference based on FM 2-22.3 (FM 34-52) HUMAN INTELLIGENCE COLLECTOR OPERATIONS and NATO documents.",
+  "version": 5,
+  "predicates": [
+    {
+      "value": "source-reliability",
+      "expanded": "Source Reliability",
+      "exclusive": true,
+      "uuid": "f7b68aff-8b01-517c-a272-13dc713d01e5"
+    },
+    {
+      "value": "information-credibility",
+      "expanded": "Information Credibility",
+      "exclusive": true,
+      "uuid": "78ceeb42-699a-5882-882a-5b8cdebb4565"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "source-reliability",
+      "entry": [
+        {
+          "value": "a",
+          "expanded": "Completely reliable",
+          "description": "No doubt of authenticity, trustworthiness, or competency; has a history of complete reliability",
+          "numerical_value": 100,
+          "uuid": "bcb65b93-062a-5b9f-8d69-9a1f23d25827"
+        },
+        {
+          "value": "b",
+          "expanded": "Usually reliable",
+          "description": "Minor doubt about authenticity, trustworthiness, or competency; has a history of valid information most of the time",
+          "numerical_value": 75,
+          "uuid": "61cbed64-0bdf-5467-9b28-e94aa3ee87c5"
+        },
+        {
+          "value": "c",
+          "expanded": "Fairly reliable",
+          "description": "Doubt of authenticity, trustworthiness, or competency but has provided valid information in the past",
+          "numerical_value": 50,
+          "uuid": "046949ad-cdc0-53a6-b3ae-762b7befbd77"
+        },
+        {
+          "value": "d",
+          "expanded": "Not usually reliable",
+          "description": "Significant doubt about authenticity, trustworthiness, or co mpetency but has provided valid information in the past",
+          "numerical_value": 25,
+          "uuid": "3125e574-7adc-5e08-b5ca-86d7d1afb2a3"
+        },
+        {
+          "value": "e",
+          "expanded": "Unreliable",
+          "description": "Lacking in authenticity, trustworthiness, and competency; history of invalid information",
+          "numerical_value": 0,
+          "uuid": "6615786b-22e5-58d1-9bf5-4a790975e461"
+        },
+        {
+          "value": "f",
+          "expanded": "Reliability cannot be judged",
+          "description": "No basis exists for evaluating the reliability of the source",
+          "numerical_value": 50,
+          "uuid": "5c877b09-bc69-5b92-bd34-099b4789d6ab"
+        },
+        {
+          "value": "g",
+          "expanded": "Deliberatly deceptive",
+          "numerical_value": 0,
+          "uuid": "47487617-8fe2-518a-9472-178e88a45e6f"
+        }
+      ]
+    },
+    {
+      "predicate": "information-credibility",
+      "entry": [
+        {
+          "value": "1",
+          "expanded": "Confirmed by other sources",
+          "description": "Confirmed by other independent sources; logical in itself; Consistent with other information on the subject",
+          "numerical_value": 100,
+          "uuid": "7bc7c468-23c2-5ecc-9e4b-709dc89a7763"
+        },
+        {
+          "value": "2",
+          "expanded": "Probably true",
+          "description": "Not confirmed; logical in itself; consistent with other information on the subject",
+          "numerical_value": 75,
+          "uuid": "802dafc1-6d38-58d0-923b-569655cd0b93"
+        },
+        {
+          "value": "3",
+          "expanded": "Possibly true",
+          "description": "Not confirmed; reasonably logical in itself; agrees with some other information on the subject",
+          "numerical_value": 50,
+          "uuid": "c1553166-625b-5d93-9b9a-816f06663e28"
+        },
+        {
+          "value": "4",
+          "expanded": "Doubtful",
+          "description": "Not confirmed; possible but not logical ; no other information on the subject",
+          "numerical_value": 25,
+          "uuid": "ec23824e-c6ef-59d4-9949-643974ad32c1"
+        },
+        {
+          "value": "5",
+          "expanded": "Improbable",
+          "description": "Not confirmed; not logical in itself; contradicted by other information on the subject",
+          "numerical_value": 0,
+          "uuid": "5d6bc630-004a-54d9-b285-566361eea3bd"
+        },
+        {
+          "value": "6",
+          "expanded": "Truth cannot be judged",
+          "description": "No basis exists for evaluating the validity of the information",
+          "numerical_value": 50,
+          "uuid": "ac88352a-20bb-5ba2-89b4-d5f0dcb78658"
+        }
+      ]
+    }
+  ],
+  "uuid": "97c896f5-df57-517f-be3b-46f7c2dfcaf4"
+}

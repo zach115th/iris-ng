@@ -1,0 +1,178 @@
+{
+  "namespace": "interactive-cyber-training-audience",
+  "description": "Describes the target of cyber training and education.",
+  "version": 1,
+  "refs": [
+    "https://arxiv.org/abs/2101.05538"
+  ],
+  "expanded": "Interactive Cyber Training - Audience",
+  "predicates": [
+    {
+      "value": "sector",
+      "expanded": "Sector",
+      "description": "The sector from which the audience comes determines the nature of the training.",
+      "uuid": "2bb30a2b-9b92-5bab-994c-151a067df855"
+    },
+    {
+      "value": "purpose",
+      "expanded": "Purpose",
+      "description": "Purpose answered the question for which reason trainings should be used.",
+      "uuid": "66aaacd8-fe25-5710-a298-98bf34a3c098"
+    },
+    {
+      "value": "proficiency-level",
+      "expanded": "Proficiency Level",
+      "description": "Proficiency describes the knowledge of users and what they are able to do.",
+      "uuid": "552f8ae6-2d07-5e09-935f-8c7ba328ea92"
+    },
+    {
+      "value": "target-audience",
+      "expanded": "Target Audience",
+      "description": "Target audience describes the audience, which is targeted by the training.",
+      "uuid": "4a57ce97-f354-594c-9aef-650ed0daff47"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "sector",
+      "entry": [
+        {
+          "value": "academic-school",
+          "expanded": "Academic - School",
+          "description": "The focus is on the principles underlying cybersecurity, ranging from theoretical to applied, at school level.",
+          "uuid": "6aecf1c0-6f51-55b9-aafa-ed64996e1c3d"
+        },
+        {
+          "value": "academic-university",
+          "expanded": "Academic - University",
+          "description": "The focus is on the principles underlying cybersecurity, ranging from theoretical to applied, at university level.",
+          "uuid": "93820444-cb1e-5f1d-8eef-6bfbf2fc5297"
+        },
+        {
+          "value": "public-government",
+          "expanded": "Public - Government",
+          "description": "In public sector such as government, Cybersecurity is seen as tool to protect the public interest. Hence, it emphasizes on developing policies and systems to implement laws and regulations.",
+          "uuid": "72b7151b-7aac-51c5-8374-82594b645152"
+        },
+        {
+          "value": "public-authorities",
+          "expanded": "Public - Authorities",
+          "description": "In public sector such as authorities, Cybersecurity is seen as tool to protect the public interest. Hence, it emphasizes on developing policies and systems to implement laws and regulations.",
+          "uuid": "ef32e64a-9863-59ef-9c3f-368dfa10ea18"
+        },
+        {
+          "value": "public-ngo",
+          "expanded": "Public - NGO",
+          "description": "In public sector such as NGO, Cybersecurity is seen as tool to protect the public interest. Hence, it emphasizes on developing policies and systems to implement laws and regulations.",
+          "uuid": "90399495-ebc6-581f-bebb-37bee0b64482"
+        },
+        {
+          "value": "public-military",
+          "expanded": "Public - Military",
+          "description": "In public sector such as military sector, Cybersecurity is seen as tool to protect the public interest. Hence, it emphasizes on developing policies and systems to implement laws and regulations.",
+          "uuid": "e6a8a62b-997f-5218-8bd5-37f7a10407e4"
+        },
+        {
+          "value": "private",
+          "expanded": "Private",
+          "description": "The private sector and industry focuses more on protecting its investments. The effectiveness of security mechanisms and people are more important than principles they embody.",
+          "uuid": "3cf9bc84-da2d-5742-88d8-862d8c63814c"
+        }
+      ]
+    },
+    {
+      "predicate": "purpose",
+      "entry": [
+        {
+          "value": "awareness",
+          "expanded": "Awareness",
+          "description": "This training should be used to raise the awareness in multiple and different security threats.",
+          "uuid": "b23311b4-452e-592a-876c-df918de8ecb7"
+        },
+        {
+          "value": "skills",
+          "expanded": "Skills",
+          "description": "This training should be used to recognize the different skill levels of the participants so that can they be improved in a targeted manner.",
+          "uuid": "751415f2-27ee-5fcc-9e17-c0c5824b44f5"
+        },
+        {
+          "value": "collaboration",
+          "expanded": "Collaboration",
+          "description": "This training should be used to improve the cooperation within a team or beyond.",
+          "uuid": "b4b7e548-dedb-5022-9d38-95a1d8bbff40"
+        },
+        {
+          "value": "communication",
+          "expanded": "Communication",
+          "description": "This training should be used to increase the efficiency of internal and external communication in case of an incident.",
+          "uuid": "9dda74b8-0847-5cbb-829d-f1a8f9769d2b"
+        },
+        {
+          "value": "leadership",
+          "expanded": "Leadership",
+          "description": "This training should be used to improve the management and coordination of the responsible entities.",
+          "uuid": "dead285c-4cc5-5bf7-a0a4-60e70073b382"
+        }
+      ]
+    },
+    {
+      "predicate": "proficiency-level",
+      "entry": [
+        {
+          "value": "beginner",
+          "expanded": "Beginner",
+          "description": "The lowest level. Beginner are limited in abilities and knowledge. They have the possibility to use foundational conceptual and procedural knowledge in a controlled and limited environment. Beginners cannot solve critical tasks and need significant supervision. They are able to perform daily processing tasks. The focus is on learning.",
+          "uuid": "0c739494-e2af-510c-bebc-9037cf2a2f0d"
+        },
+        {
+          "value": "professional",
+          "expanded": "Professional",
+          "description": "The mid level. Professionals have deeper knowledge and understanding in specific sectors. For these sectors they are able to complete tasks as requested. Sometimes supervision is needed but usually they perform independently. The focus is on enhancing and applying existing knowledge.",
+          "uuid": "7ccfef70-b80b-5914-9a12-0d9c42059b2e"
+        },
+        {
+          "value": "expert",
+          "expanded": "Expert",
+          "description": "The highest level. Experts have deeper knowledge and understanding in different sectors. They complete tasks self-dependent and have the possibilities to achieve goals in the most effective and efficient way. Experts have comprehensive understanding and abilities to lead and train others. The focus is on strategic action.",
+          "uuid": "2e06bc8e-8beb-574b-978b-6772570c6494"
+        }
+      ]
+    },
+    {
+      "predicate": "target-audience",
+      "entry": [
+        {
+          "value": "student-trainee",
+          "expanded": "Student/Trainee",
+          "description": "Student and trainees have little to none practical knowledge. Training can be used for students and trainees, to enhance their knowledge and to practice theoretical courses.",
+          "uuid": "82259ea3-a69f-5b77-9ac9-1183ede7b4a7"
+        },
+        {
+          "value": "it-user",
+          "expanded": "IT User",
+          "description": "IT users use the IT but have little to none knowledge about IT security. Users can get trained to understand principles of IT security and to grow awareness.",
+          "uuid": "7f13f3fa-d843-5235-854f-49c8bd247f38"
+        },
+        {
+          "value": "it-professional",
+          "expanded": "IT Professional",
+          "description": "Professionals have little to medium knowledge about IT security. Their professional focus is in specific sectors, therefore, they receive IT security knowledge for their sectors.",
+          "uuid": "b2044a54-c4d6-5579-a231-5ae05b4a5af0"
+        },
+        {
+          "value": "it-specialist",
+          "expanded": "IT Specialist",
+          "description": "Specialists already have a comprehensive knowledge in IT security. Therefore, the training is focussed on specific aspects.",
+          "uuid": "875d26b7-f502-5316-897a-92fa802feded"
+        },
+        {
+          "value": "management",
+          "expanded": "Management",
+          "description": "Management has little knowledge about IT security, but a broad overview. By the training, management can understand changed settings better.",
+          "uuid": "a2eec577-286e-53e6-9cb3-74755d741bbf"
+        }
+      ]
+    }
+  ],
+  "uuid": "3d85c531-47b3-5566-bd2a-6798987ed385"
+}

@@ -25,6 +25,7 @@ from typing import Any
 from app import app
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
+from app.iris_engine.ai.sigma_grounding import find_matching_sigma_rules
 from app.models.models import Ioc
 from app.models.models import IocType
 from app.models.models import Tlp
@@ -201,14 +202,60 @@ def extract_iocs(text: str, case_id: int | None = None) -> dict[str, Any]:
     system_prompt = load_system_prompt()
 
     payload_text = _truncate(text, 12000)
+
+    # Sigma RAG grounding — pull matching detection rules so the model can
+    # use the rules' `falsepositives` field to inform noise_flag decisions
+    # ("rule says public DNS resolvers are common false positives" → flag
+    # 8.8.8.8 / 1.1.1.1 as noise). The technique mix also hints at what
+    # KIND of IOCs we expect (C2 rule → expect C2 domains/IPs; ransomware
+    # rule → expect file-paths and ransom note titles; phishing rule →
+    # expect lookalike domains and email addresses). Best-effort: empty
+    # block if Pinecone isn't configured.
+    sigma_matches = find_matching_sigma_rules(query_text=payload_text, top_k=4) if payload_text else []
+
+    sigma_block = ""
+    if sigma_matches:
+        lines = [
+            "## Sigma context (semantic-search matches from the Sigma rule index)",
+            "",
+            "These detection rules describe the activity in the note. Use them to:",
+            "1. Bias noise_flag — if a Sigma rule's `falsepositives` field mentions",
+            "   the IOC type as a known FP (CDN, public DNS, sinkhole, parked, RFC1918,",
+            "   software-update endpoint), flag the candidate IOC accordingly.",
+            "2. Inform what KIND of IOCs to look for (C2 → IPs/domains; ransomware →",
+            "   file paths + ransom note names; phishing → lookalike domains + emails).",
+            "",
+        ]
+        for i, m in enumerate(sigma_matches, 1):
+            techs = ", ".join(m["techniques"]) if m["techniques"] else "(no ATT&CK tags)"
+            title_str = m.get("title") or m.get("id") or "<unknown>"
+            score = m.get("score") or 0.0
+            lines.append(f"{i}. score={score:.3f}  {title_str}  →  {techs}")
+            desc = m.get("description")
+            if isinstance(desc, str) and desc.strip():
+                lines.append(f"   desc: {_truncate(desc.strip(), 200)}")
+            # The falsepositives field is the critical noise_flag signal.
+            raw_meta = m.get("raw_metadata") or {}
+            fps = raw_meta.get("falsepositives")
+            if fps:
+                if isinstance(fps, list):
+                    fp_text = "; ".join(str(f) for f in fps if f)
+                else:
+                    fp_text = str(fps)
+                if fp_text.strip():
+                    lines.append(f"   falsepositives: {_truncate(fp_text.strip(), 240)}")
+        sigma_block = "\n".join(lines) + "\n\n"
+
     user_prompt = (
-        "Extract IOCs from the following note text.\n\n"
+        f"{sigma_block}"
+        "## Note text — extract IOCs\n\n"
         f"```\n{payload_text}\n```"
     )
 
     app.logger.info(
         f"IocExtractor: requesting suggestions (model={client.model}, "
-        f"text_chars={len(payload_text or '')})"
+        f"text_chars={len(payload_text or '')}, "
+        f"sigma_matches={len(sigma_matches)})"
     )
 
     try:
@@ -279,4 +326,13 @@ def extract_iocs(text: str, case_id: int | None = None) -> dict[str, Any]:
         "rationale": rationale,
         "model": client.model,
         "default_tlp": {"id": default_tlp_id, "name": DEFAULT_TLP_NAME} if default_tlp_id else None,
+        "sigma_matches": [
+            {
+                "title": m.get("title"),
+                "score": m.get("score"),
+                "level": m.get("level"),
+                "techniques": m.get("techniques"),
+            }
+            for m in sigma_matches
+        ],
     }

@@ -218,6 +218,55 @@ class CaseState(db.Model):
     cases = relationship('Cases', back_populates='state')
 
 
+class CaseWorkingEvent(db.Model):
+    """Tool-ingested timeline rows pending analyst review.
+
+    Source table for the right-hand "working timeline" rail. Created by
+    parsers under ``app.iris_engine.working_timeline`` (Hayabusa first;
+    KAPE / EZTools / Cybertriage planned). Analyst either *promotes* a
+    row (creates a real ``cases_events`` row + sets status =
+    true_positive + back-references the new event_id) or *rejects* it
+    (status = false_positive). See docs/19-ux-ai-design.md §5b.1.
+
+    CHECK on status lives here AND in the migration: IRIS-NG runs
+    ``db.create_all()`` from ORM models BEFORE alembic, so a
+    constraint defined only in the migration would silently never land.
+    """
+    __tablename__ = 'case_working_event'
+
+    id = Column(BigInteger, primary_key=True)
+    case_id = Column(BigInteger, ForeignKey('cases.case_id', ondelete='CASCADE'), nullable=False)
+    source = Column(String(32), nullable=False)
+    event_date = Column(DateTime, nullable=False)
+    event_title = Column(Text, nullable=False)
+    event_description = Column(Text)
+    event_source_host = Column(Text)
+    severity = Column(String(16))
+    event_tags = Column(Text)
+    mitre_techniques = Column(Text)
+    external_id = Column(Text)
+    event_raw = Column(JSONB)
+    import_batch_id = Column(UUID(as_uuid=True))
+    status = Column(String(16), nullable=False, default='pending', server_default='pending')
+    promoted_event_id = Column(BigInteger, ForeignKey('cases_events.event_id', ondelete='SET NULL'))
+    created_at = Column(DateTime, server_default=text('now()'), nullable=False)
+    created_by = Column(Integer, ForeignKey('user.id', ondelete='SET NULL'))
+    reviewed_at = Column(DateTime)
+    reviewed_by = Column(Integer, ForeignKey('user.id', ondelete='SET NULL'))
+
+    case = relationship('Cases')
+    promoted_event = relationship('CasesEvent', foreign_keys=[promoted_event_id])
+    creator = relationship('User', foreign_keys=[created_by])
+    reviewer = relationship('User', foreign_keys=[reviewed_by])
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'true_positive', 'false_positive')",
+            name='ck_case_working_event_status'
+        ),
+    )
+
+
 class CaseProtagonist(db.Model):
     __tablename__ = "case_protagonist"
 

@@ -26,7 +26,7 @@ class OpenAIClient:
         api_key: str,
         model: str,
         *,
-        timeout: float = 120.0,
+        timeout: float = 600.0,
         default_max_tokens: int = 4000,
         default_temperature: float = 0.0
     ):
@@ -47,15 +47,21 @@ class OpenAIClient:
         messages: list[dict[str, str]],
         *,
         max_tokens: int | None = None,
-        temperature: float | None = None
+        temperature: float | None = None,
+        model: str | None = None
     ) -> dict[str, Any]:
         """Send a chat-completions request and return the parsed envelope.
 
         Returns the raw OpenAI-compat envelope. Use `extract_content` for
         the assistant message body.
-        """
+
+        `model` overrides the client's configured model for this call only —
+        useful for caller-specific routing (e.g. case_summary uses Haiku for
+        the synthesizer stage to skip Sonnet's slower per-token throughput
+        on the 8-9 KB synthesis output, while keeping Sonnet for the
+        specialist analyses upstream).        """
         body = json.dumps({
-            "model": self.model,
+            "model": model if model is not None else self.model,
             "messages": messages,
             "max_tokens": max_tokens if max_tokens is not None else self.default_max_tokens,
             "temperature": temperature if temperature is not None else self.default_temperature
@@ -101,18 +107,21 @@ class OpenAIClient:
 
 def build_default_client(
     *,
-    timeout: float = 120.0,
+    timeout: float = 600.0,
     default_max_tokens: int = 4000
 ) -> OpenAIClient | None:
     """Construct a client from the active AI backend configuration.
 
     Resolution order (first non-empty wins):
-      1. ServerSettings table (admin-editable via /manage/settings)
+      1. ServerSettings table (admin-editable via /manage/settings).
+         The active slot is picked via ServerSettings.ai_backend_active_slot
+         ('primary' or 'alt'). Slot-1 columns are ai_backend_{url,api_key,
+         model}; slot-2 columns are ai_backend_alt_{url,api_key,model}.
       2. app.config (env vars at startup — bootstrap fallback before the
-         settings row is populated)
+         settings row is populated; only seeds slot-1).
 
-    Returns None when the AI backend is disabled or not configured. Caller
-    decides whether that's an error or a graceful skip.
+    Returns None when the AI backend is disabled or the active slot is not
+    configured. Caller decides whether that's an error or a graceful skip.
     """
     from app import app
 
@@ -139,10 +148,12 @@ def build_default_client(
 
 
 def _read_settings_row() -> tuple[bool | None, str | None, str | None, str | None]:
-    """Pull AI backend config from the ServerSettings row.
+    """Pull AI backend config from the ServerSettings row, honoring the
+    active-slot selector.
 
     Returns (enabled, url, api_key, model). Any field can be None if the row
-    or column doesn't exist yet (covers fresh installs / pre-migration boot).
+    or column doesn't exist yet (covers fresh installs / pre-migration boot)
+    or if the selected slot has empty URL/model.
     """
     try:
         from app.models.models import ServerSettings
@@ -153,9 +164,19 @@ def _read_settings_row() -> tuple[bool | None, str | None, str | None, str | Non
     if row is None:
         return (None, None, None, None)
 
+    slot = (getattr(row, 'ai_backend_active_slot', None) or 'primary').strip().lower()
+    if slot == 'alt':
+        url_attr, key_attr, model_attr = (
+            'ai_backend_alt_url', 'ai_backend_alt_api_key', 'ai_backend_alt_model',
+        )
+    else:
+        url_attr, key_attr, model_attr = (
+            'ai_backend_url', 'ai_backend_api_key', 'ai_backend_model',
+        )
+
     return (
         getattr(row, 'ai_backend_enabled', None),
-        (getattr(row, 'ai_backend_url', None) or '').strip() or None,
-        (getattr(row, 'ai_backend_api_key', None) or '').strip() or None,
-        (getattr(row, 'ai_backend_model', None) or '').strip() or None,
+        (getattr(row, url_attr, None) or '').strip() or None,
+        (getattr(row, key_attr, None) or '').strip() or None,
+        (getattr(row, model_attr, None) or '').strip() or None,
     )

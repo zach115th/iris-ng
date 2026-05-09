@@ -1,0 +1,138 @@
+{
+  "predicates": [
+    {
+      "expanded": "Intentionally-Motivated Failures Summary",
+      "description": "Intentional failures wherein the failure is caused by an active adversary attempting to subvert the system to attain her goals – either to misclassify the result, infer private training data, or to steal the underlying algorithm.",
+      "value": "intentionally-motivated-failures-summary",
+      "uuid": "4f09933d-aaab-5478-8c98-c2532973b681"
+    },
+    {
+      "description": "Unintentional failures wherein the failure is because an ML system produces a formally correct but completely unsafe outcome.",
+      "expanded": "Unintended Failures Summary",
+      "value": "unintended-failures-summary",
+      "uuid": "29f75df7-f6ca-520f-a2f3-0271126cd263"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "intentionally-motivated-failures-summary",
+      "entry": [
+        {
+          "value": "1-perturbation-attack",
+          "expanded": "Perturbation attack",
+          "description": "Attacker modifies the query to get appropriate response. It doesn't violate traditional technological notion of access/authorization.",
+          "uuid": "6d085a13-35d1-52ba-a995-4ec5fe7eb5eb"
+        },
+        {
+          "value": "2-poisoning-attack",
+          "expanded": "Poisoning attack",
+          "description": "Attacker contaminates the training phase of ML systems to get intended result. It doesn't violate traditional technological notion of access/authorization.",
+          "uuid": "371ef2de-610f-552d-ab8d-a4c70dcc213e"
+        },
+        {
+          "value": "3-model-inversion",
+          "expanded": "Model Inversion",
+          "description": "Attacker recovers the secret features used in the model by through careful queries. It doesn't violate traditional technological notion of access/authorization.",
+          "uuid": "c7c9ae21-172a-511c-9400-87e728b5423c"
+        },
+        {
+          "value": "4-membership-inference",
+          "expanded": "Membership Inference",
+          "description": "Attacker can infer if a given data record was part of the model’s training dataset or not. It doesn't violate traditional technological notion of access/authorization.",
+          "uuid": "677ad410-af53-5f7f-8854-2e1a91bb612d"
+        },
+        {
+          "value": "5-model-stealing",
+          "expanded": "Model Stealing",
+          "description": "Attacker is able to recover the model through carefully-crafted queries. It doesn't violate traditional technological notion of access/authorization.",
+          "uuid": "cc4eb5c5-0106-5639-8ca3-75fddfd01223"
+        },
+        {
+          "value": "6-reprogramming-ML-system",
+          "expanded": "Reprogramming ML system",
+          "description": "Repurpose the ML system to perform an activity it was not programmed for. It doesn't violate traditional technological notion of access/authorization.",
+          "uuid": "9f9a5f2e-a990-5121-a0ce-b39a62c55826"
+        },
+        {
+          "value": "7-adversarial-example-in-physical-domain",
+          "expanded": "Adversarial Example in Physical Domain ",
+          "description": "Repurpose the ML system to perform an activity it was not programmed for. It doesn't violate traditional technological notion of access/authorization.",
+          "uuid": "a29ff97a-50a9-5846-a1c7-d5257d27c696"
+        },
+        {
+          "value": "8-malicious-ML-provider-recovering-training-data",
+          "expanded": "Malicious ML provider recovering training data",
+          "description": "Malicious ML provider can query the model used by customer and recover customer’s training data. It does violate traditional technological notion of access/authorization.",
+          "uuid": "ef62fcaa-00e5-5589-908d-8f76d22a9da7"
+        },
+        {
+          "value": "9-attacking-the-ML-supply-chain",
+          "expanded": "Attacking the ML supply chain",
+          "description": "Attacker compromises the ML models as it is being downloaded for use. It does violate traditional technological notion of access/authorization.",
+          "uuid": "f1b166e3-00e8-53b4-8780-87afc0784cda"
+        },
+        {
+          "value": "10-backdoor-ML",
+          "expanded": "Backdoor ML",
+          "description": "Malicious ML provider backdoors algorithm to activate with a specific trigger. It does violate traditional technological notion of access/authorization.",
+          "uuid": "4fd86f84-1db8-58e9-8b2a-c5b1a902986f"
+        },
+        {
+          "value": "10-exploit-software-dependencies",
+          "expanded": "Exploit Software Dependencies",
+          "description": "Attacker uses traditional software exploits like buffer overflow to confuse/control ML systems. It does violate traditional technological notion of access/authorization.",
+          "uuid": "351420c0-3242-5823-8854-6e0cba624158"
+        }
+      ]
+    },
+    {
+      "predicate": "unintended-failures-summary",
+      "entry": [
+        {
+          "value": "12-reward-hacking",
+          "expanded": "Reward Hacking",
+          "description": "Reinforcement Learning (RL) systems act in unintended ways because of mismatch between stated reward and true reward",
+          "uuid": "609242b3-b871-5253-a703-187e00f17dfa"
+        },
+        {
+          "value": "13-side-effects",
+          "expanded": "Side Effects",
+          "description": "RL system disrupts the environment as it tries to attain its goal",
+          "uuid": "b39d56dc-650c-57b2-abc8-21d2a60df5fb"
+        },
+        {
+          "value": "14-distributional-shifts",
+          "expanded": "Distributional shifts",
+          "description": "The system is tested in one kind of environment, but is unable to adapt to changes in other kinds of environment",
+          "uuid": "a8849b55-efb4-5484-9067-c163aac6a185"
+        },
+        {
+          "value": "15-natural-adversarial-examples",
+          "expanded": "Natural Adversarial Examples",
+          "description": "Without attacker perturbations, the ML system fails owing to hard negative mining",
+          "uuid": "a7326ca7-3869-5cae-b0ba-744fda45db9f"
+        },
+        {
+          "value": "16-common-corruption",
+          "expanded": "Common Corruption",
+          "description": "The system is not able to handle common corruptions and perturbations such as tilting, zooming, or noisy images",
+          "uuid": "84800822-d265-5e76-ba67-e09d97a7a91e"
+        },
+        {
+          "value": "17-incomplete-testing",
+          "expanded": "Incomplete Testing",
+          "description": "The ML system is not tested in the realistic conditions that it is meant to operate in",
+          "uuid": "6ba2a770-cc2c-5701-97bb-da9d41b1f8e6"
+        }
+      ]
+    }
+  ],
+  "refs": [
+    "https://docs.microsoft.com/en-us/security/failure-modes-in-machine-learning"
+  ],
+  "version": 1,
+  "description": "The purpose of this taxonomy is to jointly tabulate both the of these failure modes in a single place. Intentional failures wherein the failure is caused by an active adversary attempting to subvert the system to attain her goals – either to misclassify the result, infer private training data, or to steal the underlying algorithm. Unintentional failures wherein the failure is because an ML system produces a formally correct but completely unsafe outcome.",
+  "expanded": "Failure mode in machine learning.",
+  "namespace": "failure-mode-in-machine-learning",
+  "uuid": "942ead82-1498-531c-8176-794036d2dd55"
+}

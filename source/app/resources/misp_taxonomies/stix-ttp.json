@@ -1,0 +1,139 @@
+{
+  "namespace": "stix-ttp",
+  "expanded": "STIX TTP",
+  "version": 1,
+  "description": "TTPs are representations of the behavior or modus operandi of cyber adversaries.",
+  "refs": [
+    "http://stixproject.github.io/documentation/idioms/industry-sector/"
+  ],
+  "predicates": [
+    {
+      "value": "victim-targeting",
+      "expanded": "Victim Targeting",
+      "uuid": "1855f729-4d31-5f5a-b23a-690fd4acea29"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "victim-targeting",
+      "entry": [
+        {
+          "value": "business-professional-sector",
+          "expanded": "Business & Professional Services Sector",
+          "uuid": "2ea35d6f-8313-5380-8bde-e12878f38c5f"
+        },
+        {
+          "value": "retail-sector",
+          "expanded": "Retail Sector",
+          "uuid": "1664c1cc-6555-5163-9080-4db568cf9ac6"
+        },
+        {
+          "value": "financial-sector",
+          "expanded": "Financial Services Sector",
+          "uuid": "fe09d5a9-1ab8-578a-856c-f0578b717eba"
+        },
+        {
+          "value": "media-entertainment-sector",
+          "expanded": "Media & Entertainment Sector",
+          "uuid": "e1d6db65-53ab-5197-8a80-98a3ba36a6f2"
+        },
+        {
+          "value": "construction-engineering-sector",
+          "expanded": "Construction & Engineering Sector",
+          "uuid": "93015665-d2b3-56b9-9b53-4ff3d4675d27"
+        },
+        {
+          "value": "government-international-organizations-sector",
+          "expanded": "Goverment & International Organizations",
+          "uuid": "bc9035df-050f-564f-b0a5-92385d74c5df"
+        },
+        {
+          "value": "legal-sector",
+          "expanded": "Legal Services",
+          "uuid": "b4c41687-cc50-5402-85c9-cf4088c37ff9"
+        },
+        {
+          "value": "hightech-it-sector",
+          "expanded": "High-Tech & IT Sector",
+          "uuid": "c764dae3-7b42-5836-bd6f-b1e7f09668d7"
+        },
+        {
+          "value": "healthcare-sector",
+          "expanded": "Healthcare Sector",
+          "uuid": "6c21b91a-a60a-545f-b585-5ddee77f8233"
+        },
+        {
+          "value": "transportation-sector",
+          "expanded": "Transportation Sector",
+          "uuid": "de3ce928-5da6-5987-85ac-96851b700ca2"
+        },
+        {
+          "value": "aerospace-defence-sector",
+          "expanded": "Aerospace & Defense Sector",
+          "uuid": "fdc60d27-8abd-503c-88e3-9e8756d393ea"
+        },
+        {
+          "value": "energy-sector",
+          "expanded": "Energy Sector",
+          "uuid": "41f31971-6f4b-569c-b3d3-b14eec2d65ed"
+        },
+        {
+          "value": "food-sector",
+          "expanded": "Food Sector",
+          "uuid": "540611f7-84c5-5067-b76e-4250ae0cf433"
+        },
+        {
+          "value": "natural-resources-sector",
+          "expanded": "Natural Resources Sector",
+          "uuid": "a15abd35-cd81-5ef3-ae0c-432f6d6a6caf"
+        },
+        {
+          "value": "other-sector",
+          "expanded": "Other Sector",
+          "uuid": "dc12ce78-f7ab-5bf6-ba99-9e49bae40718"
+        },
+        {
+          "value": "corporate-employee-information",
+          "expanded": "Corporate Employee Information",
+          "uuid": "1d835568-5a68-526c-b5cc-4c3479518164"
+        },
+        {
+          "value": "customer-pii",
+          "expanded": "Customer PII",
+          "uuid": "502bd9d8-9a9a-5197-8872-d407e0c69a87"
+        },
+        {
+          "value": "email-lists-archives",
+          "expanded": "Email Lists/Archives",
+          "uuid": "5d734161-f50f-57c3-977e-0a1e83da0330"
+        },
+        {
+          "value": "financial-data",
+          "expanded": "Financial Data",
+          "uuid": "758e1181-550a-5f5f-976c-661c01322d31"
+        },
+        {
+          "value": "intellectual-property",
+          "expanded": "Intellectual Property",
+          "uuid": "c7e15c06-cdef-5ea7-b201-3f41428de415"
+        },
+        {
+          "value": "mobile-phone-contacts",
+          "expanded": "Mobile Phone Contacts",
+          "uuid": "66814eeb-7174-5dd7-99f5-2e2683126f24"
+        },
+        {
+          "value": "user-credentials",
+          "expanded": "User Credentials",
+          "uuid": "2ff6e581-c41f-58da-9126-93963a222b43"
+        },
+        {
+          "value": "authentification-cookies",
+          "expanded": "Authentication Cookies",
+          "uuid": "64c279fc-181b-5c66-b1f5-8a4a3752d1e0"
+        }
+      ]
+    }
+  ],
+  "uuid": "0b0bc55f-347d-507f-99aa-84cf246a4fd1"
+}

@@ -1,14 +1,24 @@
 
 .login {
-    height: 100%;
+    min-height: 100vh;
+    width: 100%;
     display: flex;
     align-items: stretch;
 }
 
+/* iris-ng: span the wrapper across the full viewport so col-md-8 / col-md-4
+   compute against the viewport (not the content width). Upstream relied on
+   `.login__logo { max-width: 35% }` keeping the LHS narrow which masked this;
+   the IRIS-NG text wordmark exposes the wrapper-collapses-to-content bug,
+   leaving the body's `#f9fbfd` (atlantis.css) showing as a wide white band
+   behind a squished sign-in column. */
 .login__wrapper {
     display: flex;
     flex-direction: row;
+    flex: 1 1 auto;
     margin: 0;
+    width: 100%;
+    min-height: 100vh;
 }
 
 .login__left_part {
@@ -16,7 +26,9 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: radial-gradient(#013479, #011d40) !important;
+    /* iris-ng: spacewalk-inspired near-black with a faint violet hint,
+       matching the global palette shift in dark-theme.css. */
+    background: radial-gradient(circle at 50% 40%, #1a1228, #0b0b0d) !important;
 }
 
 .login__right_part {
@@ -24,11 +36,15 @@
     flex-direction: column;
     justify-content: center;
     align-items: stretch;
-    padding: 15px;
+    padding: 40px 60px;
+    /* iris-ng: match the dark-theme.css palette used everywhere else in the
+       app — login is the only page that doesn't load dark-theme.css. */
+    background: #15151a;
+    color: #e4e4e7;
 }
 
 .login__form {
-    margin: 0 8% 0 8%;
+    margin: 0;
 }
 
 /* ############### */
@@ -38,14 +54,18 @@
 .login__form_title {
     align-self: center;
     font-weight: bold;
-    margin-bottom: 20px;
+    margin-bottom: 32px;
+    color: #ffffff;
+    font-size: 22px;
+    letter-spacing: 0.5px;
 }
 
 /* ############## */
 /* #### LOGO #### */
 /* ############## */
 .login__logo {
-    max-width: 35%
+    max-width: 100%;
+    text-align: center;
 }
 
 .login__logo img{
@@ -53,20 +73,49 @@
     max-width: 100%;
 }
 
+/* iris-ng: text-only wordmark replaces the upstream IRIS hexagon image. */
+.login__brand {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 64px;
+    letter-spacing: 4px;
+    /* Subtle violet glow that matches the AI accent color (#8b5cf6). */
+    text-shadow: 0 0 24px rgba(139, 92, 246, 0.35);
+}
+
 /* ############### */
 /* #### FIELD #### */
 /* ############### */
 .login__form_field_container {
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .login__form_field_container label{
-    color: #737373;
+    color: #94a3b8;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+/* iris-ng: dark-theme form inputs to match the rest of the app */
+.login__form input.form-control {
+    background: #0e0e12;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: #e4e4e7;
+    height: 40px;
+    padding: 0 12px;
+}
+
+.login__form input.form-control:focus {
+    background: #0e0e12;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.18);
+    color: #ffffff;
 }
 
 .login__form_input {
     display: flex;
     align-items: center;
+    position: relative;
 }
 
 .login__form_input * {
@@ -95,9 +144,23 @@
     justify-content: space-between;
 }
 
+/* iris-ng: violet sign-in button matching the AI accent color used elsewhere */
 .login__submit_button {
-    width: 40%;
-    font-weight: bold;
+    width: 100%;
+    font-weight: 600;
+    height: 42px;
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+}
+
+.login__submit_button:hover,
+.login__submit_button:focus {
+    background: #7c3aed;
+    border-color: #7c3aed;
+    color: #ffffff;
 }
 
 /* ################# */
@@ -106,4 +169,30 @@
 
 .login__contact_container {
     align-self: center;
+    margin-top: 28px;
+    text-align: center;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.login__contact_container a {
+    color: #a78bfa;
+}
+
+/* iris-ng: dim the toggle-password eye icon for the dark form */
+.login__show_password {
+    cursor: pointer;
+    position: absolute;
+    right: 12px;
+    color: #94a3b8;
+}
+
+/* iris-ng: error alert styling for dark form */
+.login__form .alert-danger {
+    background: rgba(220, 38, 38, 0.12);
+    border: 1px solid rgba(220, 38, 38, 0.35);
+    color: #fca5a5;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
 }

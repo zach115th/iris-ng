@@ -1,0 +1,226 @@
+{# iris-next: shared AI tag-suggester partial.
+   Renders a "✨ Suggest tags" pill that POSTs to /api/v2/cases/{cid}/ai/tag-suggestion
+   and renders validated MISP machine-tag suggestions as accept-able chips
+   that append into the target tag input via the same amsifySuggestags
+   Enter-key trick used by attack-suggester.
+
+   Three layout modes (controlled by Jinja flags before include):
+
+     # Default — pill, status, and results stacked below the tag input.
+     # Used by IOC / asset / task modals.
+     {% set tagsuggest_object_type = "ioc" %}
+     {% set tagsuggest_object_id = ioc.ioc_id %}
+     {% set tagsuggest_target_input_id = "ioc_tags" %}
+     {% include 'case_tag_suggester.html' %}
+
+     # Pill-only — just the pill button + status. Place inside a label
+     # alongside the existing "Suggest ATT&CK" pill etc. Pair with a
+     # results-only include below the input. Used by event modal.
+     {% set tagsuggest_pill_only = True %}
+     {% include 'case_tag_suggester.html' %}
+
+     # Results-only — render the results container + bind the JS. Place
+     # below the input.
+     {% set tagsuggest_pill_only = False %}
+     {% set tagsuggest_results_only = True %}
+     {% include 'case_tag_suggester.html' %}
+
+   The pill (whether inline or default) only renders when object_id is
+   truthy (existing object). New objects must be saved first.
+
+   DOM IDs: iris-tagsuggest-{pill,status,results,chips,acceptall}. The JS
+   binds via getElementById, so it doesn't care whether the pill lives
+   inline with a label or below the input — the same ids work either way.
+#}
+{% if tagsuggest_object_id %}
+
+{% if not tagsuggest_results_only %}
+{# pill + status (rendered inline if pill_only, otherwise leads the default block) #}
+<button type="button"
+        class="btn btn-sm"
+        id="iris-tagsuggest-pill"
+        data-iris-tagsuggest-target="{{ tagsuggest_target_input_id }}"
+        data-iris-tagsuggest-type="{{ tagsuggest_object_type }}"
+        data-iris-tagsuggest-id="{{ tagsuggest_object_id }}"
+        title="Ask the AI for MISP taxonomy + galaxy tag suggestions based on this object's content"
+        style="background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; line-height: 1; padding: 3px 8px; border-radius: 999px; cursor: pointer;">
+    &#x2728; Suggest tags
+</button>
+<span id="iris-tagsuggest-status" style="font-size: 11px; color: #94a3b8; margin-left: 8px;"></span>
+{% endif %}
+
+{% if not tagsuggest_pill_only %}
+{# results container + JS (rendered alone in results_only mode, otherwise
+   trails the pill in the default block) #}
+<div id="iris-tagsuggest-results" style="margin-top: 10px; display: none;{% if tagsuggest_results_only %} padding: 10px 12px; background: #15151a; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px; font-size: 12.5px;{% endif %}">
+    <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+        <span style="font-size: 11px; color: #94a3b8; margin-right: 6px;">Suggested:</span>
+        <span id="iris-tagsuggest-chips" style="display: inline-flex; flex-wrap: wrap; gap: 6px;"></span>
+        <button type="button"
+                class="btn btn-sm btn-link"
+                id="iris-tagsuggest-acceptall"
+                style="font-size: 11px; padding: 0 8px; color: #a78bfa;">+ add all</button>
+    </div>
+</div>
+
+<script>
+(function () {
+    var pill        = document.getElementById('iris-tagsuggest-pill');
+    var statusEl    = document.getElementById('iris-tagsuggest-status');
+    var resultsBox  = document.getElementById('iris-tagsuggest-results');
+    var chipsBox    = document.getElementById('iris-tagsuggest-chips');
+    var acceptAll   = document.getElementById('iris-tagsuggest-acceptall');
+    if (!pill || !chipsBox) return;
+
+    var targetInputId = pill.getAttribute('data-iris-tagsuggest-target');
+    var objectType    = pill.getAttribute('data-iris-tagsuggest-type');
+    var objectId      = parseInt(pill.getAttribute('data-iris-tagsuggest-id'), 10);
+
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+
+    function csrfToken() {
+        var el = document.getElementById('csrf_token');
+        return el ? el.value : '';
+    }
+
+    function getCaseId() {
+        var match = window.location.search.match(/[?&]cid=(\d+)/);
+        return match ? match[1] : null;
+    }
+
+    function appendTagToInput(tag) {
+        /* Same trick as attack-suggester: amsifySuggestags doesn't expose
+         * addTag through the jQuery surface, so drive its keyup handler by
+         * writing into the visible .amsify-suggestags-input sibling and
+         * dispatching a fake Enter keyup. Falls back to writing the
+         * underlying input value directly when the widget isn't initialized. */
+        var $orig = $('#' + targetInputId);
+        if (!$orig.length) return false;
+        var $visible = $orig.next('.amsify-suggestags-area').find('.amsify-suggestags-input').first();
+        if (!$visible.length) {
+            var current = ($orig.val() || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+            if (current.indexOf(tag) === -1) current.push(tag);
+            $orig.val(current.join(','));
+            $orig.trigger('change');
+            return true;
+        }
+        $visible.val(tag).focus();
+        $visible.trigger($.Event('keyup', { keyCode: 13, which: 13, key: 'Enter' }));
+        return true;
+    }
+
+    function renderChips(suggestions) {
+        chipsBox.innerHTML = '';
+        if (!suggestions || !suggestions.length) {
+            chipsBox.innerHTML = '<span style="font-size: 11px; color: #94a3b8;">No high-confidence suggestions.</span>';
+            acceptAll.style.display = 'none';
+            return;
+        }
+        suggestions.forEach(function (s) {
+            var kindColor = (s.kind === 'galaxy')
+                ? { bg: 'rgba(245, 158, 11, 0.12)',  border: 'rgba(245, 158, 11, 0.35)', text: '#fbbf24' }
+                : { bg: 'rgba(139, 92, 246, 0.12)', border: 'rgba(139, 92, 246, 0.35)', text: '#d4c4ff' };
+            var conf = (typeof s.confidence === 'number') ? Math.round(s.confidence * 100) + '%' : '';
+            var titleAttr = s.reason
+                ? (s.reason + (s.matched_synonym ? ' [matched synonym: ' + s.matched_synonym + ']' : ''))
+                : (s.expanded || '');
+            var chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'iris-tagsuggest-chip';
+            chip.setAttribute('data-tag', s.tag);
+            chip.title = titleAttr;
+            chip.style.cssText = 'background: ' + kindColor.bg + '; border: 1px solid ' + kindColor.border + '; color: ' + kindColor.text + '; font-size: 11px; padding: 3px 10px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;';
+            chip.innerHTML = '<i class="fa-solid fa-plus" style="font-size: 9px;"></i>' +
+                             '<code style="background: transparent; color: inherit; font-size: 11px; padding: 0;">' + escapeHtml(s.tag) + '</code>' +
+                             '<span style="font-size: 9px; opacity: 0.7;">' + escapeHtml(conf) + '</span>';
+            chipsBox.appendChild(chip);
+        });
+        acceptAll.style.display = '';
+    }
+
+    chipsBox.addEventListener('click', function (ev) {
+        var chip = ev.target.closest('.iris-tagsuggest-chip');
+        if (!chip) return;
+        var tag = chip.getAttribute('data-tag');
+        if (!tag) return;
+        if (appendTagToInput(tag)) {
+            chip.style.opacity = '0.45';
+            chip.style.pointerEvents = 'none';
+            chip.querySelector('i.fa-plus')?.classList.replace('fa-plus', 'fa-check');
+        }
+    });
+
+    acceptAll.addEventListener('click', function () {
+        chipsBox.querySelectorAll('.iris-tagsuggest-chip').forEach(function (chip) {
+            if (chip.style.pointerEvents === 'none') return;
+            var tag = chip.getAttribute('data-tag');
+            if (tag && appendTagToInput(tag)) {
+                chip.style.opacity = '0.45';
+                chip.style.pointerEvents = 'none';
+                chip.querySelector('i.fa-plus')?.classList.replace('fa-plus', 'fa-check');
+            }
+        });
+    });
+
+    pill.addEventListener('click', function () {
+        var caseId = getCaseId();
+        if (!caseId) {
+            if (statusEl) statusEl.textContent = 'No case id in URL.';
+            return;
+        }
+        pill.disabled = true;
+        if (statusEl) {
+            statusEl.textContent = 'Asking the model…';
+            statusEl.style.color = '#a78bfa';
+        }
+        resultsBox.style.display = 'none';
+
+        var csrf = csrfToken();
+        fetch('/api/v2/cases/' + caseId + '/ai/tag-suggestion', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({
+                object_type: objectType,
+                object_id: objectId,
+                csrf_token: csrf
+            })
+        })
+        /* IRIS v2 endpoints return raw payload on 200 and `{message, data?}`
+         * on 4xx (no status wrapper) — same envelope as attack-suggester. */
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, json: j }; }); })
+        .then(function (resp) {
+            if (!resp.ok) {
+                var msg = (resp.json && resp.json.message) || ('HTTP ' + resp.status);
+                throw new Error(msg);
+            }
+            var data = resp.json || {};
+            var suggestions = data.suggestions || [];
+            if (statusEl) {
+                statusEl.textContent = suggestions.length
+                    ? '(' + suggestions.length + ' suggestion' + (suggestions.length === 1 ? '' : 's') + ' · ' + (data.model || '') + ')'
+                    : '(no suggestions above 0.5 confidence)';
+                statusEl.style.color = '#94a3b8';
+            }
+            renderChips(suggestions);
+            resultsBox.style.display = '';
+        })
+        .catch(function (e) {
+            if (statusEl) {
+                statusEl.textContent = 'Error: ' + (e.message || e);
+                statusEl.style.color = '#fca5a5';
+            }
+        })
+        .finally(function () {
+            pill.disabled = false;
+        });
+    });
+})();
+</script>
+{% endif %}
+
+{% endif %}

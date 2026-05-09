@@ -160,10 +160,17 @@
                                     {# iris-next: AI backend configuration. Powers all Tier-1 AI features
                                        (case summary panel, chat assistant, per-event analysis drawer).
                                        Reads via OpenAIClient.build_default_client() — DB takes precedence
-                                       over env vars at this point. #}
+                                       over env vars at this point.
+
+                                       Two-slot design (Alembic e9d2c5a3f8b1): admins can keep two backends
+                                       configured side-by-side (e.g. LM Studio + a hosted OpenAI-compatible endpoint) and switch
+                                       the active one with a radio click. The 'primary' slot is the legacy
+                                       ai_backend_{url,api_key,model} columns; the 'alt' slot adds
+                                       ai_backend_alt_{url,api_key,model}. ai_backend_active_slot picks
+                                       which one build_default_client() uses. #}
                                     <h2 class="mt-4">AI Backend</h2>
-                                    <p>OpenAI-compatible chat-completions endpoint used by the Tier-1 AI features (case summary, chat assistant, per-event analysis). Defaults seed from <code>AI_BACKEND_*</code> environment variables on first install; values here take precedence afterwards. Recommended: local LM Studio (always-on, no rate limit). Cloud proxies (OpenAI, Claude, Gemini, etc.) work as long as they expose <code>/v1/chat/completions</code>.</p>
-                                    <div class="row mb-2">
+                                    <p>OpenAI-compatible chat-completions endpoint used by the Tier-1 AI features (case summary, chat assistant, per-event analysis). Defaults seed from <code>AI_BACKEND_*</code> environment variables on first install; values here take precedence afterwards. Configure two backends (e.g. local LM Studio + a hosted OpenAI-compatible endpoint) and pick the active one with the radio. Anything that exposes <code>/v1/chat/completions</code> works.</p>
+                                    <div class="row mb-3">
                                         <div class="col-12">
                                             <div class="form-check">
                                                 <label class="form-check-label">
@@ -174,34 +181,76 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="row mb-2">
-                                        <div class="col-8">
-                                            <div class="input-group mb-3">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">Backend URL</span>
+                                    {# Two-slot card grid: each card has its own radio that names the
+                                       slot active when the form is submitted. Native browser radio
+                                       behaviour means only one is checked at a time. #}
+                                    {% set _active_slot = (settings.ai_backend_active_slot or 'primary') %}
+                                    <div class="row mb-3">
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card card-stats" style="border: 1px solid rgba(139, 92, 246, 0.25); padding: 14px;">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <div class="form-check">
+                                                        <label class="form-check-label">
+                                                            <input class="form-check-input" type="radio" id="ai_backend_active_slot_primary" name="ai_backend_active_slot" value="primary" {% if _active_slot == 'primary' %}checked{% endif %}>
+                                                            <span class="form-check-sign">Use this backend</span>
+                                                        </label>
+                                                    </div>
+                                                    <input class="form-control form-control-sm ml-2" id="ai_backend_label" name="ai_backend_label" placeholder="e.g. LM Studio" value="{{ settings.ai_backend_label or 'Primary' }}" style="max-width: 200px;">
                                                 </div>
-                                                <input class="form-control" id="ai_backend_url" name="ai_backend_url" placeholder="http://<your-lm-studio-host>:1234/v1" value="{{ settings.ai_backend_url or '' }}">
+                                                <div class="input-group mb-2">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">URL</span>
+                                                    </div>
+                                                    <input class="form-control" id="ai_backend_url" name="ai_backend_url" placeholder="http://<your-lm-studio-host>:1234/v1" value="{{ settings.ai_backend_url or '' }}">
+                                                </div>
+                                                <div class="input-group mb-2">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">Model</span>
+                                                    </div>
+                                                    <input class="form-control" id="ai_backend_model" name="ai_backend_model" placeholder="openai/gpt-oss-20b" value="{{ settings.ai_backend_model or '' }}">
+                                                </div>
+                                                <div class="input-group mb-0">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">API Key</span>
+                                                    </div>
+                                                    <input class="form-control" id="ai_backend_api_key" name="ai_backend_api_key" placeholder="Bearer token (or empty)" type="password" autocomplete="off" value="{{ settings.ai_backend_api_key or '' }}">
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="col-4">
-                                            <div class="input-group mb-3">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">Model</span>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card card-stats" style="border: 1px solid rgba(139, 92, 246, 0.25); padding: 14px;">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <div class="form-check">
+                                                        <label class="form-check-label">
+                                                            <input class="form-check-input" type="radio" id="ai_backend_active_slot_alt" name="ai_backend_active_slot" value="alt" {% if _active_slot == 'alt' %}checked{% endif %}>
+                                                            <span class="form-check-sign">Use this backend</span>
+                                                        </label>
+                                                    </div>
+                                                    <input class="form-control form-control-sm ml-2" id="ai_backend_alt_label" name="ai_backend_alt_label" placeholder="e.g. Hosted backend" value="{{ settings.ai_backend_alt_label or 'Alternate' }}" style="max-width: 200px;">
                                                 </div>
-                                                <input class="form-control" id="ai_backend_model" name="ai_backend_model" placeholder="openai/gpt-oss-20b" value="{{ settings.ai_backend_model or '' }}">
+                                                <div class="input-group mb-2">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">URL</span>
+                                                    </div>
+                                                    <input class="form-control" id="ai_backend_alt_url" name="ai_backend_alt_url" placeholder="https://api.example.com/v1" value="{{ settings.ai_backend_alt_url or '' }}">
+                                                </div>
+                                                <div class="input-group mb-2">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">Model</span>
+                                                    </div>
+                                                    <input class="form-control" id="ai_backend_alt_model" name="ai_backend_alt_model" placeholder="model-name" value="{{ settings.ai_backend_alt_model or '' }}">
+                                                </div>
+                                                <div class="input-group mb-0">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">API Key</span>
+                                                    </div>
+                                                    <input class="form-control" id="ai_backend_alt_api_key" name="ai_backend_alt_api_key" placeholder="Bearer token (or empty)" type="password" autocomplete="off" value="{{ settings.ai_backend_alt_api_key or '' }}">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="row mb-4">
-                                        <div class="col-8">
-                                            <div class="input-group mb-3">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">API Key</span>
-                                                </div>
-                                                <input class="form-control" id="ai_backend_api_key" name="ai_backend_api_key" placeholder="Bearer token sent as Authorization header" type="password" autocomplete="off" value="{{ settings.ai_backend_api_key or '' }}">
-                                            </div>
-                                        </div>
-                                        <div class="col-4">
+                                        <div class="col-md-4">
                                             <div class="input-group mb-3">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text">Confidence threshold</span>
@@ -213,6 +262,76 @@
                                     {# Hidden mirror of the AI-enabled checkbox so the form's serializeObject()
                                        picks up its boolean value reliably (unchecked checkboxes don't serialize). #}
                                     <input type="hidden" id="ai_backend_enabled_hidden" name="ai_backend_enabled" value="{% if settings.ai_backend_enabled %}true{% else %}false{% endif %}">
+
+                                    {# iris-next: Pinecone vector-DB configuration. Powers RAG grounding for
+                                       sigma_grounding (ATT&CK suggester v3) and the case-template / IOC noise
+                                       flagging features. Reads via pinecone_client._config() — DB takes
+                                       precedence over PINECONE_* env vars at this point. Empty/disabled =
+                                       all RAG-grounded features fall back to model-only suggestions. #}
+                                    <h2 class="mt-4">Vector Database (Pinecone)</h2>
+                                    <p>Pinecone-hosted vector indexes used to ground AI suggestions in real Sigma rules / ATT&amp;CK techniques / Atomic Red Team tests. Defaults seed from <code>PINECONE_*</code> environment variables on first install; values here take precedence afterwards. When disabled, the ATT&amp;CK suggester, IOC noise-flagging, and case-template suggester all fall back to model-only output with no degradation in core behaviour.</p>
+                                    <div class="row mb-2">
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                <label class="form-check-label">
+                                                    <input class="form-check-input" type="checkbox" id="pinecone_enabled" {% if settings.pinecone_enabled %}checked{% endif %}>
+                                                    <span class="form-check-sign">Enable RAG grounding</span>
+                                                </label>
+                                                <small class="form-text text-muted">When off, every Pinecone call short-circuits and callers receive an empty result.</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-8">
+                                            <div class="input-group mb-3">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">API Key</span>
+                                                </div>
+                                                <input class="form-control" id="pinecone_api_key" name="pinecone_api_key" placeholder="pcsk_..." type="password" autocomplete="off" value="{{ settings.pinecone_api_key or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="input-group mb-3">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">Embedding model</span>
+                                                </div>
+                                                <input class="form-control" id="pinecone_embed_model" name="pinecone_embed_model" placeholder="llama-text-embed-v2" value="{{ settings.pinecone_embed_model or '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-12">
+                                            <div class="input-group mb-3">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">Sigma index host</span>
+                                                </div>
+                                                <input class="form-control" id="pinecone_sigma_host" name="pinecone_sigma_host" placeholder="sigmarules-xxxxxxx.svc.region.pinecone.io" value="{{ settings.pinecone_sigma_host or '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-12">
+                                            <div class="input-group mb-3">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">ATT&amp;CK index host</span>
+                                                </div>
+                                                <input class="form-control" id="pinecone_attack_host" name="pinecone_attack_host" placeholder="attack-xxxxxxx.svc.region.pinecone.io" value="{{ settings.pinecone_attack_host or '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <div class="col-12">
+                                            <div class="input-group mb-3">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">Atomic index host</span>
+                                                </div>
+                                                <input class="form-control" id="pinecone_atomic_host" name="pinecone_atomic_host" placeholder="atomic-xxxxxxx.svc.region.pinecone.io" value="{{ settings.pinecone_atomic_host or '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {# Hidden mirror of the Pinecone-enabled checkbox — same serializeObject()
+                                       reason as the AI-backend toggle above. #}
+                                    <input type="hidden" id="pinecone_enabled_hidden" name="pinecone_enabled" value="{% if settings.pinecone_enabled %}true{% else %}false{% endif %}">
                             </form>
                             <div class="float-right mt-4">
                                 <button class="btn btn-outline-primary float-right" id="save_srv_settings" type="button" onclick="update_settings()">Save changes</button>
@@ -281,6 +400,16 @@
     function sync() { hidden.value = cb.checked ? 'true' : 'false'; }
     cb.addEventListener('change', sync);
     // Defensive: also sync just before the form is read.
+    document.getElementById('save_srv_settings')?.addEventListener('click', sync);
+})();
+
+// iris-next: same hidden-mirror pattern for the Pinecone enable toggle.
+(function() {
+    var cb = document.getElementById('pinecone_enabled');
+    var hidden = document.getElementById('pinecone_enabled_hidden');
+    if (!cb || !hidden) return;
+    function sync() { hidden.value = cb.checked ? 'true' : 'false'; }
+    cb.addEventListener('change', sync);
     document.getElementById('save_srv_settings')?.addEventListener('click', sync);
 })();
 </script>

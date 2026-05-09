@@ -1,0 +1,683 @@
+{
+  "namespace": "ifx-vetting",
+  "description": "The IFX taxonomy is used to categorise information (MISP events and attributes) to aid in the intelligence vetting process",
+  "version": 3,
+  "predicates": [
+    {
+      "value": "vetted",
+      "expanded": "state of the vetted intelligence",
+      "exclusive": true,
+      "uuid": "1770dca1-e0ba-52a8-885e-fe8f8d276a42"
+    },
+    {
+      "value": "score",
+      "expanded": "A numerical score added by a scoring algorithm of choice. The score can either be considered by an analyst or in combination with other tags be used for automatic processing of the data.",
+      "exclusive": true,
+      "uuid": "3a42c426-a219-5f35-a0cb-963efe30a7c5"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "vetted",
+      "entry": [
+        {
+          "value": "legit-but-compromised",
+          "expanded": "The attribute/event describes something that is legitly used, but seems to be compromised by 3rd parties to be used for malicious activities. Consider this if blocking is your course of action.",
+          "uuid": "d4daddc7-0741-5285-8d75-a56616d68908"
+        },
+        {
+          "value": "legit",
+          "expanded": "The attribute/event describes something legitly used, that does not show signes of compromise or misuse.",
+          "uuid": "55fc8e91-0f0a-53d3-bb92-f11f8ce710f9"
+        },
+        {
+          "value": "legit-uncertain",
+          "expanded": "The attribute/event describes something where it is not 100% clear if it is used only legitly.",
+          "uuid": "dc5c7757-6d94-5a73-b59b-4b2020a9757a"
+        },
+        {
+          "value": "malicious",
+          "expanded": "The attribute/event describes something that is definitly used maliciously.",
+          "uuid": "b9cfc322-dc09-576f-b3fd-b27a8e1cf60a"
+        },
+        {
+          "value": "malicious-uncertain",
+          "expanded": "The attribute/event describes something that seems to be used maliciously, but there is no 100% proof.",
+          "uuid": "ba64b105-d615-560d-a9c9-81a9a8538e13"
+        },
+        {
+          "value": "invalid",
+          "expanded": "The attribute/event is invalid or wrong in respect to the situation described by the event.",
+          "uuid": "62bc7181-5679-5601-a0e6-30fed4566cc6"
+        },
+        {
+          "value": "irrelevant",
+          "expanded": "The attribute/event is irrelevant to your organization or CTI process.",
+          "uuid": "1f6205d4-0418-59fa-9895-6608d1c20ac8"
+        },
+        {
+          "value": "undetermined",
+          "expanded": "The nature of the attribute/event cannot be further determined. Use this only as a last resort.",
+          "uuid": "e5089c08-c816-51e6-ae13-0dcb044601bf"
+        },
+        {
+          "value": "fast-track",
+          "expanded": "The attribute/event was not vetted but passed through for operational reasons. A result might be higher false-positive rates.",
+          "uuid": "223a5811-70fa-5cbf-8ae3-2bc2b1fc3cf7"
+        }
+      ]
+    },
+    {
+      "predicate": "score",
+      "entry": [
+        {
+          "value": "0",
+          "expanded": "0",
+          "numerical_value": 0,
+          "uuid": "c52d9d61-2dd5-5395-a9a6-ead6f73fcfef"
+        },
+        {
+          "value": "1",
+          "expanded": "1",
+          "numerical_value": 1,
+          "uuid": "6968aa83-28e2-55aa-a191-015eb2f3fa59"
+        },
+        {
+          "value": "2",
+          "expanded": "2",
+          "numerical_value": 2,
+          "uuid": "70e194bc-4ef0-5d18-b6bc-3afdf5ddcb9f"
+        },
+        {
+          "value": "3",
+          "expanded": "3",
+          "numerical_value": 3,
+          "uuid": "0d69afde-b1e1-55b8-9eb7-8546ef1e700b"
+        },
+        {
+          "value": "4",
+          "expanded": "4",
+          "numerical_value": 4,
+          "uuid": "3b75dc90-9134-5178-a8e7-c2cef07199d9"
+        },
+        {
+          "value": "5",
+          "expanded": "5",
+          "numerical_value": 5,
+          "uuid": "bfb14aa5-119c-5679-9086-2b55b9782373"
+        },
+        {
+          "value": "6",
+          "expanded": "6",
+          "numerical_value": 6,
+          "uuid": "37de5861-b8ee-53b6-9d8d-8fae20be57e3"
+        },
+        {
+          "value": "7",
+          "expanded": "7",
+          "numerical_value": 7,
+          "uuid": "0d57af6c-1ac5-575b-88be-5d91ca47a1f4"
+        },
+        {
+          "value": "8",
+          "expanded": "8",
+          "numerical_value": 8,
+          "uuid": "0326b254-a192-5be1-9fae-b8b89d3f8dcd"
+        },
+        {
+          "value": "9",
+          "expanded": "9",
+          "numerical_value": 9,
+          "uuid": "8e3ccffb-9387-59d7-bd22-6f2710081876"
+        },
+        {
+          "value": "10",
+          "expanded": "10",
+          "numerical_value": 10,
+          "uuid": "852309f9-8a88-54fd-857a-e699edc098c7"
+        },
+        {
+          "value": "11",
+          "expanded": "11",
+          "numerical_value": 11,
+          "uuid": "560bb090-d665-5f1e-9e05-b3a145b21421"
+        },
+        {
+          "value": "12",
+          "expanded": "12",
+          "numerical_value": 12,
+          "uuid": "0cb1c77e-1080-5a18-b301-76827088676a"
+        },
+        {
+          "value": "13",
+          "expanded": "13",
+          "numerical_value": 13,
+          "uuid": "c8fc2af5-7cf5-589c-a4f4-87e931203053"
+        },
+        {
+          "value": "14",
+          "expanded": "14",
+          "numerical_value": 14,
+          "uuid": "e607efec-e8fa-5562-87d9-79c419b1787f"
+        },
+        {
+          "value": "15",
+          "expanded": "15",
+          "numerical_value": 15,
+          "uuid": "02433a72-c226-5e20-b50c-203e5d11880a"
+        },
+        {
+          "value": "16",
+          "expanded": "16",
+          "numerical_value": 16,
+          "uuid": "6a61f671-d7bf-55dd-b539-ab474b231e8e"
+        },
+        {
+          "value": "17",
+          "expanded": "17",
+          "numerical_value": 17,
+          "uuid": "d3adcd98-8b85-5d1c-8622-724fa5cb13ab"
+        },
+        {
+          "value": "18",
+          "expanded": "18",
+          "numerical_value": 18,
+          "uuid": "c8ceb088-1ca1-5d84-af9c-08fc51e93c73"
+        },
+        {
+          "value": "19",
+          "expanded": "19",
+          "numerical_value": 19,
+          "uuid": "1b47ae01-7aad-53b0-95e3-226b65bf3301"
+        },
+        {
+          "value": "20",
+          "expanded": "20",
+          "numerical_value": 20,
+          "uuid": "cf968f1f-d5ae-54a5-a7b7-37a071898df9"
+        },
+        {
+          "value": "21",
+          "expanded": "21",
+          "numerical_value": 21,
+          "uuid": "69bdf951-f475-5143-a12e-36b86d69f415"
+        },
+        {
+          "value": "22",
+          "expanded": "22",
+          "numerical_value": 22,
+          "uuid": "033338b1-d7fd-5a99-9181-a380778aa25a"
+        },
+        {
+          "value": "23",
+          "expanded": "23",
+          "numerical_value": 23,
+          "uuid": "d96c5599-ee6c-51dd-b70a-5ab0a2262eca"
+        },
+        {
+          "value": "24",
+          "expanded": "24",
+          "numerical_value": 24,
+          "uuid": "c7ab6a2b-3026-5a88-862d-5e0bf56706e6"
+        },
+        {
+          "value": "25",
+          "expanded": "25",
+          "numerical_value": 25,
+          "uuid": "d088812b-fd9c-51f4-9052-abd801f87360"
+        },
+        {
+          "value": "26",
+          "expanded": "26",
+          "numerical_value": 26,
+          "uuid": "adf4fa27-1f34-53df-9933-e5cb2ba9662e"
+        },
+        {
+          "value": "27",
+          "expanded": "27",
+          "numerical_value": 27,
+          "uuid": "14d3df2f-4edb-50ec-88f3-e7500ad5d258"
+        },
+        {
+          "value": "28",
+          "expanded": "28",
+          "numerical_value": 28,
+          "uuid": "947db503-d1b5-55d7-a200-cf2cd69676ed"
+        },
+        {
+          "value": "29",
+          "expanded": "29",
+          "numerical_value": 29,
+          "uuid": "74f2b4a8-880e-5683-b371-560dd674b035"
+        },
+        {
+          "value": "30",
+          "expanded": "30",
+          "numerical_value": 30,
+          "uuid": "54175ceb-16b8-56d3-a62c-974f8ef078d2"
+        },
+        {
+          "value": "31",
+          "expanded": "31",
+          "numerical_value": 31,
+          "uuid": "55f7c762-c3c1-5bce-b1e7-810df7c1ce97"
+        },
+        {
+          "value": "32",
+          "expanded": "32",
+          "numerical_value": 32,
+          "uuid": "ec48565b-a140-5495-ae6f-89bb7b9f205c"
+        },
+        {
+          "value": "33",
+          "expanded": "33",
+          "numerical_value": 33,
+          "uuid": "3ecb7c0b-2cb0-532b-bb0f-a506eca6da69"
+        },
+        {
+          "value": "34",
+          "expanded": "34",
+          "numerical_value": 34,
+          "uuid": "9cd9dd90-3fb6-5c9b-bf0a-64b36ec2fcea"
+        },
+        {
+          "value": "35",
+          "expanded": "35",
+          "numerical_value": 35,
+          "uuid": "3d38a96a-6066-5676-8245-6c978d287db5"
+        },
+        {
+          "value": "36",
+          "expanded": "36",
+          "numerical_value": 36,
+          "uuid": "40aba668-ff08-586d-95d5-808d628705d9"
+        },
+        {
+          "value": "37",
+          "expanded": "37",
+          "numerical_value": 37,
+          "uuid": "a5d90995-fb4e-5b50-ab97-f9067ba0cb2f"
+        },
+        {
+          "value": "38",
+          "expanded": "38",
+          "numerical_value": 38,
+          "uuid": "1470ac75-0a40-57c9-87c2-ed2ee4a7385d"
+        },
+        {
+          "value": "39",
+          "expanded": "39",
+          "numerical_value": 39,
+          "uuid": "f043745b-3125-5aba-917f-a48431015d36"
+        },
+        {
+          "value": "40",
+          "expanded": "40",
+          "numerical_value": 40,
+          "uuid": "bc598c53-bd57-5053-b369-45a144145976"
+        },
+        {
+          "value": "41",
+          "expanded": "41",
+          "numerical_value": 41,
+          "uuid": "19eb5a0d-1aac-5a35-8efa-0cdfc65af47a"
+        },
+        {
+          "value": "42",
+          "expanded": "42",
+          "numerical_value": 42,
+          "uuid": "07ae9231-cf41-52b0-937c-b5d1597ff938"
+        },
+        {
+          "value": "43",
+          "expanded": "43",
+          "numerical_value": 43,
+          "uuid": "0b64f926-0fb5-533f-94c8-1bf0fb6eeece"
+        },
+        {
+          "value": "44",
+          "expanded": "44",
+          "numerical_value": 44,
+          "uuid": "7cdf3740-0660-5019-8f08-bfcf82107ff8"
+        },
+        {
+          "value": "45",
+          "expanded": "45",
+          "numerical_value": 45,
+          "uuid": "88dd5361-3099-5046-991a-d8432ef8081e"
+        },
+        {
+          "value": "46",
+          "expanded": "46",
+          "numerical_value": 46,
+          "uuid": "81e27253-4286-5d3c-b40d-062af63f5dfa"
+        },
+        {
+          "value": "47",
+          "expanded": "47",
+          "numerical_value": 47,
+          "uuid": "649da42e-06ad-504d-91f8-2640a3471649"
+        },
+        {
+          "value": "48",
+          "expanded": "48",
+          "numerical_value": 48,
+          "uuid": "8459509e-0c14-57bf-b7d5-a59622328c5a"
+        },
+        {
+          "value": "49",
+          "expanded": "49",
+          "numerical_value": 49,
+          "uuid": "40724ae1-56f1-5b42-a145-c8aeb976ab23"
+        },
+        {
+          "value": "50",
+          "expanded": "50",
+          "numerical_value": 50,
+          "uuid": "60653e5a-1e5d-527e-bcb6-f1b66d69187e"
+        },
+        {
+          "value": "51",
+          "expanded": "51",
+          "numerical_value": 51,
+          "uuid": "024ef9eb-9552-5951-a273-b2aa7dcc1c61"
+        },
+        {
+          "value": "52",
+          "expanded": "52",
+          "numerical_value": 52,
+          "uuid": "d54ed5b0-cbcc-531c-ad04-a4e1570f485f"
+        },
+        {
+          "value": "53",
+          "expanded": "53",
+          "numerical_value": 53,
+          "uuid": "e9f90879-d1a8-55a2-9618-58929a96ab73"
+        },
+        {
+          "value": "54",
+          "expanded": "54",
+          "numerical_value": 54,
+          "uuid": "8bf7819e-d737-5a7f-afc9-9d11e539f700"
+        },
+        {
+          "value": "55",
+          "expanded": "55",
+          "numerical_value": 55,
+          "uuid": "4edb460b-d208-54d1-b1c5-f1b1ad5b1c5e"
+        },
+        {
+          "value": "56",
+          "expanded": "56",
+          "numerical_value": 56,
+          "uuid": "66e054ac-ccff-5a64-a007-305daa9e5ef9"
+        },
+        {
+          "value": "57",
+          "expanded": "57",
+          "numerical_value": 57,
+          "uuid": "ccbb7170-a373-5764-9ec7-828cf5f144d3"
+        },
+        {
+          "value": "58",
+          "expanded": "58",
+          "numerical_value": 58,
+          "uuid": "a5dbb532-e9a6-5600-ada9-9b91c8bc9460"
+        },
+        {
+          "value": "59",
+          "expanded": "59",
+          "numerical_value": 59,
+          "uuid": "4d115cf1-37e8-55f0-a48b-797c8d36c54f"
+        },
+        {
+          "value": "60",
+          "expanded": "60",
+          "numerical_value": 60,
+          "uuid": "13bd7b2e-85fb-5e44-9edc-ca85590ad3ba"
+        },
+        {
+          "value": "61",
+          "expanded": "61",
+          "numerical_value": 61,
+          "uuid": "fb2a2b82-0e6b-5c0f-9a94-f2dbe434cc80"
+        },
+        {
+          "value": "62",
+          "expanded": "62",
+          "numerical_value": 62,
+          "uuid": "0ce9a2f2-2da8-5955-98a7-a178b93a237d"
+        },
+        {
+          "value": "63",
+          "expanded": "63",
+          "numerical_value": 63,
+          "uuid": "698350e3-bf11-580f-a61e-f510fc70d736"
+        },
+        {
+          "value": "64",
+          "expanded": "64",
+          "numerical_value": 64,
+          "uuid": "289783f3-a92b-5356-b140-3c502596bc8b"
+        },
+        {
+          "value": "65",
+          "expanded": "65",
+          "numerical_value": 65,
+          "uuid": "7ec18ed5-2771-5e44-b52e-ae22cf5814b0"
+        },
+        {
+          "value": "66",
+          "expanded": "66",
+          "numerical_value": 66,
+          "uuid": "ce62ba67-a21c-5729-8261-c11be5481f09"
+        },
+        {
+          "value": "67",
+          "expanded": "67",
+          "numerical_value": 67,
+          "uuid": "f405cf4d-0c1d-5141-9ecf-6ad32d580087"
+        },
+        {
+          "value": "68",
+          "expanded": "68",
+          "numerical_value": 68,
+          "uuid": "65e7d407-fc67-5f19-b1f6-35539f6a58cf"
+        },
+        {
+          "value": "69",
+          "expanded": "69",
+          "numerical_value": 69,
+          "uuid": "8d63b6a3-604e-5af2-82bb-13c21ce24e04"
+        },
+        {
+          "value": "70",
+          "expanded": "70",
+          "numerical_value": 70,
+          "uuid": "e0903e82-ab50-55f8-b424-a36bbc57f5e3"
+        },
+        {
+          "value": "71",
+          "expanded": "71",
+          "numerical_value": 71,
+          "uuid": "2bcf6b46-0723-5bdb-96bd-8d1f3cbf51ea"
+        },
+        {
+          "value": "72",
+          "expanded": "72",
+          "numerical_value": 72,
+          "uuid": "c90d2ff7-5d32-572f-a678-3181d4baf4ec"
+        },
+        {
+          "value": "73",
+          "expanded": "73",
+          "numerical_value": 73,
+          "uuid": "edc6dc00-ffb6-5eb4-9da6-f06f1a4ca5ec"
+        },
+        {
+          "value": "74",
+          "expanded": "74",
+          "numerical_value": 74,
+          "uuid": "8d1ea0e1-e891-5cd3-b8c0-017ecbaebe7d"
+        },
+        {
+          "value": "75",
+          "expanded": "75",
+          "numerical_value": 75,
+          "uuid": "c9e9c6bc-fdae-5567-8537-2a5a76f3ff75"
+        },
+        {
+          "value": "76",
+          "expanded": "76",
+          "numerical_value": 76,
+          "uuid": "680d3c51-4ad3-5cfc-8403-f25178a40a84"
+        },
+        {
+          "value": "77",
+          "expanded": "77",
+          "numerical_value": 77,
+          "uuid": "b4a66371-88f2-574a-b01f-ed5266af4059"
+        },
+        {
+          "value": "78",
+          "expanded": "78",
+          "numerical_value": 78,
+          "uuid": "cb000cad-b793-5720-85bd-47bbb29355d6"
+        },
+        {
+          "value": "79",
+          "expanded": "79",
+          "numerical_value": 79,
+          "uuid": "b079f633-cd68-528d-b9bf-7c54c16cb298"
+        },
+        {
+          "value": "80",
+          "expanded": "80",
+          "numerical_value": 80,
+          "uuid": "30faa36e-9dc4-51af-b585-52c596ce5d8e"
+        },
+        {
+          "value": "81",
+          "expanded": "81",
+          "numerical_value": 81,
+          "uuid": "4c43fa96-d2d3-5c0b-897e-b4b65e2d664e"
+        },
+        {
+          "value": "82",
+          "expanded": "82",
+          "numerical_value": 82,
+          "uuid": "d9b6f732-0245-55f5-9ffc-308ebfef495d"
+        },
+        {
+          "value": "83",
+          "expanded": "83",
+          "numerical_value": 83,
+          "uuid": "cfe39ab9-8876-5ec5-a7dd-32b46e926328"
+        },
+        {
+          "value": "84",
+          "expanded": "84",
+          "numerical_value": 84,
+          "uuid": "d71869f7-f041-5f79-8f6c-2d58f287cefd"
+        },
+        {
+          "value": "85",
+          "expanded": "85",
+          "numerical_value": 85,
+          "uuid": "cf3c90ee-3860-507b-bf49-f2e9d897ca73"
+        },
+        {
+          "value": "86",
+          "expanded": "86",
+          "numerical_value": 86,
+          "uuid": "c2b99edd-0edb-5ba8-be1a-42646662eba1"
+        },
+        {
+          "value": "87",
+          "expanded": "87",
+          "numerical_value": 87,
+          "uuid": "cf2514fd-9a12-53ca-9a74-bbab6edfaad8"
+        },
+        {
+          "value": "88",
+          "expanded": "88",
+          "numerical_value": 88,
+          "uuid": "61970620-e7c5-57e0-817f-d9c5183e6949"
+        },
+        {
+          "value": "89",
+          "expanded": "89",
+          "numerical_value": 89,
+          "uuid": "caa59895-6338-5696-91ec-50b87b2a6efc"
+        },
+        {
+          "value": "90",
+          "expanded": "90",
+          "numerical_value": 90,
+          "uuid": "aa2129a6-b102-5937-86b7-4e1caa06955c"
+        },
+        {
+          "value": "91",
+          "expanded": "91",
+          "numerical_value": 91,
+          "uuid": "393ad793-8e78-5b43-afdc-67d8a4d6d6e6"
+        },
+        {
+          "value": "92",
+          "expanded": "92",
+          "numerical_value": 92,
+          "uuid": "d55ea71b-175c-5197-9990-92be19d708d0"
+        },
+        {
+          "value": "93",
+          "expanded": "93",
+          "numerical_value": 93,
+          "uuid": "68c70446-e394-50a7-aa44-6a40c451efce"
+        },
+        {
+          "value": "94",
+          "expanded": "94",
+          "numerical_value": 94,
+          "uuid": "ec99432b-354c-5012-87b2-ee63a1144766"
+        },
+        {
+          "value": "95",
+          "expanded": "95",
+          "numerical_value": 95,
+          "uuid": "bfa656f3-3a37-5af9-87ab-9f87ad8ae3d5"
+        },
+        {
+          "value": "96",
+          "expanded": "96",
+          "numerical_value": 96,
+          "uuid": "f39c1db5-5541-52fc-8e7d-142f377afc58"
+        },
+        {
+          "value": "97",
+          "expanded": "97",
+          "numerical_value": 97,
+          "uuid": "70fcada3-b414-5bb4-9d55-75fabaa379c3"
+        },
+        {
+          "value": "98",
+          "expanded": "98",
+          "numerical_value": 98,
+          "uuid": "663fefad-6656-56d0-9e02-d69bcaabd221"
+        },
+        {
+          "value": "99",
+          "expanded": "99",
+          "numerical_value": 99,
+          "uuid": "946b65de-6d11-5086-8fba-da764c569e70"
+        },
+        {
+          "value": "100",
+          "expanded": "100",
+          "numerical_value": 100,
+          "uuid": "caa2b1fa-550b-51b7-a437-5af39d79667f"
+        }
+      ]
+    }
+  ],
+  "uuid": "213c89ca-d340-5cb0-b59d-abe63315c7a9"
+}

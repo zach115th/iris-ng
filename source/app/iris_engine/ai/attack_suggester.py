@@ -20,9 +20,11 @@ from typing import Any
 from app import app
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
+from app.iris_engine.ai.sigma_grounding import aggregate_techniques
+from app.iris_engine.ai.sigma_grounding import find_matching_sigma_rules
 
 
-ATTACK_SUGGESTER_PROMPT_ID = "AttackSuggesterSystemPrompt-v2"  # v2: UKC phase added 2026-04-29
+ATTACK_SUGGESTER_PROMPT_ID = "AttackSuggesterSystemPrompt-v3"  # v3: Sigma-grounded prompt 2026-04-29
 PROMPT_PATH = Path(__file__).parent.parent.parent / "resources" / "ai_prompts" / "attack_suggester.md"
 
 # T1059, T1059.001, T1566.002, etc. Reject anything that isn't a real-shape
@@ -176,15 +178,61 @@ def suggest_attack_techniques(
         "category": _truncate(category, 200),
         "existing_tags": _truncate(existing_tags, 400),
     }
+
+    # Sigma RAG grounding (best-effort; empty list if Pinecone isn't
+    # configured or the call fails — model just gets the bare event payload
+    # and falls back to its current behavior).
+    sigma_query = " ".join(
+        s for s in (payload["title"], payload["description"], payload["source"])
+        if isinstance(s, str) and s.strip()
+    ).strip()
+    sigma_matches = find_matching_sigma_rules(query_text=sigma_query, top_k=5) if sigma_query else []
+    sigma_aggregated = aggregate_techniques(sigma_matches)
+
+    sigma_block = ""
+    if sigma_matches:
+        # Compact human-readable block. The model sees this as evidence and
+        # the prompt instructs it to prefer grounded candidates over guesses.
+        lines = [
+            "## Sigma evidence (semantic-search matches from the Sigma rule index)",
+            "",
+            "These detection rules match the event description semantically. The MITRE",
+            "technique IDs in the `→ techniques` column are what the rule's authors",
+            "tagged the rule with — treat them as high-prior candidates.",
+            "",
+        ]
+        for i, m in enumerate(sigma_matches, 1):
+            techs = ", ".join(m["techniques"]) if m["techniques"] else "(no ATT&CK tags)"
+            title_str = m.get("title") or m.get("id") or "<unknown>"
+            level = f" [{m['level']}]" if m.get("level") else ""
+            score = m.get("score") or 0.0
+            lines.append(f"{i}. score={score:.3f}{level}  {title_str}  →  {techs}")
+            desc = m.get("description")
+            if isinstance(desc, str) and desc.strip():
+                lines.append(f"   {_truncate(desc.strip(), 280)}")
+        if sigma_aggregated:
+            top_voted = sigma_aggregated[:6]
+            lines.append("")
+            lines.append("**Aggregated technique votes (weight = sum of match scores citing each technique):**")
+            for t in top_voted:
+                lines.append(
+                    f"  - {t['technique_id']}  weight={t['weight']:.3f}  "
+                    f"sources={t['source_count']}  max_score={t['max_score']:.3f}"
+                )
+        sigma_block = "\n".join(lines) + "\n\n"
+
     user_prompt = (
-        "Event to map to MITRE ATT&CK Enterprise techniques.\n\n"
+        f"{sigma_block}"
+        "## Event to map to MITRE ATT&CK Enterprise techniques\n\n"
         f"```json\n{json.dumps(payload, indent=2, ensure_ascii=False)}\n```"
     )
 
     app.logger.info(
         f"AttackSuggester: requesting suggestions (model={client.model}, "
         f"title_chars={len(payload['title'] or '')}, "
-        f"desc_chars={len(payload['description'] or '')})"
+        f"desc_chars={len(payload['description'] or '')}, "
+        f"sigma_matches={len(sigma_matches)}, "
+        f"sigma_voted_techniques={len(sigma_aggregated)})"
     )
 
     try:
@@ -248,4 +296,17 @@ def suggest_attack_techniques(
         "rationale": rationale,
         "tags_string": tags_string,
         "model": client.model,
+        # RAG provenance — what Sigma rules grounded this suggestion. UI can
+        # render these as chips below the techniques so analysts see the
+        # detection rules backing the AI's call. Empty list if RAG is off.
+        "sigma_matches": [
+            {
+                "title": m.get("title"),
+                "score": m.get("score"),
+                "level": m.get("level"),
+                "techniques": m.get("techniques"),
+                "logsource": m.get("logsource"),
+            }
+            for m in sigma_matches
+        ],
     }

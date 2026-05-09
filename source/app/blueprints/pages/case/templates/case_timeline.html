@@ -163,6 +163,579 @@
   body.iris-tl-show-tags .timeline-panel-t .bottom-hour > .row > .col:nth-child(2) {
     display: block !important;
   }
+
+  /* ===================================================================
+     iris-next: working timeline (right-side panel).
+     Tool-ingested events (Hayabusa today; KAPE/EZTools/Hayabusa later)
+     pending analyst review. See docs/19-ux-ai-design.md §5b.1.
+     =================================================================== */
+  #iris-wt-panel {
+    position: fixed;
+    top: 88px;
+    /* Shift left of the master-timeline action button column on the page's
+       right edge so cards + rail don't overlap the floating action stack. */
+    right: 56px;
+    bottom: 0;
+    width: min(38vw, 520px);
+    /* Borderless container: same body backdrop as the rest of the page so
+       the cards inside read as the "menu of cards" rather than a boxed-off
+       region. */
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    z-index: 920;
+    display: none;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.18s ease-out;
+  }
+  body.iris-wt-open #iris-wt-panel {
+    display: flex;
+    transform: translateX(0);
+  }
+  /* When the panel is open, push the AI chat-bar a touch left so it
+     doesn't hide behind it. */
+  body.iris-wt-open #iris-chat-bar {
+    margin-right: min(38vw, 520px);
+  }
+  #iris-wt-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #iris-wt-header .iris-wt-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #d4c4ff;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  #iris-wt-header .iris-wt-counts {
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  #iris-wt-header .iris-wt-counts .pos { color: #6ee7b7; }
+  #iris-wt-header .iris-wt-counts .neg { color: #fca5a5; }
+  #iris-wt-header .iris-wt-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  #iris-wt-header select.iris-wt-filter {
+    background: #15151a;
+    color: #cbd5e1;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 6px;
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  #iris-wt-header .iris-wt-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  #iris-wt-list {
+    flex: 1;
+    overflow-y: auto;
+    /* Working timeline rail on the RIGHT side of the cards (mirror of the
+       master timeline). The rail is drawn per-card via .iris-wt-card::after
+       below — positioning it on the list itself doesn't work because
+       absolute pseudo-elements with top:0/bottom:0 inside scroll containers
+       only fill the visible viewport, not the full content height. */
+    padding: 12px 36px 80px 16px;
+    position: relative;
+    /* Hide the scrollbar visually — looked free-floating once the panel
+       lost its dark backdrop. Mouse-wheel + trackpad scroll still work. */
+    scrollbar-width: none;          /* Firefox */
+    -ms-overflow-style: none;       /* legacy Edge / IE */
+  }
+  #iris-wt-list::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  /* Date divider pill — mirrors the master timeline's .time-badge.
+     The outer row is a full-width positioned container that right-aligns
+     the pill, so the pill sits on the rail (the rail is on the right
+     side of the working timeline, mirror of the master timeline's left).
+     The row also contributes its own rail segment via ::after so the
+     violet line threads continuously through the date-group boundary. */
+  .iris-wt-date-row {
+    position: relative;
+    margin: 14px 0 8px 0;
+    text-align: right;
+  }
+  .iris-wt-date-row:first-child { margin-top: 0; }
+  .iris-wt-date-row::after {
+    content: '';
+    position: absolute;
+    /* Match the card connector's rail position. Date row has no border,
+       so the offset is 1px less than the card's -17px (which accounts for
+       the card's 1px right border). */
+    right: -16px;
+    top: 0;
+    bottom: -8px;          /* bridge the row's 8px margin-bottom */
+    width: 1px;
+    background: rgba(139, 92, 246, 0.45);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .iris-wt-date-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    /* Push the pill rightward so its right edge straddles the rail —
+       gives the same "rail-anchored" feel as the master timeline. */
+    margin-right: -12px;
+    background: #1f1f25;
+    border: 1px solid rgba(139, 92, 246, 0.30);
+    border-radius: 999px;
+    font-size: 11px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: #cbd5e1;
+    letter-spacing: 0.3px;
+    position: relative;
+    z-index: 2;            /* sit on top of the rail line */
+  }
+
+  .iris-wt-card {
+    position: relative;
+    /* Discrete panel per card — same visual shape as the master timeline's
+       per-event panel on the left side. The outer #iris-wt-panel is the
+       one that drops its chrome (see below). */
+    background: #15151a;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    font-size: 12.5px;
+    color: #cbd5e1;
+    /* Whole-card click toggles expanded (delegated handler on #iris-wt-list).
+       Buttons / links inside still get their default cursor since they have
+       cursor: pointer of their own and are filtered out of the toggle. */
+    cursor: pointer;
+  }
+  /* Rail dot — sits on the right-side rail (working timeline mirrors the
+     master timeline by putting its rail on the opposite side).
+     Centred on the rail: list padding-right=36px, card has 1px right
+     border. The dot's `right` is measured from the card's PADDING edge
+     (inside the border), so the offset must include the border's 1px.
+     right:-21px → dot center lands at 20.5px from the panel right edge,
+     exactly matching the rail's center. */
+  .iris-wt-card::before {
+    content: '';
+    position: absolute;
+    right: -21px;
+    left: auto;
+    top: 14px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #fbbf24;  /* pending = amber */
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.18);
+    z-index: 2;  /* sit on top of the rail line */
+  }
+  /* Vertical rail connector — per-card 1px line that extends from the top
+     of each card past its bottom margin, so consecutive cards form one
+     continuous rail through every dot. Centered on the dot:
+     dot center is at card_padding_right + 16.5px (right: -21 + 9/2 = -16.5),
+     so a 1px line at right: -17px spans (+16, +17) and centers cleanly. */
+  .iris-wt-card::after {
+    content: '';
+    position: absolute;
+    right: -17px;
+    top: 0;
+    bottom: -10px;          /* bridge the 10px margin-bottom to next card */
+    width: 1px;
+    background: rgba(139, 92, 246, 0.45);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .iris-wt-card:last-child::after {
+    /* Last card has no next card to bridge to, but the rail should still
+       run the full card height so the column doesn't visually "give up"
+       at the bottom. */
+    bottom: 0;
+  }
+  .iris-wt-card[data-status="true_positive"]::before { background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18); }
+  .iris-wt-card[data-status="false_positive"]::before { background: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18); opacity: 0.6; }
+  .iris-wt-card[data-status="false_positive"] { opacity: 0.55; }
+
+  .iris-wt-card .iris-wt-time {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .iris-wt-card .iris-wt-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #f1f5f9;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  .iris-wt-card .iris-wt-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+  .iris-wt-chip {
+    font-size: 10.5px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.30);
+    color: #d4c4ff;
+    line-height: 1.5;
+  }
+  .iris-wt-chip.sev-info     { background: rgba(148, 163, 184, 0.10); border-color: rgba(148, 163, 184, 0.35); color: #cbd5e1; }
+  .iris-wt-chip.sev-low      { background: rgba(59, 130, 246, 0.12);  border-color: rgba(59, 130, 246, 0.35);  color: #93c5fd; }
+  .iris-wt-chip.sev-med, .iris-wt-chip.sev-medium { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35); color: #fbbf24; }
+  .iris-wt-chip.sev-high     { background: rgba(249, 115, 22, 0.12); border-color: rgba(249, 115, 22, 0.35); color: #fb923c; }
+  .iris-wt-chip.sev-crit, .iris-wt-chip.sev-critical { background: rgba(239, 68, 68, 0.18); border-color: rgba(239, 68, 68, 0.50); color: #fca5a5; }
+  .iris-wt-chip.host { background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.35); color: #a5b4fc; font-family: ui-monospace, monospace; }
+  .iris-wt-chip.mitre { background: rgba(245, 158, 11, 0.10); border-color: rgba(245, 158, 11, 0.30); color: #fbbf24; font-family: ui-monospace, monospace; }
+
+  .iris-wt-card .iris-wt-body {
+    font-size: 11.5px;
+    color: #94a3b8;
+    line-height: 1.45;
+    max-height: 96px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 8px;
+    /* Body click toggles `.expanded` (see render); show pointer cursor so
+       the affordance is obvious. Buttons inside the card keep their own
+       cursor since they're nested in .iris-wt-actions, not in the body. */
+    cursor: pointer;
+  }
+  .iris-wt-card.expanded .iris-wt-body { max-height: none; }
+  .iris-wt-card .iris-wt-body code {
+    background: rgba(255, 255, 255, 0.04);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 10.5px;
+    color: #d4c4ff;
+  }
+  .iris-wt-card .iris-wt-body pre {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    color: #cbd5e1;
+    margin: 4px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .iris-wt-card .iris-wt-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .iris-wt-card .iris-wt-actions button {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: transparent;
+    color: #cbd5e1;
+    cursor: pointer;
+  }
+  .iris-wt-card .iris-wt-actions button.iris-wt-promote {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.40);
+    color: #6ee7b7;
+  }
+  .iris-wt-card .iris-wt-actions button.iris-wt-reject {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+  }
+  .iris-wt-card .iris-wt-actions button:hover { filter: brightness(1.2); }
+  .iris-wt-card .iris-wt-status-line {
+    font-size: 10.5px;
+    color: #94a3b8;
+    margin-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    padding-top: 6px;
+  }
+  .iris-wt-card .iris-wt-status-line .pos { color: #6ee7b7; }
+  .iris-wt-card .iris-wt-status-line .neg { color: #fca5a5; }
+  .iris-wt-card .iris-wt-status-line a { color: #a78bfa; }
+
+  /* Toggle pill in the topbar — reuses the AI accent so it reads as a
+     "tool/AI panel toggle" not a plain action. */
+  #iris-wt-toggle {
+    background: rgba(139, 92, 246, 0.18);
+    border: 1px solid rgba(139, 92, 246, 0.45);
+    color: #d4c4ff;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    margin-right: 6px;
+  }
+  #iris-wt-toggle .iris-wt-badge {
+    display: inline-block;
+    background: #fbbf24;
+    color: #0b0b0d;
+    border-radius: 999px;
+    font-size: 9.5px;
+    padding: 0 5px;
+    margin-left: 5px;
+    font-weight: 700;
+    min-width: 16px;
+    text-align: center;
+  }
+  #iris-wt-toggle .iris-wt-badge.zero { background: rgba(255,255,255,0.12); color: #94a3b8; }
+
+  /* ✨ Explain pill on each working card. Same violet AI accent as the
+     other AI surfaces (chat-bar, tag suggester, etc.) so it reads as
+     "AI assist", not a workflow action. */
+  .iris-wt-card .iris-wt-actions button.iris-wt-explain {
+    background: rgba(139, 92, 246, 0.18);
+    border-color: rgba(139, 92, 246, 0.45);
+    color: #d4c4ff;
+  }
+  .iris-wt-explanation {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(139, 92, 246, 0.06);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 6px;
+    font-size: 12px;
+    color: #cbd5e1;
+    line-height: 1.55;
+  }
+  .iris-wt-explanation .iris-wt-explanation-eyebrow {
+    font-size: 9.5px;
+    color: #a78bfa;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .iris-wt-explanation .iris-wt-explanation-eyebrow .meta {
+    margin-left: auto;
+    color: #64748b;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 9.5px;
+  }
+  .iris-wt-explanation .iris-wt-explanation-eyebrow button {
+    background: transparent;
+    border: none;
+    color: #a78bfa;
+    font-size: 10px;
+    padding: 0;
+    cursor: pointer;
+  }
+  .iris-wt-explanation strong { color: #d4c4ff; }
+  .iris-wt-explanation p { margin-bottom: 6px; }
+  .iris-wt-explanation p:last-child { margin-bottom: 0; }
+  .iris-wt-explanation.is-loading { color: #94a3b8; font-style: italic; }
+  .iris-wt-explanation.is-error { color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.06); }
+
+  /* ===================================================================
+     iris-next: timeline AI analysis panel — middle/right slot.
+     Sits between the master timeline cards and the working timeline.
+     Always visible; auto-loads cached analysis on page open.
+     =================================================================== */
+  #iris-ai-tl-panel {
+    position: fixed;
+    /* Top-aligned with the master timeline's first date-pill / first card
+       so the panel reads as a peer of the timeline content rather than
+       a floating header. */
+    top: 165px;
+    /* Fixed-size container — a discrete window. Internal scroll handles
+       overflow rather than the whole panel growing tall. The 265px floor
+       reserves room for: 165px top offset + ~100px bottom for the AI
+       chat bar (which sits at bottom:18px, ~60px tall, plus a 20px gap). */
+    height: min(820px, calc(100vh - 265px));
+    /* Position 30px past the master-timeline cards' right edge, regardless
+       of viewport width:
+         cards' right edge = 50% + 202px (when uncapped) OR 955px (capped at
+         the 640px max card width on viewports >= ~1505px).
+       Using min(50%+232px, 985px) tracks both regimes — small viewports
+       follow the 50%+ formula; wide viewports use the fixed 985px cap.
+       Mirror gap on the right side (see body.iris-wt-open below). */
+    left: min(calc(50% + 220px), 985px);
+    right: 56px;
+    /* Bordered "code box" container — discrete dark surface with rounded
+       corners + thin violet-tinted border, visually anchored to the page
+       like a fenced block of analysis text. */
+    background: #0f0f14;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    z-index: 910;            /* below the WT panel (920) but above page */
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+    overflow: hidden;        /* round corners clip the inner scroll area */
+  }
+  /* When the working timeline is open, the AI panel's right edge pulls
+     in to leave room for the WT panel — left edge stays inherited from
+     the default rule above (no need to override; same cards' right edge
+     applies whether WT is open or closed). Right border lands 8px before
+     the WT first card border, matching the small visible spacing. */
+  body.iris-wt-open #iris-ai-tl-panel {
+    right: calc(56px + min(38vw, 520px) - 8px);
+  }
+  /* Sidebar-collapsed regime. Atlantis JS adds .sidebar_minimize to the
+     .wrapper element (NOT body — easy to get wrong) when the sidebar
+     shrinks 250px → 75px. Cards' true right edge in viewport coords =
+     sidebar(75) + margin-left(60) + min((vp-75)*0.5, 640); the 60px is
+     the rail offset on .timeline-panel — easy to forget. On a 1920px
+     viewport that's 775px. Cap at 810 / 50%+133 offset gives a
+     consistent 35px gap from cards' right edge across all viewport
+     widths — matching the same 35px gap the default rule produces in
+     sidebar-expanded mode (cards@950 + 35 = AI@985 cap). This is the
+     ONLY override needed for sidebar-collapsed; WT-open's right-edge
+     change applies orthogonally. */
+  .wrapper.sidebar_minimize #iris-ai-tl-panel {
+    left: min(calc(50% + 133px), 810px);
+  }
+  #iris-ai-tl-header {
+    padding: 12px 16px 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #iris-ai-tl-header .iris-ai-tl-eyebrow {
+    font-size: 9.5px;
+    color: #a78bfa;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #iris-ai-tl-header .iris-ai-tl-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #d4c4ff;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  #iris-ai-tl-header .iris-ai-tl-meta {
+    font-size: 10.5px;
+    color: #64748b;
+    margin-left: 6px;
+  }
+  #iris-ai-tl-header .iris-ai-tl-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  #iris-ai-tl-header .iris-ai-tl-actions button {
+    background: rgba(139, 92, 246, 0.18);
+    border: 1px solid rgba(139, 92, 246, 0.45);
+    color: #d4c4ff;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  #iris-ai-tl-header .iris-ai-tl-actions button:hover { filter: brightness(1.15); }
+  #iris-ai-tl-header .iris-ai-tl-actions button:disabled { opacity: 0.55; cursor: progress; }
+  #iris-ai-tl-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 18px 80px 18px;
+    color: #cbd5e1;
+    font-size: 12.5px;
+    line-height: 1.6;
+    /* Hide scrollbar visually like the working timeline list. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  #iris-ai-tl-body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  #iris-ai-tl-body strong { color: #f1f5f9; }
+  #iris-ai-tl-body code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    background: rgba(255, 255, 255, 0.06);
+    color: #d4c4ff;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11.5px;
+  }
+  #iris-ai-tl-body pre {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 8px 0;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11.5px;
+    color: #e2e8f0;
+    overflow-x: auto;
+  }
+  #iris-ai-tl-body h1, #iris-ai-tl-body h2, #iris-ai-tl-body h3 {
+    color: #f1f5f9;
+    margin: 16px 0 6px 0;
+    font-weight: 600;
+  }
+  #iris-ai-tl-body h1 { font-size: 16px; }
+  #iris-ai-tl-body h2 { font-size: 13px; color: #d4c4ff; text-transform: uppercase; letter-spacing: 0.4px; }
+  #iris-ai-tl-body h3 { font-size: 11.5px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.4px; }
+  #iris-ai-tl-body h2:first-child, #iris-ai-tl-body h3:first-child, #iris-ai-tl-body h1:first-child { margin-top: 0; }
+  #iris-ai-tl-body ul, #iris-ai-tl-body ol { margin: 4px 0 8px 18px; padding: 0; }
+  #iris-ai-tl-body li { margin: 2px 0; }
+  #iris-ai-tl-body p { margin: 0 0 8px 0; }
+  #iris-ai-tl-body blockquote {
+    border-left: 2px solid #8b5cf6;
+    padding: 2px 0 2px 10px;
+    margin: 6px 0;
+    color: #cbd5e1;
+    font-style: italic;
+    background: rgba(139, 92, 246, 0.06);
+  }
+  #iris-ai-tl-body hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 14px 0;
+  }
+  #iris-ai-tl-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 12px 0;
+    font-size: 11.5px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  #iris-ai-tl-body table th,
+  #iris-ai-tl-body table td {
+    padding: 6px 9px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  #iris-ai-tl-body table th {
+    background: rgba(139, 92, 246, 0.10);
+    color: #d4c4ff;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.30);
+  }
+  #iris-ai-tl-body table tr:last-child td { border-bottom: 0; }
+  #iris-ai-tl-body table td code,
+  #iris-ai-tl-body table th code { font-size: 10.5px; }
+  #iris-ai-tl-body.is-empty,
+  #iris-ai-tl-body.is-loading { color: #94a3b8; font-style: italic; padding-top: 28px; text-align: center; }
+  #iris-ai-tl-body.is-error { color: #fca5a5; padding-top: 28px; text-align: center; }
 </style>
 
 {% endblock stylesheets %}
@@ -209,6 +782,11 @@
                                 <span class="menu-title">Add event</span>
                             </button>
                         </li>
+                        <li class="nav-item hidden-caret">
+                            <button id="iris-wt-toggle" type="button" onclick="irisWorkingTimeline.togglePanel();" title="Tool-ingested events pending review (Hayabusa, KAPE, …)">
+                                <i class="fas fa-stream" style="font-size: 10px; margin-right: 4px;"></i>Working timeline<span id="iris-wt-toggle-count" class="iris-wt-badge zero">0</span>
+                            </button>
+                        </li>
                         <li class="nav-item">
                             <div class="dropdown">
                               <button class="btn btn-sm btn-border btn-black" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -226,6 +804,8 @@
                                   <a class="dropdown-item" href="#" onclick="timelineToCsvWithUI();"><small class="fa fa-download mr-2"></small> Download as CSV with user info</a>
                                   <div class="dropdown-divider"></div>
                                   <a class="dropdown-item" href="#" onclick="fire_upload_csv_events();"><small class="fa fa-upload mr-2"></small> Upload CSV of events</a>
+                                  <div class="dropdown-divider"></div>
+                                  <a class="dropdown-item" href="#" onclick="irisWorkingTimeline.openImport('hayabusa');"><small class="fa fa-file-import mr-2"></small> Import Hayabusa CSV (working timeline)</a>
                               </div>
                             </div>
                         </li>
@@ -326,6 +906,791 @@ event_date,event_tz,event_title,event_category,event_content,event_raw,event_sou
     <!-- END_RS_CODE -->
     {% include 'includes/footer.html' %}
 </div>
+
+{# ===================================================================
+   iris-next: working timeline (right-side panel) — dual-timeline UX.
+   Markup is render-once; content populated by JS. The panel is hidden
+   by default; toggled via #iris-wt-toggle in the topbar.
+   =================================================================== #}
+<div id="iris-wt-panel" aria-hidden="true">
+    <div id="iris-wt-header">
+        <span class="iris-wt-title">Working timeline</span>
+        <span class="iris-wt-counts">
+            <span id="iris-wt-count-pending">0</span> pending ·
+            <span class="pos"><span id="iris-wt-count-tp">0</span> promoted</span> ·
+            <span class="neg"><span id="iris-wt-count-fp">0</span> rejected</span>
+        </span>
+        <span class="iris-wt-actions">
+            <select id="iris-wt-filter" class="iris-wt-filter" onchange="irisWorkingTimeline.refresh();">
+                <option value="pending" selected>Pending only</option>
+                <option value="true_positive">Promoted</option>
+                <option value="false_positive">Rejected</option>
+                <option value="all">All</option>
+            </select>
+            <button type="button" class="iris-wt-close" title="Refresh" onclick="irisWorkingTimeline.refresh();"><i class="fas fa-sync-alt" style="font-size: 11px;"></i></button>
+            <button type="button" class="iris-wt-close" title="Close panel" onclick="irisWorkingTimeline.togglePanel(false);">&times;</button>
+        </span>
+    </div>
+    <div id="iris-wt-list">
+        <div class="iris-wt-empty" style="color: #94a3b8; font-size: 12px; padding: 24px 8px; text-align: center;">
+            No working events yet.<br/><br/>
+            <button type="button" style="background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; padding: 5px 12px; border-radius: 999px; font-size: 11px; cursor: pointer;" onclick="irisWorkingTimeline.openImport('hayabusa');">
+                <i class="fas fa-file-import mr-1"></i> Import Hayabusa CSV
+            </button>
+        </div>
+    </div>
+</div>
+
+{# iris-next: timeline AI analysis panel — auto-loads cached, refresh on demand. #}
+<div id="iris-ai-tl-panel" data-cid="">
+    <div id="iris-ai-tl-header">
+        <span class="iris-ai-tl-eyebrow"><i class="fas fa-sparkles"></i></span>
+        <span class="iris-ai-tl-title">Timeline analysis</span>
+        <span class="iris-ai-tl-meta" id="iris-ai-tl-meta"></span>
+        <span class="iris-ai-tl-actions">
+            <button type="button" id="iris-ai-tl-refresh" title="Re-analyze the timeline" onclick="irisTimelineAi.run(true);">
+                <i class="fas fa-redo-alt mr-1" style="font-size: 9px;"></i>Re-run
+            </button>
+        </span>
+    </div>
+    <div id="iris-ai-tl-body" class="is-empty">Loading cached analysis…</div>
+</div>
+
+<div class="modal" tabindex="-1" id="iris-wt-import-modal" data-backdrop="true">
+    <div class="modal-lg modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Import Hayabusa CSV</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 12.5px; color: #94a3b8;">
+                    Upload a Hayabusa <code>csv-timeline</code> output. Sigma rules that fired on the same underlying EVTX event (same Channel/EID/RID) are collapsed into one card; the highest-severity rule's title becomes the headline.
+                </p>
+                <div class="form-group">
+                    <label class="placeholder">Hayabusa CSV file</label>
+                    <input id="iris-wt-import-file" type="file" accept=".csv,text/csv" class="form-control">
+                </div>
+                <div id="iris-wt-import-status" style="font-size: 12px; color: #94a3b8;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wt-import-submit" onclick="irisWorkingTimeline.submitImport();">Import</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* iris-next: working-timeline panel controller.
+ * Self-contained — does not touch the existing case.timeline.js controller.
+ * Reads from /api/v2/cases/<cid>/working-timeline/...
+ *
+ * v2 envelope: 200 returns {status: 'success', data: {...}};
+ * 4xx returns {status: 'error', message: '...'} — same shape as the rest
+ * of the v2 API (this is the response_api_* helper family). */
+window.irisWorkingTimeline = (function () {
+    'use strict';
+
+    function getCaseId() {
+        var m = window.location.search.match(/[?&]cid=(\d+)/);
+        return m ? m[1] : null;
+    }
+
+    function csrfToken() {
+        var el = document.getElementById('csrf_token');
+        return el ? el.value : '';
+    }
+
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+
+    /* Lightweight markdown render for our cards: **bold**, `code`,
+     * triple-backtick blocks. The description is generated by the
+     * Hayabusa parser and uses a constrained subset, so we don't need a
+     * full md renderer. */
+    function renderMd(s) {
+        if (!s) return '';
+        var out = escapeHtml(s);
+        out = out.replace(/```\n?([\s\S]*?)```/g, function (_, code) {
+            return '<pre>' + code.replace(/^\n+|\n+$/g, '') + '</pre>';
+        });
+        out = out.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+        out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        out = out.replace(/\n/g, '<br>');
+        return out;
+    }
+
+    function fmtTime(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return d.getUTCFullYear() + '-' + pad(d.getUTCMonth()+1) + '-' + pad(d.getUTCDate())
+             + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds()) + 'Z';
+    }
+
+    function api(method, path, body, isMultipart) {
+        var cid = getCaseId();
+        var url = '/api/v2/cases/' + cid + '/working-timeline' + path;
+        var opts = {
+            method: method,
+            credentials: 'same-origin',
+            headers: { 'X-CSRFToken': csrfToken() }
+        };
+        if (body !== undefined && body !== null) {
+            if (isMultipart) {
+                /* IRIS-NG's CSRF validator reads from request.form, which IS
+                 * populated for multipart/form-data — append csrf_token there
+                 * (header alone gets rejected). Same load-bearing rule as the
+                 * JSON branch. */
+                if (body instanceof FormData && !body.has('csrf_token')) {
+                    body.append('csrf_token', csrfToken());
+                }
+                opts.body = body;
+            } else {
+                opts.headers['Content-Type'] = 'application/json';
+                /* IRIS-NG checks csrf_token from the JSON body — header alone
+                 * is not enough on POSTs. */
+                var payload = body || {};
+                payload.csrf_token = csrfToken();
+                opts.body = JSON.stringify(payload);
+            }
+        }
+        return fetch(url, opts).then(function (r) {
+            return r.json().then(function (j) { return { ok: r.ok, status: r.status, json: j }; });
+        });
+    }
+
+    function setBadge(n) {
+        var el = document.getElementById('iris-wt-toggle-count');
+        if (!el) return;
+        el.textContent = n;
+        el.classList.toggle('zero', !n);
+    }
+
+    function setCounts(counts) {
+        var p = (counts && counts.pending)        || 0;
+        var t = (counts && counts.true_positive)  || 0;
+        var f = (counts && counts.false_positive) || 0;
+        document.getElementById('iris-wt-count-pending').textContent = p;
+        document.getElementById('iris-wt-count-tp').textContent      = t;
+        document.getElementById('iris-wt-count-fp').textContent      = f;
+        setBadge(p);
+    }
+
+    function renderCard(ev) {
+        var sev = (ev.severity || '').toLowerCase();
+        var chips = [];
+        if (sev) chips.push('<span class="iris-wt-chip sev-' + escapeHtml(sev) + '">' + escapeHtml(sev) + '</span>');
+        if (ev.event_source_host) chips.push('<span class="iris-wt-chip host">' + escapeHtml(ev.event_source_host) + '</span>');
+        if (ev.mitre_techniques) {
+            ev.mitre_techniques.split(',').forEach(function (t) {
+                t = t.trim();
+                if (t) chips.push('<span class="iris-wt-chip mitre">' + escapeHtml(t) + '</span>');
+            });
+        }
+        var actions;
+        var statusLine = '';
+        /* ✨ Explain pill — present on every status (analyst may want
+         * the explanation before promoting AND after to log rationale). */
+        var explainBtn = '<button class="iris-wt-explain" onclick="irisWorkingTimeline.explain(' + ev.id + ');"><i class="fas fa-sparkles mr-1"></i>Explain</button>';
+        if (ev.status === 'pending') {
+            actions =
+                '<button class="iris-wt-promote" onclick="irisWorkingTimeline.promote(' + ev.id + ');"><i class="fas fa-check mr-1"></i>Promote</button>' +
+                '<button class="iris-wt-reject" onclick="irisWorkingTimeline.reject(' + ev.id + ');"><i class="fas fa-times mr-1"></i>Reject</button>' +
+                explainBtn;
+        } else if (ev.status === 'true_positive') {
+            statusLine = '<div class="iris-wt-status-line"><span class="pos"><i class="fas fa-check"></i> Promoted</span>' +
+                (ev.promoted_event_id ? ' → <a href="javascript:void(0);" onclick="get_event(' + ev.promoted_event_id + ');">cases_event #' + ev.promoted_event_id + '</a>' : '') +
+                '</div>';
+            actions = '<button onclick="irisWorkingTimeline.reset(' + ev.id + ');"><i class="fas fa-undo mr-1"></i>Reset</button>' + explainBtn;
+        } else { // false_positive
+            statusLine = '<div class="iris-wt-status-line"><span class="neg"><i class="fas fa-times"></i> Rejected as false positive</span></div>';
+            actions =
+                '<button onclick="irisWorkingTimeline.reset(' + ev.id + ');"><i class="fas fa-undo mr-1"></i>Reset</button>' +
+                '<button onclick="irisWorkingTimeline.del(' + ev.id + ');"><i class="fas fa-trash mr-1"></i>Delete</button>' +
+                explainBtn;
+        }
+
+        return '' +
+            '<div class="iris-wt-card" data-status="' + escapeHtml(ev.status) + '" data-id="' + ev.id + '">' +
+                '<div class="iris-wt-time">' + escapeHtml(fmtTime(ev.event_date)) + '  ·  ' + escapeHtml(ev.source) + (ev.external_id ? '  ·  ' + escapeHtml(ev.external_id) : '') + '</div>' +
+                '<div class="iris-wt-title">' + escapeHtml(ev.event_title) + '</div>' +
+                (chips.length ? '<div class="iris-wt-chips">' + chips.join('') + '</div>' : '') +
+                '<div class="iris-wt-body">' + renderMd(ev.event_description) + '</div>' +
+                '<div class="iris-wt-actions">' + actions + '</div>' +
+                statusLine +
+                '<div class="iris-wt-explanation-slot" data-id="' + ev.id + '"></div>' +
+            '</div>';
+    }
+
+    /* Render an explanation block into the card's slot. Idempotent. */
+    function _renderExplanation(workingId, art, opts) {
+        opts = opts || {};
+        var slot = document.querySelector('.iris-wt-explanation-slot[data-id="' + workingId + '"]');
+        if (!slot) return;
+        if (opts.loading) {
+            slot.innerHTML =
+                '<div class="iris-wt-explanation is-loading">' +
+                    '<div class="iris-wt-explanation-eyebrow"><i class="fas fa-sparkles"></i> Asking the model…</div>' +
+                '</div>';
+            return;
+        }
+        if (opts.error) {
+            slot.innerHTML =
+                '<div class="iris-wt-explanation is-error">' +
+                    '<div class="iris-wt-explanation-eyebrow"><i class="fas fa-exclamation-triangle"></i> AI explanation failed' +
+                        '<span class="meta"><button onclick="irisWorkingTimeline.explain(' + workingId + ', true);">retry</button></span>' +
+                    '</div>' +
+                    escapeHtml(opts.error) +
+                '</div>';
+            return;
+        }
+        if (!art) { slot.innerHTML = ''; return; }
+        var meta = (art.model || '?');
+        if (art.generated_at) {
+            try { meta += ' · ' + new Date(art.generated_at).toLocaleString(); } catch (e) { /* noop */ }
+        }
+        slot.innerHTML =
+            '<div class="iris-wt-explanation">' +
+                '<div class="iris-wt-explanation-eyebrow">' +
+                    '<i class="fas fa-sparkles"></i> AI explanation' +
+                    '<span class="meta">' + escapeHtml(meta) + ' · ' +
+                        '<button onclick="irisWorkingTimeline.explain(' + workingId + ', true);" title="Re-run the model">re-run</button> · ' +
+                        '<button onclick="irisWorkingTimeline.clearExplanation(' + workingId + ');" title="Hide">hide</button>' +
+                    '</span>' +
+                '</div>' +
+                renderMd(art.content) +
+            '</div>';
+    }
+
+    /* Per-event state: artifact cached in memory + current visibility.
+     * Lets the Explain pill toggle (show ↔ hide) without re-calling the
+     * model on every click. The bulk-load on refresh() also populates
+     * these so the toggle state survives promote/reject re-renders. */
+    var _explanationCache = {};
+    var _explanationVisible = {};
+
+    function explain(workingId, force) {
+        /* force=true comes from the in-explanation "re-run" button. Always
+         * hits the model with ?force=true and shows the result. */
+        if (force) {
+            _explanationVisible[workingId] = true;
+            _renderExplanation(workingId, null, { loading: true });
+            _fetchExplanation(workingId, true);
+            return;
+        }
+        /* Default click on the Explain pill = toggle. */
+        if (_explanationVisible[workingId]) {
+            /* Already showing → hide. Keep the cached artifact so the next
+             * click can re-display without an API round-trip. */
+            _explanationVisible[workingId] = false;
+            var slot = document.querySelector('.iris-wt-explanation-slot[data-id="' + workingId + '"]');
+            if (slot) slot.innerHTML = '';
+            return;
+        }
+        /* Hidden → show. */
+        _explanationVisible[workingId] = true;
+        if (_explanationCache[workingId]) {
+            /* Already have it in memory — render immediately, no fetch. */
+            _renderExplanation(workingId, _explanationCache[workingId]);
+            return;
+        }
+        /* First reveal — try GET (cached on the server) first; fall back
+         * to POST to generate only if there is no cached artifact yet. */
+        _renderExplanation(workingId, null, { loading: true });
+        _fetchExplanation(workingId, false);
+    }
+
+    function _fetchExplanation(workingId, force) {
+        var postCall = function () {
+            return api('POST', '/events/' + workingId + '/explain' + (force ? '?force=true' : ''), {});
+        };
+        var promise = force
+            ? postCall()
+            : api('GET', '/events/' + workingId + '/explain').then(function (r) {
+                  if (r.ok) return r;            /* server-cached → use it */
+                  if (r.status === 404) return postCall();  /* never generated → POST */
+                  return r;                       /* propagate other errors */
+              });
+        promise.then(function (resp) {
+            if (!resp.ok) {
+                _renderExplanation(workingId, null, { error: (resp.json && resp.json.message) || ('HTTP ' + resp.status) });
+                return;
+            }
+            var art = (resp.json && resp.json.data) || resp.json;
+            _explanationCache[workingId] = art;
+            if (_explanationVisible[workingId]) {
+                _renderExplanation(workingId, art);
+            }
+        }).catch(function (e) {
+            _renderExplanation(workingId, null, { error: String(e && e.message || e) });
+        });
+    }
+
+    function clearExplanation(workingId) {
+        /* "hide" link inside an open explanation — same as toggling off. */
+        _explanationVisible[workingId] = false;
+        _renderExplanation(workingId, null);
+    }
+
+    function refresh() {
+        var listEl = document.getElementById('iris-wt-list');
+        if (!listEl) return;
+        var status = (document.getElementById('iris-wt-filter') || {}).value || 'pending';
+        api('GET', '/events?status=' + encodeURIComponent(status))
+            .then(function (resp) {
+                if (!resp.ok) {
+                    listEl.innerHTML = '<div style="color:#fca5a5; padding:16px;">Error: ' + escapeHtml((resp.json && resp.json.message) || ('HTTP ' + resp.status)) + '</div>';
+                    return;
+                }
+                var data = (resp.json && resp.json.data) || resp.json || {};
+                setCounts(data.counts);
+                var events = data.events || [];
+                if (!events.length) {
+                    listEl.innerHTML = '<div class="iris-wt-empty" style="color:#94a3b8; font-size:12px; padding:24px 8px; text-align:center;">No events at this filter.<br/><br/>' +
+                        '<button type="button" style="background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; padding: 5px 12px; border-radius: 999px; font-size: 11px; cursor: pointer;" onclick="irisWorkingTimeline.openImport(\'hayabusa\');">' +
+                        '<i class="fas fa-file-import mr-1"></i> Import Hayabusa CSV</button></div>';
+                    return;
+                }
+                /* Group by date so the working timeline gets the same
+                 * day-divider pills the master timeline shows on the left. */
+                var html = '';
+                var lastDateKey = null;
+                events.forEach(function (e) {
+                    var d = new Date(e.event_date);
+                    var dateKey = isNaN(d.getTime())
+                        ? '—'
+                        : (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + d.getUTCFullYear();
+                    if (dateKey !== lastDateKey) {
+                        html += '<div class="iris-wt-date-row">' +
+                                  '<span class="iris-wt-date-pill">' + escapeHtml(dateKey) + '</span>' +
+                                '</div>';
+                        lastDateKey = dateKey;
+                    }
+                    html += renderCard(e);
+                });
+                listEl.innerHTML = html;
+                /* Seed the in-memory cache from the bulk-loaded
+                 * explanations so the first Explain click can show
+                 * instantly without a server round-trip. Default state
+                 * is HIDDEN — the analyst opens explanations on demand
+                 * rather than having every card auto-show its narrative. */
+                events.forEach(function (e) {
+                    if (e.explanation) {
+                        _explanationCache[e.id] = e.explanation;
+                        _explanationVisible[e.id] = false;
+                    } else {
+                        /* Server has no cached artifact for this event.
+                         * Drop any in-memory cache too — re-promoted /
+                         * regenerated events should not show stale data. */
+                        delete _explanationCache[e.id];
+                        delete _explanationVisible[e.id];
+                    }
+                });
+            });
+    }
+
+    /* Counts-only refresh for the topbar badge. Cheap. */
+    function refreshCounts() {
+        api('GET', '/events?status=pending&limit=1').then(function (resp) {
+            if (resp.ok) {
+                var data = (resp.json && resp.json.data) || resp.json || {};
+                setCounts(data.counts);
+            }
+        });
+    }
+
+    function togglePanel(force) {
+        var cls = document.body.classList;
+        var open = (typeof force === 'boolean') ? force : !cls.contains('iris-wt-open');
+        cls.toggle('iris-wt-open', open);
+        document.getElementById('iris-wt-panel').setAttribute('aria-hidden', open ? 'false' : 'true');
+        if (open) refresh();
+    }
+
+    function openImport() {
+        document.getElementById('iris-wt-import-status').textContent = '';
+        document.getElementById('iris-wt-import-file').value = '';
+        if (window.jQuery) jQuery('#iris-wt-import-modal').modal('show');
+    }
+
+    function submitImport() {
+        var input = document.getElementById('iris-wt-import-file');
+        var statusEl = document.getElementById('iris-wt-import-status');
+        var btn = document.getElementById('iris-wt-import-submit');
+        if (!input.files.length) {
+            statusEl.textContent = 'Pick a CSV first.';
+            return;
+        }
+        var fd = new FormData();
+        fd.append('file', input.files[0]);
+        btn.disabled = true;
+        statusEl.style.color = '#a78bfa';
+        statusEl.textContent = 'Uploading + parsing…';
+        api('POST', '/import/hayabusa', fd, true)
+            .then(function (resp) {
+                if (!resp.ok) {
+                    statusEl.style.color = '#fca5a5';
+                    statusEl.textContent = 'Error: ' + ((resp.json && resp.json.message) || ('HTTP ' + resp.status));
+                    return;
+                }
+                var data = (resp.json && resp.json.data) || resp.json || {};
+                statusEl.style.color = '#6ee7b7';
+                statusEl.textContent = 'Imported ' + data.imported + ' event(s) (batch ' + (data.import_batch_id || '?').slice(0, 8) + '…).';
+                if (window.jQuery) {
+                    setTimeout(function () { jQuery('#iris-wt-import-modal').modal('hide'); }, 800);
+                }
+                togglePanel(true);
+                refresh();
+            })
+            .finally(function () { btn.disabled = false; });
+    }
+
+    function _post(id, suffix, onSuccess) {
+        return api('POST', '/events/' + id + suffix, {}).then(function (resp) {
+            if (!resp.ok) {
+                alert('Error: ' + ((resp.json && resp.json.message) || ('HTTP ' + resp.status)));
+                return;
+            }
+            if (typeof onSuccess === 'function') {
+                try { onSuccess((resp.json && resp.json.data) || resp.json || {}); } catch (e) { /* noop */ }
+            }
+            refresh();
+        });
+    }
+    function promote(id) {
+        _post(id, '/promote', function (data) {
+            /* Promote spawns a new master-timeline event → kick the AI
+             * analysis to refresh. Debounced inside refresh(). */
+            try { window.irisTimelineAi && window.irisTimelineAi.refresh(); } catch (e) {}
+            /* Surface auto-created assets + IOCs so the analyst knows we
+             * side-effected the case beyond just spawning the timeline event.
+             * Uses the existing notify_success helper if Atlantis loaded it;
+             * falls back to a console log so we don't crash on bare pages. */
+            if (!data) return;
+            var bits = [];
+            var createdAssets = (data.assets && data.assets.created) || [];
+            if (createdAssets.length) {
+                var assetNames = createdAssets.map(function (a) { return a.name + ' (' + a.type + ')'; }).join(', ');
+                bits.push('created ' + createdAssets.length + ' new asset' +
+                          (createdAssets.length === 1 ? '' : 's') + ': ' + assetNames);
+            }
+            var createdIocs = (data.iocs && data.iocs.created) || [];
+            if (createdIocs.length) {
+                var iocLabels = createdIocs.map(function (i) { return i.value + ' (' + i.type + ')'; }).join(', ');
+                bits.push('created ' + createdIocs.length + ' new IOC' +
+                          (createdIocs.length === 1 ? '' : 's') + ': ' + iocLabels);
+            }
+            var iocError = data.iocs && data.iocs.error;
+            if (iocError && typeof notify_warning === 'function') {
+                notify_warning('Promote OK but AI IOC extraction failed: ' + iocError);
+            }
+            if (!bits.length) return;
+            var msg = 'Promoted to event #' + data.promoted_event_id + ' · ' + bits.join(' · ');
+            if (typeof notify_success === 'function') { notify_success(msg); }
+            else { console.log('[working-timeline] ' + msg); }
+        });
+    }
+    function reject(id)  { _post(id, '/reject'); }
+    function reset(id)   { _post(id, '/reset'); }
+    function del(id) {
+        if (!confirm('Hard-delete this working event? (Promoted cases_events row, if any, is NOT removed.)')) return;
+        api('DELETE', '/events/' + id, null).then(function (resp) {
+            if (!resp.ok) {
+                alert('Error: ' + ((resp.json && resp.json.message) || ('HTTP ' + resp.status)));
+                return;
+            }
+            refresh();
+        });
+    }
+
+    /* On page load, get the pending count so the topbar badge is
+     * accurate even if the analyst doesn't open the panel. */
+    document.addEventListener('DOMContentLoaded', function () {
+        refreshCounts();
+        /* Delegated click → toggle .expanded on the clicked card. Ignore
+         * clicks on buttons / links / the explanation block so the action
+         * row + AI-explanation surfaces still work as expected. */
+        var list = document.getElementById('iris-wt-list');
+        if (list) {
+            list.addEventListener('click', function (ev) {
+                var card = ev.target.closest('.iris-wt-card');
+                if (!card) return;
+                if (ev.target.closest('button, a, .iris-wt-actions, .iris-wt-explanation, .iris-wt-explanation-slot')) return;
+                card.classList.toggle('expanded');
+            });
+        }
+    });
+
+    return {
+        togglePanel: togglePanel,
+        refresh: refresh,
+        openImport: openImport,
+        submitImport: submitImport,
+        promote: promote,
+        reject: reject,
+        reset: reset,
+        del: del,
+        explain: explain,
+        clearExplanation: clearExplanation,
+    };
+})();
+
+/* =====================================================================
+   iris-next: timeline AI analysis panel controller.
+   Wires #iris-ai-tl-panel to /api/v2/cases/<cid>/ai/timeline-analysis
+   (GET cached on page load, POST to (re)generate on demand).
+   ===================================================================== */
+window.irisTimelineAi = (function () {
+    function getCaseId() {
+        var match = window.location.search.match(/[?&]cid=(\d+)/);
+        return match ? match[1] : null;
+    }
+    function csrfToken() {
+        var el = document.getElementById('csrf_token');
+        return el ? el.value : '';
+    }
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+    /* Lightweight Markdown → HTML. Supports headings, bold, italic, code,
+     * inline code, fenced code blocks, blockquote, ordered/unordered lists,
+     * GFM-style tables (header + separator + body), paragraphs. Tables are
+     * essential for timeline analysis since the prompt emits structured
+     * sequence-of-events / suspected-elements / next-actions tables. */
+    function renderMd(s) {
+        if (!s) return '';
+        var lines = String(s).split('\n');
+        var html = [];
+        var inList = null;        // 'ul' | 'ol' | null
+        var inPre = false;
+        var preBuf = [];
+        function closeList() { if (inList) { html.push('</' + inList + '>'); inList = null; } }
+        function isTableSep(s) {
+            // | --- | :---: | ---: | ...
+            return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(s);
+        }
+        function splitTableRow(s) {
+            var t = s.trim();
+            if (t.charAt(0) === '|') t = t.slice(1);
+            if (t.charAt(t.length - 1) === '|') t = t.slice(0, -1);
+            return t.split('|').map(function (c) { return c.trim(); });
+        }
+        function looksLikeTableRow(s) {
+            // At least one pipe, and not a code-fence line.
+            return /\|/.test(s) && !/^```/.test(s);
+        }
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            // Fenced code block
+            if (/^```/.test(line)) {
+                if (inPre) {
+                    html.push('<pre>' + escapeHtml(preBuf.join('\n')) + '</pre>');
+                    preBuf = []; inPre = false;
+                } else { closeList(); inPre = true; }
+                continue;
+            }
+            if (inPre) { preBuf.push(line); continue; }
+            // GFM table — header row + separator + body rows. Detect by
+            // looking ahead from the current line.
+            if (looksLikeTableRow(line) && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+                closeList();
+                var header = splitTableRow(line);
+                var rows = [];
+                var j = i + 2;
+                while (j < lines.length && looksLikeTableRow(lines[j]) && lines[j].trim()) {
+                    rows.push(splitTableRow(lines[j]));
+                    j++;
+                }
+                html.push('<table><thead><tr>' +
+                    header.map(function (c) { return '<th>' + inline(c) + '</th>'; }).join('') +
+                    '</tr></thead><tbody>' +
+                    rows.map(function (r) {
+                        return '<tr>' + r.map(function (c) { return '<td>' + inline(c) + '</td>'; }).join('') + '</tr>';
+                    }).join('') +
+                    '</tbody></table>');
+                i = j - 1;
+                continue;
+            }
+            // Headings
+            var h = line.match(/^(#{1,3})\s+(.+)$/);
+            if (h) { closeList(); html.push('<h' + h[1].length + '>' + inline(h[2]) + '</h' + h[1].length + '>'); continue; }
+            // Blockquote
+            if (/^>\s?/.test(line)) { closeList(); html.push('<blockquote>' + inline(line.replace(/^>\s?/, '')) + '</blockquote>'); continue; }
+            // Lists
+            var ol = line.match(/^\s*\d+\.\s+(.+)$/);
+            var ul = line.match(/^\s*[-*]\s+(.+)$/);
+            if (ol) {
+                if (inList !== 'ol') { closeList(); html.push('<ol>'); inList = 'ol'; }
+                html.push('<li>' + inline(ol[1]) + '</li>');
+                continue;
+            }
+            if (ul) {
+                if (inList !== 'ul') { closeList(); html.push('<ul>'); inList = 'ul'; }
+                html.push('<li>' + inline(ul[1]) + '</li>');
+                continue;
+            }
+            // Horizontal rule
+            if (/^-{3,}\s*$/.test(line)) { closeList(); html.push('<hr>'); continue; }
+            // Blank line
+            if (!line.trim()) { closeList(); continue; }
+            // Paragraph
+            closeList();
+            html.push('<p>' + inline(line) + '</p>');
+        }
+        if (inPre) html.push('<pre>' + escapeHtml(preBuf.join('\n')) + '</pre>');
+        closeList();
+        return html.join('');
+    }
+    function inline(s) {
+        var out = escapeHtml(s);
+        out = out.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+        out = out.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+        out = out.replace(/(^|\W)\*([^*\n]+)\*(\W|$)/g, '$1<em>$2</em>$3');
+        return out;
+    }
+
+    function fmtAge(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        var ageS = (Date.now() - d.getTime()) / 1000;
+        if (ageS < 60)    return Math.floor(ageS) + 's ago';
+        if (ageS < 3600)  return Math.floor(ageS / 60) + 'm ago';
+        if (ageS < 86400) return Math.floor(ageS / 3600) + 'h ago';
+        return Math.floor(ageS / 86400) + 'd ago';
+    }
+
+    function renderArtifact(art) {
+        var bodyEl = document.getElementById('iris-ai-tl-body');
+        var metaEl = document.getElementById('iris-ai-tl-meta');
+        if (!bodyEl) return;
+        bodyEl.classList.remove('is-loading', 'is-error', 'is-empty');
+        /* IRIS-NG's CaseAiArtifact serializer uses `content` + `generated_at` */
+        bodyEl.innerHTML = renderMd(art.content || '');
+        if (metaEl) {
+            var bits = [];
+            if (art.model)         bits.push(art.model);
+            if (art.generated_at)  bits.push(fmtAge(art.generated_at));
+            metaEl.textContent = bits.length ? '· ' + bits.join(' · ') : '';
+        }
+    }
+    function renderEmpty(text) {
+        var bodyEl = document.getElementById('iris-ai-tl-body');
+        var metaEl = document.getElementById('iris-ai-tl-meta');
+        if (!bodyEl) return;
+        bodyEl.classList.remove('is-loading', 'is-error');
+        bodyEl.classList.add('is-empty');
+        bodyEl.textContent = text;
+        if (metaEl) metaEl.textContent = '';
+    }
+    function renderLoading(text) {
+        var bodyEl = document.getElementById('iris-ai-tl-body');
+        if (!bodyEl) return;
+        bodyEl.classList.remove('is-empty', 'is-error');
+        bodyEl.classList.add('is-loading');
+        bodyEl.textContent = text || 'Asking the model…';
+    }
+    function renderError(text) {
+        var bodyEl = document.getElementById('iris-ai-tl-body');
+        if (!bodyEl) return;
+        bodyEl.classList.remove('is-empty', 'is-loading');
+        bodyEl.classList.add('is-error');
+        bodyEl.textContent = text;
+    }
+
+    /* GET cached on page load. 404 → "no analysis yet, click Re-run". */
+    function loadCached() {
+        var cid = getCaseId();
+        if (!cid) { renderEmpty('No case id in URL.'); return; }
+        fetch('/api/v2/cases/' + cid + '/ai/timeline-analysis', {
+            method: 'GET',
+            credentials: 'same-origin',
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, json: j }; }); })
+        .then(function (resp) {
+            if (resp.ok) {
+                renderArtifact(resp.json || {});
+            } else if (resp.status === 404) {
+                renderEmpty('No analysis yet. Click Re-run to generate.');
+            } else {
+                renderError('Error: ' + ((resp.json && resp.json.message) || ('HTTP ' + resp.status)));
+            }
+        })
+        .catch(function (e) { renderError('Error: ' + (e.message || e)); });
+    }
+
+    /* POST to (re)generate. force=true makes the orchestrator bypass cache. */
+    function run(force) {
+        var cid = getCaseId();
+        if (!cid) { renderError('No case id in URL.'); return; }
+        var btn = document.getElementById('iris-ai-tl-refresh');
+        if (btn) btn.disabled = true;
+        renderLoading('Asking the model…');
+        var csrf = csrfToken();
+        fetch('/api/v2/cases/' + cid + '/ai/timeline-analysis' + (force ? '?force=true' : ''), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+            body: JSON.stringify({ csrf_token: csrf }),
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, json: j }; }); })
+        .then(function (resp) {
+            if (resp.ok) renderArtifact(resp.json || {});
+            else renderError('Error: ' + ((resp.json && resp.json.message) || ('HTTP ' + resp.status)));
+        })
+        .catch(function (e) { renderError('Error: ' + (e.message || e)); })
+        .finally(function () { if (btn) btn.disabled = false; });
+    }
+
+    /* Cache-aware refresh. POST without force=true — the orchestrator
+     * computes input_hash from the current case state and returns the
+     * cached artifact instantly when nothing changed, or regenerates
+     * when the timeline / IOCs / assets have shifted. Used as the
+     * auto-trigger from event add/edit/delete + working-timeline promote. */
+    var _refreshTimer = null;
+    function refresh() {
+        /* Debounce — chained edits / rapid promotes shouldn't queue a model
+         * call per keystroke. Wait 1.5s of quiet then fire. */
+        if (_refreshTimer) clearTimeout(_refreshTimer);
+        _refreshTimer = setTimeout(function () {
+            _refreshTimer = null;
+            run(false);
+        }, 1500);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadCached();
+        /* Monkey-patch the master-timeline event handlers so that a
+         * successful add / update / delete kicks off a cache-aware
+         * AI re-analysis. The bundled case.timeline.js declares these
+         * as globals; we wrap them rather than modifying the bundle. */
+        function wrap(fnName) {
+            var orig = window[fnName];
+            if (typeof orig !== 'function') return;
+            window[fnName] = function () {
+                var ret = orig.apply(this, arguments);
+                /* The wrapped fns return a jQuery deferred via post_request_api.
+                 * They don't return it, but the AI refresh debounce will fire
+                 * regardless once the timeline visibly changes. Trigger the
+                 * debounced refresh and let it land after the request completes. */
+                try { refresh(); } catch (e) {}
+                return ret;
+            };
+        }
+        ['update_event', 'update_event_ext', 'delete_event', 'save_event'].forEach(wrap);
+    });
+
+    return { loadCached: loadCached, run: run, refresh: refresh };
+})();
+</script>
 
 {% set chat_variant = 'timeline' %}
 {% set chat_eyebrow = '✨ Timeline Assistant' %}

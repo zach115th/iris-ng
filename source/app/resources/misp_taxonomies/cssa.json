@@ -1,0 +1,133 @@
+{
+  "namespace": "cssa",
+  "description": "The CSSA agreed sharing taxonomy.",
+  "version": 8,
+  "predicates": [
+    {
+      "value": "sharing-class",
+      "expanded": "Sharing Class",
+      "uuid": "9d2b361a-9d72-5563-8ddf-3df634a0a6e8"
+    },
+    {
+      "value": "report",
+      "expanded": "Report",
+      "uuid": "0730ae32-ad2e-5ef1-b237-d8086be6dde5"
+    },
+    {
+      "value": "origin",
+      "expanded": "Origin",
+      "uuid": "7fe9d006-b5eb-572f-872e-bc8f2bba1b03"
+    },
+    {
+      "value": "analyse",
+      "expanded": "Please analyse sample",
+      "colour": "#fab74d",
+      "uuid": "8aec27d1-1a96-5d78-abe8-9b21228556b3"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "sharing-class",
+      "entry": [
+        {
+          "value": "high_profile",
+          "expanded": "Generated within the company during incident/case related investigations or forensic analysis or via malware reversing, validated by humans and highly contextualized.",
+          "colour": "#007695",
+          "numerical_value": 95,
+          "uuid": "af39b08e-cca0-5c08-9c96-0360b321fce8"
+        },
+        {
+          "value": "vetted",
+          "expanded": "Generated within the company, validated by a human prior to sharing, data points have been contextualized (to a degree) e.g. IPs are related to C2 or drop site.",
+          "colour": "#008aaf",
+          "numerical_value": 50,
+          "uuid": "e3932188-d9d0-5cbd-a5bc-bd9bab455e6e"
+        },
+        {
+          "value": "unvetted",
+          "expanded": "Generated within the company by automated means without human interaction e.g., by malware sandbox, honeypots, IDS, etc.",
+          "colour": "#00b3e2",
+          "numerical_value": 10,
+          "uuid": "49ecd21d-d16c-56e3-95a5-2739b5961a68"
+        }
+      ]
+    },
+    {
+      "predicate": "report",
+      "entry": [
+        {
+          "value": "details",
+          "expanded": "Description of the incidence.",
+          "colour": "#fbc166",
+          "uuid": "228dc592-f89b-55ad-b072-5155685efe3b"
+        },
+        {
+          "value": "link",
+          "expanded": "Link to the original report location.",
+          "colour": "#fbcb7f",
+          "uuid": "f94ab4c5-be51-5857-872c-e6e218381300"
+        },
+        {
+          "value": "attached",
+          "expanded": "Attached report.",
+          "colour": "#fcd597",
+          "uuid": "efaa9a4f-7392-598b-957b-ab484c70603b"
+        }
+      ]
+    },
+    {
+      "predicate": "origin",
+      "entry": [
+        {
+          "value": "manual_investigation",
+          "expanded": "Information gathered by an analyst/incident responder/forensic expert/etc.",
+          "colour": "#29775d",
+          "uuid": "c0f0c802-884d-5be9-b2a9-2bd430bcf093"
+        },
+        {
+          "value": "honeypot",
+          "expanded": "Information coming out of honeypots.",
+          "colour": "#2f8a6c",
+          "uuid": "770abfc5-c68b-5e33-971b-35c4829f6c9f"
+        },
+        {
+          "value": "sandbox",
+          "expanded": "Information coming out of sandboxes.",
+          "colour": "#369d7b",
+          "uuid": "81cc4aaf-0ee2-5fcf-9c47-a10c4bbd9f36"
+        },
+        {
+          "value": "email",
+          "expanded": "Information coming out of email infrastructure.",
+          "colour": "#3db08a",
+          "uuid": "190671c4-5625-5c20-bd7c-47c68f4f2d8f"
+        },
+        {
+          "value": "3rd-party",
+          "expanded": "Information from outside the company.",
+          "colour": "#46c098",
+          "uuid": "cd5ced8e-8670-5ebd-aaf3-7525374418d2"
+        },
+        {
+          "value": "report",
+          "expanded": "Information coming from a report.",
+          "colour": "#22644e",
+          "uuid": "74449244-655d-56de-8bd3-7561668d1f7f"
+        },
+        {
+          "value": "other",
+          "expanded": "If none of the other origins applies.",
+          "colour": "#59c6a2",
+          "uuid": "a16f25d0-f96a-57c2-aeb3-8f84a8624415"
+        },
+        {
+          "value": "unknown",
+          "expanded": "Origin of the data unknown.",
+          "colour": "#6ccdad",
+          "uuid": "3c612a76-fb96-5f18-8f11-20345f728055"
+        }
+      ]
+    }
+  ],
+  "uuid": "7f2de2a2-fa82-5916-a5f7-7f062f37e6b5"
+}

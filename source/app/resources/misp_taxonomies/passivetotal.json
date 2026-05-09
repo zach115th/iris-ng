@@ -1,0 +1,101 @@
+{
+  "namespace": "passivetotal",
+  "expanded": "PassiveTotal",
+  "description": "Tags from RiskIQ's PassiveTotal service",
+  "version": 2,
+  "predicates": [
+    {
+      "value": "sinkholed",
+      "expanded": "Sinkhole Status",
+      "uuid": "ffd4f0db-2eab-5d4a-bee8-11eb17728844"
+    },
+    {
+      "value": "ever-compromised",
+      "expanded": "Ever Compromised?",
+      "uuid": "5d41b535-d95f-50de-9f58-d9d8a8bfc830"
+    },
+    {
+      "value": "dynamic-dns",
+      "expanded": "Dynamic DNS",
+      "uuid": "8aeed95c-9932-5491-86a1-3892783e5c99"
+    },
+    {
+      "value": "class",
+      "expanded": "Classification",
+      "uuid": "00c29377-aa68-5870-81c0-a07ce9d68894"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "sinkholed",
+      "entry": [
+        {
+          "value": "yes",
+          "expanded": "Yes",
+          "uuid": "edd57816-7f7c-5645-baae-5357f40b2b1a"
+        },
+        {
+          "value": "no",
+          "expanded": "No",
+          "uuid": "e3530996-fdc1-522c-aa65-5a0db8386aff"
+        }
+      ]
+    },
+    {
+      "predicate": "ever-compromised",
+      "entry": [
+        {
+          "value": "yes",
+          "expanded": "Yes",
+          "uuid": "b0fed906-cc14-5ce3-9bed-18e206998e45"
+        },
+        {
+          "value": "no",
+          "expanded": "No",
+          "uuid": "887fc92b-aaa0-59ed-b25e-376441e2bf45"
+        }
+      ]
+    },
+    {
+      "predicate": "dynamic-dns",
+      "entry": [
+        {
+          "value": "yes",
+          "expanded": "Yes",
+          "uuid": "84de6852-d240-584c-996b-1fc3b2e53d01"
+        },
+        {
+          "value": "no",
+          "expanded": "No",
+          "uuid": "b357c449-529e-5332-b0b4-3cc15e0ccc89"
+        }
+      ]
+    },
+    {
+      "predicate": "class",
+      "entry": [
+        {
+          "value": "malicious",
+          "expanded": "Malicious",
+          "uuid": "0c5949e7-5438-5a91-9d1e-4b0b58942623"
+        },
+        {
+          "value": "suspicious",
+          "expanded": "Suspicious",
+          "uuid": "5102be59-b299-5c23-81a1-9060ffc56374"
+        },
+        {
+          "value": "non-malicious",
+          "expanded": "Non Malicious",
+          "uuid": "d7d9c528-0398-5e69-b347-79f92fca96fa"
+        },
+        {
+          "value": "unknown",
+          "expanded": "Unknown",
+          "uuid": "5b318fc9-cf70-5ba0-834b-bbb185a6d55b"
+        }
+      ]
+    }
+  ],
+  "uuid": "57dae4d0-8e88-5a55-9bee-674348826af9"
+}

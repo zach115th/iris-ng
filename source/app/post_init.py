@@ -272,6 +272,7 @@ def run_post_init(development=False):
                                   cases_count=int(app.config.get('DEMO_CASES_COUNT', 20)),
                                   clients_count=int(app.config.get('DEMO_CLIENTS_COUNT', 4)))
 
+
             # Log completion message
             log.info("Post-init steps completed")
             log.warning("===============================")
@@ -1695,6 +1696,14 @@ def create_safe_server_settings():
     env_ai_key = (os.environ.get('AI_BACKEND_API_KEY') or '').strip()
     env_ai_model = (os.environ.get('AI_BACKEND_MODEL') or '').strip()
 
+    # Same pattern for Pinecone (a7d1f2e3b8c9).
+    env_pc_key = (os.environ.get('PINECONE_API_KEY') or '').strip()
+    env_pc_embed = (os.environ.get('PINECONE_EMBED_MODEL') or '').strip()
+    env_pc_sigma = (os.environ.get('PINECONE_SIGMA_HOST') or '').strip()
+    env_pc_attack = (os.environ.get('PINECONE_ATTACK_HOST') or '').strip()
+    env_pc_atomic = (os.environ.get('PINECONE_ATOMIC_HOST') or '').strip()
+    env_pc_any_host = bool(env_pc_sigma or env_pc_attack or env_pc_atomic)
+
     if not ServerSettings.query.count():
         create_safe(db.session, ServerSettings,
                     http_proxy="", https_proxy="", prevent_post_mod_repush=False,
@@ -1703,10 +1712,19 @@ def create_safe_server_settings():
                     password_policy_lower_case=True, password_policy_digit=True,
                     password_policy_special_chars="", enforce_mfa=app.config.get("MFA_ENABLED", False),
                     ai_backend_enabled=bool(env_ai_url and env_ai_model),
+                    ai_backend_active_slot='primary',
                     ai_backend_url=env_ai_url or None,
                     ai_backend_api_key=env_ai_key or None,
                     ai_backend_model=env_ai_model or None,
-                    ai_backend_confidence_threshold=0.70)
+                    ai_backend_label='Primary',
+                    ai_backend_alt_label='Alternate',
+                    ai_backend_confidence_threshold=0.70,
+                    pinecone_enabled=bool(env_pc_key and env_pc_any_host),
+                    pinecone_api_key=env_pc_key or None,
+                    pinecone_embed_model=env_pc_embed or None,
+                    pinecone_sigma_host=env_pc_sigma or None,
+                    pinecone_attack_host=env_pc_attack or None,
+                    pinecone_atomic_host=env_pc_atomic or None)
         return
 
     # Existing-install backfill: if the AI columns are still empty after the
@@ -1726,6 +1744,17 @@ def create_safe_server_settings():
     if row.ai_backend_confidence_threshold is None:
         row.ai_backend_confidence_threshold = 0.70
         changed = True
+    # Friendly defaults for the slot labels so the admin UI never renders
+    # blank chips on existing installs that predate the e9d2c5a3f8b1 migration.
+    if not (getattr(row, 'ai_backend_label', None) or '').strip():
+        row.ai_backend_label = 'Primary'
+        changed = True
+    if not (getattr(row, 'ai_backend_alt_label', None) or '').strip():
+        row.ai_backend_alt_label = 'Alternate'
+        changed = True
+    if not (getattr(row, 'ai_backend_active_slot', None) or '').strip():
+        row.ai_backend_active_slot = 'primary'
+        changed = True
     # Only flip enabled to True on the backfill path if all three required
     # values are now present AND the admin hasn't explicitly turned it off.
     if changed and not row.ai_backend_enabled and env_ai_url and env_ai_model:
@@ -1733,6 +1762,29 @@ def create_safe_server_settings():
     if changed:
         db.session.commit()
         log.info("Backfilled AI backend settings from environment on existing ServerSettings row")
+
+    # Pinecone existing-install backfill — same idempotent never-overwrite rule.
+    pc_changed = False
+    if not (getattr(row, 'pinecone_api_key', None) or '').strip() and env_pc_key:
+        row.pinecone_api_key = env_pc_key
+        pc_changed = True
+    if not (getattr(row, 'pinecone_embed_model', None) or '').strip() and env_pc_embed:
+        row.pinecone_embed_model = env_pc_embed
+        pc_changed = True
+    if not (getattr(row, 'pinecone_sigma_host', None) or '').strip() and env_pc_sigma:
+        row.pinecone_sigma_host = env_pc_sigma
+        pc_changed = True
+    if not (getattr(row, 'pinecone_attack_host', None) or '').strip() and env_pc_attack:
+        row.pinecone_attack_host = env_pc_attack
+        pc_changed = True
+    if not (getattr(row, 'pinecone_atomic_host', None) or '').strip() and env_pc_atomic:
+        row.pinecone_atomic_host = env_pc_atomic
+        pc_changed = True
+    if pc_changed and not getattr(row, 'pinecone_enabled', False) and env_pc_key and env_pc_any_host:
+        row.pinecone_enabled = True
+    if pc_changed:
+        db.session.commit()
+        log.info("Backfilled Pinecone settings from environment on existing ServerSettings row")
 
 
 def register_modules_pipelines():

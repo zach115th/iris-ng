@@ -1,0 +1,110 @@
+{
+  "namespace": "misp-workflow",
+  "expanded": "MISP workflow",
+  "description": "MISP workflow taxonomy to support result of workflow execution.",
+  "version": 3,
+  "predicates": [
+    {
+      "value": "action-taken",
+      "expanded": "Action taken",
+      "description": "Action taken during the workflow execution",
+      "uuid": "e8f55152-5a74-5ba9-b478-79221ff35ad0"
+    },
+    {
+      "value": "analysis",
+      "expanded": "Analysis",
+      "description": "Result of the analysis executed during the workflow execution",
+      "uuid": "2f9ae3d0-5922-5217-945c-820d3125dc68"
+    },
+    {
+      "value": "mutability",
+      "expanded": "Mutability",
+      "description": "Describe if the workflow is allowed to modify data",
+      "uuid": "283c8e79-420f-5b5e-86af-168ba33130eb"
+    },
+    {
+      "value": "run",
+      "expanded": "Run",
+      "description": "Describe if the workflow is allowed to run on the data being passed",
+      "uuid": "2fbb965d-8b96-5e18-8d3b-c46e6fcf7f37"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "action-taken",
+      "entry": [
+        {
+          "value": "ids-flag-removed",
+          "expanded": "IDS flag removed",
+          "uuid": "e5abcb29-5669-5f70-9b7b-44c155426eba"
+        },
+        {
+          "value": "ids-flag-added",
+          "expanded": "IDS flag added",
+          "uuid": "0fe0344b-578e-502f-bed8-0b383dd88b5f"
+        },
+        {
+          "value": "pushed-to-zmq",
+          "expanded": "Pushed to ZMQ",
+          "uuid": "637a3abd-dee4-5900-afa6-d6c4c9b6deca"
+        },
+        {
+          "value": "email-sent",
+          "expanded": "Email sent",
+          "uuid": "9885ffe2-25e0-5fbb-b565-a98ac47d9ad6"
+        },
+        {
+          "value": "webhook-triggered",
+          "expanded": "Webhook triggered",
+          "uuid": "607172b1-d597-5420-a5ec-5e35a5124c85"
+        },
+        {
+          "value": "execution-stopped",
+          "expanded": "Execution stopped",
+          "uuid": "a6bd049b-cfb2-5714-860a-8864282881ec"
+        }
+      ]
+    },
+    {
+      "predicate": "analysis",
+      "entry": [
+        {
+          "value": "false-positive",
+          "expanded": "False positive",
+          "uuid": "c1f2f6e2-d74f-5ee0-8ce9-3e65c5480ecd"
+        },
+        {
+          "value": "highly-likely-positive",
+          "expanded": "Highly Likely Positive",
+          "uuid": "f31d4e22-8725-55ea-879a-c213afc64d48"
+        },
+        {
+          "value": "known-file-hash",
+          "expanded": "Known file hash",
+          "uuid": "a6eb00cb-9c56-585e-a65c-7823950ec3f5"
+        }
+      ]
+    },
+    {
+      "predicate": "mutability",
+      "entry": [
+        {
+          "value": "allowed",
+          "expanded": "Allowed",
+          "uuid": "1fa241b3-9bb5-55b7-b2a5-4f89cfefc4cd"
+        }
+      ]
+    },
+    {
+      "predicate": "run",
+      "entry": [
+        {
+          "value": "allowed",
+          "expanded": "Allowed",
+          "uuid": "3deac7c2-7a34-58c5-936e-56ea73b15a3b"
+        }
+      ]
+    }
+  ],
+  "uuid": "3ba568ad-ac97-5e13-9952-93c95e7ab2fc"
+}

@@ -1,0 +1,878 @@
+{
+  "values": [
+    {
+      "entry": [
+        {
+          "colour": "#00804f",
+          "expanded": "executable",
+          "value": "peexe",
+          "uuid": "f80e0a79-cd12-57ef-9637-b893084aa522"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "executable",
+          "value": "pedll",
+          "uuid": "e98c5711-da44-55b5-a062-54703b6c6e8e"
+        },
+        {
+          "colour": "#00ff9d",
+          "expanded": "executable",
+          "value": "neexe",
+          "uuid": "ec770418-97fe-5b16-a21d-1b6cac56b25f"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "executable",
+          "value": "nedll",
+          "uuid": "a478a959-a18e-5b38-95ec-8cde47bc66bb"
+        },
+        {
+          "colour": "#1affa7",
+          "expanded": "executable",
+          "value": "mz",
+          "uuid": "551eba80-9065-58dd-b465-982d7069d058"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "executable",
+          "value": "msi",
+          "uuid": "5b3e7652-0371-57ef-ae29-75b81d598d31"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "executable",
+          "value": "com",
+          "uuid": "59553632-97c4-541f-ae1b-fd10996f2293"
+        },
+        {
+          "colour": "#66ffc4",
+          "expanded": "executable",
+          "value": "coff",
+          "uuid": "5ac0c4f7-850b-5023-905f-1930dc71e994"
+        },
+        {
+          "colour": "#1affa7",
+          "expanded": "executable",
+          "value": "elf",
+          "uuid": "c1185962-39e0-5ec7-b226-4fe59aa7236f"
+        },
+        {
+          "colour": "#00663f",
+          "expanded": "executable",
+          "value": "krnl",
+          "uuid": "0f71fb01-4f2a-57b9-8f89-f4ae4c186791"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "executable",
+          "value": "rpm",
+          "uuid": "76299bc0-54ba-515c-b663-1a6421beb66a"
+        },
+        {
+          "colour": "#66ffc4",
+          "expanded": "executable",
+          "value": "linux",
+          "uuid": "9f392926-1c1b-523c-9ed3-59bc4215f917"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "executable",
+          "value": "macho",
+          "uuid": "2aa08ddd-cb68-5cb1-a40a-eef05cf0dc42"
+        },
+        {
+          "colour": "#80ffce",
+          "expanded": "executable",
+          "value": "elf32",
+          "uuid": "cf4e19a7-4927-502a-826e-56a393906e91"
+        },
+        {
+          "colour": "#99ffd8",
+          "expanded": "executable",
+          "value": "elf64",
+          "uuid": "7419e27e-af3b-5d2f-acc5-a59150fb1b97"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "executable",
+          "value": "elfso",
+          "uuid": "e2e9229e-d0d4-50f7-99c2-2e965dcf6bc7"
+        },
+        {
+          "colour": "#b3ffe2",
+          "expanded": "executable",
+          "value": "peexe32",
+          "uuid": "f2130610-5801-5875-89b8-8bb37515ec1a"
+        },
+        {
+          "colour": "#00995e",
+          "expanded": "executable",
+          "value": "peexe64",
+          "uuid": "99788902-23e7-5ac1-b137-83158d9353bf"
+        },
+        {
+          "colour": "#00995e",
+          "expanded": "executable",
+          "value": "assembly",
+          "uuid": "bdfc07eb-a90f-5b30-849f-3f0d034aeaa6"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "internet",
+          "value": "html",
+          "uuid": "4c13a829-c780-5cb2-8152-ff9f95f8027f"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "internet",
+          "value": "xml",
+          "uuid": "7d913cfc-ca99-58a6-a6d0-0961f231a312"
+        },
+        {
+          "colour": "#11eded",
+          "expanded": "internet",
+          "value": "hta",
+          "uuid": "86e90abb-c8e7-53fd-a533-58fd47f51663"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "internet",
+          "value": "flash",
+          "uuid": "bbb81859-749b-51a5-ba91-f7a2450c6459"
+        },
+        {
+          "colour": "#1affa7",
+          "expanded": "internet",
+          "value": "fla",
+          "uuid": "51f41d1c-8337-5b97-8d76-ea60e379a9c1"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "internet",
+          "value": "iecookie",
+          "uuid": "f3ab98d7-351b-562c-aa43-cc6b41f1e118"
+        },
+        {
+          "colour": "#00995e",
+          "expanded": "internet",
+          "value": "bittorrent",
+          "uuid": "e7bd5b21-dbaf-5cd5-bff6-ef37ef249f87"
+        },
+        {
+          "colour": "#b3ffe2",
+          "expanded": "internet",
+          "value": "email",
+          "uuid": "923295cc-6b8f-599c-9752-f5c518a6fd1a"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "internet",
+          "value": "outlook",
+          "uuid": "c64d4c70-97b3-530e-8ed7-d0cd943499b3"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "internet",
+          "value": "cap",
+          "uuid": "53cb3a88-09ba-5043-aef8-a684771c4b7d"
+        },
+        {
+          "colour": "#1affa7",
+          "expanded": "phone and tablet",
+          "value": "symbian",
+          "uuid": "e5981a1a-e6c3-5e89-a33b-7b675c629273"
+        },
+        {
+          "colour": "#00ff9d",
+          "expanded": "phone and tablet",
+          "value": "palmos",
+          "uuid": "7aebb6a7-bcd9-5e90-a614-b7b10047b26c"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "phone and tablet",
+          "value": "wince",
+          "uuid": "5367f73b-49a9-574b-8e18-ab0168dc86bb"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "phone and tablet",
+          "value": "android",
+          "uuid": "eab8eb7b-6f8d-5fa4-9930-182448483e24"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "phone and tablet",
+          "value": "iphone",
+          "uuid": "886a210b-8377-5451-a31a-59c18ba33270"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "image",
+          "value": "jpeg",
+          "uuid": "47c33e47-7885-5400-b6c1-cf8858c13134"
+        },
+        {
+          "colour": "#66ffc4",
+          "expanded": "image",
+          "value": "emf",
+          "uuid": "aa35095a-ac4d-559d-9a72-a6142a710dca"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "image",
+          "value": "tiff",
+          "uuid": "392055c7-a2fe-594e-a70a-ede51815bec8"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "image",
+          "value": "gif",
+          "uuid": "6cbb3e9c-5b62-578c-a596-827649d08e0c"
+        },
+        {
+          "colour": "#00995e",
+          "expanded": "image",
+          "value": "png",
+          "uuid": "3d745e05-00d2-53db-81ea-8189385fb57d"
+        },
+        {
+          "colour": "#66ffc4",
+          "expanded": "image",
+          "value": "bmp",
+          "uuid": "9e3e8225-cbc0-5b4d-b789-2eafc9b43a5d"
+        },
+        {
+          "colour": "#b3ffe2",
+          "expanded": "image",
+          "value": "gimp",
+          "uuid": "cef1828c-6365-5bfc-9ef0-167c9664cb5d"
+        },
+        {
+          "colour": "#25c3e6",
+          "expanded": "image",
+          "value": "img",
+          "uuid": "428ab0bd-caf9-566b-893a-a2736c0fc1ae"
+        },
+        {
+          "colour": "#80ffce",
+          "expanded": "image",
+          "value": "indesign",
+          "uuid": "c6e49fac-2a4a-54ae-9958-8cda27f81117"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "image",
+          "value": "psd",
+          "uuid": "1ca8232e-ffbe-582f-8707-ae5e23babf4e"
+        },
+        {
+          "colour": "#004d2f",
+          "expanded": "image",
+          "value": "targa",
+          "uuid": "c09cb970-f5d5-5456-80c7-6799dfe898fb"
+        },
+        {
+          "colour": "#00cc7e",
+          "expanded": "image",
+          "value": "xws",
+          "uuid": "b9ac6da6-0e82-520e-968b-9fd1075c9661"
+        },
+        {
+          "colour": "#00cc7e",
+          "expanded": "image",
+          "value": "dib",
+          "uuid": "27ad8ab5-2942-5ebf-8dd5-3c8722f4ec3b"
+        },
+        {
+          "colour": "#00fa9a",
+          "expanded": "image",
+          "value": "jng",
+          "uuid": "d36ed281-8df9-572b-b293-667684b32cc6"
+        },
+        {
+          "colour": "#00804f",
+          "expanded": "image",
+          "value": "ico",
+          "uuid": "53dca042-1b8e-5860-b583-77f20f13864e"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "image",
+          "value": "fpx",
+          "uuid": "29806406-f9e9-5b86-86a9-fbbe8785ab59"
+        },
+        {
+          "colour": "#b3ffe2",
+          "expanded": "image",
+          "value": "eps",
+          "uuid": "43d0aa97-f76e-5656-95d3-5367e0e83d94"
+        },
+        {
+          "colour": "#00cc7e",
+          "expanded": "image",
+          "value": "svg",
+          "uuid": "84c5ca10-b1bd-5c6a-be79-ae106c4922ca"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "video and audio",
+          "value": "ogg",
+          "uuid": "a42ebf5e-1e7c-56e3-86ae-460e08007968"
+        },
+        {
+          "colour": "#80ffce",
+          "expanded": "video and audio",
+          "value": "flc",
+          "uuid": "378555dc-a16b-5f78-8446-8b6fd2ab8a5d"
+        },
+        {
+          "colour": "#00804f",
+          "expanded": "video and audio",
+          "value": "fli",
+          "uuid": "a3209132-4624-56db-a032-db2e2325dd7c"
+        },
+        {
+          "colour": "#80ffce",
+          "expanded": "video and audio",
+          "value": "mp3",
+          "uuid": "bfe1274e-b995-50b6-8822-a6cecbd912b5"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "video and audio",
+          "value": "flac",
+          "uuid": "3a64396f-7d23-52b4-b97b-1ff6c8b7c2bc"
+        },
+        {
+          "colour": "#00ff9d",
+          "expanded": "video and audio",
+          "value": "wav",
+          "uuid": "536453cc-de92-56fb-8d68-161eca01ec54"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "video and audio",
+          "value": "midi",
+          "uuid": "160e55d5-fdc4-51ba-a718-28aadf4d1cd1"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "video and audio",
+          "value": "avi",
+          "uuid": "3da7ddbf-d3b9-59f6-9de3-67811e0b04ef"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "video and audio",
+          "value": "mpeg",
+          "uuid": "591f0747-44d4-5238-b0de-8244b700a44d"
+        },
+        {
+          "colour": "#00804f",
+          "expanded": "video and audio",
+          "value": "qt",
+          "uuid": "dc1a5cd2-594a-5d9d-b42d-39bb5e509102"
+        },
+        {
+          "colour": "#00cc7e",
+          "expanded": "video and audio",
+          "value": "asf",
+          "uuid": "7bb3e69f-43a9-5c20-a542-093240218dce"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "video and audio",
+          "value": "divx",
+          "uuid": "e8e93485-5a13-5800-b4e9-58cf4198cbee"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "video and audio",
+          "value": "flv",
+          "uuid": "26435b87-ee13-53f5-8f9b-3e4de2964d35"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "video and audio",
+          "value": "wma",
+          "uuid": "cc53d0e4-10cb-53be-93f8-bf63aae652c5"
+        },
+        {
+          "colour": "#00fa9a",
+          "expanded": "video and audio",
+          "value": "wmv",
+          "uuid": "3ea5b95f-0e0c-5434-9a42-00f1d0346d3e"
+        },
+        {
+          "colour": "#00fa9a",
+          "expanded": "video and audio",
+          "value": "rm",
+          "uuid": "ae4eb683-32f7-52a6-9c95-51f3be19b684"
+        },
+        {
+          "colour": "#b3ffe2",
+          "expanded": "video and audio",
+          "value": "mov",
+          "uuid": "a1d774c1-4b21-50fd-9400-1089aeb79e19"
+        },
+        {
+          "colour": "#00fa9a",
+          "expanded": "video and audio",
+          "value": "mp4",
+          "uuid": "52d92237-3f34-532c-a616-1ece9fae4bef"
+        },
+        {
+          "colour": "#99ffd8",
+          "expanded": "video and audio",
+          "value": "3gp",
+          "uuid": "c8fcc70c-255b-5a6a-bae1-e765c0054596"
+        },
+        {
+          "colour": "#004d2f",
+          "expanded": "document",
+          "value": "text",
+          "uuid": "c0448f37-c911-5677-85da-b559605e5067"
+        },
+        {
+          "colour": "#00995e",
+          "expanded": "document",
+          "value": "pdf",
+          "uuid": "1b07dc3d-c1b8-5657-8363-88681699d351"
+        },
+        {
+          "colour": "#66ffc4",
+          "expanded": "document",
+          "value": "ps",
+          "uuid": "4876226b-ad2a-5d48-80b5-3525cb9709ad"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "document",
+          "value": "dot",
+          "uuid": "f1bcd1e2-2d9d-5ec6-afc6-549331fc8cf1"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "document",
+          "value": "dotm",
+          "uuid": "9e2d44c6-f814-5479-854b-6139abda46d6"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "document",
+          "value": "dotx",
+          "uuid": "fa609ef0-280b-5276-bd70-6c2d1d3357e3"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "document",
+          "value": "doc",
+          "uuid": "3634aac1-3ff5-5ffe-93a8-260bd753adf5"
+        },
+        {
+          "colour": "#35b8f0",
+          "expanded": "document",
+          "value": "txt",
+          "uuid": "7c5fd38d-1c42-5acc-8f3f-5277594d1b39"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "document",
+          "value": "docm",
+          "uuid": "da2e4a32-ef93-5d45-9ff5-4d1a6fd98c6b"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "document",
+          "value": "docx",
+          "uuid": "a78f1c04-73a5-5a5c-b61a-75537f0f61a1"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "document",
+          "value": "rtf",
+          "uuid": "3ca1e179-aedf-597b-a88f-070afdee81b1"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "document",
+          "value": "ppt",
+          "uuid": "93e51b3d-b211-5062-b188-58225ac90fe2"
+        },
+        {
+          "colour": "#b3ffe2",
+          "expanded": "document",
+          "value": "pptx",
+          "uuid": "c5492ad0-48e7-5048-a43d-2aff495ec431"
+        },
+        {
+          "colour": "#99ffd8",
+          "expanded": "document",
+          "value": "xls",
+          "uuid": "e8778e4e-7170-5f2d-8431-7c530fc078fd"
+        },
+        {
+          "colour": "#00663f",
+          "expanded": "document",
+          "value": "xlsx",
+          "uuid": "c594123c-fb0e-51c3-be43-22a945c60317"
+        },
+        {
+          "colour": "#00663f",
+          "expanded": "document",
+          "value": "xlsm",
+          "uuid": "cd8792c6-b2dc-5457-8c5a-b404850e99c0"
+        },
+        {
+          "colour": "#99ffd8",
+          "expanded": "document",
+          "value": "odp",
+          "uuid": "8ac9c7ba-cf71-57d0-bc07-c1bdde4c711d"
+        },
+        {
+          "colour": "#00fa9a",
+          "expanded": "document",
+          "value": "ods",
+          "uuid": "21562a2a-54de-589e-be8c-42e5f46686b6"
+        },
+        {
+          "colour": "#00995e",
+          "expanded": "document",
+          "value": "odt",
+          "uuid": "cb122d0c-71bf-5d2b-8527-4f00d47396ac"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "document",
+          "value": "hwp",
+          "uuid": "bef794e7-198b-5a5b-8365-cbd38b9d7162"
+        },
+        {
+          "colour": "#00995e",
+          "expanded": "document",
+          "value": "gul",
+          "uuid": "cd392290-fdc3-54cd-af28-5c4912654c85"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "document",
+          "value": "ebook",
+          "uuid": "1ac1db1b-7e3b-5562-904d-ebd4f77fe91e"
+        },
+        {
+          "colour": "#004d2f",
+          "expanded": "document",
+          "value": "latex",
+          "uuid": "f13566a8-e4ba-52c5-ac57-97a6a2d57010"
+        },
+        {
+          "colour": "#00fa9a",
+          "expanded": "bundle",
+          "value": "isoimage",
+          "uuid": "f2707ca9-fe03-5599-a1f1-e2aefb81f0cc"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "bundle",
+          "value": "txz",
+          "uuid": "186e7680-91a8-5b61-b695-8aab984def8e"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "bundle",
+          "value": "zip",
+          "uuid": "a46f77af-581c-5d53-a015-e84d2a2c13c2"
+        },
+        {
+          "colour": "#00fa9a",
+          "expanded": "bundle",
+          "value": "gzip",
+          "uuid": "e8133e59-21d9-5242-8ddd-493a6e26bfeb"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "bundle",
+          "value": "tar",
+          "uuid": "03c2ccfc-34ff-5d9f-bb37-3cd108de4ded"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "bundle",
+          "value": "bzip",
+          "uuid": "a03ac574-abcb-55fe-99f0-58d93237871a"
+        },
+        {
+          "colour": "#00995e",
+          "expanded": "bundle",
+          "value": "rzip",
+          "uuid": "f0ae74cd-3030-587d-87ca-efc99b2300f1"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "bundle",
+          "value": "dzip",
+          "uuid": "740187de-130a-5a34-96bb-8767649e069d"
+        },
+        {
+          "colour": "#66ffc4",
+          "expanded": "bundle",
+          "value": "7zip",
+          "uuid": "720ff25a-38ec-5b9f-9b69-f1c7348117f5"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "bundle",
+          "value": "cab",
+          "uuid": "a3f747b2-edb8-5b6c-99ee-b9a0e4802d41"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "bundle",
+          "value": "jar",
+          "uuid": "efb6bb12-4fcf-5008-9758-1a9bddaa342c"
+        },
+        {
+          "colour": "#00995e",
+          "expanded": "bundle",
+          "value": "rar",
+          "uuid": "4c0b25b2-c0b8-5b16-9740-1109fc1d9c1d"
+        },
+        {
+          "colour": "#99ffd8",
+          "expanded": "bundle",
+          "value": "mscompress",
+          "uuid": "58e7b156-b6dc-5f48-aac8-27eff7ca7ae9"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "bundle",
+          "value": "ace",
+          "uuid": "41ac2a46-7236-5074-8df1-8fbffc563e7f"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "bundle",
+          "value": "arc",
+          "uuid": "4c4e437a-0ab1-55f0-9271-3e8a8374b76c"
+        },
+        {
+          "colour": "#004d2f",
+          "expanded": "bundle",
+          "value": "arj",
+          "uuid": "78522068-0564-5006-88b0-d78ca7ddab0d"
+        },
+        {
+          "colour": "#00804f",
+          "expanded": "bundle",
+          "value": "asd",
+          "uuid": "90f91610-5ec8-58bb-b71c-5a0f1d051e6c"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "bundle",
+          "value": "blackhole",
+          "uuid": "37ddb45e-efdd-5e06-85a6-59f47848d32e"
+        },
+        {
+          "colour": "#00cc7e",
+          "expanded": "bundle",
+          "value": "kgb",
+          "uuid": "c7858eb0-e24c-5ec9-a964-6102c94a60eb"
+        },
+        {
+          "colour": "#00ff9d",
+          "expanded": "bundle",
+          "value": "xz",
+          "uuid": "15c2724d-408f-5072-9597-75b597dfe442"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "code",
+          "value": "bat",
+          "uuid": "506b8551-a2bc-5b2a-955f-1b7c8b0b5677"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "code",
+          "value": "script",
+          "uuid": "40639288-36cf-5b5a-bf1b-3da06d6ce19b"
+        },
+        {
+          "colour": "#00e68e",
+          "expanded": "code",
+          "value": "php",
+          "uuid": "e8427fc1-d914-56dd-82fa-b822af6e2222"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "code",
+          "value": "python",
+          "uuid": "42d42014-015c-5a11-992d-7ee261c78b6b"
+        },
+        {
+          "colour": "#1affa7",
+          "expanded": "code",
+          "value": "perl",
+          "uuid": "9fa68dff-e894-5adc-bb8f-addb31a8d656"
+        },
+        {
+          "colour": "#66ffc4",
+          "expanded": "code",
+          "value": "ruby",
+          "uuid": "fd219250-9818-5bce-99cd-79fb24719974"
+        },
+        {
+          "colour": "#99ffd8",
+          "expanded": "code",
+          "value": "c",
+          "uuid": "67265cd7-7035-5c16-ad89-c02b10fc9357"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "code",
+          "value": "cpp",
+          "uuid": "49eee54b-2484-5892-95d7-a7fe29e4a937"
+        },
+        {
+          "colour": "#00cc7e",
+          "expanded": "code",
+          "value": "javascript",
+          "uuid": "b4f620e1-b56e-5397-82a4-039a3af23ffa"
+        },
+        {
+          "colour": "#00cc7e",
+          "expanded": "code",
+          "value": "java",
+          "uuid": "6629ac8f-5ebf-5a87-a8c3-e1381d7131c3"
+        },
+        {
+          "colour": "#004d2f",
+          "expanded": "code",
+          "value": "shell",
+          "uuid": "5bec5e19-177b-5344-bd69-257b3dfe0f98"
+        },
+        {
+          "colour": "#00663f",
+          "expanded": "code",
+          "value": "pascal",
+          "uuid": "06075653-7169-58f4-ab4f-36f4e8d83282"
+        },
+        {
+          "colour": "#33b5a5",
+          "expanded": "code",
+          "value": "vbs",
+          "uuid": "067f8526-af2b-51b7-994f-9873f43d5c64"
+        },
+        {
+          "colour": "#b3ffe2",
+          "expanded": "code",
+          "value": "awk",
+          "uuid": "22eede74-1a6f-5bb9-943c-021fdf4c4d50"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "code",
+          "value": "dyalog",
+          "uuid": "3df86045-9dca-5c4d-9c6d-f2b28bf7317b"
+        },
+        {
+          "colour": "#33ffb1",
+          "expanded": "code",
+          "value": "fortran",
+          "uuid": "cf2b6eee-2dd0-51f4-8474-e9322f95f27c"
+        },
+        {
+          "colour": "#99ffd8",
+          "expanded": "code",
+          "value": "java-bytecode",
+          "uuid": "fda651da-e1db-5552-8fcc-0e5d8d771e15"
+        },
+        {
+          "colour": "#2e73db",
+          "expanded": "code",
+          "value": "ppa",
+          "uuid": "77f8ce73-2b28-570e-a38d-81f17725d87b"
+        },
+        {
+          "colour": "#004d2f",
+          "expanded": "apple",
+          "value": "apple",
+          "uuid": "3bf28136-5e29-5b58-93ae-55dbd958b532"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "apple",
+          "value": "mac",
+          "uuid": "24b82dd9-754a-5cdd-9805-5cacdf519c51"
+        },
+        {
+          "colour": "#99ffd8",
+          "expanded": "apple",
+          "value": "applesingle",
+          "uuid": "40852303-f006-57ee-9b3b-d6fe084c5bc9"
+        },
+        {
+          "colour": "#4dffbb",
+          "expanded": "apple",
+          "value": "appledouble",
+          "uuid": "70fe9b55-672d-5298-9cad-3cb713a82328"
+        },
+        {
+          "colour": "#00663f",
+          "expanded": "apple",
+          "value": "machfs",
+          "uuid": "fc9a4b58-44b5-51c6-b616-b76129ae96c1"
+        },
+        {
+          "colour": "#00b36e",
+          "expanded": "apple",
+          "value": "appleplist",
+          "uuid": "4b2fb814-4f13-5f7f-8bc4-dcb938b08c50"
+        },
+        {
+          "colour": "#99ffd8",
+          "expanded": "apple",
+          "value": "maclib",
+          "uuid": "fe2b2c19-4fb3-5733-a360-66d5190566a7"
+        },
+        {
+          "colour": "#00cc7e",
+          "expanded": "miscellaneous",
+          "value": "lnk",
+          "uuid": "b49648f3-1ad7-5022-ab3e-5451aa0772b3"
+        },
+        {
+          "colour": "#1affa7",
+          "expanded": "miscellaneous",
+          "value": "ttf",
+          "uuid": "a2e1046a-3b34-5521-8259-2abb4012949a"
+        },
+        {
+          "colour": "#ccffeb",
+          "expanded": "miscellaneous",
+          "value": "rom",
+          "uuid": "f91fbf56-f95a-5459-b21d-3bdf9bb25839"
+        },
+        {
+          "colour": "#00663f",
+          "expanded": "miscellaneous",
+          "value": "dat",
+          "uuid": "7c6d4f4f-b7a2-5dc7-99ff-58e5ad49f62b"
+        }
+      ],
+      "predicate": "type"
+    }
+  ],
+  "predicates": [
+    {
+      "expanded": "File category",
+      "value": "type",
+      "uuid": "dcd4d6be-3601-5e21-b1f9-3ceea3afae4d"
+    }
+  ],
+  "version": 1,
+  "description": "List of known file types.",
+  "namespace": "file-type",
+  "uuid": "d83a6813-75d2-55da-bbf3-f496d5b79405"
+}

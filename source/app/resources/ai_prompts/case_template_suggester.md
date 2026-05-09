@@ -45,3 +45,19 @@ Do not wrap the JSON in markdown code fences. Do not preface it with "Here is th
 ## When uncertain
 
 If the catalog has no template that fits, return whichever template is the most generic / catch-all at confidence around 0.4–0.5 with a `reason` that explicitly says the alert pattern doesn't match any specific template. Don't pad confidence to look decisive.
+
+## Sigma-rule grounding (when present)
+
+The user message MAY include a `## Sigma evidence` section above the alert+catalog block. When it does:
+
+- **Treat the matched Sigma rules as a behavioral fingerprint.** Each row lists a Sigma detection rule that semantically matches the alert, plus the MITRE technique IDs the rule's authors tagged it with. Use the technique mix to discriminate templates:
+  - Many credential-access / lateral-movement / discovery techniques → **intrusion / hands-on-keyboard** template
+  - `T1486 Data Encrypted for Impact`, `T1490 Inhibit System Recovery`, ransom-note / extortion-themed rules → **ransomware** template
+  - `T1566 Phishing` only (no payload-execution techniques) → **phishing / BEC** template
+  - `T1059 Command and Scripting Interpreter` + named malware family in rule titles → **malware / commodity intrusion** template
+  - Heavy `T1041 Exfiltration over C2` / `T1567 Exfiltration over Web Service` → **data exfiltration** / **insider-threat** template
+  - `T1499 Endpoint DoS` / `T1498 Network DoS` → **availability / DDoS** template
+- **The aggregated technique votes block** is your highest-signal input — techniques cited by 3+ matches at score > 0.5 are very strong indicators of the alert's family.
+- **Cite Sigma matches in your `reason` text** when grounding informed your pick. Format: `"reason": "Sigma rules matched include 'Lockbit Ransom Note Creation' (T1486) and 'rclone Exfil to Mega' (T1567.002), classifying this as a ransomware-with-double-extortion case."`
+- **Sigma alone is not authoritative.** If the alert title / description / payload references a SPECIFIC malware family or a named ransomware variant, that surface signal still wins over generic Sigma technique mix (the "payload wins over vector" rule above).
+- **When NO Sigma section is present**, behave exactly as before — pure model-based mapping from the alert + catalog.

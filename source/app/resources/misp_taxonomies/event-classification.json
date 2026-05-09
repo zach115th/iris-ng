@@ -1,0 +1,50 @@
+{
+  "namespace": "event-classification",
+  "description": "Classification of events as seen in tools such as RT/IR, MISP and other",
+  "version": 1,
+  "predicates": [
+    {
+      "value": "event-class",
+      "expanded": "Event Classification",
+      "uuid": "3017def1-c44d-5113-b35f-5b2fab3f2a16"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "event-class",
+      "entry": [
+        {
+          "value": "incident_report",
+          "expanded": "Incident Report",
+          "uuid": "b353cf6a-bf90-55fb-8571-5072fa61958c"
+        },
+        {
+          "value": "incident",
+          "expanded": "Incident",
+          "uuid": "aecdcdcc-0b57-5426-96a5-23cc9eda5621"
+        },
+        {
+          "value": "investigation",
+          "expanded": "Investigation",
+          "uuid": "900ea05f-a49c-56ea-99f4-4525059b1d3a"
+        },
+        {
+          "value": "countermeasure",
+          "expanded": "Countermeasure",
+          "uuid": "e09cf973-9d23-5b61-b983-c8517056698c"
+        },
+        {
+          "value": "general",
+          "expanded": "General",
+          "uuid": "c667fdce-c877-5e2a-810e-d990b2d3fabf"
+        },
+        {
+          "value": "exercise",
+          "expanded": "Exercise",
+          "uuid": "d508bf7a-6f4e-5ea6-8856-6ee6793cf0de"
+        }
+      ]
+    }
+  ],
+  "uuid": "40517c50-9736-5833-9a44-2c966f534ea7"
+}

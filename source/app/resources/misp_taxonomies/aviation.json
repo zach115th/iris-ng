@@ -1,0 +1,469 @@
+{
+  "predicates": [
+    {
+      "expanded": "Target",
+      "value": "target",
+      "uuid": "24c4893a-3d3c-5e6d-a52b-c22f8bc3d97a"
+    },
+    {
+      "expanded": "Target systems",
+      "value": "target-systems",
+      "uuid": "762557b0-2a31-571a-b4e2-be16ee7c109d"
+    },
+    {
+      "expanded": "Target Sub Systems",
+      "value": "target-sub-systems",
+      "uuid": "5083f465-fd1f-57e6-9845-af13d73ddd9d"
+    },
+    {
+      "value": "impact",
+      "expanded": "Impact",
+      "exclusive": true,
+      "uuid": "ac1486b5-757b-5c2b-817e-55800e62bb61"
+    },
+    {
+      "value": "likelihood",
+      "expanded": "Likelihood",
+      "exclusive": true,
+      "uuid": "c8c1da24-f937-59ac-8696-31f9c1e757b6"
+    },
+    {
+      "expanded": "Criticality",
+      "value": "criticality",
+      "uuid": "7cd141d6-7f10-53b8-96a0-a8cbe88f46bb"
+    },
+    {
+      "value": "certainty",
+      "expanded": "Certainty",
+      "exclusive": true,
+      "uuid": "98db5265-d825-5277-91c0-1cd52ab9bc80"
+    }
+  ],
+  "version": 1,
+  "description": "A taxonomy describing security threats or incidents against the aviation sector.",
+  "namespace": "aviation",
+  "values": [
+    {
+      "predicate": "target",
+      "entry": [
+        {
+          "value": "airline",
+          "expanded": "airline",
+          "description": "airlines or airline groups",
+          "uuid": "3cb0adaf-bef0-51c2-bd8b-9a425bfa6120"
+        },
+        {
+          "value": "airspace users",
+          "expanded": "Airspace Users",
+          "description": "Airspace users other than airlines like drone, helicopter, baloon operators",
+          "uuid": "bc03117d-253f-5716-95be-84b150551a23"
+        },
+        {
+          "value": "airport",
+          "expanded": "Airport",
+          "description": "Airports or airport operators",
+          "uuid": "afb2362f-b9b1-5db8-8c8e-6edc87c9685e"
+        },
+        {
+          "value": "ansp",
+          "expanded": "Air Navigation Service Provider",
+          "description": "Air Navigation Service Provider who is managing the airspace of a country or a specific region",
+          "uuid": "090e5236-9cfb-5aad-820c-8d6fe69f13e0"
+        },
+        {
+          "value": "international-association",
+          "expanded": "International Association",
+          "description": "International associations related with aviation sector",
+          "uuid": "266bddfd-6124-5d8e-a919-9e45ab2af55e"
+        },
+        {
+          "value": "caa",
+          "expanded": "Civil Aviation Authority",
+          "description": "Civil Aviation Authority who is responsible for regulation the aviation of a country",
+          "uuid": "52c4fa6f-1dec-5b7e-ae31-043c670f7f41"
+        },
+        {
+          "value": "manufacturer",
+          "expanded": "Manufacturer",
+          "description": "Manufacturers who produce aircrafts,aircraft or ATM related components",
+          "uuid": "6dfd321d-aeb8-59a5-9478-0bd08be6311e"
+        },
+        {
+          "value": "service-provider",
+          "expanded": "Service Provider",
+          "description": "Service providers who provide different services to the aviation stakeholders",
+          "uuid": "70a445f8-accb-58c5-b064-3d61b4b55abf"
+        },
+        {
+          "value": "network-manager",
+          "expanded": "Network Manager",
+          "description": "Network Manager manages ATM network functions (airspace design, flow management) as well as scarce resources",
+          "uuid": "3ece6363-5253-5a87-af0a-3b7af8c81052"
+        },
+        {
+          "value": "military",
+          "expanded": "Military",
+          "description": "Military aviation",
+          "uuid": "62ef9d1f-83ef-54a6-9506-4ea94cdd6973"
+        }
+      ]
+    },
+    {
+      "predicate": "target-systems",
+      "entry": [
+        {
+          "value": "ATM",
+          "expanded": "ATM - Air Traffic Management",
+          "description": "Air traffic management systems which manage airspace",
+          "uuid": "3a32070f-d35c-5d9f-977f-ce4588e8794d"
+        },
+        {
+          "value": "AIS",
+          "expanded": "AIS - Aeronautical Information Service",
+          "description": "Aeronatutical Infromation Service whose objective is to ensure the flow of aeronautical information and data necessary for the safety, regularity and efficiency of international air navigation",
+          "uuid": "1204f193-b0ca-5be9-a5f9-26ee82f5a79c"
+        },
+        {
+          "value": "MET",
+          "expanded": "MET - Meteorological Service",
+          "description": "Meteorological service which provides meteo data to the airspace users",
+          "uuid": "45398cca-584b-54eb-8b85-deaa8ccf9110"
+        },
+        {
+          "value": "SAR",
+          "expanded": "SAR - Search and Rescue",
+          "description": "Search and rescue (SAR) service is provided to the survivors of aircraft accidents as well as aircraft in distress (and their occupants) regardless of their nationality",
+          "uuid": "2a7ea0c1-07c6-5e3b-baaa-2048e73c57e3"
+        },
+        {
+          "value": "CNS",
+          "expanded": "CNS - Communication, Navigation and Surveillance",
+          "description": "The main functions of ATM: Communication, Navigation and Surveillance",
+          "uuid": "1c078cf8-0b3b-582c-87ee-a7c9eccdbb11"
+        },
+        {
+          "value": "airport-management-systems",
+          "expanded": "Airport Management Systems",
+          "description": "Airport IT and OT systems that manage airport internal operations",
+          "uuid": "26c60d16-55cd-5061-8739-c600556da365"
+        },
+        {
+          "value": "airport-online-services",
+          "expanded": "Airport Online Services",
+          "description": "Airport online service that helps external users to reach airport services",
+          "uuid": "893a3ab7-80ca-5fe6-bc81-6a7192edba06"
+        },
+        {
+          "value": "airport-fids-systems",
+          "expanded": "Airport Flight Information Display Systems",
+          "description": "Airport Flight Information Display Systems that guide the passangers about flights",
+          "uuid": "081c82a3-7a90-56bc-beb3-5072301fbef5"
+        },
+        {
+          "value": "airline-management-systems",
+          "expanded": "Airline Management Systems",
+          "description": "Airline Management Systems that manage airline intenal operations",
+          "uuid": "38d6b9d7-73c6-50e2-9b0a-be57cd3201e2"
+        },
+        {
+          "value": "airline-online-services",
+          "expanded": "Airline Online Services",
+          "description": "Airline Online Services that helps external users to reach airlines services",
+          "uuid": "9d55aad1-26db-5064-822b-44f134c9b237"
+        }
+      ]
+    },
+    {
+      "predicate": "target-sub-systems",
+      "entry": [
+        {
+          "value": "ATM:NewPENS",
+          "expanded": "ATM New PENS(Pan-European Network Service)",
+          "description": "ATM New PENS(Pan-European Network Service) which is private network for aviation stakeholders",
+          "uuid": "783d8f2f-2fc8-5303-8607-4d46caf93812"
+        },
+        {
+          "value": "ATM:SWIM",
+          "expanded": "ATM SWIM(Sytem Wide Information Management)",
+          "description": "ATM SWIM(System Wide Information Management) is the system that enables seamless information access and interchange between all providers and users of ATM information and services",
+          "uuid": "a1e18b10-4c22-54fc-a5fd-743b7948249e"
+        },
+        {
+          "value": "ATM:ATS:ATC",
+          "expanded": "ATM ATS(Air Traffic Service) ATC - Air Traffic Control",
+          "description": "ATM ATS(Air Traffic Service) ATC - Air Traffic Control systems",
+          "uuid": "54b6edc3-36e4-5d44-883e-320376789b25"
+        },
+        {
+          "value": "ATM:ATS:FIS",
+          "expanded": "ATM ATS FIS - Flight Information Services",
+          "description": "ATM ATS FIS - Flight Information Services systems",
+          "uuid": "225f6d1b-2d57-5e3b-8dfc-f94340be219c"
+        },
+        {
+          "value": "ATM:ATS:ALRS",
+          "expanded": "ATM ATS ALRS - Alerting Services",
+          "description": "ATM ATS ALRS - Alerting Services systems",
+          "uuid": "afd2dfce-37de-5c66-9b6c-08f01d7d33c9"
+        },
+        {
+          "value": "ATM:ATS:ATFM",
+          "expanded": "ATM ATS ATFM(Air Traffic Flow Management)",
+          "description": "ATM ATS ATFM(Air Traffic Flow Management) systems ",
+          "uuid": "22931648-6780-5588-9221-c8cfa647b594"
+        },
+        {
+          "value": "ATM:ATS:ASM",
+          "expanded": "ATM ATS ASM(Airspace management)",
+          "description": "ATM ATS ASM(Airspace management) systems ",
+          "uuid": "bafd8088-e751-5015-91ba-2f0d14ef7812"
+        },
+        {
+          "value": "CNS:COM:Ground-Ground",
+          "expanded": "CNS COM Ground-Ground",
+          "description": "Ground-ground communication systems",
+          "uuid": "f52acd06-412c-538d-9e11-8d4b0d244c4d"
+        },
+        {
+          "value": "CNS:COM:Ground-Air",
+          "expanded": "CNS COM Ground Air",
+          "description": "Ground-Air communication systems",
+          "uuid": "7518b8ec-2ff0-5c2c-b6db-a58be02e0f98"
+        },
+        {
+          "value": "CNS:COM:Air-Air",
+          "expanded": "CNS COM Air Air",
+          "description": "Air-Air Communication systems",
+          "uuid": "a800ba7e-3a85-51e9-8730-526c849e1c77"
+        },
+        {
+          "value": "CNS:COM:Asterix",
+          "expanded": "CNS COM Asterix",
+          "description": "Asterix radar data protocol processing systems",
+          "uuid": "7e61003b-5a58-562f-9628-e7af3b796f64"
+        },
+        {
+          "value": "CNS:COM:VDL",
+          "expanded": "CNS COM VDL",
+          "description": "Very High Frequency Data link",
+          "uuid": "21e19f21-35e9-5352-815f-f7866a10dba9"
+        },
+        {
+          "value": "CNS:SUR:ADS-B",
+          "expanded": "CNS SUR ADS-B(Automatic Dependent Surveillance-Broadcast)",
+          "description": "ADS-B Automatic Dependent Surveillance-Broadcast) protocol",
+          "uuid": "ed31faf4-cd03-5cba-90f7-0d7414001242"
+        },
+        {
+          "value": "CNS:SUR:ADS-C",
+          "expanded": "CNS SUR ADS-C(Automatic dependent surveillance-contract)",
+          "description": "ADS-C Automatic Dependent Surveillance-contract",
+          "uuid": "f2c58d08-84a7-5f9b-ba38-d896556b253d"
+        },
+        {
+          "value": "CNS:SUR:Radar",
+          "expanded": "CNS SUR Radar",
+          "description": "Radar related systems",
+          "uuid": "986f13dc-44e3-5290-8fd1-309fbd51ef4f"
+        },
+        {
+          "value": "CNS:SUR:PR",
+          "expanded": "CNS SUR PR(Primary Radar)",
+          "description": "Primary Radar related systems",
+          "uuid": "8e87e361-c69a-594f-97c3-6a0b66e23f67"
+        },
+        {
+          "value": "CNS:SUR:SSR",
+          "expanded": "CNS SUR SSR(Secondary Surveillance Radar)",
+          "description": "Secondary Surveillance Radar related systems",
+          "uuid": "4c38bd57-413a-517c-afe1-3d6bd96c9f05"
+        },
+        {
+          "value": "CNS:Nav:GNSS",
+          "expanded": "CNS Nav GNSS(Global Navigation Satellite Systems)",
+          "description": "GNSS(Global Naviation Satellite Systems) related systems",
+          "uuid": "38971f3a-f819-513c-a4ad-1696b0118ce2"
+        },
+        {
+          "value": "CNS:Nav:GPS",
+          "expanded": "CNS Nav GPS(Global Positioning Systems)",
+          "description": "GPS(Global Positioning Systems) related systems",
+          "uuid": "95d7a679-4953-56fc-812b-44d97a8f966e"
+        },
+        {
+          "value": "CNS:Nav:GLONASS",
+          "expanded": "CNS Nav GLONASS(GLObal NAvigation Satellite Systems)",
+          "description": "GLONASS(GLObal NAvigation Satellite Systems) related systems",
+          "uuid": "dec66a53-0998-59da-83bd-22a90d09dab5"
+        },
+        {
+          "value": "CNS:Nav:ILS",
+          "expanded": "CNS Nav ILS(Instrument landing systems)",
+          "description": "ILS(Instrument landing systems) related systems",
+          "uuid": "207e3182-35f9-57f2-bdbd-9820eed20ea1"
+        },
+        {
+          "value": "CNS:Nav:GLS",
+          "expanded": "CNS Nav GLS (GNSS dependent landing systems",
+          "description": "GLS(GNSS dependent landing systems) related systems",
+          "uuid": "72e13017-16d8-5f17-ba8a-0139cdb96c03"
+        }
+      ]
+    },
+    {
+      "predicate": "impact",
+      "entry": [
+        {
+          "value": "trivial",
+          "expanded": "Trivial",
+          "uuid": "d0a124c3-34f8-5d0a-b94b-2c113c67f6b3"
+        },
+        {
+          "value": "minor",
+          "expanded": "Minor",
+          "uuid": "a5c0cb42-8c1e-5852-b113-66206a4f752f"
+        },
+        {
+          "value": "moderate",
+          "expanded": "Moderate",
+          "uuid": "2e3a6363-b870-582f-8387-7784299ed498"
+        },
+        {
+          "value": "major",
+          "expanded": "Major",
+          "uuid": "9e7e588f-2c45-583d-90be-9074f04333d9"
+        },
+        {
+          "value": "extreme",
+          "expanded": "Extreme",
+          "uuid": "db7cf59a-c0d1-58b2-acc6-fb49857d3e9c"
+        }
+      ]
+    },
+    {
+      "predicate": "likelihood",
+      "entry": [
+        {
+          "value": "almost-no-chance",
+          "expanded": "Almost no chance - remote - 01-05%",
+          "numerical_value": 0,
+          "uuid": "2ee10b83-671e-5672-9a8c-986eb70a7334"
+        },
+        {
+          "value": "very-unlikely",
+          "expanded": "Very unlikely - highly improbable - 05-20%",
+          "numerical_value": 5,
+          "uuid": "6ee2c1fb-f897-5d4a-bcd8-787a4bf404cf"
+        },
+        {
+          "value": "unlikely",
+          "expanded": "Unlikely - improbable (improbably) - 20-45%",
+          "numerical_value": 20,
+          "uuid": "35ab5a29-dec6-502a-a2d8-a83ed402d6b3"
+        },
+        {
+          "value": "roughly-even-chance",
+          "expanded": "Roughly even change - roughly even odds - 45-55%",
+          "numerical_value": 45,
+          "uuid": "2354f167-bbf0-54a9-a527-95a1bfa51dba"
+        },
+        {
+          "value": "likely",
+          "expanded": "Likely - probable (probably) - 55-80%",
+          "numerical_value": 55,
+          "uuid": "26fe49da-3577-5201-a44a-7050cbc6b077"
+        },
+        {
+          "value": "very-likely",
+          "expanded": "Very likely - highly probable - 80-95%",
+          "numerical_value": 80,
+          "uuid": "3e5ff3b9-d370-5c36-93bb-e2e7a7df443a"
+        },
+        {
+          "value": "almost-certain",
+          "expanded": "Almost certain(ly) - nearly certain - 95-99%",
+          "numerical_value": 95,
+          "uuid": "79334088-d028-5a0d-a08e-7897073e1eb0"
+        }
+      ]
+    },
+    {
+      "predicate": "criticality",
+      "entry": [
+        {
+          "value": "safety-critical",
+          "expanded": "Safety Critical",
+          "description": "Criticality level that threatens human life",
+          "uuid": "2522770a-9c88-5958-8202-0aa5fc996078"
+        },
+        {
+          "value": "mission-critical",
+          "expanded": "Mission Critical",
+          "description": "Criticality level that affects the critical services impacting the airspace management",
+          "uuid": "16776be9-d9b5-5aeb-ad9e-b140aadc1ce4"
+        },
+        {
+          "value": "business-critical",
+          "expanded": "business Critical",
+          "description": "Criticality level that affects business functions",
+          "uuid": "71942b23-ccc5-586d-b564-8a9ebee3e0b0"
+        }
+      ]
+    },
+    {
+      "entry": [
+        {
+          "description": "Certainty",
+          "expanded": "Certainty (probability equals 1 - 100%)",
+          "value": "100",
+          "numerical_value": 100,
+          "uuid": "97ea8237-1b10-5a81-ae62-0f8c5c83cd93"
+        },
+        {
+          "description": "Almost certain",
+          "expanded": "Almost certain (probability equals 0.93 - 93%)",
+          "value": "93",
+          "numerical_value": 93,
+          "uuid": "5894f680-b155-534a-b99f-53ebf29204a6"
+        },
+        {
+          "description": "Probable",
+          "expanded": "Probable (probability equals 0.75 - 75%)",
+          "value": "75",
+          "numerical_value": 75,
+          "uuid": "1057baab-3fe8-5f8c-b1ce-2867eccd9008"
+        },
+        {
+          "description": "Chances about even",
+          "expanded": "Chances about even (probability equals 0.50 - 50%)",
+          "value": "50",
+          "numerical_value": 50,
+          "uuid": "a35b174f-25c3-5dd4-840f-9dba5882d0a8"
+        },
+        {
+          "description": "Probably not",
+          "expanded": "Probably not (probability equals 0.30 - 30%)",
+          "value": "30",
+          "numerical_value": 30,
+          "uuid": "72e1c46c-7a72-5b89-b430-3467a221d172"
+        },
+        {
+          "description": "Almost certainly not",
+          "expanded": "Almost certainly not (probability equals 0.07 - 7%)",
+          "value": "7",
+          "numerical_value": 7,
+          "uuid": "49faa11a-5a21-5704-bdfc-a008b6a9db97"
+        },
+        {
+          "description": "Impossibility",
+          "expanded": "Impossibility (probability equals 0 - 0%)",
+          "value": "0",
+          "numerical_value": 0,
+          "uuid": "52671dbc-4e99-5e36-967f-c1b8dd6bc412"
+        }
+      ],
+      "predicate": "certainty"
+    }
+  ],
+  "uuid": "bf879f0c-4272-5b2f-86d7-7bb4265a2815"
+}

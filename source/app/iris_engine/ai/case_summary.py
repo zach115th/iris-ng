@@ -50,6 +50,33 @@ from app.models.models import Notes
 CASE_SUMMARY_KIND = "case_summary"
 CASE_SUMMARY_PROMPT_ID = "CaseSummarizationSystemPrompt-v2"  # v2: multi-pass
 
+
+# Synthesizer model routing. The synthesizer call is the dominant latency in
+# the multi-pass summary (8-9 KB output through whatever model is configured).
+# Sonnet via the claude-code CLI takes ~170s for that output size; Haiku is
+# 3-5x faster and quality is plenty for the synthesis task (it just composes
+# the specialists' analyses into a 7-section executive summary, not novel
+# reasoning over raw case data).
+#
+# This map picks a faster sibling within the same backend family. LM Studio
+# and any other OpenAI-compat backend whose model id is not a known Claude
+# variant fall through to None — the synthesizer uses the configured model
+# unchanged. Add entries when new fast/slow pairings are worth optimizing.
+SYNTHESIZER_FAST_MODEL_MAP: dict[str, str] = {
+    "claude-opus-4-7":  "claude-haiku-4-5",
+    "claude-sonnet-4-6": "claude-haiku-4-5",
+}
+
+
+def _pick_synthesizer_model(configured_model: str) -> str:
+    """Return the model to use for the synthesizer call.
+
+    Returns the configured model unchanged when no fast sibling is mapped
+    (covers LM Studio, OpenAI, etc. — only the Claude family currently
+    benefits from this optimization).
+    """
+    return SYNTHESIZER_FAST_MODEL_MAP.get(configured_model, configured_model)
+
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "resources" / "ai_prompts"
 
 # Per-domain specialist config. Each entry: prompt filename, artifact kind
@@ -260,10 +287,12 @@ def _call_domain_specialist(
     )
 
     try:
-        response = client.chat([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ])
+        response = client.chat(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
     except AIClientError as exc:
         raise CaseSummaryError(
             f"Domain '{domain}' specialist call failed: {exc}"
@@ -492,7 +521,11 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
     }
 
     synthesis_prompt = _load_prompt("case_summary.md")
-    synthesis_hash = _hash_inputs(client.model, synthesis_prompt, synthesis_payload)
+    # Route to a faster sibling (e.g. Haiku when configured = Sonnet) for the
+    # synthesis call only. Hash + artifact.model record the actual model used
+    # so the cache key invalidates correctly on backend swap.
+    synthesis_model = _pick_synthesizer_model(client.model)
+    synthesis_hash = _hash_inputs(synthesis_model, synthesis_prompt, synthesis_payload)
 
     if not force:
         cached = _find_artifact(case_id, CASE_SUMMARY_KIND, synthesis_hash)
@@ -510,14 +543,18 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
 
     app.logger.info(
         f"Case #{case_id}: running synthesis stage "
-        f"(model={client.model}, prompt={CASE_SUMMARY_PROMPT_ID})"
+        f"(model={synthesis_model}, prompt={CASE_SUMMARY_PROMPT_ID}"
+        f"{f', overrides configured={client.model}' if synthesis_model != client.model else ''})"
     )
 
     try:
-        response = client.chat([
-            {"role": "system", "content": synthesis_prompt},
-            {"role": "user", "content": user_prompt}
-        ])
+        response = client.chat(
+            [
+                {"role": "system", "content": synthesis_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            model=synthesis_model
+        )
     except AIClientError as exc:
         raise CaseSummaryError(f"Synthesis call failed: {exc}") from exc
 
@@ -531,7 +568,7 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
         case_id=case_id,
         kind=CASE_SUMMARY_KIND,
         prompt_id=CASE_SUMMARY_PROMPT_ID,
-        model=client.model,
+        model=synthesis_model,
         input_hash=synthesis_hash,
         content=content,
         confidence=None

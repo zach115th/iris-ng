@@ -53,6 +53,8 @@ def create_asset(asset, caseid, user_id):
     asset.date_update = datetime.datetime.utcnow()
     asset.case_id = caseid
     asset.user_id = user_id
+    if asset.analysis_status_id is None:
+        asset.analysis_status_id = get_unspecified_analysis_status_id()
 
     db.session.add(asset)
     update_assets_state(caseid=caseid, userid=user_id)

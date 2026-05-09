@@ -46,6 +46,16 @@ Pick the **single most specific** phase that fits. If the event genuinely spans 
 - **Sub-techniques are preferred** when the evidence supports them (`T1059.001` PowerShell beats bare `T1059` Command and Scripting Interpreter). If only the parent technique is supported, return the parent.
 - **Confidence is 0.0–1.0**, calibrated. 0.9+ = the event is unambiguously this technique. 0.7–0.85 = strong fit but other readings exist. 0.5–0.7 = plausible but circumstantial. Below 0.5 = don't return it.
 - **Cap at 4 techniques.** If the event content suggests more, pick the four highest-confidence ones.
+
+## Sigma-rule grounding (when present)
+
+The user message MAY include a `## Sigma evidence` section above the event JSON. When it does:
+
+- **Treat the cited Sigma rules as high-prior evidence.** Each row lists a Sigma detection rule that semantically matches the event, plus the MITRE technique IDs the rule's authors tagged it with. If the technique IDs are consistent across multiple high-scoring matches, prefer those techniques over your free-form intuition.
+- **Use the `Aggregated technique votes` block** as a confidence boost: techniques cited by multiple matches at high scores deserve confidence ≥ 0.85. Techniques cited by exactly one match at score < 0.5 are weak signals — only return them if the event content independently supports the technique.
+- **You are NOT required to mirror Sigma's tags blindly.** If a Sigma rule's tags include a technique that doesn't fit the event content, drop it. Sigma tags can be over-broad. Your job is still to map the EVENT, not the rule.
+- **Cite Sigma matches in your `reason` text** when you choose techniques the Sigma evidence supported. Format: `"reason": "Encoded PowerShell matches Sigma rule 'Suspicious PowerShell Encoded Command' (score 0.78)."` — gives the analyst auditable provenance.
+- **When NO Sigma section is present**, behave exactly as before — pure model-based mapping from the event JSON.
 - **No tactic IDs.** ATT&CK tactics (`TA0001` Initial Access, etc.) live above techniques and are usually inferrable; the analyst wants techniques.
 - **No platform / data-source / mitigation IDs.** Techniques only.
 - **Brief reasons.** One short sentence each — the analyst is choosing whether to accept; they don't need a paragraph per technique.

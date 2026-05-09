@@ -76,6 +76,7 @@ services:
         NGINX_CONF_FILE: ${NGINX_CONF_FILE:-nginx.conf}
     image: iriswebapp_nginx:develop
 
+
   frontend:
     image: node:22-alpine
     profiles: ["new-ui"]

@@ -926,10 +926,33 @@ class ServerSettings(db.Model):
     # "AI backend is not configured" instead of erroring. URL/key/model populate
     # from env (.env) on first install via post_init; admins can override here.
     ai_backend_enabled = Column(Boolean, default=False, nullable=False, server_default=text('false'))
+    # Slot-1 (the default / "primary" backend).
     ai_backend_url = Column(Text, nullable=True)
     ai_backend_api_key = Column(Text, nullable=True)
     ai_backend_model = Column(Text, nullable=True)
+    ai_backend_label = Column(Text, nullable=True)
+    # Slot-2 ("alternate" backend) — admins can keep two configs side-by-side
+    # (e.g. LM Studio + a hosted OpenAI-compatible endpoint) and switch the active one via
+    # ai_backend_active_slot without retyping the URL/key/model fields.
+    ai_backend_alt_url = Column(Text, nullable=True)
+    ai_backend_alt_api_key = Column(Text, nullable=True)
+    ai_backend_alt_model = Column(Text, nullable=True)
+    ai_backend_alt_label = Column(Text, nullable=True)
+    # 'primary' or 'alt'. Read by build_default_client() to pick which slot
+    # gets used. Defaults to 'primary' so existing rows keep behaviour.
+    ai_backend_active_slot = Column(String(16), nullable=False, server_default=text("'primary'"))
     ai_backend_confidence_threshold = Column(Float, nullable=True)
+
+    # Pinecone vector DB (used by sigma_grounding + ATT&CK / Atomic RAG layers).
+    # When pinecone_enabled is False, callers fall back to model-only suggestions
+    # with no degradation in core behaviour. Hosts/key seed from PINECONE_*
+    # environment variables on first install; UI values take precedence afterwards.
+    pinecone_enabled = Column(Boolean, default=False, nullable=False, server_default=text('false'))
+    pinecone_api_key = Column(Text, nullable=True)
+    pinecone_embed_model = Column(Text, nullable=True)
+    pinecone_sigma_host = Column(Text, nullable=True)
+    pinecone_attack_host = Column(Text, nullable=True)
+    pinecone_atomic_host = Column(Text, nullable=True)
 
 
 class Comments(db.Model):

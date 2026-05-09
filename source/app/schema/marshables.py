@@ -1504,11 +1504,28 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
 
     # iris-next AI backend settings (Tier-1 features). Allow None / empty so
     # admins can clear the URL/key/model from the UI without tripping validation.
+    # Two-slot design: slot-1 ('primary', the legacy fields) + slot-2 ('alt')
+    # + ai_backend_active_slot pointer chosen via the radio in the admin UI.
     ai_backend_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
+    ai_backend_active_slot: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_url: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_api_key: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_model: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_label: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_alt_url: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_alt_api_key: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_alt_model: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_alt_label: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_confidence_threshold: Optional[float] = fields.Float(required=False, allow_none=True)
+
+    # iris-next Pinecone vector-DB settings (RAG grounding for sigma / ATT&CK /
+    # atomic). Same allow-none policy as the AI backend block above.
+    pinecone_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
+    pinecone_api_key: Optional[str] = fields.String(required=False, allow_none=True)
+    pinecone_embed_model: Optional[str] = fields.String(required=False, allow_none=True)
+    pinecone_sigma_host: Optional[str] = fields.String(required=False, allow_none=True)
+    pinecone_attack_host: Optional[str] = fields.String(required=False, allow_none=True)
+    pinecone_atomic_host: Optional[str] = fields.String(required=False, allow_none=True)
 
     class Meta:
         model = ServerSettings

@@ -29,6 +29,8 @@ from app.iris_engine.ai.evidence_type_suggester import EvidenceTypeSuggesterErro
 from app.iris_engine.ai.evidence_type_suggester import suggest_evidence_type
 from app.iris_engine.ai.ioc_extractor import IocExtractorError
 from app.iris_engine.ai.ioc_extractor import extract_iocs
+from app.iris_engine.ai.tag_suggester import TagSuggesterError
+from app.iris_engine.ai.tag_suggester import suggest_tags
 from app.iris_engine.ai.timeline_analysis import TimelineAnalysisError
 from app.iris_engine.ai.timeline_analysis import generate_timeline_analysis
 from app.iris_engine.ai.timeline_analysis import get_cached_analysis as get_cached_timeline_analysis
@@ -294,6 +296,51 @@ def extract_iocs_endpoint(case_identifier):
     try:
         result = extract_iocs(text, case_id=case_identifier)
     except IocExtractorError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(result)
+
+
+@case_ai_blueprint.post('/tag-suggestion')
+@ac_api_requires()
+def suggest_tags_endpoint(case_identifier):
+    """Suggest MISP machine tags for a case object (IOC / asset / task / case / event).
+
+    Body (JSON):
+      - object_type: 'ioc' | 'asset' | 'task' | 'case' | 'event'  (required)
+      - object_id:   int  (required; for object_type=='case' it's ignored, the case_identifier is authoritative)
+
+    Returns: {
+      suggestions: [{tag, kind, expanded, description, reason, confidence, matched_synonym}],
+      model:        str,
+      object_type:  str,
+      object_id:    int,
+      catalog_size: int,
+    }
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    body = request.get_json(silent=True) or {}
+    object_type = body.get('object_type')
+    object_id = body.get('object_id')
+
+    if object_type == 'case':
+        object_id = case_identifier  # case_id is the authoritative id for case-level suggestion
+    elif not isinstance(object_id, int):
+        return response_api_error("'object_id' must be an int")
+    if not isinstance(object_type, str):
+        return response_api_error("'object_type' is required")
+
+    try:
+        result = suggest_tags(
+            case_id=case_identifier,
+            object_type=object_type,
+            object_id=object_id,
+        )
+    except TagSuggesterError as exc:
         return response_api_error(str(exc))
 
     return response_api_success(result)

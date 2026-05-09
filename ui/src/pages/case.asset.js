@@ -509,17 +509,17 @@ $(document).ready(function(){
             "data": "analysis_status",
             "render": function(data, type, row, meta) {
                if (type === 'display') {
-                data = sanitizeHTML(data['name']);
-                if (data == 'To be done') {
+                let statusName = data && data['name'] ? sanitizeHTML(data['name']) : 'Unspecified';
+                if (statusName == 'To be done') {
                     flag = 'danger';
-                } else if (data == 'Started') {
+                } else if (statusName == 'Started') {
                     flag = 'warning';
-                } else if (data == 'Done') {
+                } else if (statusName == 'Done') {
                     flag = 'success';
                 } else {
                     flag = 'muted';
                 }
-                  data = '<span class="badge ml-2 badge-'+ flag +'">' + data + '</span>';
+                  data = '<span class="badge ml-2 badge-'+ flag +'">' + statusName + '</span>';
               }
               return data;
             }

@@ -313,6 +313,19 @@ class Config:
     AI_BACKEND_API_KEY = os.environ.get('AI_BACKEND_API_KEY', '')
     AI_BACKEND_MODEL = os.environ.get('AI_BACKEND_MODEL', '')
 
+    # Pinecone RAG backend for grounding AI features in Sigma rules / ATT&CK /
+    # Atomic Red Team. Uses Pinecone-hosted embeddings (llama-text-embed-v2 by
+    # default). Empty PINECONE_API_KEY disables RAG entirely — features fall
+    # back to model-only suggestions with no degradation in core behaviour.
+    PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY', '')
+    PINECONE_EMBED_MODEL = os.environ.get('PINECONE_EMBED_MODEL', 'llama-text-embed-v2')
+    PINECONE_SIGMA_INDEX_NAME = os.environ.get('PINECONE_SIGMA_INDEX_NAME', 'sigmarules')
+    PINECONE_SIGMA_HOST = os.environ.get('PINECONE_SIGMA_HOST', '')
+    PINECONE_ATTACK_INDEX_NAME = os.environ.get('PINECONE_ATTACK_INDEX_NAME', 'attack')
+    PINECONE_ATTACK_HOST = os.environ.get('PINECONE_ATTACK_HOST', '')
+    PINECONE_ATOMIC_INDEX_NAME = os.environ.get('PINECONE_ATOMIC_INDEX_NAME', 'atomic')
+    PINECONE_ATOMIC_HOST = os.environ.get('PINECONE_ATOMIC_HOST', '')
+
     DEMO_MODE_ENABLED = config.load('IRIS_DEMO', 'ENABLED', fallback=False)
     if DEMO_MODE_ENABLED == 'True':
         DEMO_DOMAIN = config.load('IRIS_DEMO', 'DOMAIN', fallback=None)

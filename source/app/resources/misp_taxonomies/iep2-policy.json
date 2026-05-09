@@ -1,0 +1,278 @@
+{
+  "namespace": "iep2-policy",
+  "description": "Forum of Incident Response and Security Teams (FIRST) Information Exchange Policy (IEP) v2.0 Policy",
+  "version": 1,
+  "predicates": [
+    {
+      "value": "id",
+      "expanded": "POLICY ID",
+      "description": "Provides a unique ID to identify a specific IEP policy.",
+      "uuid": "c53abfae-8552-555e-8cb9-e4d5cb3c5a29"
+    },
+    {
+      "value": "name",
+      "expanded": "POLICY NAME",
+      "description": "This statement can be used to provide a name for an IEP policy.",
+      "uuid": "829a860f-5c03-59be-a9a7-7b061c581562"
+    },
+    {
+      "value": "description",
+      "expanded": "POLICY DESCRIPTION",
+      "description": "This statement can be used to provide more details as a background for an IEP policy.",
+      "uuid": "dfeeedb1-3f3e-5611-9bab-6aec96a0751f"
+    },
+    {
+      "value": "iep_version",
+      "expanded": "IEP POLICY VERSION",
+      "description": "States the version of the IEP framework that has been used. Must be set to 2.0.",
+      "uuid": "e31d5d67-de3b-5f11-b2b4-ac0707b0e4be"
+    },
+    {
+      "value": "start_date",
+      "expanded": "POLICY START DATE",
+      "description": "States the UTC date that the IEP is effective from.",
+      "uuid": "ac5a661f-4b4a-55f5-9714-db0b5189acd5"
+    },
+    {
+      "value": "end_date",
+      "expanded": "POLICY END DATE",
+      "description": "States the UTC date that the IEP is effective until.",
+      "uuid": "9bb8a177-10f4-5370-9f28-2c3c87c23c3a"
+    },
+    {
+      "value": "encrypt_in_transit",
+      "expanded": "ENCRYPT IN TRANSIT",
+      "description": "States whether the received information has to be encrypted when it is retransmitted by the recipient.",
+      "uuid": "9e4bb7ce-0c7e-59dc-bf1a-f27efa4e08df"
+    },
+    {
+      "value": "permitted_actions",
+      "expanded": "PERMITTED ACTIONS",
+      "description": "States the permitted actions that Recipients can take upon information received.",
+      "uuid": "7a438493-968b-57ae-8102-48713d51b1cf"
+    },
+    {
+      "value": "affected_party_notifications",
+      "expanded": "AFFECTED PARTY NOTIFICATIONS",
+      "description": "Recipients are permitted notify affected third parties of a potential compromise or threat.",
+      "uuid": "2f5e176a-4cef-5dc7-93f7-c15da1c49f12"
+    },
+    {
+      "value": "tlp",
+      "expanded": "TRAFFIC LIGHT PROTOCOL",
+      "description": "Recipients are permitted to redistribute the information received within the redistribution scope as defined by the enumerations.",
+      "uuid": "5674619c-5114-5a30-84c4-5c83698ec806"
+    },
+    {
+      "value": "attribution",
+      "expanded": "ATTRIBUTION",
+      "description": "Recipients could be required to attribute or anonymize the Provider when redistributing the information received.",
+      "uuid": "f62401ec-9194-5ab0-ba64-7079736321b4"
+    },
+    {
+      "value": "unmodified_resale",
+      "expanded": "UNMODIFIED RESALE",
+      "description": "States whether the recipient MAY or MUST NOT resell the information received unmodified or in a semantically equivalent format.",
+      "uuid": "4ca9b67c-aad4-52b6-84fc-cb02dd094061"
+    },
+    {
+      "value": "external_reference",
+      "expanded": "EXTERNAL REFERENCE",
+      "description": "This statement can be used to convey a description or reference to any applicable licenses, agreements, or conditions between the producer and receiver.",
+      "uuid": "1be58fbe-616c-56af-800d-31008805b25b"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "id",
+      "entry": [
+        {
+          "value": "$text",
+          "expanded": "An id value is required",
+          "uuid": "d037605d-494d-58d8-90cd-fa2211873cab"
+        }
+      ]
+    },
+    {
+      "predicate": "name",
+      "entry": [
+        {
+          "value": "$text",
+          "expanded": "A name value is required",
+          "uuid": "b6b09b37-51f7-52b8-a997-f2aa960f7beb"
+        }
+      ]
+    },
+    {
+      "predicate": "description",
+      "entry": [
+        {
+          "value": "$text",
+          "expanded": "A description value is required",
+          "uuid": "928fcc32-3498-50ab-9de7-852cf19eff50"
+        }
+      ]
+    },
+    {
+      "predicate": "iep_version",
+      "entry": [
+        {
+          "value": "2.0",
+          "expanded": "The IEP version value must be 2.0",
+          "uuid": "768adcc0-eb2c-5748-8d27-0da764749ff8"
+        }
+      ]
+    },
+    {
+      "predicate": "start_date",
+      "entry": [
+        {
+          "value": "$text",
+          "expanded": "A start_date value is required.  It must be a UTC date in RFC3339 format.",
+          "uuid": "bbd1c8ad-cb99-5fa9-963f-859755859017"
+        }
+      ]
+    },
+    {
+      "predicate": "end_date",
+      "entry": [
+        {
+          "value": "$text",
+          "expanded": "An end_date value is required. It must be a UTC date in RFC3339 format, or 'null'. null is used when the IEP policy never expires.",
+          "uuid": "22fb5b09-10b1-5059-9e13-0ea2db39d0ac"
+        }
+      ]
+    },
+    {
+      "predicate": "encrypt_in_transit",
+      "entry": [
+        {
+          "value": "must",
+          "expanded": "Recipients MUST encrypt the information received when it is retransmitted or redistributed.",
+          "uuid": "44bc5f90-5e96-5171-aaa3-f4b9ca88035d"
+        },
+        {
+          "value": "may",
+          "expanded": "Recipients MAY encrypt the information received when it is retransmitted or redistributed.",
+          "uuid": "7c692857-af1d-5bd1-9c2d-f10777073b83"
+        }
+      ]
+    },
+    {
+      "predicate": "permitted_actions",
+      "entry": [
+        {
+          "value": "none",
+          "expanded": "Recipients MUST contact the Providers before acting upon the information received.",
+          "uuid": "d07d8c08-fadb-5996-a393-c6084ec4838c"
+        },
+        {
+          "value": "contact-for-instruction",
+          "expanded": "Recipients MUST contact the Providers before acting upon the information received.",
+          "uuid": "d8c0fbd2-a785-5308-a341-9878d4055bbb"
+        },
+        {
+          "value": "internally-visible-actions",
+          "expanded": "Recipients MAY conduct actions on the information received that are only visible on the Recipients internal networks and systems, and MUST NOT conduct actions that are visible outside of the Recipients networks and systems, or visible to third parties.",
+          "uuid": "36d27fc8-3cb3-55c3-a0d6-b788f594311d"
+        },
+        {
+          "value": "externally-visible-indirect-actions",
+          "expanded": "Recipients MAY conduct indirect, or passive, actions on the information received that are externally visible and MUST NOT conduct direct, or active, actions.",
+          "uuid": "8b7fec68-1663-500a-bf50-af1f30aeb216"
+        },
+        {
+          "value": "externally-visible-direct-actions",
+          "expanded": "Recipients MAY conduct direct, or active, actions on the information received that are externally visible.",
+          "uuid": "1a039b8e-efc9-559e-a54d-f4d0a31b4a25"
+        }
+      ]
+    },
+    {
+      "predicate": "affected_party_notifications",
+      "entry": [
+        {
+          "value": "may",
+          "expanded": "Recipients MAY notify affected parties of a potential compromise or threat.",
+          "uuid": "1c780238-d87d-5385-b9e0-68ac00f9eedf"
+        },
+        {
+          "value": "must-not",
+          "expanded": "Recipients MUST NOT notify affected parties of potential compromise or threat.",
+          "uuid": "2ee156f0-3848-51ed-9bcd-d9c40f9029c3"
+        }
+      ]
+    },
+    {
+      "predicate": "tlp",
+      "entry": [
+        {
+          "value": "red",
+          "expanded": "Personal for identified recipients only.",
+          "uuid": "cc10efef-e1b1-533f-8ac6-589786b13d04"
+        },
+        {
+          "value": "amber",
+          "expanded": "Limited sharing on the basis of need-to-know.",
+          "uuid": "a40ec0e8-146f-5a1a-88ed-c91b57efd25a"
+        },
+        {
+          "value": "green",
+          "expanded": "Community wide sharing.",
+          "uuid": "5d2fd46e-b726-5596-bd8c-c67bb62ce33e"
+        },
+        {
+          "value": "white",
+          "expanded": "Unlimited sharing.",
+          "uuid": "756b4ebc-af13-56a6-b0a1-6fe5a3aa53f7"
+        }
+      ]
+    },
+    {
+      "predicate": "attribution",
+      "entry": [
+        {
+          "value": "may",
+          "expanded": "Recipients MAY attribute the Provider when redistributing the information received.",
+          "uuid": "0cdf7e16-f96d-58cf-abde-0bfe6d0a5a1b"
+        },
+        {
+          "value": "must",
+          "expanded": "Recipients MUST attribute the Provider when redistributing the information received.",
+          "uuid": "ee83ec3f-c619-5bf1-b9c7-d276d91a87f9"
+        },
+        {
+          "value": "must-not",
+          "expanded": "Recipients MUST NOT attribute the Provider when redistributing the information received.",
+          "uuid": "4518b84d-1296-5c3b-8b7a-60a9126ced80"
+        }
+      ]
+    },
+    {
+      "predicate": "unmodified_resale",
+      "entry": [
+        {
+          "value": "may",
+          "expanded": "Recipients MAY resell the information received.",
+          "uuid": "4d96d80e-6ff5-5435-a568-8c12b31b8b38"
+        },
+        {
+          "value": "must-not",
+          "expanded": "Recipients MUST NOT resell the information received unmodified or in a semantically equivalent format.",
+          "uuid": "ffa56cec-9e18-51e8-a598-b4ee51aa11b9"
+        }
+      ]
+    },
+    {
+      "predicate": "external_reference",
+      "entry": [
+        {
+          "value": "$text",
+          "expanded": "An external_reference value is a URL that contains information relevant for this IEP policy. The URL MUST adhere to RFC3986.",
+          "uuid": "d0c5e522-5c23-5a20-86fb-e7af49f5ac37"
+        }
+      ]
+    }
+  ],
+  "uuid": "6b4b43e7-2ce5-522d-b208-8d6a3847e0b4"
+}

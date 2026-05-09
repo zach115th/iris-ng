@@ -10,10 +10,19 @@ This directory is a sanitized copy of the active iris-ng fork
   template — it ships dummy passwords / placeholders.
 - `.devcontainer/docker-compose.yml` (had a hardcoded dev-only API key
   inherited from upstream) was excluded.
-- All references to the author's lab LM Studio host were rewritten to
-  `<your-lm-studio-host>` placeholders.
+- All references to the author's lab LM Studio host (`192.168.20.9`)
+  were rewritten to `<your-lm-studio-host>` placeholders.
 - The author's personal email was scrubbed to `<author-email>`.
 - `CLAUDE.md` / `AGENTS.md` (private agent working files) were excluded.
+- The Claude integration is private to the maintainer's local instance:
+  the `docker/claudeProxy/` sidecar (claude.ai Pro OAuth bridge), the
+  `case_memory.py` + `case_memory_hooks.py` per-case Claude-Code memory
+  layer, the `claude_proxy:` compose service + shared `case_memory:` volume,
+  and the `metadata={"iris_case_id":...}` kwargs in the orchestrators are
+  all stripped from this snapshot. The two-slot AI Backend admin UI is
+  generic and stays — point it at any OpenAI-compatible endpoint
+  (LM Studio, Ollama, vLLM, OpenAI itself, Anthropic's `/v1/chat/completions`,
+  etc.).
 - `.git/` was not copied — initialise fresh in this directory:
 
       cd <this-directory>

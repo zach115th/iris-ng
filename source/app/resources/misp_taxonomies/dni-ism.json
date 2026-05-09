@@ -1,0 +1,485 @@
+{
+  "namespace": "dni-ism",
+  "description": "A subset of Information Security Marking Metadata ISM as required by Executive Order (EO) 13526. As described by DNI.gov as Data Encoding Specifications for Information Security Marking Metadata in Controlled Vocabulary Enumeration Values for ISM",
+  "version": 3,
+  "predicates": [
+    {
+      "value": "classification:all",
+      "expanded": "ClassificationAll",
+      "uuid": "e78aed2c-29ae-5bd5-880c-932f157d37f9"
+    },
+    {
+      "value": "classification:us",
+      "expanded": "ClassificationUS",
+      "uuid": "a6002c61-caaf-5072-aa11-821c6be1fdfb"
+    },
+    {
+      "value": "scicontrols",
+      "expanded": "SCIControls",
+      "uuid": "1c436c6c-079d-5105-bd1e-aca639b19e62"
+    },
+    {
+      "value": "complies:with",
+      "expanded": "CompliesWith",
+      "uuid": "a2bfc9b2-db0d-5219-b736-cab38a2435d0"
+    },
+    {
+      "value": "atomicenergymarkings",
+      "expanded": "atomicEnergyMarkings",
+      "uuid": "58131fd3-507c-5516-b03d-fff4d825fb05"
+    },
+    {
+      "value": "notice",
+      "expanded": "Notice",
+      "uuid": "84366b54-ac79-5730-a3df-b1f4e2050b93"
+    },
+    {
+      "value": "nonic",
+      "expanded": "NonIC",
+      "uuid": "eb7620f0-0bfb-508c-94c5-5bf16306968b"
+    },
+    {
+      "value": "nonuscontrols",
+      "expanded": "NonUSControls",
+      "uuid": "0f0dc0ec-0e7e-54e8-a00f-df9f02bb5f9c"
+    },
+    {
+      "value": "dissem",
+      "expanded": "Dissem",
+      "uuid": "f9318f9e-4b13-5e42-afa8-8657b0b4c449"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "classification:all",
+      "entry": [
+        {
+          "value": "R",
+          "expanded": "RESTRICTED",
+          "uuid": "65049985-e834-586c-a9d4-7b42b74f9546"
+        },
+        {
+          "value": "C",
+          "expanded": "CONFIDENTIAL",
+          "uuid": "c7d9613f-a844-5efb-8555-abaedbf8fa4e"
+        },
+        {
+          "value": "S",
+          "expanded": "SECRET",
+          "uuid": "a4df8834-2145-547d-b6df-c8d940bf774b"
+        },
+        {
+          "value": "TS",
+          "expanded": "TOP SECRET",
+          "uuid": "ac6d1aab-6c93-503c-8454-c5309f40f83b"
+        },
+        {
+          "value": "U",
+          "expanded": "UNCLASSIFIED",
+          "uuid": "b522442b-9f7b-5893-b17d-0b9d4e27c2b2"
+        }
+      ]
+    },
+    {
+      "predicate": "classification:us",
+      "entry": [
+        {
+          "value": "C",
+          "expanded": "CONFIDENTIAL",
+          "uuid": "2975e876-1e4a-5a0d-884f-470327f97dfb"
+        },
+        {
+          "value": "S",
+          "expanded": "SECRET",
+          "uuid": "d0254c3c-f317-5cf8-90d2-896e7891e5f0"
+        },
+        {
+          "value": "TS",
+          "expanded": "TOP SECRET",
+          "uuid": "70fda176-f464-547c-8523-7a925ca470a9"
+        },
+        {
+          "value": "U",
+          "expanded": "UNCLASSIFIED",
+          "uuid": "9f743567-f1bb-5a3e-a755-2584948b42af"
+        }
+      ]
+    },
+    {
+      "predicate": "scicontrols",
+      "entry": [
+        {
+          "value": "EL",
+          "expanded": "ENDSEAL",
+          "uuid": "46263a0b-b89a-5238-8de9-90296073ae25"
+        },
+        {
+          "value": "EL-EU",
+          "expanded": "ECRU",
+          "uuid": "c34aa271-5f0c-5520-811e-420ce9ecc542"
+        },
+        {
+          "value": "EL-NK",
+          "expanded": "NONBOOK",
+          "uuid": "411fb395-9b0e-5377-8201-e87a990c0647"
+        },
+        {
+          "value": "HCS",
+          "expanded": "HCS",
+          "uuid": "9ba622cc-b5fe-567f-9e90-695066182ae7"
+        },
+        {
+          "value": "HCS-O",
+          "expanded": "HCS-O",
+          "uuid": "17b96b7e-5953-5661-97c5-ff93189c7f99"
+        },
+        {
+          "value": "HCS-P",
+          "expanded": "HCS-P",
+          "uuid": "4eceab01-8c8e-5149-82a0-82f078512b90"
+        },
+        {
+          "value": "KDK",
+          "expanded": "KLONDIKE",
+          "uuid": "5052595d-fcbe-503b-9834-148ce995c4b0"
+        },
+        {
+          "value": "KDK-BLFH",
+          "expanded": "KDK BLUEFISH",
+          "uuid": "9080b06d-d61a-5ab0-a348-da042f54e8ad"
+        },
+        {
+          "value": "KDK-IDIT",
+          "expanded": "KDK IDITAROD",
+          "uuid": "78fa0fe7-d723-5dfe-8630-9cc1f0eafd2c"
+        },
+        {
+          "value": "KDK-KAND",
+          "expanded": "KDK KANDIK",
+          "uuid": "98e16e2f-39e1-5037-8c9a-4f1516d531c8"
+        },
+        {
+          "value": "RSV",
+          "expanded": "RESERVE",
+          "uuid": "7af9db60-b443-5bd5-aebb-e5a12ad07b04"
+        },
+        {
+          "value": "SI",
+          "expanded": "SPECIAL INTELLIGENCE",
+          "uuid": "09b21be9-c60b-5a59-b8b8-b5459be258e4"
+        },
+        {
+          "value": "SI-G",
+          "expanded": "SI-GAMMA",
+          "uuid": "29d341f6-5727-5c7c-9ff5-38d402ac47e0"
+        },
+        {
+          "value": "TK",
+          "expanded": "TALENT KEYHOLE",
+          "uuid": "50356a66-c657-59fa-9b31-2ffb3166ebfd"
+        }
+      ]
+    },
+    {
+      "predicate": "complies:with",
+      "entry": [
+        {
+          "value": "USGov",
+          "expanded": "Document claims compliance with all rules encoded in ISM for documents produced by the US Federal Government. This is the minimum set of rules for US documents to adhere to, and all US documents should claim compliance with USGov.",
+          "uuid": "86081459-4208-5691-809d-09f1ee1905d5"
+        },
+        {
+          "value": "USIC",
+          "expanded": "Document claims compliance with all rules encoded in ISM for documents produced by the US Intelligence Community. Documents that claim compliance with USIC MUST also claim compliance with USGov.",
+          "uuid": "0cc52717-81aa-5739-8188-438150200a3c"
+        },
+        {
+          "value": "USDOD",
+          "expanded": "Document claims compliance with all rules encoded in ISM for documents produced by the US Department of Defense. Documents that claim compliance with USDOD MUST also claim compliance with USGov.",
+          "uuid": "f940fcd6-e457-5e8f-ab7c-70cab16ed043"
+        },
+        {
+          "value": "OtherAuthority",
+          "expanded": "Document claims compliance with an authority other than the USGov, USIC, or USDOD.",
+          "uuid": "ab394734-fc21-59f2-ba2a-640c72d37c8b"
+        }
+      ]
+    },
+    {
+      "predicate": "atomicenergymarkings",
+      "entry": [
+        {
+          "expanded": "RESTRICTED DATA",
+          "value": "RD",
+          "uuid": "73e85ac5-65a5-5262-8c64-c087ff817943"
+        },
+        {
+          "expanded": "RD-CRITICAL NUCLEAR WEAPON DESIGN INFORMATION",
+          "value": "RD-CNWDI",
+          "uuid": "bd7ea753-e976-5be9-8bbb-a89ef9e8cf8f"
+        },
+        {
+          "expanded": "FORMERLY RESTRICTED DATA",
+          "value": "FRD",
+          "uuid": "7dd289df-f17f-5cea-ab21-bd6ad915b4f8"
+        },
+        {
+          "expanded": "DoD CONTROLLED NUCLEAR INFORMATION",
+          "value": "DCNI",
+          "uuid": "2dc7560a-73b9-5085-8a94-e26fc40f9f03"
+        },
+        {
+          "expanded": "DoE CONTROLLED NUCLEAR INFORMATION",
+          "value": "UCNI",
+          "uuid": "52e57452-c5b4-5894-b558-07c894088d92"
+        },
+        {
+          "expanded": "TRANSCLASSIFIED FOREIGN NUCLEAR INFORMATION",
+          "value": "TFNI",
+          "uuid": "e0cfc206-2d4f-57a5-8f9c-dcd9b6597166"
+        }
+      ]
+    },
+    {
+      "predicate": "notice",
+      "entry": [
+        {
+          "expanded": "FISA Warning statement",
+          "value": "FISA",
+          "uuid": "90bbe247-05dc-5a8f-97fd-9a3bad0d5b70"
+        },
+        {
+          "expanded": "IMCON Warning statement",
+          "value": "IMC",
+          "uuid": "145b3a28-3528-52ed-9504-488534bc35d1"
+        },
+        {
+          "expanded": "Controled Nuclear Weapon Design Information Warning statement",
+          "value": "CNWDI",
+          "uuid": "e6db7e5f-8ace-527d-99e3-ee997bebcdc1"
+        },
+        {
+          "expanded": "RD Warning statement",
+          "value": "RD",
+          "uuid": "777a87fd-cfc9-5f69-891b-e23996fc5b01"
+        },
+        {
+          "expanded": "FRD Warning statement",
+          "value": "FRD",
+          "uuid": "8cf0e512-ad05-50d1-a83c-f50beb139e98"
+        },
+        {
+          "expanded": "LIMDIS caveat",
+          "value": "DS",
+          "uuid": "88b45c33-1f05-5748-9359-8558efd2551f"
+        },
+        {
+          "expanded": "LES Notice",
+          "value": "LES",
+          "uuid": "774ec770-4d7f-5670-a5c1-07e70f099579"
+        },
+        {
+          "expanded": "LES-NF Notice",
+          "value": "LES-NF",
+          "uuid": "9d0f991a-8ac5-595a-8de8-b3367a32d27e"
+        },
+        {
+          "expanded": "DSEN Notice",
+          "value": "DSEN",
+          "uuid": "df574527-8396-5ad6-8afe-6e1bdca3f721"
+        },
+        {
+          "expanded": "DoD Distribution statement A from DoD Directive 5230.24",
+          "value": "DoD-Dist-A",
+          "uuid": "a9e4d23a-19c8-532f-9a53-497ee814cb21"
+        },
+        {
+          "expanded": "DoD Distribution statement B from DoD Directive 5230.24",
+          "value": "DoD-Dist-B",
+          "uuid": "3aefdf41-c166-54b7-89c4-981c2a006faf"
+        },
+        {
+          "expanded": "DoD Distribution statement C from DoD Directive 5230.24",
+          "value": "DoD-Dist-C",
+          "uuid": "512f4729-890e-5ca4-8f69-7e90b222f10c"
+        },
+        {
+          "expanded": "DoD Distribution statement D from DoD Directive 5230.24",
+          "value": "DoD-Dist-D",
+          "uuid": "b8c625c2-385d-5ac3-93d8-a53feb12adde"
+        },
+        {
+          "expanded": "DoD Distribution statement E from DoD Directive 5230.24",
+          "value": "DoD-Dist-E",
+          "uuid": "64e4c877-5902-5989-8f08-229b33502335"
+        },
+        {
+          "expanded": "DoD Distribution statement F from DoD Directive 5230.24",
+          "value": "DoD-Dist-F",
+          "uuid": "5abd43b2-25e1-5058-add6-4608755070d1"
+        },
+        {
+          "expanded": "DoD Distribution statement X from DoD Directive 5230.24",
+          "value": "DoD-Dist-X",
+          "uuid": "cb037f4f-85c0-5080-bca2-c449889036c0"
+        },
+        {
+          "expanded": "US Person info Notice",
+          "value": "US-Person",
+          "uuid": "9e2f82d9-e9ef-59c2-84e1-7720297f4848"
+        },
+        {
+          "expanded": "Indicates that an instance document must abide by rules pertaining to ORIGINATOR CONTROLLED data issued prior to Executive Order 13526.",
+          "value": "pre13526ORCON",
+          "uuid": "c1c337fe-ae70-57a6-97bf-52c4aaecee79"
+        },
+        {
+          "expanded": "Indicates that the contents of this notice specify the contact information for a required point-of-contact.",
+          "value": "POC",
+          "uuid": "bb9c7120-85de-52f1-8b18-1a1ce1fe48db"
+        },
+        {
+          "expanded": "COMSEC Notice",
+          "value": "COMSEC",
+          "uuid": "69ba9ef7-e7ba-5961-be08-4e8b25a23cda"
+        }
+      ]
+    },
+    {
+      "predicate": "nonic",
+      "entry": [
+        {
+          "expanded": "NAVAL NUCLEAR PROPULSION INFORMATION",
+          "value": "NNPI",
+          "uuid": "320d3f66-7a24-5483-8072-398811103f4b"
+        },
+        {
+          "expanded": "LIMITED DISTRIBUTION",
+          "value": "DS",
+          "uuid": "a07ce9c9-155a-510b-8e68-d56b60cdbd6d"
+        },
+        {
+          "expanded": "EXCLUSIVE DISTRIBUTION",
+          "value": "XD",
+          "uuid": "e3f5b1ca-2472-5133-9ea3-3fe4ef2032f4"
+        },
+        {
+          "expanded": "NO DISTRIBUTION",
+          "value": "ND",
+          "uuid": "445ba0bd-065c-55fa-aaa1-233871830372"
+        },
+        {
+          "expanded": "SENSITIVE BUT UNCLASSIFIED",
+          "value": "SBU",
+          "uuid": "0631932a-1b1a-53a5-a848-1d982204aa2d"
+        },
+        {
+          "expanded": "SENSITIVE BUT UNCLASSIFIED NOFORN",
+          "value": "SBU-NF",
+          "uuid": "41d6b2b5-3b14-5ef7-bb45-b5dd0981cc83"
+        },
+        {
+          "expanded": "LAW ENFORCEMENT SENSITIVE",
+          "value": "LES",
+          "uuid": "b8e6c442-6d0a-56d8-8391-d0dfb72ecb54"
+        },
+        {
+          "expanded": "LAW ENFORCEMENT SENSITIVE NOFORN",
+          "value": "LES-NF",
+          "uuid": "9dcdb713-8213-5048-923d-355df3418b4e"
+        },
+        {
+          "expanded": "SENSITIVE SECURITY INFORMATION",
+          "value": "SSI",
+          "uuid": "63f62e86-2a85-5536-8f8e-428364458e91"
+        }
+      ]
+    },
+    {
+      "predicate": "nonuscontrols",
+      "entry": [
+        {
+          "value": "ATOMAL",
+          "expanded": "NATO Atomal mark",
+          "uuid": "aecac86c-ffb7-53f7-b8c4-16cca83841e6"
+        },
+        {
+          "value": "BOHEMIA",
+          "expanded": "NATO Bohemia mark",
+          "uuid": "a32313d5-6c68-5b0c-8298-f4c459a4a665"
+        },
+        {
+          "value": "BALK",
+          "expanded": "NATO Balk mark",
+          "uuid": "febf0b96-cd66-5615-b39f-785ad7c6496a"
+        }
+      ]
+    },
+    {
+      "predicate": "dissem",
+      "entry": [
+        {
+          "value": "RS",
+          "expanded": "RISK SENSITIVE",
+          "uuid": "22d978d1-07e8-55fe-8773-218d29604443"
+        },
+        {
+          "value": "FOUO",
+          "expanded": "FOR OFFICIAL USE ONLY",
+          "uuid": "b9e52556-8dbf-5d5d-91f2-97bab8be75ef"
+        },
+        {
+          "value": "OC",
+          "expanded": "ORIGINATOR CONTROLLED",
+          "uuid": "3df20553-876b-5509-9e78-0b2b50763530"
+        },
+        {
+          "value": "OC-USGOV",
+          "expanded": "ORIGINATOR CONTROLLED US GOVERNMENT",
+          "uuid": "7c137816-2f77-5b48-9342-17ae75be8772"
+        },
+        {
+          "value": "IMC",
+          "expanded": "CONTROLLED IMAGERY",
+          "uuid": "767302b1-52cb-568e-98b2-0e0b74c84f84"
+        },
+        {
+          "value": "NF",
+          "expanded": "NOT RELEASABLE TO FOREIGN NATIONALS",
+          "uuid": "3413d69f-0d5d-5afe-adba-6b7c2c583eb3"
+        },
+        {
+          "value": "PR",
+          "expanded": "CAUTION-PROPRIETARY INFORMATION INVOLVED",
+          "uuid": "25d14d38-f9aa-5785-9d88-861a43a97252"
+        },
+        {
+          "value": "REL",
+          "expanded": "AUTHORIZED FOR RELEASE TO",
+          "uuid": "7b375ab5-ff38-5096-807a-1d42a7f9fb12"
+        },
+        {
+          "value": "RELIDO",
+          "expanded": "RELEASABLE BY INFORMATION DISCLOSURE OFFICIAL",
+          "uuid": "f7be358d-d039-5375-869a-9233263d0917"
+        },
+        {
+          "value": "DSEN",
+          "expanded": "DEA SENSITIVE",
+          "uuid": "89ec1e32-5e86-5f18-9a70-68b11be682f3"
+        },
+        {
+          "value": "FISA",
+          "expanded": "FOREIGN INTELLIGENCE SURVEILLANCE ACT",
+          "uuid": "06ce2d04-5d78-5159-9512-6c632519e60b"
+        },
+        {
+          "value": "DISPLAYONLY",
+          "expanded": "AUTHORIZED FOR DISPLAY BUT NOT RELEASE TO",
+          "uuid": "4f894c70-2da8-5fcb-a94a-6f7ef51d4aaa"
+        }
+      ]
+    }
+  ],
+  "uuid": "3e5c1c55-ef37-5f8c-a262-2a0215462f34"
+}
