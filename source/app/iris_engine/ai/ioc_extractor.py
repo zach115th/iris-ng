@@ -42,6 +42,17 @@ DEFAULT_TLP_NAME = "amber"
 MAX_IOCS_RETURNED = 10
 MIN_CONFIDENCE = 0.5
 
+# Route IOC extraction to a faster sibling model when the configured
+# backend is a Claude family. IOC extraction is regex-validated structured
+# output where Sigma RAG provides most of the context — Haiku handles it
+# well at ~3-5x Sonnet's wall-clock. Same pattern as case_summary.py's
+# SYNTHESIZER_FAST_MODEL_MAP. Backends not listed here pass through
+# unchanged (LM Studio, OpenAI, etc.).
+_IOC_EXTRACT_FAST_MODEL_MAP: dict[str, str] = {
+    "claude-opus-4-7":   "claude-haiku-4-5",
+    "claude-sonnet-4-6": "claude-haiku-4-5",
+}
+
 # Per-type regex sanity checks. Not exhaustive — misses are fine because
 # the prompt also constrains the model — but catches obvious miscat
 # (e.g. `WS-FIN-07` claimed as `ip-dst`). Types that map to free text
@@ -199,6 +210,14 @@ def extract_iocs(text: str, case_id: int | None = None) -> dict[str, Any]:
             "or configure it in Server Settings)"
         )
 
+    # Pick a faster sibling for the IOC extraction call. IOC extraction is
+    # a structured-output task (regex-validated per type) where Sigma-RAG
+    # grounding does the heavy lifting — Haiku handles it well at ~3-5x the
+    # speed of Sonnet. Same pattern as the case-summary synthesizer routing
+    # in case_summary.py (SYNTHESIZER_FAST_MODEL_MAP). LM Studio / other
+    # backends pass through unchanged.
+    call_model = _IOC_EXTRACT_FAST_MODEL_MAP.get(client.model, client.model)
+
     system_prompt = load_system_prompt()
 
     payload_text = _truncate(text, 12000)
@@ -253,8 +272,8 @@ def extract_iocs(text: str, case_id: int | None = None) -> dict[str, Any]:
     )
 
     app.logger.info(
-        f"IocExtractor: requesting suggestions (model={client.model}, "
-        f"text_chars={len(payload_text or '')}, "
+        f"IocExtractor: requesting suggestions (configured_model={client.model}, "
+        f"call_model={call_model}, text_chars={len(payload_text or '')}, "
         f"sigma_matches={len(sigma_matches)})"
     )
 
@@ -262,7 +281,7 @@ def extract_iocs(text: str, case_id: int | None = None) -> dict[str, Any]:
         response = client.chat([
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
-        ])
+        ], model=call_model if call_model != client.model else None)
     except AIClientError as exc:
         raise IocExtractorError(f"AI backend call failed: {exc}") from exc
 

@@ -1,6 +1,6 @@
 #  IRIS Source Code
-#  Copyright (C) 2024 - DFIR-IRIS
-#  contact@dfir-iris.org
+#  Copyright (C) 2021 - Airbus CyberSecurity (SAS)
+#  ir@cyberactionlab.net
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -19,16 +19,24 @@
 from flask import Blueprint
 from flask import request
 from sqlalchemy import and_
+from sqlalchemy import or_
 
 from app.iris_engine.utils.tracker import track_activity
+from app.models.models import AssetsType
+from app.models.models import CaseAssets
+from app.models.models import CaseReceivedFile
+from app.models.models import CaseTasks
 from app.models.models import Comments
-from app.models.authorization import Permissions
-from app.models.cases import Cases
-from app.models.models import Client
+from app.models.models import EvidenceTypes
 from app.models.models import Ioc
 from app.models.models import IocType
 from app.models.models import Notes
+from app.models.models import TaskStatus
 from app.models.models import Tlp
+from app.models.cases import Cases
+from app.models.cases import CasesEvent
+from app.models.models import Client
+from app.models.authorization import Permissions
 from app.blueprints.access_controls import ac_api_requires
 from app.blueprints.responses import response_success
 
@@ -116,5 +124,151 @@ def search_file_post():
         ).all()
 
         files = [row._asdict() for row in comments]
+
+    if search_type == "assets":
+        if search_value:
+            like_value = "%{}%".format(search_value)
+            res = CaseAssets.query.with_entities(
+                CaseAssets.asset_id,
+                CaseAssets.asset_name,
+                CaseAssets.asset_description,
+                CaseAssets.asset_ip,
+                CaseAssets.asset_domain,
+                AssetsType.asset_name.label('asset_type'),
+                Cases.name.label('case_name'),
+                Cases.case_id,
+                Client.name.label('customer_name')
+            ).filter(
+                and_(
+                    or_(
+                        CaseAssets.asset_name.ilike(like_value),
+                        CaseAssets.asset_description.ilike(like_value),
+                        CaseAssets.asset_ip.ilike(like_value),
+                        CaseAssets.asset_domain.ilike(like_value),
+                    ),
+                    CaseAssets.case_id == Cases.case_id,
+                    Client.client_id == Cases.client_id,
+                    search_condition
+                )
+            ).join(
+                CaseAssets.asset_type
+            ).order_by(
+                Client.name
+            ).all()
+            files = [row._asdict() for row in res]
+
+    if search_type == "tasks":
+        if search_value:
+            like_value = "%{}%".format(search_value)
+            res = CaseTasks.query.with_entities(
+                CaseTasks.id.label('task_id'),
+                CaseTasks.task_title,
+                CaseTasks.task_description,
+                TaskStatus.status_name.label('status_name'),
+                TaskStatus.status_bscolor.label('status_bscolor'),
+                Cases.name.label('case_name'),
+                Cases.case_id,
+                Client.name.label('customer_name')
+            ).filter(
+                and_(
+                    or_(
+                        CaseTasks.task_title.ilike(like_value),
+                        CaseTasks.task_description.ilike(like_value),
+                    ),
+                    CaseTasks.task_case_id == Cases.case_id,
+                    Client.client_id == Cases.client_id,
+                    search_condition
+                )
+            ).outerjoin(
+                TaskStatus, TaskStatus.id == CaseTasks.task_status_id
+            ).order_by(
+                Client.name
+            ).all()
+            files = [row._asdict() for row in res]
+
+    if search_type == "evidence":
+        if search_value:
+            like_value = "%{}%".format(search_value)
+            res = CaseReceivedFile.query.with_entities(
+                CaseReceivedFile.id.label('evidence_id'),
+                CaseReceivedFile.filename,
+                CaseReceivedFile.file_description,
+                CaseReceivedFile.file_hash,
+                EvidenceTypes.name.label('type_name'),
+                Cases.name.label('case_name'),
+                Cases.case_id,
+                Client.name.label('customer_name')
+            ).filter(
+                and_(
+                    or_(
+                        CaseReceivedFile.filename.ilike(like_value),
+                        CaseReceivedFile.file_description.ilike(like_value),
+                        CaseReceivedFile.file_hash.ilike(like_value),
+                    ),
+                    CaseReceivedFile.case_id == Cases.case_id,
+                    Client.client_id == Cases.client_id,
+                    search_condition
+                )
+            ).outerjoin(
+                EvidenceTypes, EvidenceTypes.id == CaseReceivedFile.type_id
+            ).order_by(
+                Client.name
+            ).all()
+            files = [row._asdict() for row in res]
+
+    if search_type == "events":
+        if search_value:
+            like_value = "%{}%".format(search_value)
+            res = CasesEvent.query.with_entities(
+                CasesEvent.event_id,
+                CasesEvent.event_title,
+                CasesEvent.event_content,
+                CasesEvent.event_date,
+                CasesEvent.event_source,
+                Cases.name.label('case_name'),
+                Cases.case_id,
+                Client.name.label('customer_name')
+            ).filter(
+                and_(
+                    or_(
+                        CasesEvent.event_title.ilike(like_value),
+                        CasesEvent.event_content.ilike(like_value),
+                        CasesEvent.event_source.ilike(like_value),
+                    ),
+                    CasesEvent.case_id == Cases.case_id,
+                    Client.client_id == Cases.client_id,
+                    search_condition
+                )
+            ).order_by(
+                Client.name
+            ).all()
+            files = [row._asdict() for row in res]
+
+    if search_type == "cases":
+        if search_value:
+            like_value = "%{}%".format(search_value)
+            res = Cases.query.with_entities(
+                Cases.case_id,
+                Cases.name.label('case_name'),
+                Cases.description.label('case_description'),
+                Cases.soc_id,
+                Cases.open_date,
+                Cases.close_date,
+                Client.name.label('customer_name')
+            ).filter(
+                and_(
+                    or_(
+                        Cases.name.ilike(like_value),
+                        Cases.description.ilike(like_value),
+                        Cases.soc_id.ilike(like_value),
+                        Cases.closing_note.ilike(like_value),
+                    ),
+                    Client.client_id == Cases.client_id,
+                    search_condition
+                )
+            ).order_by(
+                Client.name
+            ).all()
+            files = [row._asdict() for row in res]
 
     return response_success("Results fetched", files)

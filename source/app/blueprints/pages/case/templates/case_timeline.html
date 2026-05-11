@@ -362,6 +362,47 @@
   .iris-wt-card[data-status="false_positive"]::before { background: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18); opacity: 0.6; }
   .iris-wt-card[data-status="false_positive"] { opacity: 0.55; }
 
+  /* Card is busy waiting on a server action (promote / reject / reset).
+     Greys it out + blocks pointer events so the analyst can't double-fire
+     while AI IOC extraction / asset materialization / MISP sync are still
+     running. Matched by the server-side row lock + button-disable logic;
+     this is the visual layer. */
+  .iris-wt-card.is-busy {
+    opacity: 0.55;
+    pointer-events: none;
+    position: relative;
+  }
+  .iris-wt-card.is-busy::after {
+    /* Override the rail-bridge ::after by re-using the same selector slot
+       with a higher-specificity is-busy variant. The rail still wants to
+       draw, so use a child .iris-wt-busy-overlay node for the spinner
+       instead (see _setCardBusy in JS). */
+  }
+  .iris-wt-busy-overlay {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    color: #d4c4ff;
+    background: rgba(139, 92, 246, 0.18);
+    border: 1px solid rgba(139, 92, 246, 0.45);
+    padding: 3px 8px;
+    border-radius: 999px;
+    pointer-events: none;
+  }
+  .iris-wt-busy-overlay .spin {
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid rgba(212, 196, 255, 0.35);
+    border-top-color: #d4c4ff;
+    border-radius: 50%;
+    animation: iris-wt-spin 0.8s linear infinite;
+  }
+  @keyframes iris-wt-spin { to { transform: rotate(360deg); } }
+
   .iris-wt-card .iris-wt-time {
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 10.5px;
@@ -1351,16 +1392,63 @@ window.irisWorkingTimeline = (function () {
             .finally(function () { btn.disabled = false; });
     }
 
+    /* Lock the card while a server action (promote / reject / reset) is in
+     * flight. Greys the card out + blocks pointer events + shows a spinner
+     * pill so the analyst gets unambiguous visual feedback during the
+     * ~30-60s wall-clock (AI IOC extraction + asset materialization + MISP
+     * sync). Matched by the server-side row lock on case_working_event
+     * (working_timeline.py::_get_or_404_locked) — belt-and-suspenders. */
+    function _setCardBusy(id, busy, label) {
+        var card = document.querySelector('.iris-wt-card[data-id="' + id + '"]');
+        if (!card) return;
+        var btns = card.querySelectorAll('.iris-wt-actions button');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].disabled = !!busy;
+        }
+        card.classList.toggle('is-busy', !!busy);
+        var existing = card.querySelector('.iris-wt-busy-overlay');
+        if (busy) {
+            if (!existing) {
+                var pill = document.createElement('div');
+                pill.className = 'iris-wt-busy-overlay';
+                pill.innerHTML = '<span class="spin"></span><span>' + (label || 'working…') + '</span>';
+                card.appendChild(pill);
+            } else if (label) {
+                var text = existing.querySelector('span:last-child');
+                if (text) text.textContent = label;
+            }
+        } else if (existing) {
+            existing.remove();
+        }
+    }
+
+    /* Action label → user-visible pill text. Reflects what the server is
+     * spending time on so a 30-60s wall-clock doesn't feel like a hang.
+     * Promote is the heavy one (AI IOC extraction + asset/IOC linkage). */
+    var BUSY_LABELS = {
+        '/promote': 'promoting…',
+        '/reject':  'rejecting…',
+        '/reset':   'resetting…',
+    };
+
     function _post(id, suffix, onSuccess) {
+        _setCardBusy(id, true, BUSY_LABELS[suffix] || 'working…');
         return api('POST', '/events/' + id + suffix, {}).then(function (resp) {
             if (!resp.ok) {
+                _setCardBusy(id, false);
                 alert('Error: ' + ((resp.json && resp.json.message) || ('HTTP ' + resp.status)));
                 return;
             }
             if (typeof onSuccess === 'function') {
                 try { onSuccess((resp.json && resp.json.data) || resp.json || {}); } catch (e) { /* noop */ }
             }
+            /* refresh() re-renders the list, so the disabled button vanishes
+             * along with the rest of the card if the status moved off the
+             * current filter. No need to re-enable explicitly. */
             refresh();
+        }, function (err) {
+            _setCardBusy(id, false);
+            throw err;
         });
     }
     function promote(id) {

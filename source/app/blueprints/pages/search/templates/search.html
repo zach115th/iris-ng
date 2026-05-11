@@ -40,6 +40,26 @@
                                     <input type="radio" name="search_type" value="comments" class="selectgroup-input">
                                     <span class="selectgroup-button">Comments</span>
                                 </label>
+                                <label class="selectgroup-item">
+                                    <input type="radio" name="search_type" value="assets" class="selectgroup-input">
+                                    <span class="selectgroup-button">Assets</span>
+                                </label>
+                                <label class="selectgroup-item">
+                                    <input type="radio" name="search_type" value="tasks" class="selectgroup-input">
+                                    <span class="selectgroup-button">Tasks</span>
+                                </label>
+                                <label class="selectgroup-item">
+                                    <input type="radio" name="search_type" value="evidence" class="selectgroup-input">
+                                    <span class="selectgroup-button">Evidence</span>
+                                </label>
+                                <label class="selectgroup-item">
+                                    <input type="radio" name="search_type" value="events" class="selectgroup-input">
+                                    <span class="selectgroup-button">Timeline events</span>
+                                </label>
+                                <label class="selectgroup-item">
+                                    <input type="radio" name="search_type" value="cases" class="selectgroup-input">
+                                    <span class="selectgroup-button">Cases</span>
+                                </label>
                             </div>
                         </div>
                     </form>
@@ -126,6 +146,141 @@
                             <th>#ID</th>
                             <th>Comment text</th>
                             <th>Case</th>
+                            <th>Customer</th>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <div class="table-responsive" style="display: none;" id="search_table_wrapper_assets">
+                        <div class="selectgroup">
+                            <span id="table_buttons_assets"></span>
+                        </div>
+                      <table class="table display table table-striped table-hover" width="100%" cellspacing="0" id="assets_search_table" >
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>IP</th>
+                            <th>Domain</th>
+                            <th>Case</th>
+                            <th>Customer</th>
+                          </tr>
+                        </thead>
+                        <tfoot>
+                          <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>IP</th>
+                            <th>Domain</th>
+                            <th>Case</th>
+                            <th>Customer</th>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <div class="table-responsive" style="display: none;" id="search_table_wrapper_tasks">
+                        <div class="selectgroup">
+                            <span id="table_buttons_tasks"></span>
+                        </div>
+                      <table class="table display table table-striped table-hover" width="100%" cellspacing="0" id="tasks_search_table" >
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Case</th>
+                            <th>Customer</th>
+                          </tr>
+                        </thead>
+                        <tfoot>
+                          <tr>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Case</th>
+                            <th>Customer</th>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <div class="table-responsive" style="display: none;" id="search_table_wrapper_evidence">
+                        <div class="selectgroup">
+                            <span id="table_buttons_evidence"></span>
+                        </div>
+                      <table class="table display table table-striped table-hover" width="100%" cellspacing="0" id="evidence_search_table" >
+                        <thead>
+                          <tr>
+                            <th>Filename</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Hash</th>
+                            <th>Case</th>
+                            <th>Customer</th>
+                          </tr>
+                        </thead>
+                        <tfoot>
+                          <tr>
+                            <th>Filename</th>
+                            <th>Description</th>
+                            <th>Type</th>
+                            <th>Hash</th>
+                            <th>Case</th>
+                            <th>Customer</th>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <div class="table-responsive" style="display: none;" id="search_table_wrapper_events">
+                        <div class="selectgroup">
+                            <span id="table_buttons_events"></span>
+                        </div>
+                      <table class="table display table table-striped table-hover" width="100%" cellspacing="0" id="events_search_table" >
+                        <thead>
+                          <tr>
+                            <th>Title</th>
+                            <th>Content</th>
+                            <th>Source</th>
+                            <th>Date</th>
+                            <th>Case</th>
+                            <th>Customer</th>
+                          </tr>
+                        </thead>
+                        <tfoot>
+                          <tr>
+                            <th>Title</th>
+                            <th>Content</th>
+                            <th>Source</th>
+                            <th>Date</th>
+                            <th>Case</th>
+                            <th>Customer</th>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <div class="table-responsive" style="display: none;" id="search_table_wrapper_cases">
+                        <div class="selectgroup">
+                            <span id="table_buttons_cases"></span>
+                        </div>
+                      <table class="table display table table-striped table-hover" width="100%" cellspacing="0" id="cases_search_table" >
+                        <thead>
+                          <tr>
+                            <th>Case</th>
+                            <th>Description</th>
+                            <th>SOC ID</th>
+                            <th>Opened</th>
+                            <th>Closed</th>
+                            <th>Customer</th>
+                          </tr>
+                        </thead>
+                        <tfoot>
+                          <tr>
+                            <th>Case</th>
+                            <th>Description</th>
+                            <th>SOC ID</th>
+                            <th>Opened</th>
+                            <th>Closed</th>
                             <th>Customer</th>
                           </tr>
                         </tfoot>

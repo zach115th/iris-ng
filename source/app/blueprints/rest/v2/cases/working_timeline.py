@@ -253,6 +253,16 @@ def _get_or_404(working_id: int, case_identifier: int) -> CaseWorkingEvent | Non
     ).first()
 
 
+def _get_or_404_locked(working_id: int, case_identifier: int) -> CaseWorkingEvent | None:
+    # SELECT ... FOR UPDATE — blocks concurrent transactions trying to mutate
+    # the same working event. Without this, rapid double-clicks on Promote race
+    # past the idempotency check and create duplicate cases_events rows.
+    return CaseWorkingEvent.query.filter(
+        CaseWorkingEvent.id == working_id,
+        CaseWorkingEvent.case_id == case_identifier,
+    ).with_for_update().first()
+
+
 @case_working_timeline_blueprint.post('/events/<int:working_id>/promote')
 @ac_api_requires()
 def promote_working_event(case_identifier, working_id):
@@ -268,18 +278,25 @@ def promote_working_event(case_identifier, working_id):
     if denied is not None:
         return denied
 
-    working = _get_or_404(working_id, case_identifier)
+    # Row-locked fetch so a rapid double-click can't race past the idempotency
+    # check below and create duplicate cases_events rows. The lock releases on
+    # commit/rollback at the end of this request.
+    working = _get_or_404_locked(working_id, case_identifier)
     if working is None:
         return response_api_not_found()
-    if working.status == 'true_positive' and working.promoted_event_id:
-        # idempotent — return the existing promoted event id
+    if working.status == 'true_positive':
+        # Idempotent. Note: we also short-circuit when promoted_event_id is
+        # NULL (legacy rows from before the back-ref was wired) — re-promoting
+        # would silently create a duplicate cases_events row, which is exactly
+        # the bug we're guarding against. Analyst can hit Reset first if they
+        # actually want to re-promote.
         return response_api_success({
             'working': _serialize(working),
             'promoted_event_id': working.promoted_event_id,
             'note': 'already promoted',
         })
 
-    # Pull the parser-built Event Source string (e.g. "Windows Security 4688")
+    # Pull the parser-built Event Source string (e.g. "Windows Security 4698")
     # from event_raw. Falls back to the source name if the parser didn't
     # populate it (older rows, future ingest sources without that field).
     raw = working.event_raw or {}
