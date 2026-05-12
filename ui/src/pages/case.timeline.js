@@ -1158,49 +1158,64 @@ function goToSharedLink(){
     }
 }
 
+/* Export column names + separators match the import endpoint
+ * (/case/timeline/events/csv_upload) so a CSV exported from one case
+ * round-trips cleanly into another:
+ *   - column names: event_date / event_content / event_assets /
+ *     event_iocs / event_raw (NOT event_date(UTC) / event_description
+ *     / linked_assets / linked_iocs which were the legacy export-only
+ *     header names that the import endpoint did not understand)
+ *   - asset separator: ";"   (import: csv_upload splits on ";")
+ *   - ioc separator:   "|"   (import: csv_upload splits on "|")
+ *   - tag separator:   "|"   (import: csv_upload splits on "|", joins
+ *     back into "," for DB storage; DB-format is comma-separated so
+ *     we convert here)
+ */
+function _csvEscape(v) {
+    return (v == null ? '' : String(v)).replace(/"/g, '""');
+}
+
 function timelineToCsv(){
-    csv_data = "event_date(UTC),event_title,event_description,event_tz,event_date_wtz,event_category,event_tags,linked_assets,linked_iocs\n";
+    csv_data = "event_date,event_tz,event_title,event_category,event_content,event_raw,event_source,event_assets,event_iocs,event_tags\n";
     for (index in current_timeline) {
         item = current_timeline[index];
-        content = item.event_content.replace(/"/g, '""');
-        content_parsed = content.replace(/(\r?\n)+/g, ' - ');
-        title = item.event_title.replace(/"/g, '""');
-        tags = item.event_tags.replace(/"/g, '""');
-        assets = "";
-        for (k in item.assets) {
-            asset = item.assets[k].name.replace(/"/g, '""');
-            assets += `${asset};`;
-        }
-        iocs = "";
-        for (k in item.iocs) {
-            ioc = item.iocs[k].name.replace(/"/g, '""');
-            iocs += `${ioc};`;
-        }
-        csv_data += `"${item.event_date}","${title}","${content_parsed}","${item.event_tz}","${item.event_date_wtz}","${item.category_name}","${tags}","${assets}","${iocs}"\n`;
+        const content_parsed = _csvEscape((item.event_content || '').replace(/(\r?\n)+/g, ' - '));
+        const title          = _csvEscape(item.event_title);
+        /* DB stores tags comma-separated; import expects pipe-separated. */
+        const tags           = _csvEscape((item.event_tags || '').split(',').filter(Boolean).join('|'));
+        const source         = _csvEscape(item.event_source);
+        const raw            = _csvEscape(item.event_raw);
+        const date           = _csvEscape(item.event_date);
+        const tz             = _csvEscape(item.event_tz);
+        const category       = _csvEscape(item.category_name);
+        const assets         = (item.assets || []).map(a => _csvEscape(a.name)).join(';');
+        const iocs           = (item.iocs   || []).map(i => _csvEscape(i.name)).join('|');
+        csv_data += `"${date}","${tz}","${title}","${category}","${content_parsed}","${raw}","${source}","${assets}","${iocs}","${tags}"\n`;
     }
     download_file("iris_timeline.csv", "text/csv", csv_data);
 }
 
 function timelineToCsvWithUI(){
-    csv_data = "event_date(UTC),event_title,event_description,event_tz,event_date_wtz,event_category,event_tags,linked_assets,linked_iocs,created_by,creation_date\n";
+    /* Import-compatible columns FIRST so the file round-trips; analyst-
+     * informational extras (event_date_wtz, created_by, creation_date)
+     * appended at the end. The import endpoint tolerates extra columns. */
+    csv_data = "event_date,event_tz,event_title,event_category,event_content,event_raw,event_source,event_assets,event_iocs,event_tags,event_date_wtz,created_by,creation_date\n";
     for (index in current_timeline) {
-
         item = current_timeline[index];
-        content = item.event_content.replace(/"/g, '""');
-        content_parsed = content.replace(/(\r?\n)+/g, ' - ');
-        title = item.event_title.replace(/"/g, '""');
-        tags = item.event_tags.replace(/"/g, '""');
-        assets = "";
-        for (k in item.assets) {
-            asset = item.assets[k].name.replace(/"/g, '""');
-            assets += `${asset};`;
-        }
-        iocs = "";
-        for (k in item.iocs) {
-            ioc = item.iocs[k].name.replace(/"/g, '""');
-            iocs += `${ioc};`;
-        }
-        csv_data += `"${item.event_date}","${title}","${content_parsed}","${item.event_tz}","${item.event_date_wtz}","${item.category_name}","${tags}","${assets}","${iocs}","${item.user}","${item.event_added}"\n`;
+        const content_parsed = _csvEscape((item.event_content || '').replace(/(\r?\n)+/g, ' - '));
+        const title          = _csvEscape(item.event_title);
+        const tags           = _csvEscape((item.event_tags || '').split(',').filter(Boolean).join('|'));
+        const source         = _csvEscape(item.event_source);
+        const raw            = _csvEscape(item.event_raw);
+        const date           = _csvEscape(item.event_date);
+        const date_wtz       = _csvEscape(item.event_date_wtz);
+        const tz             = _csvEscape(item.event_tz);
+        const category       = _csvEscape(item.category_name);
+        const assets         = (item.assets || []).map(a => _csvEscape(a.name)).join(';');
+        const iocs           = (item.iocs   || []).map(i => _csvEscape(i.name)).join('|');
+        const user           = _csvEscape(item.user);
+        const added          = _csvEscape(item.event_added);
+        csv_data += `"${date}","${tz}","${title}","${category}","${content_parsed}","${raw}","${source}","${assets}","${iocs}","${tags}","${date_wtz}","${user}","${added}"\n`;
     }
     download_file("iris_timeline.csv", "text/csv", csv_data);
 }

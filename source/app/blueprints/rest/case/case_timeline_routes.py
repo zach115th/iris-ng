@@ -270,6 +270,16 @@ def case_gettimeline_api(asset_id, caseid):
         CasesEvent.event_color,
         CasesEvent.event_tags,
         CasesEvent.event_content,
+        # Event Source — the readable Windows event identifier (e.g.
+        # "Windows Security 4688") set by the working-timeline promote
+        # and editable on the master timeline. Surfaced here so the JS
+        # `current_timeline` has it for CSV export + future filters.
+        CasesEvent.event_source,
+        # event_raw — populated by the working-timeline promote (the
+        # original parsed payload) or the analyst via the "Edit raw event
+        # data" textarea. Surfaced here so CSV export carries it through;
+        # the import endpoint requires this column to be present.
+        CasesEvent.event_raw,
         CasesEvent.event_in_summary,
         CasesEvent.event_in_graph,
         EventCategory.name.label("category_name"),
@@ -447,6 +457,12 @@ def case_filter_timeline(caseid):
         CasesEvent.event_color,
         CasesEvent.event_tags,
         CasesEvent.event_content,
+        # Event Source + event_raw — this is the actual endpoint the
+        # master-timeline page calls (NOT /events/list). Surfacing these
+        # here so `current_timeline[i].event_source` / `.event_raw` are
+        # populated for CSV export + future per-row filters.
+        CasesEvent.event_source,
+        CasesEvent.event_raw,
         CasesEvent.event_in_summary,
         CasesEvent.event_in_graph,
         CasesEvent.event_is_flagged,
@@ -991,7 +1007,12 @@ def case_events_upload_csv(caseid):
 
             row['event_in_summary'] = event_in_summary
             row['event_in_graph'] = event_in_graph
-            row['event_source'] = event_source
+            # Per-row event_source from the CSV wins. The modal-supplied
+            # `event_source` (from CSVOptions) is only used as a fallback
+            # when the row itself doesn't carry one — matches analyst
+            # intent when re-importing a previously-exported timeline.
+            if not row.get('event_source'):
+                row['event_source'] = event_source
 
             csv_lines.append(row)
     except Exception as e:

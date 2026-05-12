@@ -43,6 +43,8 @@ from app.iris_engine.ai.working_event_explainer import get_cached as get_cached_
 from app.iris_engine.utils.tracker import track_activity
 from app.iris_engine.working_timeline.asset_resolver import ensure_assets_for_working_event
 from app.iris_engine.working_timeline.ioc_resolver import ensure_iocs_for_working_event
+from app.iris_engine.working_timeline.eztools_parser import EztoolsParseError
+from app.iris_engine.working_timeline.eztools_parser import parse_eztools_csv
 from app.iris_engine.working_timeline.hayabusa_parser import HayabusaParseError
 from app.iris_engine.working_timeline.hayabusa_parser import parse_hayabusa_csv
 from app.models.authorization import CaseAccessLevel
@@ -57,12 +59,31 @@ case_working_timeline_blueprint = Blueprint(
 )
 
 
+def _iso_utc(dt) -> str | None:
+    """Serialize a stored datetime as an explicit UTC ISO string.
+
+    Working-timeline ingest sources (Hayabusa with --UTC, EZ Tools / KAPE
+    output run in UTC mode) all store event_date as a *naive* datetime that
+    represents UTC wall-clock. Without an explicit `Z` suffix the browser's
+    `new Date(iso)` parses the value as the browser's local timezone, which
+    then displays an offset value (e.g. a 15:28 UTC event renders as 22:28Z
+    for a PDT analyst). Appending `Z` makes the conversion correct.
+    """
+    if dt is None:
+        return None
+    # If a future ingest source stores TZ-aware values, normalise to UTC.
+    if dt.tzinfo is not None:
+        from datetime import timezone as _tz
+        return dt.astimezone(_tz.utc).isoformat().replace('+00:00', 'Z')
+    return dt.isoformat() + 'Z'
+
+
 def _serialize(ev: CaseWorkingEvent) -> dict:
     return {
         'id': ev.id,
         'case_id': ev.case_id,
         'source': ev.source,
-        'event_date': ev.event_date.isoformat() if ev.event_date else None,
+        'event_date': _iso_utc(ev.event_date),
         'event_title': ev.event_title,
         'event_description': ev.event_description,
         'event_source_host': ev.event_source_host,
@@ -73,8 +94,8 @@ def _serialize(ev: CaseWorkingEvent) -> dict:
         'import_batch_id': str(ev.import_batch_id) if ev.import_batch_id else None,
         'status': ev.status,
         'promoted_event_id': ev.promoted_event_id,
-        'created_at': ev.created_at.isoformat() if ev.created_at else None,
-        'reviewed_at': ev.reviewed_at.isoformat() if ev.reviewed_at else None,
+        'created_at': _iso_utc(ev.created_at),
+        'reviewed_at': _iso_utc(ev.reviewed_at),
     }
 
 
@@ -155,6 +176,72 @@ def import_hayabusa(case_identifier):
         'import_batch_id': str(batch_id),
         'imported': inserted,
         'source': 'hayabusa',
+    })
+
+
+@case_working_timeline_blueprint.post('/import/eztools')
+@ac_api_requires()
+def import_eztools(case_identifier):
+    """Upload an Eric Zimmerman tools CSV and stage it as pending working events.
+
+    Accepts ``multipart/form-data`` with a ``file`` field, or a JSON body
+    with a ``csv`` string field. Auto-detects which EZ Tools sub-format
+    the CSV is (EvtxECmd / MFTECmd $J / PECmd / Amcache / AppCompatCache /
+    RBCmd / LECmd / JLECmd) by inspecting the header columns.
+    """
+    denied = _require_full_access(case_identifier)
+    if denied is not None:
+        return denied
+
+    csv_bytes: bytes | str | None = None
+    if 'file' in request.files:
+        csv_bytes = request.files['file'].read()
+    else:
+        body = request.get_json(silent=True) or {}
+        if 'csv' in body:
+            csv_bytes = body['csv']
+
+    if not csv_bytes:
+        return response_api_error('No CSV provided. POST a "file" multipart field or JSON {"csv": "..."}.')
+
+    try:
+        batch_id, kind, parsed = parse_eztools_csv(csv_bytes, case_identifier)
+    except EztoolsParseError as exc:
+        return response_api_error(str(exc))
+
+    inserted = 0
+    for row in parsed:
+        ev = CaseWorkingEvent(
+            case_id=row['case_id'],
+            source=row['source'],
+            event_date=row['event_date'],
+            event_title=row['event_title'],
+            event_description=row['event_description'],
+            event_source_host=row['event_source_host'],
+            severity=row['severity'],
+            event_tags=row['event_tags'],
+            mitre_techniques=row['mitre_techniques'],
+            external_id=row['external_id'],
+            event_raw=row['event_raw'],
+            import_batch_id=row['import_batch_id'],
+            status='pending',
+            created_by=current_user.id,
+        )
+        db.session.add(ev)
+        inserted += 1
+    db.session.commit()
+
+    track_activity(
+        f'imported {inserted} EZ Tools ({kind}) event(s) into the working timeline '
+        f'(batch {batch_id})',
+        caseid=case_identifier,
+    )
+
+    return response_api_created({
+        'import_batch_id': str(batch_id),
+        'imported': inserted,
+        'source': 'eztools',
+        'kind': kind,
     })
 
 

@@ -18,6 +18,14 @@
             <h2 class="text-white pb-2 fw-bold">Dashboard</h2>
           </div>
           <div class="ml-md-auto py-2 py-md-0">
+            {# iris-next: portable case import. Triggers a small modal that POSTs a JSON file to /api/v2/cases/import. #}
+            <a href="javascript:void(0);" onclick="open_import_case_modal();" class="btn btn-white btn-sm btn-border btn-round mr-2"
+               title="Import a case from a previously-exported JSON file">
+              <span class="btn-label">
+                <i class="fa fa-upload"></i>
+              </span>
+              Import case
+            </a>
             <a href="javascript:void(0);" onclick="load_add_case();" class="btn btn-white btn-sm btn-border btn-round mr-2">
               <span class="btn-label">
                 <i class="fa fa-plus"></i>
@@ -272,6 +280,39 @@
         <!-- /.modal-dialog -->
     </div>
 
+    {# iris-next: portable case import modal — POSTs a JSON file to /api/v2/cases/import. #}
+    <div class="modal" tabindex="-1" role="dialog" id="iris-import-case-modal" data-backdrop="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Import case from JSON</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Select a JSON file previously produced by <em>Export</em> on a case-info modal.
+                        A brand-new case will be created with the notes, IOCs, assets, tasks,
+                        evidence metadata, and timeline events from the export. Evidence file
+                        contents and working-timeline rows are not included.
+                    </p>
+                    <div class="form-group">
+                        <label for="iris-import-case-file">Export file (.json)</label>
+                        <input type="file" class="form-control-file" id="iris-import-case-file" accept="application/json,.json">
+                    </div>
+                    <div id="iris-import-case-status" class="small text-muted mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark" data-dismiss="modal" id="iris-import-case-cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="iris-import-case-submit" onclick="submit_import_case();">
+                        <i class="fa fa-upload mr-1"></i> Import
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock content %}
 
 {% block javascripts %}
@@ -287,6 +328,73 @@
     <script src="/static/assets/js/iris/dashboard.js"></script>
     <script src="/static/assets/js/core/charts.js"></script>
     <script src="/static/assets/js/core/Chart.PieceLabel.min.js"></script>
+
+    {# iris-next: portable case import wiring (kept inline to avoid bundle rebuild for this small feature). #}
+    <script>
+        function open_import_case_modal() {
+            $('#iris-import-case-file').val('');
+            $('#iris-import-case-status').text('').removeClass('text-danger text-success');
+            $('#iris-import-case-submit').prop('disabled', false);
+            $('#iris-import-case-modal').modal({show: true});
+        }
+
+        function submit_import_case() {
+            const fileInput = document.getElementById('iris-import-case-file');
+            const statusEl = $('#iris-import-case-status');
+            statusEl.text('').removeClass('text-danger text-success');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                statusEl.addClass('text-danger').text('Pick a JSON file first.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const fd = new FormData();
+            fd.append('file', file);
+            // Multipart CSRF: the validator reads request.form, not headers — append as field.
+            fd.append('csrf_token', $('#csrf_token').val());
+
+            $('#iris-import-case-submit').prop('disabled', true);
+            statusEl.text('Uploading and importing…');
+
+            $.ajax({
+                url: '/api/v2/cases/import',
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                headers: {'X-CSRFToken': $('#csrf_token').val()},
+            }).done(function (resp) {
+                const data = (resp && resp.data) || {};
+                const counts = data.counts || {};
+                const warnings = data.warnings || [];
+                const summary =
+                    `${counts.notes || 0} notes · ${counts.iocs || 0} iocs · ` +
+                    `${counts.assets || 0} assets · ${counts.tasks || 0} tasks · ` +
+                    `${counts.evidences || 0} evidences · ${counts.timeline_events || 0} events`;
+                statusEl.removeClass('text-danger')
+                    .addClass('text-success')
+                    .text(`Imported case "${data.case_name}" (id ${data.case_id}) — ${summary}`);
+                if (warnings.length) {
+                    console.warn('Case import warnings:', warnings);
+                }
+                setTimeout(function () {
+                    window.location.href = '/case?cid=' + data.case_id;
+                }, 1500);
+            }).fail(function (xhr) {
+                let msg = 'Import failed';
+                try {
+                    const j = xhr.responseJSON || JSON.parse(xhr.responseText);
+                    msg = (j && (j.message || j.error)) || msg;
+                    if (j && j.data) {
+                        msg += ' — ' + JSON.stringify(j.data);
+                    }
+                } catch (_) {}
+                statusEl.removeClass('text-success').addClass('text-danger').text(msg);
+                $('#iris-import-case-submit').prop('disabled', false);
+            });
+        }
+    </script>
 
   <script>
 

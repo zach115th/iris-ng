@@ -16,7 +16,10 @@
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import json
+
 from flask import Blueprint
+from flask import Response as FlaskResponse
 from flask import request
 from flask_login import current_user
 from werkzeug import Response
@@ -37,6 +40,8 @@ from app.blueprints.rest.v2.cases.tasks import case_tasks_blueprint
 from app.blueprints.rest.v2.cases.working_timeline import case_working_timeline_blueprint
 from app.business.cases import cases_create
 from app.business.cases import cases_delete
+from app.business.cases_portability import export_case_for_portability
+from app.business.cases_portability import import_case_from_portability_dict
 from app.datamgmt.case.case_db import get_case
 from app.business.cases import cases_update
 from app.business.errors import BusinessProcessingError
@@ -169,3 +174,70 @@ def case_routes_delete(identifier):
         return response_api_deleted()
     except BusinessProcessingError as e:
         return response_api_error(e.get_message(), e.get_data())
+
+
+# iris-next: portable case export/import (round-trip JSON).
+@cases_blueprint.get('/<int:identifier>/export')
+@ac_api_requires()
+def case_export_portable(identifier):
+    """Download the case as a portable JSON file. Skips evidence binaries,
+    working-timeline rows, comments, AI cache, and modification history.
+    The receiving side resolves lookup IDs by name."""
+
+    if not ac_fast_check_current_user_has_case_access(identifier,
+                                                     [CaseAccessLevel.read_only,
+                                                      CaseAccessLevel.full_access]):
+        return ac_api_return_access_denied(caseid=identifier)
+
+    try:
+        payload = export_case_for_portability(identifier)
+    except BusinessProcessingError as e:
+        return response_api_error(e.get_message(), e.get_data())
+
+    body = json.dumps(payload, default=str, indent=2)
+    safe_id = identifier
+    filename = f'iris-case-{safe_id}-export.json'
+    return FlaskResponse(
+        body,
+        mimetype='application/json',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
+
+
+@cases_blueprint.post('/import')
+@ac_api_requires(Permissions.standard_user)
+def case_import_portable():
+    """Create a brand-new case from a previously-exported JSON payload.
+
+    Accepts either:
+      - multipart/form-data with a single 'file' part (the JSON file), or
+      - application/json with the payload as the body.
+
+    Returns the new case id, name, per-object insert counts, and any warnings
+    accumulated during name-based lookup resolution (e.g. unknown IOC types)."""
+
+    payload = None
+    if 'file' in request.files:
+        file_storage = request.files['file']
+        try:
+            raw = file_storage.read()
+            if isinstance(raw, bytes):
+                raw = raw.decode('utf-8-sig', errors='replace')
+            payload = json.loads(raw)
+        except (ValueError, UnicodeDecodeError) as e:
+            return response_api_error(f'Invalid JSON file: {e}')
+    else:
+        try:
+            payload = request.get_json(silent=False)
+        except Exception as e:
+            return response_api_error(f'Invalid JSON body: {e}')
+
+    if payload is None:
+        return response_api_error('No import payload provided (send file=<json> or a JSON body)')
+
+    try:
+        result = import_case_from_portability_dict(payload)
+    except BusinessProcessingError as e:
+        return response_api_error(e.get_message(), e.get_data())
+
+    return response_api_created(result)

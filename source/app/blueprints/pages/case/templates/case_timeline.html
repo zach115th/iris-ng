@@ -408,6 +408,10 @@
     font-size: 10.5px;
     color: #94a3b8;
     margin-bottom: 4px;
+    /* external_id can be path-y (e.g. EZ Tools PrefetchRun/<exe>/<iso-ts>);
+       wrap rather than overflow. */
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .iris-wt-card .iris-wt-title {
     font-weight: 600;
@@ -415,6 +419,12 @@
     color: #f1f5f9;
     line-height: 1.3;
     margin-bottom: 6px;
+    /* EZ Tools titles can contain long unbroken paths (`\VOLUME{guid}\…`).
+       overflow-wrap:anywhere breaks at arbitrary characters when no word
+       boundary exists, so the path wraps inside the card instead of
+       overflowing horizontally. */
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .iris-wt-card .iris-wt-chips {
     display: flex;
@@ -451,14 +461,47 @@
        the affordance is obvious. Buttons inside the card keep their own
        cursor since they're nested in .iris-wt-actions, not in the body. */
     cursor: pointer;
+    /* See title rule — EZ Tools bodies are full of inline-backticked paths
+       and SHA1 hashes that won't break at spaces. */
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .iris-wt-card.expanded .iris-wt-body { max-height: none; }
+  /* Truncation affordance — fade the bottom of a collapsed body so it's
+     obvious there's more content hidden. The fade vanishes once the user
+     clicks to expand. Pointer-events:none so the click still falls through
+     to the body, which toggles .expanded. */
+  .iris-wt-card .iris-wt-body::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 28px;
+    background: linear-gradient(180deg, rgba(21, 21, 26, 0) 0%, #15151a 90%);
+    pointer-events: none;
+  }
+  .iris-wt-card.expanded .iris-wt-body::after { display: none; }
+  /* "Show more / Show less" pill — sits just under the body. Bound to the
+     same click target as the body via a delegated handler so the analyst
+     can hit either to toggle. */
+  .iris-wt-card .iris-wt-expand-hint {
+    display: inline-block;
+    font-size: 10.5px;
+    color: #a78bfa;
+    margin: -2px 0 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .iris-wt-card .iris-wt-expand-hint:hover { color: #c4b5fd; }
   .iris-wt-card .iris-wt-body code {
     background: rgba(255, 255, 255, 0.04);
     padding: 1px 4px;
     border-radius: 3px;
     font-size: 10.5px;
     color: #d4c4ff;
+    /* Inline backticks (e.g. ExecutableName, full paths) — must wrap or
+       they'll force the card to scroll horizontally. */
+    overflow-wrap: anywhere;
+    word-break: break-all;
   }
   .iris-wt-card .iris-wt-body pre {
     background: rgba(0, 0, 0, 0.25);
@@ -847,6 +890,7 @@
                                   <a class="dropdown-item" href="#" onclick="fire_upload_csv_events();"><small class="fa fa-upload mr-2"></small> Upload CSV of events</a>
                                   <div class="dropdown-divider"></div>
                                   <a class="dropdown-item" href="#" onclick="irisWorkingTimeline.openImport('hayabusa');"><small class="fa fa-file-import mr-2"></small> Import Hayabusa CSV (working timeline)</a>
+                                  <a class="dropdown-item" href="#" onclick="irisWorkingTimeline.openImport('eztools');"><small class="fa fa-file-import mr-2"></small> Import EZ Tools / KAPE CSV (working timeline)</a>
                               </div>
                             </div>
                         </li>
@@ -1001,15 +1045,13 @@ event_date,event_tz,event_title,event_category,event_content,event_raw,event_sou
     <div class="modal-lg modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5>Import Hayabusa CSV</h5>
+                <h5 id="iris-wt-import-title">Import CSV</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
-                <p style="font-size: 12.5px; color: #94a3b8;">
-                    Upload a Hayabusa <code>csv-timeline</code> output. Sigma rules that fired on the same underlying EVTX event (same Channel/EID/RID) are collapsed into one card; the highest-severity rule's title becomes the headline.
-                </p>
+                <p id="iris-wt-import-blurb" style="font-size: 12.5px; color: #94a3b8;"></p>
                 <div class="form-group">
-                    <label class="placeholder">Hayabusa CSV file</label>
+                    <label class="placeholder" id="iris-wt-import-file-label">CSV file</label>
                     <input id="iris-wt-import-file" type="file" accept=".csv,text/csv" class="form-control">
                 </div>
                 <div id="iris-wt-import-status" style="font-size: 12px; color: #94a3b8;"></div>
@@ -1163,6 +1205,7 @@ window.irisWorkingTimeline = (function () {
                 '<div class="iris-wt-title">' + escapeHtml(ev.event_title) + '</div>' +
                 (chips.length ? '<div class="iris-wt-chips">' + chips.join('') + '</div>' : '') +
                 '<div class="iris-wt-body">' + renderMd(ev.event_description) + '</div>' +
+                '<span class="iris-wt-expand-hint" data-role="expand-hint">Show more ▾</span>' +
                 '<div class="iris-wt-actions">' + actions + '</div>' +
                 statusLine +
                 '<div class="iris-wt-explanation-slot" data-id="' + ev.id + '"></div>' +
@@ -1333,7 +1376,29 @@ window.irisWorkingTimeline = (function () {
                         delete _explanationVisible[e.id];
                     }
                 });
+                /* Hide the "Show more" affordance on cards whose body already
+                 * fits inside the max-height. Without this every card shows
+                 * "Show more" even when nothing is actually clipped. */
+                _hideExpandHintWhenFlush(listEl);
             });
+    }
+
+    function _hideExpandHintWhenFlush(listEl) {
+        var cards = listEl.querySelectorAll('.iris-wt-card');
+        for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            var body = card.querySelector('.iris-wt-body');
+            var hint = card.querySelector('[data-role="expand-hint"]');
+            if (!body || !hint) continue;
+            /* scrollHeight > clientHeight ⇒ content overflowed the
+             * max-height of the collapsed body. Add a 2px tolerance for
+             * sub-pixel rounding differences across zoom levels. */
+            if (body.scrollHeight > body.clientHeight + 2) {
+                hint.style.display = '';
+            } else {
+                hint.style.display = 'none';
+            }
+        }
     }
 
     /* Counts-only refresh for the topbar badge. Cheap. */
@@ -1354,7 +1419,33 @@ window.irisWorkingTimeline = (function () {
         if (open) refresh();
     }
 
-    function openImport() {
+    /* Per-source metadata for the import modal. The dropdown calls
+     * openImport(kind) — we look up the labels + endpoint here so adding
+     * a new ingest source (KAPE/EZTools live, Cybertriage future) is a
+     * one-line addition. */
+    var IMPORT_SOURCES = {
+        'hayabusa': {
+            title:    'Import Hayabusa CSV',
+            blurb:    'Upload a Hayabusa <code>csv-timeline</code> output. Sigma rules that fired on the same underlying EVTX event (same Channel/EID/RID) are collapsed into one card; the highest-severity rule\'s title becomes the headline.',
+            label:    'Hayabusa CSV file',
+            endpoint: '/import/hayabusa',
+        },
+        'eztools': {
+            title:    'Import EZ Tools / KAPE CSV',
+            blurb:    'Upload a single Eric Zimmerman tool output CSV (e.g. <code>EvtxECmd_Output.csv</code>, <code>MFTECmd_$J_Output.csv</code>, <code>PECmd_Output_Timeline.csv</code>, <code>AppCompatCache.csv</code>, <code>Amcache_*.csv</code>, <code>RBCmd_Output.csv</code>, <code>LECmd_Output.csv</code>, <code>AutomaticDestinations.csv</code>). The format is auto-detected from the column header. Cap: 25k rows per import.',
+            label:    'EZ Tools CSV file',
+            endpoint: '/import/eztools',
+        },
+    };
+    var _currentImportSource = 'hayabusa';
+
+    function openImport(kind) {
+        kind = kind || 'hayabusa';
+        var src = IMPORT_SOURCES[kind] || IMPORT_SOURCES['hayabusa'];
+        _currentImportSource = kind;
+        document.getElementById('iris-wt-import-title').textContent = src.title;
+        document.getElementById('iris-wt-import-blurb').innerHTML = src.blurb;
+        document.getElementById('iris-wt-import-file-label').textContent = src.label;
         document.getElementById('iris-wt-import-status').textContent = '';
         document.getElementById('iris-wt-import-file').value = '';
         if (window.jQuery) jQuery('#iris-wt-import-modal').modal('show');
@@ -1364,6 +1455,7 @@ window.irisWorkingTimeline = (function () {
         var input = document.getElementById('iris-wt-import-file');
         var statusEl = document.getElementById('iris-wt-import-status');
         var btn = document.getElementById('iris-wt-import-submit');
+        var src = IMPORT_SOURCES[_currentImportSource] || IMPORT_SOURCES['hayabusa'];
         if (!input.files.length) {
             statusEl.textContent = 'Pick a CSV first.';
             return;
@@ -1373,7 +1465,7 @@ window.irisWorkingTimeline = (function () {
         btn.disabled = true;
         statusEl.style.color = '#a78bfa';
         statusEl.textContent = 'Uploading + parsing…';
-        api('POST', '/import/hayabusa', fd, true)
+        api('POST', src.endpoint, fd, true)
             .then(function (resp) {
                 if (!resp.ok) {
                     statusEl.style.color = '#fca5a5';
@@ -1382,7 +1474,9 @@ window.irisWorkingTimeline = (function () {
                 }
                 var data = (resp.json && resp.json.data) || resp.json || {};
                 statusEl.style.color = '#6ee7b7';
-                statusEl.textContent = 'Imported ' + data.imported + ' event(s) (batch ' + (data.import_batch_id || '?').slice(0, 8) + '…).';
+                var kindLabel = data.kind ? ' [' + data.kind + ']' : '';
+                statusEl.textContent = 'Imported ' + data.imported + ' event(s)' + kindLabel +
+                                       ' (batch ' + (data.import_batch_id || '?').slice(0, 8) + '…).';
                 if (window.jQuery) {
                     setTimeout(function () { jQuery('#iris-wt-import-modal').modal('hide'); }, 800);
                 }
@@ -1511,6 +1605,12 @@ window.irisWorkingTimeline = (function () {
                 if (!card) return;
                 if (ev.target.closest('button, a, .iris-wt-actions, .iris-wt-explanation, .iris-wt-explanation-slot')) return;
                 card.classList.toggle('expanded');
+                /* Keep the hint label in sync with the card's expanded state. */
+                var hint = card.querySelector('[data-role="expand-hint"]');
+                if (hint) {
+                    hint.textContent = card.classList.contains('expanded')
+                        ? 'Show less ▴' : 'Show more ▾';
+                }
             });
         }
     });

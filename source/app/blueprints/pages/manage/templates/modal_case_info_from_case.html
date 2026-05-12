@@ -415,6 +415,12 @@
         <button type="button" class="btn btn-success" onclick="reopen_case('{{ data.case_id }}');"
                 id="reopen_case_info">Reopen case</button>
     {% endif %}
+    {# iris-next: portable case export — downloads the case as JSON #}
+    <button type="button" class="btn btn-outline-primary mr-2"
+            onclick="window.location.href='/api/v2/cases/{{ data.case_id }}/export';"
+            id="export_case_info" title="Download this case as a portable JSON file">
+        <i class="fa-solid fa-file-export mr-1"></i> Export
+    </button>
     <button type="button" class="btn btn-outline-dark mr-2" style="display:none;" id="cancel_case_info"  onclick="cancel_case_edit();">Cancel</button>
     <button type="button" class="btn btn-outline-success mr-2" style="display:none;" id="save_case_info" onclick="save_case_edit({{ data.case_id }});">Save</button>
 </div>
