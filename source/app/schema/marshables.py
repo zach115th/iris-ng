@@ -1837,12 +1837,14 @@ class CustomerSchema(ma.SQLAlchemyAutoSchema):
     customer_name: str = auto_field('name', required=True, validate=Length(min=2), allow_none=False)
     customer_description: Optional[str] = auto_field('description', allow_none=True)
     customer_sla: Optional[str] = auto_field('sla', allow_none=True)
+    # iris-next: comma-separated DHS CIIP sector slugs inherited by new cases.
+    customer_dhs_sectors: Optional[str] = auto_field('dhs_sectors', allow_none=True)
     customer_id: int = auto_field('client_id')
 
     class Meta:
         model = Client
         load_instance = True
-        exclude = ['name', 'client_id', 'description', 'sla']
+        exclude = ['name', 'client_id', 'description', 'sla', 'dhs_sectors']
         unknown = EXCLUDE
 
     @post_load

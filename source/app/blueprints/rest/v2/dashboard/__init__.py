@@ -20,6 +20,8 @@ from flask import Blueprint, request
 
 from app.blueprints.access_controls import ac_api_requires
 from app.blueprints.rest.endpoints import response_api_success
+from app.blueprints.rest.endpoints import response_api_error
+from app.business.dashboard_metrics import get_dashboard_metrics
 from app.datamgmt.dashboard.dashboard_db import list_user_cases, list_user_tasks, list_user_reviews
 from app.schema.marshables import CaseDetailsSchema, CaseTaskSchema, CaseSchema
 
@@ -61,3 +63,22 @@ def list_own_reviews():
             only=["case_id", "case_name",
                   "review_status.status_name", "status_id"]
         ).dump(reviews))
+
+
+# iris-next: aggregated metrics dashboard. Returns KPI strip + four sections
+# (analyst self, SOC manager, admin/system health, investigation quality)
+# computed on the fly from existing tables. Date range via query params:
+#   ?start=<iso>&end=<iso>   (defaults to last 30 days)
+@dashboard_blueprint.get('/metrics')
+@ac_api_requires()
+def get_metrics():
+    start = request.args.get('start', None, type=str)
+    end = request.args.get('end', None, type=str)
+    # iris-next: ci_year overrides the year for the Critical Infrastructure
+    # section only. Decoupled from the page-level date range on purpose.
+    ci_year = request.args.get('ci_year', None, type=int)
+    try:
+        data = get_dashboard_metrics(start, end, ci_year=ci_year)
+    except Exception as exc:
+        return response_api_error(f'Failed to compute metrics: {exc}')
+    return response_api_success(data=data)

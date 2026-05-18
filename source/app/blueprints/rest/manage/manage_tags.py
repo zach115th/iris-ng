@@ -74,6 +74,15 @@ def manage_tags_filter() -> Response:
 @manage_tags_rest_blueprint.route('/manage/tags/suggest', methods=['GET'])
 @ac_api_requires()
 def manage_tags_suggest() -> Response:
+    """Returns tag completions for the `term` query.
+
+    iris-next: enriches the upstream behavior (DB-applied tags only) with the
+    bundled MISP taxonomy + galaxy catalog. This way the analyst sees every
+    valid `dhs-ciip-sectors:DHS-critical-sectors="<sector>"`, `tlp:*`,
+    `kill-chain:*`, `misp-galaxy:threat-actor="…"`, etc. even before any of
+    them have been applied to a case. DB-applied tags rank first so the
+    analyst's most-used tags stay on top.
+    """
     tag_title = request.args.get('term', None, type=str)
     filtered_tags = get_filtered_tags(tag_title=tag_title,
                                       tag_namespace=None,
@@ -82,9 +91,46 @@ def manage_tags_suggest() -> Response:
                                       sort_by='tage_title',
                                       sort_dir='asc')
 
-    tags = {
-        "suggestions": [tag.tag_title for tag in filtered_tags.items]
-    }
+    # DB-applied tags first (dedup is by lower-cased exact title). Filter out
+    # malformed MISP taxonomy stubs (e.g. `dhs-ciip-sectors:DHS-critical-sectors=`)
+    # so they don't keep getting re-applied as completion picks.
+    import re as _re
+    _malformed_stub = _re.compile(r'^[^:]+:[^=]+=\s*$')
+    seen: set[str] = set()
+    suggestions: list[str] = []
+    for t in filtered_tags.items:
+        title = t.tag_title
+        if not title:
+            continue
+        if _malformed_stub.match(title):
+            continue
+        key = title.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        suggestions.append(title)
+
+    # iris-next: catalog-backed completions — surface valid taxonomy/galaxy
+    # tags that no analyst has applied yet. The bundled catalog at
+    # `app.iris_engine.misp_tag_catalog` lazy-loads on first call and caches
+    # in memory, so this is one dict lookup per suggest call after warm-up.
+    try:
+        from app.iris_engine.misp_tag_catalog import search as _catalog_search
+        for rec in _catalog_search(tag_title or '', limit=25):
+            tag = rec.get('tag')
+            if not tag:
+                continue
+            key = tag.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            suggestions.append(tag)
+            if len(suggestions) >= 25:
+                break
+    except Exception as exc:
+        app.logger.warning(f'tag suggest: catalog enrichment skipped: {exc}')
+
+    tags = {"suggestions": suggestions}
 
     # TODO why can't we use a response_success here?
     return app.response_class(response=json.dumps(tags, cls=AlchemyEncoder),

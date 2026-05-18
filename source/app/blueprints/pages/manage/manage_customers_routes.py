@@ -122,6 +122,9 @@ def view_customer_modal(client_id, caseid, url_redir):
     form.customer_name.render_kw = {'value': customer.name}
     form.customer_description.data = customer.description
     form.customer_sla.data = customer.sla
+    # iris-next: round-trip the existing customer sector list so the picker
+    # opens pre-populated.
+    form.customer_dhs_sectors.data = customer.dhs_sectors or ''
 
     return render_template("modal_add_customer.html", form=form, customer=customer,
                            attributes=customer.custom_attributes)

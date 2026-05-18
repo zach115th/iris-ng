@@ -35,8 +35,63 @@
                                     <label for="sla" class="mr-4">SLAs</label>
                                     {{ form.customer_sla(class='form-control',  autocomplete="off") }}
                                 </div>
+                                {# iris-next: DHS CIIP sector picker. New cases for this customer
+                                   inherit these sectors as `dhs-ciip-sectors:DHS-critical-sectors="…"`
+                                   tags. Multi-select because some customers operate in multiple sectors
+                                   (e.g. DIB + IT). Bound to a hidden customer_dhs_sectors form input
+                                   that the existing serializeObject() picks up. #}
+                                <div class="form-group">
+                                    <label class="mr-4 d-flex align-items-center" style="gap: 8px;">
+                                        <span>DHS CIIP sector(s)</span>
+                                        <span class="text-muted small">inherited by new cases for this customer</span>
+                                    </label>
+                                    <select id="iris-cust-ciip" class="form-control" multiple
+                                            title="Pick zero or more sectors"
+                                            onchange="iris_cust_refresh_sectors();">
+                                        <option value="chemical">Chemical</option>
+                                        <option value="commercial-facilities">Commercial Facilities</option>
+                                        <option value="communications">Communications</option>
+                                        <option value="critical-manufacturing">Critical Manufacturing</option>
+                                        <option value="dams">Dams</option>
+                                        <option value="dib">Defense Industrial Base</option>
+                                        <option value="emergency-services">Emergency Services</option>
+                                        <option value="energy">Energy</option>
+                                        <option value="financial-services">Financial Services</option>
+                                        <option value="food-agriculture">Food &amp; Agriculture</option>
+                                        <option value="government-facilities">Government Facilities</option>
+                                        <option value="healthcare-public">Healthcare &amp; Public Health</option>
+                                        <option value="it">Information Technology</option>
+                                        <option value="nuclear">Nuclear</option>
+                                        <option value="transport">Transportation Systems</option>
+                                        <option value="water">Water Systems</option>
+                                    </select>
+                                    {{ form.customer_dhs_sectors(type='hidden', id='customer_dhs_sectors') }}
+                                </div>
                             </div>
                         </form>
+                        <script>
+                            // Pre-select sectors from the existing customer record (if editing).
+                            (function () {
+                                const preset = ({{ (customer.dhs_sectors if customer and customer.dhs_sectors else '') | tojson }})
+                                    .split(',').map(s => s.trim()).filter(Boolean);
+                                if (preset.length) {
+                                    $('#iris-cust-ciip').val(preset);
+                                    $('#customer_dhs_sectors').val(preset.join(','));
+                                }
+                                $('#iris-cust-ciip').selectpicker({
+                                    liveSearch: true,
+                                    title: 'Pick sectors',
+                                    style: 'btn-outline-white',
+                                    size: 8,
+                                    selectedTextFormat: 'count > 2',
+                                });
+                            })();
+
+                            function iris_cust_refresh_sectors() {
+                                const values = $('#iris-cust-ciip').val() || [];
+                                $('#customer_dhs_sectors').val(values.join(','));
+                            }
+                        </script>
                     </div>
                 </div>
                 {% include 'modals/modal_attributes_tabs.html' %}

@@ -58,6 +58,10 @@ class AddCustomerForm(FlaskForm):
     customer_name = StringField(u'Customer name', validators=[DataRequired()])
     customer_description = TextAreaField(u'Customer description', validators=[DataRequired()])
     customer_sla = TextAreaField(u'Customer SLAs', validators=[DataRequired()])
+    # iris-next: comma-separated DHS CIIP sector slugs. Optional in the form
+    # (analyst may save without picking), but the metrics dashboard surfaces
+    # unset customers and the case-create flow inherits these when set.
+    customer_dhs_sectors = StringField(u'Customer DHS CIIP sectors')
 
 
 class MultiCheckboxField(SelectMultipleField):

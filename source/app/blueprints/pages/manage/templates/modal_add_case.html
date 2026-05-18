@@ -43,8 +43,114 @@
                             </div>
                             {{ form.case_soc_id(class="form-control", type="text") }}
                         </div>
+
+                        {# iris-next: DHS CIIP sector picker — mandatory per policy.
+                           Renders a 16-option multi-select; on change, a hidden case_tags
+                           input is populated with the corresponding misp-taxonomy tags
+                           so the existing form serialization carries them through. #}
+                        <div class="mt-3 mb-2">
+                            <label class="d-flex align-items-center" style="gap: 8px;">
+                                <strong>Critical infrastructure sector(s) *</strong>
+                                <span class="text-muted small">required — DHS CIIP taxonomy</span>
+                            </label>
+                            <select id="iris-newcase-ciip" class="form-control" multiple
+                                    data-live-search="true" title="Pick at least one sector"
+                                    onchange="iris_newcase_refresh_tags();">
+                                <option value="chemical">Chemical</option>
+                                <option value="commercial-facilities">Commercial Facilities</option>
+                                <option value="communications">Communications</option>
+                                <option value="critical-manufacturing">Critical Manufacturing</option>
+                                <option value="dams">Dams</option>
+                                <option value="dib">Defense Industrial Base</option>
+                                <option value="emergency-services">Emergency Services</option>
+                                <option value="energy">Energy</option>
+                                <option value="financial-services">Financial Services</option>
+                                <option value="food-agriculture">Food &amp; Agriculture</option>
+                                <option value="government-facilities">Government Facilities</option>
+                                <option value="healthcare-public">Healthcare &amp; Public Health</option>
+                                <option value="it">Information Technology</option>
+                                <option value="nuclear">Nuclear</option>
+                                <option value="transport">Transportation Systems</option>
+                                <option value="water">Water Systems</option>
+                            </select>
+                            <small id="iris-newcase-ciip-error" class="text-danger" style="display:none;">
+                                Pick at least one sector before creating the case.
+                            </small>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="d-flex align-items-center" style="gap: 8px;">
+                                <strong>Additional tags</strong>
+                                <span class="text-muted small">comma-separated, optional</span>
+                            </label>
+                            <input type="text" id="iris-newcase-extra-tags" class="form-control"
+                                   placeholder="e.g. priority-1, customer-x"
+                                   oninput="iris_newcase_refresh_tags();">
+                        </div>
+
+                        {# Hidden input the existing serializeObject() picks up — populated by JS above. #}
+                        <input type="hidden" name="case_tags" id="iris-newcase-case-tags" value="">
                     </div>
                 </form>
+
+                <script>
+                    // iris-next: customer_id -> [sector slugs]. Injected by the
+                    // create-case-modal route from get_client_list().
+                    window.IRIS_CUSTOMER_SECTORS_MAP = {{ customer_sectors_map | tojson }};
+
+                    // Match the visual treatment of the other selects on this modal.
+                    $('#iris-newcase-ciip').selectpicker({
+                        liveSearch: true,
+                        title: 'Pick at least one sector *',
+                        style: 'btn-outline-white',
+                        size: 8,
+                        selectedTextFormat: 'count > 2',
+                    });
+
+                    // Pre-fill the sector picker from the *user-selected* customer.
+                    // We deliberately do NOT fire on modal-open: bootstrap-select shows
+                    // the "Select customer *" placeholder visually but the underlying
+                    // <select> still defaults to the first option, so an init-run would
+                    // wrongly pre-fill before the analyst has picked anything. Only react
+                    // to the analyst actually picking a customer.
+                    $('#case_customer').on('changed.bs.select', function () {
+                        const raw = $('#case_customer').val();
+                        const cid = parseInt(raw, 10);
+                        if (!cid || isNaN(cid)) { return; }
+                        const sectors = (window.IRIS_CUSTOMER_SECTORS_MAP || {})[cid] || [];
+                        $('#iris-newcase-ciip').val(sectors);
+                        $('#iris-newcase-ciip').selectpicker('refresh');
+                        iris_newcase_refresh_tags();
+                    });
+
+                    function iris_newcase_refresh_tags() {
+                        const sectorValues = $('#iris-newcase-ciip').val() || [];
+                        const sectorTags = sectorValues.map(v =>
+                            'dhs-ciip-sectors:DHS-critical-sectors="' + v + '"'
+                        );
+                        const extra = ($('#iris-newcase-extra-tags').val() || '')
+                            .split(',').map(s => s.trim()).filter(Boolean);
+                        $('#iris-newcase-case-tags').val(sectorTags.concat(extra).join(','));
+                        if (sectorValues.length) {
+                            $('#iris-newcase-ciip-error').hide();
+                        }
+                    }
+
+                    // Wrap the existing submit_new_case() so we can hard-gate on at least one sector.
+                    (function () {
+                        const _orig = window.submit_new_case;
+                        window.submit_new_case = function () {
+                            const sectors = $('#iris-newcase-ciip').val() || [];
+                            if (!sectors.length) {
+                                $('#iris-newcase-ciip-error').show();
+                                $('#iris-newcase-ciip').focus();
+                                return false;
+                            }
+                            iris_newcase_refresh_tags();
+                            return _orig.apply(this, arguments);
+                        };
+                    })();
+                </script>
             </div>
             <div class="col-12">
                 {% if attributes and attributes|length > 0 %}

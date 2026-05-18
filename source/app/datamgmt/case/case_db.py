@@ -123,18 +123,59 @@ def get_case_report_template():
     return reports
 
 
+import re as _re
+
+# iris-next: matches half-typed MISP taxonomy tags that end with `=` and no
+# value (e.g. `circl:incident-classification=`). These slip in when an analyst
+# starts typing the prefix and commits before completing the value+quotes —
+# the metrics aggregator then collapses unrelated cases under the same
+# placeholder, masking real classification differences. The autocomplete
+# catalog never produces this shape, so dropping silently on save is safe.
+_MALFORMED_TAXONOMY_STUB = _re.compile(r'^[^:]+:[^=]+=\s*$')
+
+
 def save_case_tags(tags, case):
     if tags is None:
+        return
+
+    # iris-next: defend against silent tag-wipe. The case-info modal's chip
+    # widget (amsifySuggestags) can fail to render existing chips in some
+    # cases — when it does, `$('#case_tags').val()` returns "" and the save
+    # path here would clear every tag the analyst painstakingly added. Refuse
+    # to wipe when the incoming value is empty AND the case currently has
+    # tags. To genuinely clear, the analyst must remove chips one at a time
+    # in the widget so the last save carries at least one prior tag... or
+    # the caller passes a single space (or a sentinel) which trims to "" but
+    # explicitly bypasses this guard. Erring on the side of preserving work
+    # — analysts can always remove tags individually, but recovering wiped
+    # tags requires manual SQL.
+    if isinstance(tags, str) and tags.strip() == '' and case.tags:
+        from app import app as _app
+        _app.logger.warning(
+            f'save_case_tags: refusing to wipe {len(case.tags)} existing tags from '
+            f'case #{case.case_id} on empty input — likely a chip-widget render miss. '
+            f'If the analyst genuinely wants to clear, remove tags via the widget '
+            f'one at a time.'
+        )
         return
 
     case.tags.clear()
 
     for tag in tags.split(','):
         tag = tag.strip()
-        if tag:
-            tg = add_db_tag(tag)
-
-            case.tags.append(tg)
+        if not tag:
+            continue
+        if _MALFORMED_TAXONOMY_STUB.match(tag):
+            # Silently drop — logging so analyst can find it if a tag they
+            # expected didn't land.
+            from app import app as _app
+            _app.logger.warning(
+                f'save_case_tags: dropping malformed taxonomy stub {tag!r} '
+                f'on case #{case.case_id} — finish the value (e.g. ...="phishing")'
+            )
+            continue
+        tg = add_db_tag(tag)
+        case.tags.append(tg)
 
     db.session.commit()
 

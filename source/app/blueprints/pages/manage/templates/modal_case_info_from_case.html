@@ -463,4 +463,27 @@
         style: "btn-outline-white"
     });
     access_case_info_reload('{{ data.case_id }}', '{{ data.owner_id }}', '{{ data.reviewer_id }}');
+
+    // iris-next: commit-on-save for the case_tags chip widget.
+    // amsifySuggestags only turns typed text into a chip on Enter or comma; if
+    // the analyst types a tag and clicks Save without pressing Enter first, the
+    // text stays in the widget's visible "Type here" input and never makes it
+    // into the underlying #case_tags value. Wrap the bundled save_case_edit so
+    // we fire a synthetic Enter keyup against the visible input first — the
+    // plugin then commits the pending text and the chip's value flows through.
+    (function () {
+        if (typeof window.save_case_edit !== 'function') { return; }
+        if (window.save_case_edit.__iris_wrapped) { return; }
+        const _orig = window.save_case_edit;
+        window.save_case_edit = function (case_id) {
+            const $visible = $('#case_tags').next('.amsify-suggestags-area').find('.amsify-suggestags-input');
+            if ($visible.length && $visible.val() && $visible.val().trim()) {
+                const ev = $.Event('keyup');
+                ev.keyCode = 13; ev.which = 13; ev.key = 'Enter';
+                $visible.trigger(ev);
+            }
+            return _orig.apply(this, arguments);
+        };
+        window.save_case_edit.__iris_wrapped = true;
+    })();
 </script>

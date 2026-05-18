@@ -110,6 +110,59 @@ def cases_create(request_data):
 
     ac_set_new_case_access(None, case.case_id, case.client_id)
 
+    # iris-next: apply tags supplied at create-time. Upstream's cases_create
+    # never persisted tags from the request payload; only cases_update did.
+    # The create modal now ships sector + free-text tag fields, so wire them
+    # through the same save_case_tags helper.
+    incoming_tags = request_data.get('case_tags')
+    if incoming_tags:
+        save_case_tags(incoming_tags, case)
+
+    # iris-next: inherit DHS CIIP sector tags from the customer when the
+    # case create payload didn't supply any. Customer sectors are stored as
+    # a comma-separated slug list on `Client.dhs_sectors`; we expand them
+    # into full machine-tag form here. Analyst-picked sectors on the case
+    # take precedence — we only inherit when the case has no sector tag at
+    # all, so a one-off override stays a one-off override.
+    existing_titles = [t.tag_title or '' for t in (case.tags or [])]
+    case_has_sector = any(
+        t.startswith('dhs-ciip-sectors:DHS-critical-sectors=') for t in existing_titles
+    )
+    if not case_has_sector and case.client is not None and case.client.dhs_sectors:
+        slugs = [s.strip() for s in case.client.dhs_sectors.split(',') if s.strip()]
+        if slugs:
+            inherited = [
+                f'dhs-ciip-sectors:DHS-critical-sectors="{s}"' for s in slugs
+            ]
+            # Preserve any non-sector tags already on the case (e.g. free-text
+            # tags the analyst typed alongside).
+            merged = ','.join(existing_titles + inherited)
+            save_case_tags(merged, case)
+            track_activity(
+                f'case "{case.name}" inherited sector tag(s) from customer: '
+                f'{", ".join(slugs)}',
+                caseid=case.case_id, ctx_less=False,
+            )
+
+    # iris-next: soft-enforce a DHS CIIP sector tag on every case. Management
+    # wants the quarterly "this sector was responded to most" view to be
+    # accurate, so we log a warning when a case is created without one rather
+    # than rejecting outright (which would break alert-escalation and the
+    # programmatic case-import path). Flip this to BusinessProcessingError
+    # once existing cases are backfilled and external creators are updated.
+    tag_titles = [t.tag_title or '' for t in (case.tags or [])]
+    has_ciip = any(t.startswith('dhs-ciip-sectors:DHS-critical-sectors=') for t in tag_titles)
+    if not has_ciip:
+        log.warning(
+            f'Case #{case.case_id} "{case.name}" created without a '
+            f'dhs-ciip-sectors:DHS-critical-sectors=... tag — '
+            f'will appear in the Critical Infrastructure compliance list'
+        )
+        track_activity(
+            f'case "{case.name}" missing required dhs-ciip-sectors tag',
+            caseid=case.case_id, ctx_less=False,
+        )
+
     # TODO remove caseid doesn't seems to be useful for call_modules_hook => remove argument
     case = call_modules_hook('on_postload_case_create', case, None)
 

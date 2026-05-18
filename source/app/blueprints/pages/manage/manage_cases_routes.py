@@ -128,4 +128,14 @@ def add_case_modal(caseid: int, url_redir: bool):
 
     attributes = get_default_custom_attributes('case')
 
-    return render_template('modal_add_case.html', form=form, attributes=attributes)
+    # iris-next: map of customer_id → list of DHS CIIP sector slugs. Consumed
+    # by inline JS in the modal to pre-fill the sector picker when the
+    # customer dropdown changes. Stored as comma-string in DB; split here so
+    # the template doesn't have to do string parsing.
+    customer_sectors_map = {
+        c['customer_id']: [s.strip() for s in (c.get('customer_dhs_sectors') or '').split(',') if s.strip()]
+        for c in client_list
+    }
+
+    return render_template('modal_add_case.html', form=form, attributes=attributes,
+                           customer_sectors_map=customer_sectors_map)

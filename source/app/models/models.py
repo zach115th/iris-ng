@@ -138,6 +138,11 @@ class Client(db.Model):
     created_by = Column(ForeignKey('user.id'), nullable=True)
     last_update_date = Column(DateTime, server_default=func.now(), nullable=True)
 
+    # iris-next: comma-separated DHS CIIP sector slugs (e.g. "financial-services,it").
+    # New cases for this customer inherit these as case tags when the create
+    # payload doesn't already include a sector tag. See app/business/cases.py.
+    dhs_sectors = Column(Text, nullable=True)
+
     custom_attributes = Column(JSON)
 
 

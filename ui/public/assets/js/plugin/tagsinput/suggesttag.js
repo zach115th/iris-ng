@@ -1,7 +1,33 @@
 /**
  * Amsify Suggestags
  * https://github.com/amsify42/jquery.amsify.suggestags
+ *
+ * iris-next patch (2026-05-13): the upstream plugin builds chip / suggestion
+ * HTML via string concatenation, using `sanitizeHTML(value)` (filterXSS) for
+ * the `data-val="..."` attribute. filterXSS does NOT escape `"`, so any tag
+ * containing a literal `"` (e.g. MISP taxonomy tags like
+ * `circl:incident-classification="phishing"`) breaks out of the attribute
+ * mid-string and the browser stores `data-val="circl:incident-classification="`
+ * (truncated). The chip/suggestion then captures the malformed stub, the
+ * underlying input value gets the stub on commit, and the server-side
+ * `_MALFORMED_TAXONOMY_STUB` filter drops it on save. Net effect: typed MISP
+ * tags silently vanish.
+ *
+ * Fix: `irisAttrEscape()` below properly entity-encodes everything that
+ * would terminate or confuse an HTML attribute (`&`, `"`, `<`, `>`,  `'`).
+ * Used everywhere the upstream code interpolates raw values into HTML
+ * attributes (`data-val`, `id`, etc.). Display text (between tags) is fine
+ * with filterXSS's default behavior.
  */
+
+function irisAttrEscape(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/'/g, '&#39;');
+}
 
 var AmsifySuggestags;
 
@@ -511,7 +537,8 @@ var AmsifySuggestags;
 					value = item;
 					tag   = item;
 				}
-				listHTML += '<li class="'+_self.classes.listItem.substring(1)+'" data-val="'+sanitizeHTML(value)+'">'+sanitizeHTML(tag)+'</li>';
+				// iris-next: irisAttrEscape on data-val so values with `"` (e.g. MISP taxonomy tags) don't break out of the attribute.
+				listHTML += '<li class="'+_self.classes.listItem.substring(1)+'" data-val="'+irisAttrEscape(value)+'">'+sanitizeHTML(tag)+'</li>';
 			});
 			if(_self.settings.noSuggestionMsg) {
 				listHTML += '<li class="'+_self.classes.noSuggestion.substring(1)+'">'+_self.settings.noSuggestionMsg+'</li>';
@@ -539,10 +566,11 @@ var AmsifySuggestags;
 				value = value.replace(/\s+/g, '-');
 			}
 
-			var sanitizedValue = sanitizeHTML(value);
+			// iris-next: irisAttrEscape on data-val so values with `"` (e.g. MISP taxonomy tags) don't break out of the attribute.
+			var attrSafeValue = irisAttrEscape(value);
   			var sanitizedDisplay = sanitizeHTML(this.getTag(value))
 
-			var html = '<span class="'+this.classes.tagItem.substring(1)+'" data-val="'+sanitizedValue+'">'+sanitizedDisplay+' '+this.setIcon()+'</span>';
+			var html = '<span class="'+this.classes.tagItem.substring(1)+'" data-val="'+attrSafeValue+'">'+sanitizedDisplay+' '+this.setIcon()+'</span>';
 			$item    = $(html).insertBefore($(this.selectors.sTagsInput));
 			if(this.settings.defaultTagClass) {
 				$item.addClass(this.settings.defaultTagClass);

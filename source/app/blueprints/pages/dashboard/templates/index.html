@@ -16,6 +16,16 @@
         <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row ">
           <div>
             <h2 class="text-white pb-2 fw-bold">Dashboard</h2>
+            {# iris-next: top-level tabs for Operational vs Metrics views. #}
+            <ul class="nav nav-pills nav-default" id="iris-dash-tabs" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" data-toggle="pill" href="#iris-dash-operational" role="tab" aria-selected="true">Operational</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#iris-dash-metrics" role="tab" aria-selected="false"
+                   onclick="iris_dashboard_metrics_load_if_needed();">Metrics</a>
+              </li>
+            </ul>
           </div>
           <div class="ml-md-auto py-2 py-md-0">
             {# iris-next: portable case import. Triggers a small modal that POSTs a JSON file to /api/v2/cases/import. #}
@@ -40,6 +50,9 @@
       </div>
     </div>
     <div class="page-inner mt--5">
+    <div class="tab-content" id="iris-dash-tab-content">
+    {# iris-next: Operational pane — original dashboard cards + tables. #}
+    <div class="tab-pane fade show active" id="iris-dash-operational" role="tabpanel">
       <div class="row row-card-no-pd">
           <div class="col-sm-6 col-md-4">
             <div class="card card-stats card-round">
@@ -269,6 +282,326 @@
 			</div>
         </div>
     </div>
+    {# /Operational pane #}
+
+    {# iris-next: Metrics pane — KPI strip + 4 sections, computed on-load. #}
+    <div class="tab-pane fade" id="iris-dash-metrics" role="tabpanel">
+      <div class="row mb-3">
+        <div class="col-md-12 d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Date range">
+            <button type="button" class="btn btn-outline-dark iris-mtx-range-btn" data-range="7">7d</button>
+            <button type="button" class="btn btn-dark iris-mtx-range-btn" data-range="30">30d</button>
+            <button type="button" class="btn btn-outline-dark iris-mtx-range-btn" data-range="90">90d</button>
+            <button type="button" class="btn btn-outline-dark iris-mtx-range-btn" data-range="ytd">YTD</button>
+          </div>
+          <span class="text-muted small">or</span>
+          <input type="date" id="iris-mtx-start" class="form-control form-control-sm" style="max-width: 160px;">
+          <span class="text-muted small">to</span>
+          <input type="date" id="iris-mtx-end" class="form-control form-control-sm" style="max-width: 160px;">
+          <button type="button" class="btn btn-sm btn-primary" onclick="iris_dashboard_metrics_reload();">Apply</button>
+          <span id="iris-mtx-range-label" class="text-muted small ml-auto"></span>
+        </div>
+      </div>
+
+      <div id="iris-mtx-loading" class="text-center text-muted py-5" style="display:none;">Loading metrics&hellip;</div>
+      <div id="iris-mtx-error" class="alert alert-danger" style="display:none;"></div>
+
+      <div id="iris-mtx-content" style="display:none;">
+        <div class="row row-card-no-pd mb-2">
+          <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round"><div class="card-body">
+              <p class="card-category">Open cases (now)</p>
+              <h4 class="card-title" id="iris-mtx-kpi-open">&mdash;</h4>
+            </div></div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round"><div class="card-body">
+              <p class="card-category">Cases closed (range)</p>
+              <h4 class="card-title" id="iris-mtx-kpi-closed">&mdash;</h4>
+            </div></div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round"><div class="card-body">
+              <p class="card-category">Median MTTR (days)</p>
+              <h4 class="card-title" id="iris-mtx-kpi-mttr">&mdash;</h4>
+            </div></div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round"><div class="card-body">
+              <p class="card-category">Untriaged working-tl</p>
+              <h4 class="card-title" id="iris-mtx-kpi-untriaged">&mdash;</h4>
+            </div></div>
+          </div>
+        </div>
+
+        <section class="card mt-3">
+          <div class="card-header"><div class="card-title">Your activity</div></div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3"><p class="card-category mb-1">My open cases</p><h5 id="iris-mtx-my-open">&mdash;</h5></div>
+              <div class="col-md-3"><p class="card-category mb-1">My closed (range)</p><h5 id="iris-mtx-my-closed">&mdash;</h5></div>
+              <div class="col-md-3"><p class="card-category mb-1">My median MTTR</p><h5 id="iris-mtx-my-mttr">&mdash;</h5></div>
+              <div class="col-md-3"><p class="card-category mb-1">My notes (range)</p><h5 id="iris-mtx-my-notes">&mdash;</h5></div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <p class="card-category mb-1">My working-timeline reviews (range)</p>
+                <span id="iris-mtx-my-wt-reviews" class="small">&mdash;</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card mt-3">
+          <div class="card-header"><div class="card-title">Team throughput</div></div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <p class="card-category">Cases opened vs closed (in range)</p>
+                {# Fixed-height wrapper — required for Chart.js with responsive:true + maintainAspectRatio:false,
+                   otherwise the canvas grows to fill available viewport space and triggers a resize loop. #}
+                <div style="position: relative; height: 240px;">
+                  <canvas id="iris-mtx-tl-chart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <p class="card-category">Classification mix (all cases)</p>
+                <div style="position: relative; height: 220px;">
+                  <canvas id="iris-mtx-class-chart"></canvas>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">Severity mix (all cases)</p>
+                <div style="position: relative; height: 220px;">
+                  <canvas id="iris-mtx-sev-chart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <p class="card-category">Top owners (cases opened in range)</p>
+                <table class="table table-sm" id="iris-mtx-owners-table"><tbody></tbody></table>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">Top customers (cases opened in range)</p>
+                <table class="table table-sm" id="iris-mtx-customers-table"><tbody></tbody></table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# iris-next: System health card hidden per request 2026-05-13.
+           Backend still computes d.admin and JS still renders into the
+           tables/spans below — just visually hidden. Remove the style
+           attribute on the section to re-enable. #}
+        <section class="card mt-3" style="display: none;">
+          <div class="card-header"><div class="card-title">System health</div></div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <p class="card-category">AI artifacts by model (range)</p>
+                <table class="table table-sm" id="iris-mtx-ai-model-table"><tbody></tbody></table>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">AI artifacts by feature (range)</p>
+                <table class="table table-sm" id="iris-mtx-ai-kind-table"><tbody></tbody></table>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <p class="card-category">MISP sync state (now)</p>
+                <div id="iris-mtx-misp" class="small">&mdash;</div>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">Working-timeline imports (range)</p>
+                <table class="table table-sm" id="iris-mtx-wt-imports-table"><tbody></tbody></table>
+                <p class="card-category mt-2 mb-1 small">Status snapshot</p>
+                <span id="iris-mtx-wt-status" class="small">&mdash;</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# iris-next: Case tagging card with a flip-to-chart back face.
+           Click anywhere on the card (or the small "Flip" affordance in the
+           header) to rotate 180° and reveal a donut of the same data. Each
+           face is a real .card so the visual treatment carries through;
+           the .iris-flip-card wrapper provides the 3D perspective. #}
+        <style>
+          .iris-flip-card { perspective: 1500px; cursor: pointer; }
+          .iris-flip-card-inner {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s ease;
+          }
+          .iris-flip-card.is-flipped .iris-flip-card-inner { transform: rotateY(180deg); }
+          .iris-flip-face {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            margin: 0;
+          }
+          .iris-flip-face-back {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            transform: rotateY(180deg);
+          }
+          .iris-flip-hint {
+            opacity: 0.55;
+            font-size: 0.85em;
+            transition: opacity 0.2s;
+          }
+          .iris-flip-card:hover .iris-flip-hint { opacity: 1; }
+        </style>
+        <section class="iris-flip-card mt-3" id="iris-mtx-tag-card">
+          <div class="iris-flip-card-inner">
+            <div class="iris-flip-face iris-flip-face-front card">
+              <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
+                <div class="card-title mr-2">Case tagging</div>
+                <div class="text-muted small ml-auto">Year follows the selector above &mdash; non-sector case-level tags only.</div>
+                <span class="iris-flip-hint ml-2" title="Click card to flip"><i class="fa-solid fa-rotate"></i> Flip</span>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-3"><p class="card-category mb-1">Tagged cases (all time)</p><h5 id="iris-mtx-tag-tagged">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">Untagged cases (all time)</p><h5 id="iris-mtx-tag-untagged-count" class="text-warning">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">YTD top tag</p><h5 id="iris-mtx-tag-ytd-top">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">Unique tags / applications</p><h5 id="iris-mtx-tag-totals">&mdash;</h5></div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <p class="card-category">Top case tag per quarter</p>
+                    <div id="iris-mtx-tag-top-quarter" class="d-flex" style="gap: 12px; flex-wrap: wrap;"></div>
+                  </div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <p class="card-category">Cases by tag × quarter (top {{ 15 }} tags by year total)</p>
+                    <div class="table-responsive">
+                      <table class="table table-sm" id="iris-mtx-tag-matrix">
+                        <thead><tr><th>Tag</th></tr></thead>
+                        <tbody></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="iris-flip-face iris-flip-face-back card">
+              <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
+                <div class="card-title mr-2">Case tagging &mdash; chart view</div>
+                <div class="text-muted small ml-auto">Same data, donut form &mdash; click to flip back.</div>
+                <span class="iris-flip-hint ml-2"><i class="fa-solid fa-rotate"></i> Flip back</span>
+              </div>
+              <div class="card-body">
+                <div style="position: relative; height: 360px;">
+                  <canvas id="iris-mtx-tag-donut"></canvas>
+                </div>
+                <p class="card-category text-center mt-2 mb-0" id="iris-mtx-tag-donut-caption">&mdash;</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# iris-next: Critical Infrastructure card with the same flip-to-chart
+           pattern as Case tagging. The year selector lives on the front face;
+           clicks on the selector are isolated so they don't trigger a flip. #}
+        <section class="iris-flip-card mt-3" id="iris-mtx-ci-card">
+          <div class="iris-flip-card-inner">
+            <div class="iris-flip-face iris-flip-face-front card">
+              <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
+                <div class="card-title mr-2">Critical infrastructure (DHS CIIP sectors)</div>
+                {# Year selector — stopPropagation so its clicks don't flip the card. #}
+                <div class="d-flex align-items-center" style="gap: 6px;"
+                     onclick="event.stopPropagation();">
+                  <span class="text-muted small">Year:</span>
+                  <select id="iris-mtx-ci-year-select" class="form-control form-control-sm"
+                          style="max-width: 110px;"
+                          onclick="event.stopPropagation();"
+                          onchange="event.stopPropagation(); iris_dashboard_metrics_reload();">
+                  </select>
+                </div>
+                <div class="text-muted small ml-auto">Full calendar year &mdash; not the date-range filter.</div>
+                <span class="iris-flip-hint ml-2" title="Click card to flip"><i class="fa-solid fa-rotate"></i> Flip</span>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-3"><p class="card-category mb-1">Tagged cases</p><h5 id="iris-mtx-ci-tagged">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">Missing sector tag</p><h5 id="iris-mtx-ci-missing" class="text-warning">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">YTD cases</p><h5 id="iris-mtx-ci-ytd-total">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">YTD top sector</p><h5 id="iris-mtx-ci-ytd-top">&mdash;</h5></div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <p class="card-category">Top sector per quarter</p>
+                    <div id="iris-mtx-ci-top-quarter" class="d-flex" style="gap: 12px; flex-wrap: wrap;"></div>
+                  </div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <p class="card-category">Cases by sector × quarter</p>
+                    <div class="table-responsive">
+                      <table class="table table-sm" id="iris-mtx-ci-matrix">
+                        <thead><tr><th>Sector</th><th id="iris-mtx-ci-quarter-headers"></th></tr></thead>
+                        <tbody></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="iris-flip-face iris-flip-face-back card">
+              <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
+                <div class="card-title mr-2">Critical infrastructure &mdash; chart view</div>
+                <div class="text-muted small ml-auto">Same data, donut form &mdash; click to flip back.</div>
+                <span class="iris-flip-hint ml-2"><i class="fa-solid fa-rotate"></i> Flip back</span>
+              </div>
+              <div class="card-body">
+                <div style="position: relative; height: 360px;">
+                  <canvas id="iris-mtx-ci-donut"></canvas>
+                </div>
+                <p class="card-category text-center mt-2 mb-0" id="iris-mtx-ci-donut-caption">&mdash;</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card mt-3 mb-4">
+          <div class="card-header"><div class="card-title">Investigation quality</div></div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4"><p class="card-category mb-1">Open cases missing notes/IOCs/assets/events</p><h5><span id="iris-mtx-redflag-count">&mdash;</span></h5></div>
+              <div class="col-md-4"><p class="card-category mb-1">Timeline events</p><h5 id="iris-mtx-total-events">&mdash;</h5></div>
+              <div class="col-md-4"><p class="card-category mb-1">Events with cross-links</p><h5 id="iris-mtx-crosslink-pct">&mdash;</h5></div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <p class="card-category mb-1">Red-flag open cases (top 25)</p>
+                <div class="table-responsive">
+                  <table class="table table-sm" id="iris-mtx-redflags-table">
+                    <thead><tr><th>Case</th><th>Opened</th><th>Missing</th><th class="text-right">Notes</th><th class="text-right">IOCs</th><th class="text-right">Assets</th><th class="text-right">Events</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <p class="card-category mb-1">Working-timeline backlog (top 10 cases)</p>
+                <table class="table table-sm" id="iris-mtx-wt-backlog-table"><tbody></tbody></table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    {# /Metrics pane #}
+
+    </div>
+    {# /tab-content #}
+    </div>
+    {# /page-inner #}
 
     <div class="modal " tabindex="-1" role="dialog" id="modal_add_gtask" data-backdrop="true">
         <div class="modal-xl modal-dialog" role="document">
@@ -328,6 +661,419 @@
     <script src="/static/assets/js/iris/dashboard.js"></script>
     <script src="/static/assets/js/core/charts.js"></script>
     <script src="/static/assets/js/core/Chart.PieceLabel.min.js"></script>
+
+    {# iris-next: dashboard metrics tab — load on first activation, re-load on date-range change. #}
+    <script>
+        let _irisMtxLoaded = false;
+        let _irisMtxState = {start: null, end: null};
+        let _irisMtxCharts = {tl: null, cls: null, sev: null, tagNs: null, tagDonut: null, ciDonut: null};
+
+        // Click anywhere on a flip card to toggle. The year selector inside the
+        // CI card calls event.stopPropagation() so its clicks/changes don't
+        // bubble up and flip the card unexpectedly.
+        $(document).on('click', '#iris-mtx-tag-card, #iris-mtx-ci-card', function () {
+            $(this).toggleClass('is-flipped');
+        });
+
+        function _irisMtxIso(d) { return d.toISOString().slice(0, 10); }
+        function _irisMtxSetRange(days) {
+            const end = new Date();
+            const start = new Date();
+            if (days === 'ytd') {
+                start.setMonth(0); start.setDate(1);
+            } else {
+                start.setDate(end.getDate() - parseInt(days, 10));
+            }
+            $('#iris-mtx-start').val(_irisMtxIso(start));
+            $('#iris-mtx-end').val(_irisMtxIso(end));
+        }
+        function _irisMtxFmt(n) { return (n === null || n === undefined) ? '—' : n; }
+        function _irisMtxEsc(s) {
+            const div = document.createElement('div');
+            div.textContent = s == null ? '' : String(s);
+            return div.innerHTML;
+        }
+
+        function iris_dashboard_metrics_load_if_needed() {
+            if (_irisMtxLoaded) { return; }
+            _irisMtxSetRange(30);
+            iris_dashboard_metrics_reload();
+            _irisMtxLoaded = true;
+        }
+
+        function iris_dashboard_metrics_reload() {
+            const start = $('#iris-mtx-start').val();
+            const end = $('#iris-mtx-end').val();
+            const ciYear = $('#iris-mtx-ci-year-select').val();
+            $('#iris-mtx-loading').show();
+            $('#iris-mtx-error').hide().text('');
+            $('#iris-mtx-content').hide();
+            const params = {start: start, end: end};
+            if (ciYear) { params.ci_year = ciYear; }
+            $.ajax({
+                url: '/api/v2/dashboard/metrics',
+                type: 'GET',
+                data: params,
+                dataType: 'json',
+            }).done(function (resp) {
+                const data = (resp && resp.data) || resp;
+                _irisMtxRender(data);
+                $('#iris-mtx-loading').hide();
+                $('#iris-mtx-content').show();
+            }).fail(function (xhr) {
+                $('#iris-mtx-loading').hide();
+                let msg = 'Failed to load metrics';
+                try {
+                    const j = xhr.responseJSON || JSON.parse(xhr.responseText);
+                    msg = (j && (j.message || j.error)) || msg;
+                } catch (_) {}
+                $('#iris-mtx-error').text(msg).show();
+            });
+        }
+
+        // Range button selection visual state
+        $(document).on('click', '.iris-mtx-range-btn', function () {
+            $('.iris-mtx-range-btn').removeClass('btn-dark').addClass('btn-outline-dark');
+            $(this).removeClass('btn-outline-dark').addClass('btn-dark');
+            _irisMtxSetRange($(this).data('range'));
+            iris_dashboard_metrics_reload();
+        });
+
+        function _irisMtxRender(d) {
+            // KPI strip
+            $('#iris-mtx-kpi-open').text(_irisMtxFmt(d.kpi.open_cases));
+            $('#iris-mtx-kpi-closed').text(_irisMtxFmt(d.kpi.closed_in_range));
+            $('#iris-mtx-kpi-mttr').text(d.kpi.median_mttr_days === null ? '—' : d.kpi.median_mttr_days);
+            $('#iris-mtx-kpi-untriaged').text(_irisMtxFmt(d.kpi.untriaged_working_tl));
+
+            // Range label
+            if (d.range) {
+                $('#iris-mtx-range-label').text(
+                    d.range.start.slice(0,10) + ' → ' + d.range.end.slice(0,10) +
+                    ' (' + d.range.days + ' days)'
+                );
+            }
+
+            // Analyst
+            $('#iris-mtx-my-open').text(_irisMtxFmt(d.analyst.my_open_cases));
+            $('#iris-mtx-my-closed').text(_irisMtxFmt(d.analyst.my_closed_in_range));
+            $('#iris-mtx-my-mttr').text(d.analyst.my_median_mttr_days === null ? '—' : d.analyst.my_median_mttr_days);
+            $('#iris-mtx-my-notes').text(_irisMtxFmt(d.analyst.my_notes_in_range));
+            const wt = d.analyst.my_wt_reviews || {};
+            const wtParts = Object.keys(wt).map(k => _irisMtxEsc(k) + ': <strong>' + wt[k] + '</strong>');
+            $('#iris-mtx-my-wt-reviews').html(wtParts.length ? wtParts.join(' &middot; ') : '<span class="text-muted">no reviews in range</span>');
+
+            // SOC manager — charts
+            _irisMtxRenderTimelineChart(d.soc.timeline);
+            _irisMtxRenderDonut('iris-mtx-class-chart', 'cls', d.soc.classifications, 'name');
+            _irisMtxRenderDonut('iris-mtx-sev-chart', 'sev', d.soc.severities, 'name');
+            _irisMtxRenderRankTable('iris-mtx-owners-table', d.soc.top_owners, 'name', 'count');
+            _irisMtxRenderRankTable('iris-mtx-customers-table', d.soc.top_customers, 'name', 'count');
+
+            // Admin
+            _irisMtxRenderRankTable('iris-mtx-ai-model-table', d.admin.ai_by_model, 'model', 'count');
+            _irisMtxRenderRankTable('iris-mtx-ai-kind-table', d.admin.ai_by_kind, 'kind', 'count');
+            const m = d.admin.misp || {};
+            const mispParts = [
+                'Total links: <strong>' + (m.total_links || 0) + '</strong>',
+                'Synced: <strong>' + (m.synced || 0) + '</strong>',
+                'Unsynced: <strong>' + (m.unsynced || 0) + '</strong>',
+            ];
+            if (m.oldest_unsynced_at) {
+                mispParts.push('Oldest unsynced: <span class="text-warning">' + _irisMtxEsc(m.oldest_unsynced_at.slice(0,16).replace('T',' ')) + '</span>');
+            }
+            $('#iris-mtx-misp').html(mispParts.join('<br>'));
+            _irisMtxRenderRankTable('iris-mtx-wt-imports-table', d.admin.wt_imports, 'source', 'count');
+            const ws = d.admin.wt_status || {};
+            const wsParts = Object.keys(ws).map(k => _irisMtxEsc(k) + ': <strong>' + ws[k] + '</strong>');
+            $('#iris-mtx-wt-status').html(wsParts.length ? wsParts.join(' &middot; ') : '<span class="text-muted">empty</span>');
+
+            // Case tagging (non-sector) — same shape as Critical Infra
+            _irisMtxRenderCaseTagging(d.tagging || {});
+
+            // Critical Infrastructure
+            _irisMtxRenderCriticalInfra(d.critical_infra || {});
+
+            // Investigation quality
+            $('#iris-mtx-redflag-count').text(_irisMtxFmt(d.quality.red_flag_total));
+            $('#iris-mtx-total-events').text(_irisMtxFmt(d.quality.total_events));
+            $('#iris-mtx-crosslink-pct').text(
+                d.quality.events_with_crosslink_pct === null ? '—' : d.quality.events_with_crosslink_pct + '%'
+            );
+            _irisMtxRenderRedflagTable(d.quality.red_flags || []);
+            _irisMtxRenderRankTable('iris-mtx-wt-backlog-table',
+                (d.quality.wt_backlog_top || []).map(r => ({name: '#' + r.case_id + ' ' + r.case_name, count: r.pending})),
+                'name', 'count'
+            );
+        }
+
+        function _irisMtxRenderRankTable(tableId, rows, labelKey, countKey) {
+            const $body = $('#' + tableId + ' tbody').empty();
+            if (!rows || !rows.length) {
+                $body.append('<tr><td colspan="2" class="text-muted small">No data in range</td></tr>');
+                return;
+            }
+            rows.forEach(r => {
+                $body.append('<tr><td>' + _irisMtxEsc(r[labelKey]) +
+                             '</td><td class="text-right">' + r[countKey] + '</td></tr>');
+            });
+        }
+
+        function _irisMtxRenderRedflagTable(rows) {
+            const $body = $('#iris-mtx-redflags-table tbody').empty();
+            if (!rows.length) {
+                $body.append('<tr><td colspan="7" class="text-muted small">All open cases have notes/IOCs/assets/events 🎉</td></tr>');
+                return;
+            }
+            rows.forEach(r => {
+                const missing = (r.missing || []).map(m =>
+                    '<span class="badge badge-pill" style="background:#f5a623;color:#000;">' + _irisMtxEsc(m) + '</span>'
+                ).join(' ');
+                $body.append(
+                    '<tr>' +
+                    '<td><a href="/case?cid=' + r.case_id + '">' + _irisMtxEsc(r.case_name) + '</a></td>' +
+                    '<td class="small">' + _irisMtxEsc(r.open_date ? r.open_date.slice(0,10) : '') + '</td>' +
+                    '<td>' + missing + '</td>' +
+                    '<td class="text-right">' + r.notes + '</td>' +
+                    '<td class="text-right">' + r.iocs + '</td>' +
+                    '<td class="text-right">' + r.assets + '</td>' +
+                    '<td class="text-right">' + r.events + '</td>' +
+                    '</tr>'
+                );
+            });
+        }
+
+        function _irisMtxRenderCaseTagging(tg) {
+            const totals = tg.totals || {};
+            const ytd = tg.ytd || {};
+            $('#iris-mtx-tag-tagged').text(
+                _irisMtxFmt(totals.tagged_cases) + ' / ' + _irisMtxFmt(totals.total_cases)
+            );
+            $('#iris-mtx-tag-untagged-count').text(_irisMtxFmt(totals.untagged_cases));
+            $('#iris-mtx-tag-ytd-top').html(
+                ytd.top_tag
+                    ? _irisMtxEsc(ytd.top_tag) + ' <span class="text-muted small">(' + (ytd.top_tag_count || 0) + ')</span>'
+                    : '—'
+            );
+            $('#iris-mtx-tag-totals').html(
+                _irisMtxFmt(totals.unique_tags) + ' <span class="text-muted small">/</span> ' + _irisMtxFmt(totals.tag_applications)
+            );
+
+            // Top tag per quarter — mirrors the sector pills.
+            const quarters = tg.quarters || [];
+            const $top = $('#iris-mtx-tag-top-quarter').empty();
+            (tg.top_per_quarter || []).forEach(q => {
+                const label = q.top_tag || '—';
+                const total = q.total_cases || 0;
+                const count = q.top_tag_count || 0;
+                const cardClass = total > 0 ? 'card card-stats card-round mb-0' : 'card card-stats card-round mb-0 opacity-50';
+                $top.append(
+                    '<div class="' + cardClass + '" style="min-width: 200px; flex: 1 1 200px; max-width: 260px;">' +
+                      '<div class="card-body py-3">' +
+                        '<p class="card-category mb-1">' + _irisMtxEsc(q.quarter) + ' &middot; ' + total + ' cases</p>' +
+                        '<h5 class="mb-0 text-truncate" title="' + _irisMtxEsc(label) + '">' + _irisMtxEsc(label) +
+                        (count ? ' <span class="text-muted small">(' + count + ')</span>' : '') +
+                        '</h5>' +
+                      '</div>' +
+                    '</div>'
+                );
+            });
+            if (!quarters.length) {
+                $top.append('<div class="text-muted small">No quarters configured.</div>');
+            }
+
+            // Tag × quarter matrix
+            const $head = $('#iris-mtx-tag-matrix thead tr');
+            $head.empty();
+            $head.append('<th>Tag</th>');
+            quarters.forEach(q => $head.append('<th class="text-right">' + _irisMtxEsc(q) + '</th>'));
+            $head.append('<th class="text-right">Total</th>');
+            const $body = $('#iris-mtx-tag-matrix tbody').empty();
+            (tg.matrix || []).forEach(row => {
+                let tds = '<td><code class="text-monospace">' + _irisMtxEsc(row.tag) + '</code></td>';
+                (row.counts || []).forEach(c => {
+                    tds += '<td class="text-right">' + (c || '—') + '</td>';
+                });
+                tds += '<td class="text-right"><strong>' + (row.total || 0) + '</strong></td>';
+                $body.append('<tr>' + tds + '</tr>');
+            });
+            if (!(tg.matrix || []).length) {
+                $body.append('<tr><td colspan="' + (quarters.length + 2) + '" class="text-muted small">No non-sector case tags in selected year.</td></tr>');
+            }
+
+            // Donut on the back face — same year totals as the matrix's `total`
+            // column, so flipping the card shows the same data in donut form.
+            const ctx = document.getElementById('iris-mtx-tag-donut').getContext('2d');
+            if (_irisMtxCharts.tagDonut) { _irisMtxCharts.tagDonut.destroy(); }
+            const matrixRows = tg.matrix || [];
+            const palette = ['#177dff','#31ce36','#ffad46','#f25961','#9b59b6','#1abc9c','#34495e','#e67e22','#7f8c8d','#2ecc71','#e74c3c','#3498db','#f39c12','#8e44ad','#16a085'];
+            _irisMtxCharts.tagDonut = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: matrixRows.map(r => r.tag),
+                    datasets: [{
+                        data: matrixRows.map(r => r.total || 0),
+                        backgroundColor: matrixRows.map((_, i) => palette[i % palette.length]),
+                        borderWidth: 0,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {position: 'right', labels: {boxWidth: 12}},
+                },
+            });
+            const captionYear = tg.year ? (' in ' + tg.year) : '';
+            $('#iris-mtx-tag-donut-caption').text(
+                matrixRows.length
+                    ? ('Top ' + matrixRows.length + ' case tags by case count' + captionYear)
+                    : ('No non-sector case tags' + captionYear)
+            );
+        }
+
+        function _irisMtxRenderCriticalInfra(ci) {
+            const comp = ci.compliance || {};
+            const ytd = ci.ytd || {};
+
+            // Year selector — populate from `available_years` on every render so
+            // newly opened years show up automatically. Keep current selection
+            // sticky across reloads.
+            const $sel = $('#iris-mtx-ci-year-select');
+            const currentVal = $sel.val();
+            const years = ci.available_years || (ci.year ? [ci.year] : []);
+            if (years.length) {
+                const wantVal = String(currentVal || ci.year || years[0]);
+                if ($sel.children().length !== years.length ||
+                    $sel.children().toArray().some((opt, i) => opt.value !== String(years[i]))) {
+                    $sel.empty();
+                    years.forEach(y => $sel.append(
+                        '<option value="' + y + '"' + (String(y) === wantVal ? ' selected' : '') + '>' + y + '</option>'
+                    ));
+                }
+                if (String($sel.val()) !== wantVal) { $sel.val(wantVal); }
+            }
+
+            $('#iris-mtx-ci-tagged').text(_irisMtxFmt(comp.tagged_cases) + ' / ' + _irisMtxFmt(comp.total_cases));
+            $('#iris-mtx-ci-missing').text(_irisMtxFmt(comp.missing_cases_count));
+            $('#iris-mtx-ci-ytd-total').text(_irisMtxFmt(ytd.total_cases));
+            $('#iris-mtx-ci-ytd-top').html(
+                ytd.top_sector_label
+                    ? _irisMtxEsc(ytd.top_sector_label) + ' <span class="text-muted small">(' + (ytd.top_sector_count || 0) + ')</span>'
+                    : '—'
+            );
+
+            // Top sector per quarter — small pill cards for all four quarters of the year.
+            // Quarters with zero cases still render so management sees Q1 was quiet vs Q2 hot.
+            const quarters = ci.quarters || [];
+            const $top = $('#iris-mtx-ci-top-quarter').empty();
+            (ci.top_per_quarter || []).forEach(q => {
+                const label = q.top_sector_label || '—';
+                const total = q.total_cases || 0;
+                const count = q.top_sector_count || 0;
+                const cardClass = total > 0 ? 'card card-stats card-round mb-0' : 'card card-stats card-round mb-0 opacity-50';
+                $top.append(
+                    '<div class="' + cardClass + '" style="min-width: 200px; flex: 1 1 200px; max-width: 260px;">' +
+                      '<div class="card-body py-3">' +
+                        '<p class="card-category mb-1">' + _irisMtxEsc(q.quarter) + ' &middot; ' + total + ' cases</p>' +
+                        '<h5 class="mb-0">' + _irisMtxEsc(label) +
+                        (count ? ' <span class="text-muted small">(' + count + ')</span>' : '') +
+                        '</h5>' +
+                      '</div>' +
+                    '</div>'
+                );
+            });
+            if (!quarters.length) {
+                $top.append('<div class="text-muted small">No quarters configured.</div>');
+            }
+
+            // Sector × quarter matrix
+            const $head = $('#iris-mtx-ci-matrix thead tr');
+            $head.empty();
+            $head.append('<th>Sector</th>');
+            quarters.forEach(q => $head.append('<th class="text-right">' + _irisMtxEsc(q) + '</th>'));
+            $head.append('<th class="text-right">Total</th>');
+            const $body = $('#iris-mtx-ci-matrix tbody').empty();
+            (ci.matrix || []).forEach(row => {
+                let tds = '<td>' + _irisMtxEsc(row.label) + '</td>';
+                (row.counts || []).forEach(c => {
+                    tds += '<td class="text-right">' + (c || '—') + '</td>';
+                });
+                tds += '<td class="text-right"><strong>' + (row.total || 0) + '</strong></td>';
+                $body.append('<tr>' + tds + '</tr>');
+            });
+            if (!(ci.matrix || []).length) {
+                $body.append('<tr><td colspan="' + (quarters.length + 2) + '" class="text-muted small">No sector-tagged cases opened this year.</td></tr>');
+            }
+
+            // Donut on the back face — sector year totals from the matrix.
+            const ctx = document.getElementById('iris-mtx-ci-donut').getContext('2d');
+            if (_irisMtxCharts.ciDonut) { _irisMtxCharts.ciDonut.destroy(); }
+            const matrixRows = ci.matrix || [];
+            const palette = ['#177dff','#31ce36','#ffad46','#f25961','#9b59b6','#1abc9c','#34495e','#e67e22','#7f8c8d','#2ecc71','#e74c3c','#3498db','#f39c12','#8e44ad','#16a085','#d35400'];
+            _irisMtxCharts.ciDonut = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: matrixRows.map(r => r.label || r.sector),
+                    datasets: [{
+                        data: matrixRows.map(r => r.total || 0),
+                        backgroundColor: matrixRows.map((_, i) => palette[i % palette.length]),
+                        borderWidth: 0,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {position: 'right', labels: {boxWidth: 12}},
+                },
+            });
+            const captionYear = ci.year ? (' in ' + ci.year) : '';
+            $('#iris-mtx-ci-donut-caption').text(
+                matrixRows.length
+                    ? ('Cases per sector' + captionYear)
+                    : ('No sector-tagged cases' + captionYear)
+            );
+        }
+
+        function _irisMtxRenderTimelineChart(timeline) {
+            const ctx = document.getElementById('iris-mtx-tl-chart').getContext('2d');
+            if (_irisMtxCharts.tl) { _irisMtxCharts.tl.destroy(); }
+            _irisMtxCharts.tl = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeline.labels,
+                    datasets: [
+                        {label: 'Opened', data: timeline.opened, borderColor: '#177dff', backgroundColor: 'rgba(23,125,255,0.15)', borderWidth: 2, pointRadius: 0, fill: true, tension: 0.3},
+                        {label: 'Closed', data: timeline.closed, borderColor: '#31ce36', backgroundColor: 'rgba(49,206,54,0.15)', borderWidth: 2, pointRadius: 0, fill: true, tension: 0.3},
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {position: 'bottom'},
+                    scales: {
+                        yAxes: [{ticks: {beginAtZero: true, precision: 0}}],
+                        xAxes: [{ticks: {maxTicksLimit: 12, maxRotation: 0}}],
+                    },
+                },
+            });
+        }
+
+        function _irisMtxRenderDonut(canvasId, key, rows, labelKey) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (_irisMtxCharts[key]) { _irisMtxCharts[key].destroy(); }
+            const palette = ['#177dff','#31ce36','#ffad46','#f25961','#9b59b6','#1abc9c','#34495e','#e67e22','#7f8c8d','#2ecc71'];
+            _irisMtxCharts[key] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: rows.map(r => r[labelKey]),
+                    datasets: [{data: rows.map(r => r.count),
+                                backgroundColor: rows.map((_, i) => palette[i % palette.length]),
+                                borderWidth: 0}],
+                },
+                options: {responsive: true, maintainAspectRatio: false, legend: {position: 'right'}},
+            });
+        }
+    </script>
 
     {# iris-next: portable case import wiring (kept inline to avoid bundle rebuild for this small feature). #}
     <script>

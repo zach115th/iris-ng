@@ -46,6 +46,9 @@ def get_client_list(current_user_id: int = None,
         Client.client_uuid.label('customer_uuid'),
         Client.description.label('customer_description'),
         Client.sla.label('customer_sla'),
+        # iris-next: surface DHS CIIP sector list so the create-case modal
+        # can pre-fill its sector picker the moment a customer is chosen.
+        Client.dhs_sectors.label('customer_dhs_sectors'),
         Client.custom_attributes
     ).filter(
         filter
