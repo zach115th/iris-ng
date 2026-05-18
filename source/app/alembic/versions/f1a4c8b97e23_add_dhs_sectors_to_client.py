@@ -13,6 +13,8 @@ Create Date: 2026-05-13 17:50:00.000000
 import sqlalchemy as sa
 from alembic import op
 
+from app.alembic.alembic_utils import _table_has_column
+
 
 revision = 'f1a4c8b97e23'
 down_revision = 'e9d2c5a3f8b1'
@@ -21,7 +23,10 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('client', sa.Column('dhs_sectors', sa.Text(), nullable=True))
+    # iris-ng runs `db.create_all()` BEFORE alembic on first boot, so on a
+    # fresh install the column may already exist.
+    if not _table_has_column('client', 'dhs_sectors'):
+        op.add_column('client', sa.Column('dhs_sectors', sa.Text(), nullable=True))
 
 
 def downgrade():
