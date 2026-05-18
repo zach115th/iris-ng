@@ -139,7 +139,13 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
     2>/dev/null
 
 chmod 644 "${WEB_CERT}"
-chmod 600 "${WEB_KEY}"
+# 644 (not the textbook 600) because the key is bind-mounted into the nginx
+# container, which runs as www-data (UID 33) — a different UID than the host
+# user that runs this script. 600 would mean only the host owner can read the
+# file, and nginx-in-container gets EACCES. This is a self-signed dev cert,
+# not a real secret; for production, ship a real cert and tighten perms via
+# Docker secrets or a build-time COPY with chown.
+chmod 644 "${WEB_KEY}"
 
 echo "Generating placeholder root CA cert (${ROOTCA_CERT})..."
 # IRIS mounts a root CA bundle for trusted-client-cert support. For dev this
