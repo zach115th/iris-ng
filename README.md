@@ -161,6 +161,33 @@ Or seed it via `IRIS_ADM_PASSWORD` in `.env` before the first start.
   (defaults work with a local LM Studio at `http://<lm-studio-host>:1234/v1`). The
   free `openai/gpt-oss-20b` model is what the AI surfaces are tuned against.
 
+### Migrating from vanilla DFIR-IRIS
+
+If you have an existing DFIR-IRIS (v2.4.x or v2.5.0-beta.1) install, the
+`scripts/import_vanilla_db.sh` helper carries your cases, customers, users,
+IOCs, assets, events, templates, evidence, and generated reports across.
+IRIS-NG is purely additive — no schema renames or removals — so the existing
+DB upgrades cleanly.
+
+```bash
+# On the OLD vanilla DFIR-IRIS host — captures DB + named volumes + secrets:
+bash scripts/import_vanilla_db.sh export --project <old-compose-project> --out ./iris-export
+
+# Move the resulting iris-export/ directory to the iris-ng host, then from
+# the iris-ng working directory:
+bash scripts/import_vanilla_db.sh import --from ./iris-export
+```
+
+The import pass stops `app`+`worker`, drops and recreates `iris_db`, restores
+via `pg_restore`, restores the `server_data` / `user_templates` /
+`iris-downloads` volumes, carries `IRIS_SECRET_KEY` and
+`IRIS_SECURITY_PASSWORD_SALT` into iris-ng's `.env` (with backup) so existing
+user passwords still verify, brings the stack back up, and runs schema sanity
+checks before and after Alembic. Missing files in the migration directory
+degrade gracefully — DB-only and DB+secrets-only flows work. MISP sync needs
+reconfiguring under `/manage/modules` after import (iris-ng's module is
+distinct from upstream's).
+
 ---
 
 ## Stack
