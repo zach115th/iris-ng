@@ -19,8 +19,9 @@
 #   -v, --version <version>     Set version tags for containers (prod mode only)
 #                               e.g. "2.4.20" or "2.5.0-beta"
 #   --init                      If .env doesn't exist, copy .env.model -> .env,
-#                               generate secrets, set versions to latest, pull
-#                               images, start in daemon mode, print admin pass.
+#                               generate secrets, build the dev stack from
+#                               the in-tree Dockerfiles, start in daemon mode,
+#                               print admin pass.
 #   -h, --help                  Show this help message.
 #
 ###############################################################################
@@ -245,20 +246,19 @@ init_env() {
 
   echo "Secrets generated and inserted into $envfile"
 
-  # 4) Pull images (production by default)
-  echo "Pulling Docker images (production stack)..."
-  docker compose --env-file "$envfile" -f "$PROD_DOCKER_FILE" pull
+  # 4) Build + start (dev compose). iris-ng does not publish container images to
+  #    a public registry, so `docker compose pull` against the production
+  #    compose fails with "pull access denied for iris-next/app". The dev
+  #    compose builds locally from the in-tree Dockerfiles.
+  echo "Building and starting containers (dev stack)..."
+  docker compose --env-file "$envfile" -f "$DEV_DOCKER_FILE" up -d --build
 
-  # 5) Start in daemon mode
-  echo "Starting containers in daemon mode..."
-  docker compose --env-file "$envfile" -f "$PROD_DOCKER_FILE" up -d
-
-  # 6) Print the admin password
+  # 5) Print the admin password
   echo "IRIS_ADM_PASSWORD has been set to: $iris_adm_pass"
 
-  # 7) Ask if we want to tail logs
+  # 6) Ask if we want to tail logs
   if ask "Do you want to tail logs now?" "N"; then
-    docker compose --env-file "$envfile" -f "$PROD_DOCKER_FILE" logs -f
+    docker compose --env-file "$envfile" -f "$DEV_DOCKER_FILE" logs -f
   fi
 
   echo "Initialization complete."

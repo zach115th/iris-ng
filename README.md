@@ -132,12 +132,15 @@ cd iris-ng
 # 2. Generate self-signed dev certs for nginx
 bash scripts/generate_dev_certs.sh
 
-# 3. Bootstrap .env (random secrets + first-boot admin password)
+# 3. Bootstrap .env, build, and start the stack (one-shot)
 bash scripts/iris_helper.sh --init
-
-# 4. Bring up the stack (dev compose)
-docker compose -f docker-compose.dev.yml up -d --build
 ```
+
+`--init` writes `.env` with fresh random secrets, builds the dev stack from
+the in-tree Dockerfiles, and starts everything in daemon mode. If you'd rather
+manage the stack yourself, skip `--init` and run
+`docker compose -f docker-compose.dev.yml up -d --build` directly after
+generating an `.env` from `.env.model`.
 
 UI on `https://localhost` (HTTPS, port 443). The browser will warn about the self-signed
 cert on first visit — accept the warning (`Advanced` → `Proceed`).
