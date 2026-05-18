@@ -19,7 +19,8 @@
 #   -v, --version <version>     Set version tags for containers (prod mode only)
 #                               e.g. "2.4.20" or "2.5.0-beta"
 #   --init                      If .env doesn't exist, copy .env.model -> .env,
-#                               generate secrets, build the dev stack from
+#                               generate secrets, auto-generate dev certs if
+#                               they're missing, build the dev stack from
 #                               the in-tree Dockerfiles, start in daemon mode,
 #                               print admin pass.
 #   -h, --help                  Show this help message.
@@ -246,7 +247,24 @@ init_env() {
 
   echo "Secrets generated and inserted into $envfile"
 
-  # 4) Build + start (dev compose). iris-ng does not publish container images to
+  # 4) Pre-flight: generate dev certs if they aren't there. The dev compose
+  #    bind-mounts ./certificates/web_certificates/, ./certificates/rootCA/,
+  #    and ./certificates/ldap/ into nginx + app + worker. Missing paths =
+  #    container start failures with cryptic "no such file" errors. Auto-run
+  #    the cert generator if either the cert or the key is missing so --init
+  #    is a true one-shot for fresh clones.
+  if [[ ! -f "./certificates/web_certificates/iris_dev_cert.pem" \
+      || ! -f "./certificates/web_certificates/iris_dev_key.pem" ]]; then
+    if [[ -x "./scripts/generate_dev_certs.sh" || -f "./scripts/generate_dev_certs.sh" ]]; then
+      echo "Dev certs missing — running scripts/generate_dev_certs.sh..."
+      bash ./scripts/generate_dev_certs.sh
+    else
+      echo "WARN: dev certs missing AND scripts/generate_dev_certs.sh not found." >&2
+      echo "      The stack will likely fail to start with cert bind-mount errors." >&2
+    fi
+  fi
+
+  # 5) Build + start (dev compose). iris-ng does not publish container images to
   #    a public registry, so `docker compose pull` against the production
   #    compose fails with "pull access denied for iris-next/app". The dev
   #    compose builds locally from the in-tree Dockerfiles.
