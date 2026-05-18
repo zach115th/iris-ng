@@ -142,6 +142,15 @@ manage the stack yourself, skip `--init` and run
 `docker compose -f docker-compose.dev.yml up -d --build` directly after
 generating an `.env` from `.env.model`.
 
+The cert script auto-detects your host's LAN IPv4 addresses and adds them to
+the certificate's `subjectAltName`, so browsing via a LAN IP
+(e.g. `https://192.168.1.50/`) doesn't trigger an extra hostname-mismatch
+warning. Override with `--ip <addr>` (repeatable) to add specific addresses,
+or `--no-auto-ip` to stick with `localhost` + `127.0.0.1` only. Re-run with
+`--force` after changing networks and restart nginx
+(`docker compose -f docker-compose.dev.yml restart nginx`) to pick up the new
+cert.
+
 UI on `https://localhost` (HTTPS, port 443). The browser will warn about the self-signed
 cert on first visit — accept the warning (`Advanced` → `Proceed`).
 
