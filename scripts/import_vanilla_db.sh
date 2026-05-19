@@ -385,9 +385,25 @@ import_run() {
         log "[6/6] Skipping secrets (--skip-secrets or no secrets.env in source)"
     fi
 
-    # 7. Bring app + worker back up so Alembic runs on entrypoint.
+    # 7. Schema reconciliation. Vanilla DFIR-IRIS shipped a long stretch of
+    #    upstream releases with a broken alembic env.py (begin_transaction
+    #    commented out) — ADD COLUMN migrations during that window logged
+    #    "Running upgrade ..." but never committed. alembic_version got
+    #    advanced regardless. Result on iris-ng's side: db.create_all won't
+    #    touch existing tables and alembic skips the "already applied"
+    #    migrations, so columns the iris-ng ORM expects (ioc.case_id,
+    #    asset_compromise_status_id, …) are silently absent. Run a one-shot
+    #    diff-and-add pass via the iris-ng app image's Python env so every
+    #    ORM-declared-but-missing column gets ALTER TABLE ADD COLUMN'd.
     log ""
-    log "Bringing app + worker back up — Alembic will run iris-ng's additive migrations on entrypoint..."
+    log "[7/8] Reconciling imported schema against iris-ng ORM models..."
+    docker compose -f "$IRIS_NG_COMPOSE" run --rm --no-deps -T app \
+        python /iriswebapp/scripts/reconcile_vanilla_schema.py \
+        || warn "schema reconciliation reported errors — check the log above; the app may still boot, but some pages may 500 until manually fixed"
+
+    # 8. Bring app + worker back up so Alembic runs on entrypoint.
+    log ""
+    log "[8/8] Bringing app + worker back up — Alembic will run iris-ng's additive migrations on entrypoint..."
     docker compose -f "$IRIS_NG_COMPOSE" up -d app worker
 
     # 8. Wait for app to be healthy, then post-Alembic schema check.
