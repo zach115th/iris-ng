@@ -37,7 +37,13 @@ Run inside the app container after pg_restore but before alembic upgrade:
 
 (import_vanilla_db.sh calls this automatically during the import flow.)
 """
+import os
 import sys
+
+# When invoked as `python /iriswebapp/scripts/reconcile_vanilla_schema.py`,
+# Python prepends the script's directory (/iriswebapp/scripts) to sys.path,
+# not the parent. Add /iriswebapp so `from app import ...` resolves.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app, db
 from sqlalchemy import inspect, text
