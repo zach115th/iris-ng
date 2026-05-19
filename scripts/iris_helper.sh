@@ -238,12 +238,28 @@ init_env() {
   local iris_sec_salt="$(openssl rand -hex 16)"   # 32 hex
   local iris_adm_pass="$(openssl rand -hex 8)"    # 16 hex
 
-  # 3) Insert them into the .env
-  sed -i.bak "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$pg_pass|" "$envfile" && rm -f "$envfile.bak"
-  sed -i.bak "s|^POSTGRES_ADMIN_PASSWORD=.*|POSTGRES_ADMIN_PASSWORD=$pg_admin_pass|" "$envfile" && rm -f "$envfile.bak"
-  sed -i.bak "s|^IRIS_SECRET_KEY=.*|IRIS_SECRET_KEY=$iris_secret_key|" "$envfile" && rm -f "$envfile.bak"
-  sed -i.bak "s|^IRIS_SECURITY_PASSWORD_SALT=.*|IRIS_SECURITY_PASSWORD_SALT=$iris_sec_salt|" "$envfile" && rm -f "$envfile.bak"
-  sed -i.bak "s|^IRIS_ADM_PASSWORD=.*|IRIS_ADM_PASSWORD=$iris_adm_pass|" "$envfile" && rm -f "$envfile.bak"
+  # 3) Insert them into the .env. Use a small helper that replaces the
+  #    uncommented line if present, OR appends a fresh line if the var
+  #    is missing/commented-out. The IRIS_ADM_PASSWORD line in .env.model
+  #    ships commented (`#IRIS_ADM_PASSWORD=...`), so a plain
+  #    `s|^IRIS_ADM_PASSWORD=.*|...` silently no-ops on a fresh clone —
+  #    iris_helper.sh would print one password while the app generated
+  #    and used a different one. set_env_var handles both shapes.
+  set_env_var() {
+    local key="$1"
+    local val="$2"
+    local file="$3"
+    if grep -q "^${key}=" "$file"; then
+      sed -i.bak "s|^${key}=.*|${key}=${val}|" "$file" && rm -f "${file}.bak"
+    else
+      echo "${key}=${val}" >> "$file"
+    fi
+  }
+  set_env_var POSTGRES_PASSWORD             "$pg_pass"        "$envfile"
+  set_env_var POSTGRES_ADMIN_PASSWORD       "$pg_admin_pass"  "$envfile"
+  set_env_var IRIS_SECRET_KEY               "$iris_secret_key" "$envfile"
+  set_env_var IRIS_SECURITY_PASSWORD_SALT   "$iris_sec_salt"  "$envfile"
+  set_env_var IRIS_ADM_PASSWORD             "$iris_adm_pass"  "$envfile"
 
   echo "Secrets generated and inserted into $envfile"
 
