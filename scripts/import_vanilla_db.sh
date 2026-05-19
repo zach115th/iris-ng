@@ -289,9 +289,18 @@ import_run() {
     log "  Postgres is ready."
 
     # 3. Drop + recreate iris_db, then pg_restore.
+    #    DROP DATABASE ... WITH (FORCE) needs Postgres 13+. iris-ng's db
+    #    image is currently postgres:12-alpine (and the user may have an
+    #    even older Postgres on their old vanilla host). Manually terminate
+    #    open backends first, then plain DROP — works on Pg >= 9.6.
     log "[3/6] Restoring Postgres dump (drop + recreate iris_db)..."
+    docker exec -i "$IRIS_NG_DB_CONTAINER" psql -U postgres -d postgres -c "
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = 'iris_db' AND pid <> pg_backend_pid();
+    " >/dev/null
     docker exec -i "$IRIS_NG_DB_CONTAINER" psql -U postgres -d postgres \
-        -c "DROP DATABASE IF EXISTS iris_db WITH (FORCE);" >/dev/null
+        -c "DROP DATABASE IF EXISTS iris_db;" >/dev/null
     docker exec -i "$IRIS_NG_DB_CONTAINER" psql -U postgres -d postgres \
         -c "CREATE DATABASE iris_db OWNER postgres;" >/dev/null
     # --no-owner / --no-acl so ownership/grants from the old DB don't try to
