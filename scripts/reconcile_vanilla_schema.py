@@ -65,6 +65,57 @@ def _column_ddl_fragment(col):
     return f"{col_type}{default}"
 
 
+def _backfill_ioc_case_id():
+    """Replay the data half of upstream migration 3715d4fac4de.
+
+    That migration added ioc.case_id and then copied from the M2M ioc_link
+    table. On vanilla DBs caught in the broken-env.py window, only the
+    column-add half ran (and silently no-committed); the data copy was
+    never replayed. Result: every IOC has case_id = NULL after this
+    reconciler adds the column, so the IOC tab loads but is empty.
+
+    Naive single-pass backfill — for IOCs that were linked to multiple
+    cases in vanilla, only the first case wins. Log a warning if any
+    multi-case IOCs are detected; the analyst can re-link manually."""
+    inspector = inspect(db.engine)
+    tables = set(inspector.get_table_names())
+    if 'ioc' not in tables or 'ioc_link' not in tables:
+        return 0
+    ioc_cols = {c['name'] for c in inspector.get_columns('ioc')}
+    if 'case_id' not in ioc_cols:
+        return 0
+
+    # Count IOCs we're about to fix.
+    pending = db.session.execute(text("""
+        SELECT COUNT(*) FROM ioc i
+        JOIN ioc_link il ON il.ioc_id = i.ioc_id
+        WHERE i.case_id IS NULL
+    """)).scalar()
+    if pending == 0:
+        return 0
+
+    multi_case = db.session.execute(text("""
+        SELECT COUNT(*) FROM (
+            SELECT ioc_id FROM ioc_link
+            GROUP BY ioc_id HAVING COUNT(DISTINCT case_id) > 1
+        ) sub
+    """)).scalar()
+
+    print(f"  backfilling ioc.case_id from ioc_link for {pending} IOC(s)...")
+    if multi_case:
+        print(f"    note: {multi_case} IOC(s) had links to multiple cases in vanilla;")
+        print(f"          single-pass UPDATE picks one case per IOC. Re-link manually")
+        print(f"          if any IOCs should appear under multiple cases.")
+    result = db.session.execute(text("""
+        UPDATE ioc SET case_id = il.case_id
+        FROM ioc_link il
+        WHERE il.ioc_id = ioc.ioc_id AND ioc.case_id IS NULL
+    """))
+    db.session.commit()
+    print(f"  + ioc.case_id backfilled ({result.rowcount} row(s) updated)")
+    return result.rowcount
+
+
 def reconcile():
     with app.app_context():
         inspector = inspect(db.engine)
@@ -102,6 +153,19 @@ def reconcile():
                     db.session.rollback()
                     failed.append((table_name, col.name, str(exc)))
                     print(f"  ! {table_name}.{col.name}  FAILED: {exc}", file=sys.stderr)
+
+        # Phase 2 — known-data backfills for vanilla-era migrations whose
+        # data-copy half silently no-committed.
+        print("")
+        print("Phase 2 — data backfills:")
+        try:
+            backfilled = _backfill_ioc_case_id()
+            if backfilled == 0:
+                print("  ioc.case_id: nothing to backfill (already populated or ioc_link absent)")
+        except Exception as exc:
+            print(f"  ! ioc.case_id backfill FAILED: {exc}", file=sys.stderr)
+            db.session.rollback()
+            failed.append(("ioc", "case_id (backfill)", str(exc)))
 
         print("")
         print(f"=== Reconciliation summary ===")
