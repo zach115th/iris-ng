@@ -8,8 +8,11 @@
 #
 # Usage:
 #
-#   # On the OLD host (vanilla DFIR-IRIS), capture everything to a portable dir:
-#   bash scripts/import_vanilla_db.sh export --project iriswebapp --out ./iris-export
+#   # On the OLD host (vanilla DFIR-IRIS), capture everything to a portable dir.
+#   # --project is the docker-compose project name (working-directory basename
+#   # of the cloned iris-web repo, e.g. `iris-web`). Auto-detected if omitted.
+#   # If your DB container has a custom name, use --db-container <name> instead.
+#   bash scripts/import_vanilla_db.sh export --project iris-web --out ./iris-export
 #
 #   # Move that directory to the NEW host (iris-ng), then:
 #   bash scripts/import_vanilla_db.sh import --from ./iris-export
@@ -128,34 +131,62 @@ tar_in_volume() {
 # ===========================================================================
 export_run() {
     local project_name=""
+    local db_container=""
     local out_dir=""
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --project) project_name="$2"; shift 2 ;;
-            --out)     out_dir="$2"; shift 2 ;;
-            -f|--force) FORCE=1; shift ;;
+            --project)       project_name="$2"; shift 2 ;;
+            --db-container)  db_container="$2"; shift 2 ;;
+            --out)           out_dir="$2"; shift 2 ;;
+            -f|--force)      FORCE=1; shift ;;
             *) die "export: unknown option: $1" ;;
         esac
     done
 
     require_command docker
 
-    if [[ -z "$project_name" ]]; then
-        die "--project <name> is required (the docker-compose project name of the OLD DFIR-IRIS install — usually the working-dir basename)"
+    # Resolve the db container name. Try in order:
+    #   1. --db-container if explicitly given (most robust)
+    #   2. iriswebapp_db (the canonical DFIR-IRIS container_name — set in
+    #      docker-compose.yml across every upstream release we know of)
+    #   3. <project>_db_1 (compose v1 style) if --project provided
+    #   4. <project>-db-1 (compose v2 style) if --project provided
+    # If --project is omitted, auto-detect from cwd basename for the 3/4 try.
+    [[ -z "$project_name" ]] && project_name="$(basename "$PWD")"
+
+    local candidates=()
+    [[ -n "$db_container" ]] && candidates+=("$db_container")
+    candidates+=("iriswebapp_db")
+    candidates+=("${project_name}_db_1")
+    candidates+=("${project_name}-db-1")
+
+    local found=""
+    for c in "${candidates[@]}"; do
+        if docker ps --format '{{.Names}}' | grep -qx "$c"; then
+            found="$c"
+            break
+        fi
+    done
+
+    if [[ -z "$found" ]]; then
+        echo "[import_vanilla_db] FATAL: could not find a running DFIR-IRIS db container." >&2
+        echo "  Tried: ${candidates[*]}" >&2
+        echo "" >&2
+        echo "  Containers currently running on this host:" >&2
+        docker ps --format '    {{.Names}}    ({{.Image}})' >&2 || true
+        echo "" >&2
+        echo "  Fix: re-run with --db-container <name>  (e.g. --db-container iriswebapp_db)" >&2
+        echo "       OR set --project <compose-project-name>  (e.g. --project iris-web)" >&2
+        echo "       --project takes the COMPOSE PROJECT NAME (working-dir basename), not a file path." >&2
+        exit 1
     fi
+
+    local old_db_container="$found"
     [[ -z "$out_dir" ]] && out_dir="./iris-export-$(date +%Y%m%d-%H%M%S)"
 
-    log "Exporting vanilla DFIR-IRIS (project: $project_name) -> $out_dir"
+    log "Exporting vanilla DFIR-IRIS (db container: $old_db_container, project: $project_name) -> $out_dir"
     mkdir -p "$out_dir"
 
-    # 1. DB dump.
-    local old_db_container="${project_name}_db_1"
-    if ! docker ps --format '{{.Names}}' | grep -qx "$old_db_container"; then
-        # Try the underscore-less form that newer compose uses.
-        old_db_container="${project_name}-db-1"
-        docker ps --format '{{.Names}}' | grep -qx "$old_db_container" \
-            || die "could not find db container for project '$project_name' (tried ${project_name}_db_1 and ${project_name}-db-1)"
-    fi
     log "Dumping Postgres from container '$old_db_container'..."
     # No -t: a TTY would inject CR characters into the binary dump and corrupt it.
     docker exec "$old_db_container" pg_dump -U postgres -Fc -d iris_db \
