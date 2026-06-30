@@ -1,0 +1,98 @@
+Timestamp,RuleTitle,Level,Computer,Channel,EventID,RuleAuthor,RuleModifiedDate,Status,RecordID,Details,ExtraFieldInfo,MitreTactics,MitreTags,OtherTags,Provider,RuleCreationDate,RuleFile,RuleID,EvtxFile
+2020-07-11 21:09:03.249 +00:00,Proc Exec,info,jump01.offsec.lan,Sec,4688,Zach Mathis,12/16/2022,stable,2774613,"Cmdline: schtasks /create /s fs02 /tn tasks_test_hacker2 /tr myapp.exe /sc daily /mo 10
+Proc: C:\Windows\System32\schtasks.exe
+PID: 7704
+User: lambda-user
+LID: 0x1d41a5fa","MandatoryLabel: MEDIUM_INTEGRITY
+ParentProcessName: C:\Windows\System32\cmd.exe
+ProcessId: 3284
+SubjectDomainName: OFFSEC
+SubjectUserSid: S-1-5-21-4230534742-2542757381-3142984815-1158
+TargetDomainName: -
+TargetLogonId: 0x0
+TargetUserName: -
+TargetUserSid: S-1-0-0
+TokenElevationType: LIMITED_TOKEN",,,,Sec,2/5/2022,Sec_4688_Info_ProcExec.yml,ac933178-c222-430d-8dcf-17b4f3a2fed8,evtx1.evtx
+2020-07-11 21:09:03.249 +00:00,Possible LOLBIN,low,jump01.offsec.lan,Sec,4688,Zach Mathis,12/16/2022,stable,2774613,"Cmdline: schtasks /create /s fs02 /tn tasks_test_hacker2 /tr myapp.exe /sc daily /mo 10
+Proc: C:\Windows\System32\schtasks.exe
+PID: 7704
+User: lambda-user
+LID: 0x1d41a5fa","MandatoryLabel: MEDIUM_INTEGRITY
+ParentProcessName: C:\Windows\System32\cmd.exe
+ProcessId: 3284
+SubjectDomainName: OFFSEC
+SubjectUserSid: S-1-5-21-4230534742-2542757381-3142984815-1158
+TargetDomainName: -
+TargetLogonId: 0x0
+TargetUserName: -
+TargetUserSid: S-1-0-0
+TokenElevationType: LIMITED_TOKEN",,,lolbas,Sec,2/5/2022,Sec_4688_Low_ProcExec_PossibleLOLBIN-Abuse.yml,6c34b782-a5b5-4298-80f3-1918caf1f558,evtx1.evtx
+2020-07-11 21:09:03.249 +00:00,Scheduled Task Creation Via Schtasks.EXE,low,jump01.offsec.lan,Sec,4688,Florian Roth (Nextron Systems),10/22/2025,test,2774613,"Cmdline: schtasks /create /s fs02 /tn tasks_test_hacker2 /tr myapp.exe /sc daily /mo 10
+Proc: C:\Windows\System32\schtasks.exe
+PID: 7704
+User: lambda-user
+LID: 0x1d41a5fa","MandatoryLabel: MEDIUM_INTEGRITY
+ParentProcessName: C:\Windows\System32\cmd.exe
+ProcessId: 3284
+SubjectDomainName: OFFSEC
+SubjectUserSid: S-1-5-21-4230534742-2542757381-3142984815-1158
+TargetDomainName: -
+TargetLogonId: 0x0
+TargetUserName: -
+TargetUserSid: S-1-0-0
+TokenElevationType: LIMITED_TOKEN","Exec
+Persis
+PrivEsc","T1053.005
+S0111","car.2013-08-001
+stp.1u",Sec,1/16/2019,proc_creation_win_schtasks_creation.yml,c7b9e6e8-4212-b14e-b622-503d7c760107,evtx1.evtx
+2020-07-11 21:38:17.351 +00:00,Task Created,info,fs02.offsec.lan,Sec,4698,Zach Mathis,12/16/2022,stable,1230348,"Name: \smbservice
+User: admmig
+LID: 0x3246775","SubjectDomainName: OFFSEC
+SubjectUserSid: S-1-5-21-4230534742-2542757381-3142984815-1111",,,,Sec,4/8/2022,Sec_4698_Info_TaskCreated.yml,60d768ca-33e8-4f34-b967-14fd7aa18a22,evtx2.evtx
+2020-07-11 21:38:17.445 +00:00,Task Deleted,info,fs02.offsec.lan,Sec,4699,Zach Mathis,12/16/2022,stable,1230359,"Name: \smbservice
+User: admmig
+LID: 0x3246ace","SubjectDomainName: OFFSEC
+SubjectUserSid: S-1-5-21-4230534742-2542757381-3142984815-1111",,,,Sec,4/8/2022,Sec_4699_Info_TaskDeleted.yml,de5ed02e-e7b5-47a0-a35c-06a907c988e4,evtx2.evtx
+2020-07-11 21:38:17.445 +00:00,Scheduled Task Deletion,low,fs02.offsec.lan,Sec,4699,"David Strassegger
+Tim Shelton",1/20/2023,test,1230359,"Name: \smbservice
+User: admmig
+LID: 0x3246ace","SubjectDomainName: OFFSEC
+SubjectUserSid: S-1-5-21-4230534742-2542757381-3142984815-1111","Exec
+PrivEsc
+Persis",T1053.005,"car.2013-08-001
+detection.threat-hunting",Sec,1/22/2021,win_security_scheduled_task_deletion.yml,68d6fb03-e325-2ed1-a429-abac7adf7ba3,evtx2.evtx
+2020-12-11 12:28:01.299 +00:00,Defender Alert (High),high,WIN10-client01.offsec.lan,Defender,1116,"Zach Mathis
+Fukusuke Takahashi",3/20/2024,test,171,"Threat: HackTool:Win64/Mikatz!dha
+Severity: High
+Type: Tool
+User: OFFSEC\admmig
+Path: file:_C:\Users\admmig\Documents\mimidrv.sys
+Proc: C:\Windows\explorer.exe","Action ID: 9
+Action Name: Not Applicable",,,malware,Defender,12/1/2021,Defender_1116_High_Alert.yml,1e11c0f0-aecd-45d8-9229-da679c0265ea,evtx3.evtx
+2020-12-11 12:28:01.299 +00:00,Antivirus Hacktool Detection,high,WIN10-client01.offsec.lan,Defender,1116,"Florian Roth (Nextron Systems)
+Arnim Rupp",11/2/2024,stable,171,"Threat: HackTool:Win64/Mikatz!dha
+Severity: High",,Exec,T1204,,Defender,8/16/2021,av_hacktool.yml,f3d20838-65fe-0575-52a9-fd41ce2a5fdd,evtx3.evtx
+2020-12-11 12:28:01.299 +00:00,Mimikatz Use,high,WIN10-client01.offsec.lan,Defender,1116,"Florian Roth (Nextron Systems)
+David ANDRE (additional keywords)",1/5/2022,test,171,"Threat: HackTool:Win64/Mikatz!dha","Action ID: 9","LatMov
+CredAccess","S0002
+T1003.002
+T1003.004
+T1003.001
+T1003.006","car.2013-07-001
+car.2019-04-004",Defender,1/10/2017,win_alert_mimikatz_keywords.yml,06d71506-7beb-4f22-8888-e2e5e2ca7fd8,evtx3.evtx
+2020-12-11 12:28:01.566 +00:00,Antivirus Password Dumper Detection,crit,WIN10-client01.offsec.lan,Defender,1116,"Florian Roth (Nextron Systems)
+Arnim Rupp",11/2/2024,stable,172,"Threat: HackTool:Win32/Mimikatz.D
+Severity: High",,CredAccess,"T1003
+T1558
+T1003.001
+T1003.002",,Defender,9/9/2018,av_password_dumper.yml,46fc2e9f-df4e-8628-05d5-39bc97b56bab,evtx3.evtx
+2021-04-21 13:30:00.569 +00:00,Suspicious Command Patterns In Scheduled Task Creation,high,srvdefender01.offsec.lan,Sec,4688,Florian Roth (Nextron Systems),3/19/2024,test,352963,"Cmdline: ""C:\Windows\system32\schtasks.exe"" /create /sc minute /mo 1 /tn eviltask /tr C:\tools\shell.cmd /ru SYSTEM
+Proc: C:\Windows\System32\schtasks.exe
+PID: 5556
+User: admmig
+LID: 0x6fc89e","MandatoryLabel: HIGH_INTEGRITY
+ParentProcessName: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe","PrivEsc
+Persis
+Exec",T1053.005,,Sec,2/23/2022,proc_creation_win_schtasks_susp_pattern.yml,7c9f3379-969f-2e9a-5a03-cc75e44fffd0,evtx4.evtx
+,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
