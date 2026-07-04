@@ -1,0 +1,25 @@
+{# iris-next 2026-04-29: align nav `href` with the pane `id` produced by
+   modal_attributes_tabs.html. Upstream nav rendered `<name>{{page_uid}}{{idx}}`
+   while tabs rendered `<name>_{{page_uid}}{{idx}}` (note the underscore
+   before `page_uid`), so Bootstrap's tab JS couldn't find the pane and
+   custom-attribute tabs (e.g. "MISP Report" on the IOC modal) silently
+   refused to switch — the pill highlighted but the body stayed on Info.
+   Mirror the exact `id` shape from tabs.html, including the `itab_`
+   prefix when `is_case_page` is set. #}
+{% if attributes and attributes|length > 0 %}
+<div class="row text-center">
+        <ul class="nav nav-pills nav-default mr-4" id="pills-tab-custom-attr" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active show" id="pills-home-tab-nobd" data-toggle="pill" href="#details" role="tab" aria-controls="pills-home-nobd" aria-selected="false">Info</a>
+        </li>
+
+        {% for ca in attributes %}
+            {% set pane_id = ('itab_' if is_case_page else '') ~ (ca.lower() | replace(' ', '_')) ~ '_' ~ (page_uid|default('')) ~ loop.index|string %}
+            <li class="nav-item submenu">
+                <a class="nav-link"  data-toggle="pill" href="#{{ pane_id }}" role="tab" aria-controls="{{ pane_id }}" aria-selected="false">{{ca}}</a>
+            </li>
+        {% endfor %}
+
+    </ul>
+</div>
+{% endif %}
