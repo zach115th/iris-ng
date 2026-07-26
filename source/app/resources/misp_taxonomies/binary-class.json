@@ -1,0 +1,36 @@
+{
+  "namespace": "binary-class",
+  "description": "Custom taxonomy for types of binary file.",
+  "exclusive": true,
+  "version": 2,
+  "predicates": [
+    {
+      "value": "type",
+      "expanded": "Binary Type",
+      "uuid": "c92eb9b4-5882-5094-a25b-bad90845dcff"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "type",
+      "entry": [
+        {
+          "value": "good",
+          "expanded": "Known Good/Safe",
+          "uuid": "fbba2b4b-5417-5311-b740-db5310205adc"
+        },
+        {
+          "value": "malicious",
+          "expanded": "Known Bad/Malicious",
+          "uuid": "ec9dbf56-5273-55c9-8739-875ff0f96e7c"
+        },
+        {
+          "value": "unknown",
+          "expanded": "Not yet known",
+          "uuid": "66dc5129-790c-52f4-b4c6-7d01122674ba"
+        }
+      ]
+    }
+  ],
+  "uuid": "38ee9d7b-844a-5591-b56b-8780c0ae8be0"
+}

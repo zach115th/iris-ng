@@ -1,0 +1,3709 @@
+
+{% extends "layouts/default.html" %}
+
+{% block title %} Dashboard {% endblock title %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/static/assets/css/suggestags.css">
+<link href="/static/assets/css/dataTables.contextualActions.min.css" rel="stylesheet">
+<link href="/static/assets/css/dataTables.select.min.css" rel="stylesheet">
+{% endblock stylesheets %}
+
+{% block content %}
+
+    <div class="panel-header bg-primary-gradient mt--4">
+      <div class="page-inner py-5">
+        <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row ">
+          <div>
+            <h2 class="text-white pb-2 fw-bold">Dashboard</h2>
+            {# iris-next: top-level tabs for Operational vs Metrics views. #}
+            <ul class="nav nav-pills nav-default" id="iris-dash-tabs" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active" data-toggle="pill" href="#iris-dash-operational" role="tab" aria-selected="true">Operational</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#iris-dash-metrics" role="tab" aria-selected="false"
+                   onclick="iris_dashboard_metrics_load_if_needed();">Metrics</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#iris-dash-inventory" role="tab" aria-selected="false"
+                   onclick="iris_inventory_on_show();">Inventory</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#iris-dash-correlation" role="tab" aria-selected="false"
+                   onclick="iris_correlation_on_show();">Correlation</a>
+              </li>
+            </ul>
+          </div>
+          <div class="ml-md-auto py-2 py-md-0">
+            {# iris-next: portable case import. Triggers a small modal that POSTs a JSON file to /api/v2/cases/import. #}
+            <a href="javascript:void(0);" onclick="open_import_case_modal();" class="btn btn-white btn-sm btn-border btn-round mr-2"
+               title="Import a case from a previously-exported JSON file">
+              <span class="btn-label">
+                <i class="fa fa-upload"></i>
+              </span>
+              Import case
+            </a>
+            <a href="javascript:void(0);" onclick="load_add_case();" class="btn btn-white btn-sm btn-border btn-round mr-2">
+              <span class="btn-label">
+                <i class="fa fa-plus"></i>
+              </span>
+              Create new case
+            </a>
+          </div>
+        </div>
+          <div class="chart-container mt--2 mb--2">
+            <canvas id="htmlLegendsChart" style="display: block; width: auto; height: 100px;" width="auto" height="100px" class="chartjs-render-monitor"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="page-inner mt--5">
+    <div class="tab-content" id="iris-dash-tab-content">
+    {# iris-next: Operational pane — original dashboard cards + tables. #}
+    <div class="tab-pane fade show active" id="iris-dash-operational" role="tabpanel">
+      <div class="row row-card-no-pd">
+          <div class="col-sm-6 col-md-4">
+            <div class="card card-stats card-round">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5">
+                            <div class="icon-big text-center">
+                                <i class="flaticon-file-1 text-success"></i>
+                            </div>
+                        </div>
+                        <div class="col-7 col-stats">
+                            <div class="numbers">
+                                <p class="card-category">Cases (open / all)</p>
+                                <h4 class="card-title">{{ data.cases_open_count }} / {{ data.cases_count }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <div class="card card-stats card-round">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5">
+                            <div class="icon-big text-center">
+                                <i class="flaticon-suitcase text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="col-7 col-stats">
+                            <div class="numbers">
+                                <p class="card-category">Attributed open cases</p>
+                                <h4 class="card-title">{{ data.user_open_count }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <div class="card card-stats card-round">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5">
+                            <div class="icon-big text-center">
+                                <i id='icon_user_task' class=""></i>
+                            </div>
+                        </div>
+                        <div class="col-7 col-stats">
+                            <div class="numbers">
+                                <p class="card-category">Attributed open tasks</p>
+                                <h4 class="card-title" id="user_attr_count"></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    <div class="row" id="rowPendingCasesReview" style="display: none;">
+      <div class="col-md-12">
+            <section class="card">
+                <div class="card-header">
+                  <div class="card-title">Attributed cases review
+                    <div class="text-faded float-right">
+                      <small id="ureviews_last_updated"></small>
+                      <button type="button" class="btn btn-xs btn-dark ml-2"
+                          onclick="update_ureviews_list();">Refresh
+                        </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" id="ureviews_table_wrapper">
+                      <table class="table display table-striped table-hover" width="100%" cellspacing="0" id="ureview_table" >
+                        <thead>
+                          <tr>
+                              <th>Case name</th>
+                              <th>Review Status</th>
+                          </tr>
+                        </thead>
+                        <tfoot>
+                          <tr>
+                              <th>Case name</th>
+                              <th>Review Status</th>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+            {{ form.hidden_tag() }}
+            <section class="card">
+                <div class="card-header">
+                  <div class="card-title">Attributed open tasks
+                    <div class="text-faded float-right">
+                      <small id="utasks_last_updated"></small>
+                      <button type="button" class="btn btn-xs btn-dark ml-2"
+                          onclick="update_utasks_list();">Refresh
+                        </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" id="utasks_table_wrapper">
+                      <table class="table display table-striped table-hover" width="100%" cellspacing="0" id="utasks_table" >
+                        <thead>
+                          <tr>
+                              <th>Title</th>
+                              <th>Description</th>
+                              <th>Status</th>
+                              <th>Case</th>
+                              <th>Last update</th>
+                              <th>Tags</th>
+                          </tr>
+                        </thead>
+                        <tfoot>
+                          <tr>
+                              <th>Title</th>
+                              <th>Description</th>
+                              <th>Status</th>
+                              <th>Case</th>
+                              <th>Last update</th>
+                              <th>Tags</th>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <section class="card">
+                <div class="card-header">
+                  <div class="card-title">Attributed open cases
+                    <div class="text-faded float-right">
+                      <small id="ucases_last_updated"></small>
+                        <button type="button" class="btn btn-xs btn-dark ml-2"
+                          onclick="update_ucases_list(true);">Show closed cases
+                        </button>
+                        <button type="button" class="btn btn-xs btn-dark ml-2"
+                          onclick="update_ucases_list();">Refresh
+                        </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" id="ucases_table_wrapper">
+                      <table class="table display table-striped table-hover" width="100%" cellspacing="0" id="ucases_table" >
+                        <thead>
+                          <tr>
+                              <th>Title</th>
+                              <th>Description</th>
+                              <th>Client</th>
+                              <th>Opening date</th>
+                              <th>Tags</th>
+                          </tr>
+                        </thead>
+                        <tfoot>
+                          <tr>
+                              <th>Title</th>
+                              <th>Description</th>
+                              <th>Client</th>
+                              <th>Opening date</th>
+                              <th>Tags</th>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+      <div class="row">
+          <div class="col-md-12">
+
+				<section class="card">
+                    <div class="card-header">
+                      <div class="card-title">Global tasks
+                        <div class="text-faded float-right">
+                          <small id="tasks_last_updated"></small>
+                            <button type="button" class="btn btn-xs btn-dark ml-2"
+                              onclick="add_gtask();">
+                              Add global task
+                            </button>
+                            <button type="button" class="btn btn-xs btn-dark ml-2"
+                              onclick="update_gtasks_list();">Refresh
+                            </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" id="gtasks_table_wrapper">
+                          <table class="table display table-striped table-hover" width="100%" cellspacing="0" id="gtasks_table" >
+                            <thead>
+                              <tr>
+                                  <th>Title</th>
+                                  <th>Description</th>
+                                  <th>Status</th>
+                                  <th>Assigned to</th>
+                                  <th>Last update</th>
+                                  <th>Tags</th>
+                              </tr>
+                            </thead>
+                            <tfoot>
+                              <tr>
+                                  <th>Title</th>
+                                  <th>Description</th>
+                                  <th>Status</th>
+                                  <th>Assigned to</th>
+                                  <th>Last update</th>
+                                  <th>Tags</th>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                    </div>
+				</section>
+			</div>
+        </div>
+    </div>
+    {# /Operational pane #}
+
+    {# iris-next: Metrics pane — KPI strip + 4 sections, computed on-load. #}
+    <div class="tab-pane fade" id="iris-dash-metrics" role="tabpanel">
+      <div class="row mb-3">
+        <div class="col-md-12 d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Date range">
+            <button type="button" class="btn btn-outline-dark iris-mtx-range-btn" data-range="7">7d</button>
+            <button type="button" class="btn btn-dark iris-mtx-range-btn" data-range="30">30d</button>
+            <button type="button" class="btn btn-outline-dark iris-mtx-range-btn" data-range="90">90d</button>
+            <button type="button" class="btn btn-outline-dark iris-mtx-range-btn" data-range="ytd">YTD</button>
+          </div>
+          <span class="text-muted small">or</span>
+          <input type="date" id="iris-mtx-start" class="form-control form-control-sm" style="max-width: 160px;">
+          <span class="text-muted small">to</span>
+          <input type="date" id="iris-mtx-end" class="form-control form-control-sm" style="max-width: 160px;">
+          <button type="button" class="btn btn-sm btn-primary" onclick="_irisMtxClearYearOverrides(); iris_dashboard_metrics_reload();">Apply</button>
+          <span id="iris-mtx-range-label" class="text-muted small ml-auto"></span>
+        </div>
+      </div>
+
+      <div id="iris-mtx-loading" class="text-center text-muted py-5" style="display:none;">Loading metrics&hellip;</div>
+      <div id="iris-mtx-error" class="alert alert-danger" style="display:none;"></div>
+
+      <div id="iris-mtx-content" style="display:none;">
+        <div class="row row-card-no-pd mb-2">
+          <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round"><div class="card-body">
+              <p class="card-category">Open cases (now)</p>
+              <h4 class="card-title" id="iris-mtx-kpi-open">&mdash;</h4>
+            </div></div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round"><div class="card-body">
+              <p class="card-category">Cases closed (range)</p>
+              <h4 class="card-title" id="iris-mtx-kpi-closed">&mdash;</h4>
+            </div></div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round"><div class="card-body">
+              <p class="card-category">Median MTTR (days)</p>
+              <h4 class="card-title" id="iris-mtx-kpi-mttr">&mdash;</h4>
+            </div></div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="card card-stats card-round"><div class="card-body">
+              <p class="card-category">Untriaged working-tl</p>
+              <h4 class="card-title" id="iris-mtx-kpi-untriaged">&mdash;</h4>
+            </div></div>
+          </div>
+        </div>
+
+        <section class="card mt-3">
+          <div class="card-header"><div class="card-title">Your activity</div></div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3"><p class="card-category mb-1">My open cases</p><h5 id="iris-mtx-my-open">&mdash;</h5></div>
+              <div class="col-md-3"><p class="card-category mb-1">My closed (range)</p><h5 id="iris-mtx-my-closed">&mdash;</h5></div>
+              <div class="col-md-3"><p class="card-category mb-1">My median MTTR</p><h5 id="iris-mtx-my-mttr">&mdash;</h5></div>
+              <div class="col-md-3"><p class="card-category mb-1">My notes (range)</p><h5 id="iris-mtx-my-notes">&mdash;</h5></div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <p class="card-category mb-1">My working-timeline reviews (range)</p>
+                <span id="iris-mtx-my-wt-reviews" class="small">&mdash;</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card mt-3">
+          <div class="card-header"><div class="card-title">Team throughput</div></div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <p class="card-category">Cases opened vs closed (in range)</p>
+                {# Fixed-height wrapper — required for Chart.js with responsive:true + maintainAspectRatio:false,
+                   otherwise the canvas grows to fill available viewport space and triggers a resize loop. #}
+                <div style="position: relative; height: 240px;">
+                  <canvas id="iris-mtx-tl-chart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <p class="card-category">Classification mix (all cases)</p>
+                <div style="position: relative; height: 220px;">
+                  <canvas id="iris-mtx-class-chart"></canvas>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">Severity mix (all cases)</p>
+                <div style="position: relative; height: 220px;">
+                  <canvas id="iris-mtx-sev-chart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <p class="card-category">Top owners (cases opened in range)</p>
+                <table class="table table-sm" id="iris-mtx-owners-table"><tbody></tbody></table>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">Top customers (cases opened in range)</p>
+                <table class="table table-sm" id="iris-mtx-customers-table"><tbody></tbody></table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# iris-next: System health card hidden per request 2026-05-13.
+           Backend still computes d.admin and JS still renders into the
+           tables/spans below — just visually hidden. Remove the style
+           attribute on the section to re-enable. #}
+        <section class="card mt-3" style="display: none;">
+          <div class="card-header"><div class="card-title">System health</div></div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <p class="card-category">AI artifacts by model (range)</p>
+                <table class="table table-sm" id="iris-mtx-ai-model-table"><tbody></tbody></table>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">AI artifacts by feature (range)</p>
+                <table class="table table-sm" id="iris-mtx-ai-kind-table"><tbody></tbody></table>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <p class="card-category">MISP sync state (now)</p>
+                <div id="iris-mtx-misp" class="small">&mdash;</div>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">Working-timeline imports (range)</p>
+                <table class="table table-sm" id="iris-mtx-wt-imports-table"><tbody></tbody></table>
+                <p class="card-category mt-2 mb-1 small">Status snapshot</p>
+                <span id="iris-mtx-wt-status" class="small">&mdash;</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# iris-next: Case tagging + Sectors cards — 3-state cycle: table → donut → bar → table.
+           State is tracked in _irisMtxFlipState[cardId] (0=front, 1=donut, 2=bar).
+           The CSS flip animation takes the front → back (state 0↔1+2).
+           Switching between donut and bar (state 1↔2) swaps content in the back face
+           in-place with a 150ms opacity crossfade — no re-flip needed.
+           Clicking the back face while showing either chart advances to the next state. #}
+        <style>
+          .iris-flip-card { perspective: 1500px; cursor: pointer; }
+          .iris-flip-card-inner {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s ease;
+          }
+          .iris-flip-card.is-flipped .iris-flip-card-inner { transform: rotateY(180deg); }
+          .iris-flip-face {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            margin: 0;
+          }
+          .iris-flip-face-back {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            transform: rotateY(180deg);
+          }
+          .iris-flip-hint {
+            opacity: 0.55;
+            font-size: 0.85em;
+            transition: opacity 0.2s;
+          }
+          .iris-flip-card:hover .iris-flip-hint { opacity: 1; }
+          .iris-chart-slot { transition: opacity 0.15s ease; }
+          .iris-chart-slot.iris-hidden { opacity: 0; pointer-events: none; position: absolute; top: 0; left: 0; right: 0; }
+        </style>
+        <section class="iris-flip-card mt-3" id="iris-mtx-tag-card">
+          <div class="iris-flip-card-inner">
+            <div class="iris-flip-face iris-flip-face-front card">
+              <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
+                <div class="card-title mr-2">Case tagging</div>
+                <div class="d-flex align-items-center" style="gap: 6px;"
+                     onclick="event.stopPropagation();">
+                  <span class="text-muted small">Year:</span>
+                  <select id="iris-mtx-tag-year-select" class="form-control form-control-sm"
+                          style="max-width: 110px;"
+                          onclick="event.stopPropagation();"
+                          onchange="event.stopPropagation(); _irisMtxTagYearOverride = parseInt(this.value, 10); iris_dashboard_metrics_reload();">
+                  </select>
+                </div>
+                <div class="text-muted small ml-auto">Full calendar year &mdash; non-sector case-level tags only.</div>
+                <span class="iris-flip-hint ml-2" title="Click card to flip"><i class="fa-solid fa-rotate"></i> Flip</span>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-3"><p class="card-category mb-1">Tagged cases (all time)</p><h5 id="iris-mtx-tag-tagged">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">Untagged cases (all time)</p><h5 id="iris-mtx-tag-untagged-count" class="text-warning">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">YTD top tag</p><h5 id="iris-mtx-tag-ytd-top">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">Unique tags / applications</p><h5 id="iris-mtx-tag-totals">&mdash;</h5></div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <p class="card-category">Top case tag per quarter</p>
+                    <div id="iris-mtx-tag-top-quarter" class="d-flex" style="gap: 12px; flex-wrap: wrap;"></div>
+                  </div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <p class="card-category">Cases by tag × quarter (top {{ 15 }} tags by year total)</p>
+                    <div class="table-responsive">
+                      <table class="table table-sm" id="iris-mtx-tag-matrix">
+                        <thead><tr><th>Tag</th></tr></thead>
+                        <tbody></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="iris-flip-face iris-flip-face-back card" style="display: flex; flex-direction: column;">
+              <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap; flex-shrink: 0;">
+                <div class="card-title mr-2" id="iris-mtx-tag-back-title">Case tagging &mdash; donut</div>
+                <div class="d-flex align-items-center" style="gap: 6px;"
+                     onclick="event.stopPropagation();">
+                  <span class="text-muted small">Year:</span>
+                  <select id="iris-mtx-tag-year-select-back" class="form-control form-control-sm"
+                          style="max-width: 110px;"
+                          onclick="event.stopPropagation();"
+                          onchange="event.stopPropagation(); $('#iris-mtx-tag-year-select').val(this.value); _irisMtxTagYearOverride = parseInt(this.value, 10); iris_dashboard_metrics_reload();"></select>
+                </div>
+                <div class="text-muted small ml-auto" id="iris-mtx-tag-back-hint">Click for bar view &mdash; click again to go back to table.</div>
+                <span class="iris-flip-hint ml-2"><i class="fa-solid fa-rotate"></i> Next</span>
+              </div>
+              <div class="card-body" style="display:flex; flex-direction:column; flex: 1 1 auto; overflow: hidden; padding-bottom: 8px; min-height: 380px;">
+                <div class="iris-chart-slot" id="iris-mtx-tag-slot-donut" style="position: relative; flex:1 1 auto; min-height:0;">
+                  <canvas id="iris-mtx-tag-donut"></canvas>
+                </div>
+                <div class="iris-chart-slot iris-hidden" id="iris-mtx-tag-slot-bar" style="display:flex; flex-direction:column; flex:1 1 auto; min-height:0;">
+                  <div id="iris-mtx-tag-bar-years" onclick="event.stopPropagation();"
+                       style="flex-shrink:0; padding: 4px 0 6px; font-size:12px; color:#94a3b8;"></div>
+                  <div style="height:260px; flex-shrink:0; position:relative;">
+                    <canvas id="iris-mtx-tag-bar"></canvas>
+                  </div>
+                  <p class="card-category text-center mt-1 mb-0" id="iris-mtx-tag-bar-caption">&mdash;</p>
+                </div>
+                <p class="card-category text-center mt-1 mb-0" id="iris-mtx-tag-chart-caption">&mdash;</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# iris-next: Sectors card (DHS CIIP + threatmatch e.g. Education) with the
+           same 3-state flip pattern. The year selector lives on the front face;
+           clicks on the selector are isolated so they don't flip. #}
+        <section class="iris-flip-card mt-3" id="iris-mtx-ci-card">
+          <div class="iris-flip-card-inner">
+            <div class="iris-flip-face iris-flip-face-front card">
+              <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
+                <div class="card-title mr-2">Sectors</div>
+                {# Year selector — stopPropagation so its clicks don't flip the card. #}
+                <div class="d-flex align-items-center" style="gap: 6px;"
+                     onclick="event.stopPropagation();">
+                  <span class="text-muted small">Year:</span>
+                  <select id="iris-mtx-ci-year-select" class="form-control form-control-sm"
+                          style="max-width: 110px;"
+                          onclick="event.stopPropagation();"
+                          onchange="event.stopPropagation(); _irisMtxCiYearOverride = parseInt(this.value, 10); iris_dashboard_metrics_reload();">
+                  </select>
+                </div>
+                <div class="text-muted small ml-auto">Full calendar year &mdash; not the date-range filter.</div>
+                <span class="iris-flip-hint ml-2" title="Click card to flip"><i class="fa-solid fa-rotate"></i> Flip</span>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-3"><p class="card-category mb-1">Tagged cases</p><h5 id="iris-mtx-ci-tagged">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">Missing sector tag</p><h5 id="iris-mtx-ci-missing" class="text-warning">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">YTD cases</p><h5 id="iris-mtx-ci-ytd-total">&mdash;</h5></div>
+                  <div class="col-md-3"><p class="card-category mb-1">YTD top sector</p><h5 id="iris-mtx-ci-ytd-top">&mdash;</h5></div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <p class="card-category">Top sector per quarter</p>
+                    <div id="iris-mtx-ci-top-quarter" class="d-flex" style="gap: 12px; flex-wrap: wrap;"></div>
+                  </div>
+                </div>
+                <div class="row mt-3">
+                  <div class="col-md-12">
+                    <p class="card-category">Cases by sector × quarter</p>
+                    <div class="table-responsive">
+                      <table class="table table-sm" id="iris-mtx-ci-matrix">
+                        <thead><tr><th>Sector</th><th id="iris-mtx-ci-quarter-headers"></th></tr></thead>
+                        <tbody></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="iris-flip-face iris-flip-face-back card" style="display: flex; flex-direction: column;">
+              <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap; flex-shrink: 0;">
+                <div class="card-title mr-2" id="iris-mtx-ci-back-title">Sectors &mdash; donut</div>
+                <div class="d-flex align-items-center" style="gap: 6px;"
+                     onclick="event.stopPropagation();">
+                  <span class="text-muted small">Year:</span>
+                  <select id="iris-mtx-ci-year-select-back" class="form-control form-control-sm"
+                          style="max-width: 110px;"
+                          onclick="event.stopPropagation();"
+                          onchange="event.stopPropagation(); $('#iris-mtx-ci-year-select').val(this.value); _irisMtxCiYearOverride = parseInt(this.value, 10); iris_dashboard_metrics_reload();"></select>
+                </div>
+                <div class="text-muted small ml-auto" id="iris-mtx-ci-back-hint">Click for bar view &mdash; click again to go back to table.</div>
+                <span class="iris-flip-hint ml-2"><i class="fa-solid fa-rotate"></i> Next</span>
+              </div>
+              <div class="card-body" style="display:flex; flex-direction:column; flex: 1 1 auto; overflow: hidden; padding-bottom: 8px; min-height: 380px;">
+                <div class="iris-chart-slot" id="iris-mtx-ci-slot-donut" style="position: relative; flex:1 1 auto; min-height:0;">
+                  <canvas id="iris-mtx-ci-donut"></canvas>
+                </div>
+                <div class="iris-chart-slot iris-hidden" id="iris-mtx-ci-slot-bar" style="display:flex; flex-direction:column; flex:1 1 auto; min-height:0;">
+                  <div id="iris-mtx-ci-bar-years" onclick="event.stopPropagation();"
+                       style="flex-shrink:0; padding: 4px 0 6px; font-size:12px; color:#94a3b8;"></div>
+                  <div style="height:260px; flex-shrink:0; position:relative;">
+                    <canvas id="iris-mtx-ci-bar"></canvas>
+                  </div>
+                  <p class="card-category text-center mt-1 mb-0" id="iris-mtx-ci-bar-caption">&mdash;</p>
+                </div>
+                <p class="card-category text-center mt-1 mb-0" id="iris-mtx-ci-chart-caption">&mdash;</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card mt-3 mb-4">
+          <div class="card-header"><div class="card-title">Investigation quality</div></div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4"><p class="card-category mb-1">Open cases missing notes/IOCs/assets/events</p><h5><span id="iris-mtx-redflag-count">&mdash;</span></h5></div>
+              <div class="col-md-4"><p class="card-category mb-1">Timeline events</p><h5 id="iris-mtx-total-events">&mdash;</h5></div>
+              <div class="col-md-4"><p class="card-category mb-1">Events with cross-links</p><h5 id="iris-mtx-crosslink-pct">&mdash;</h5></div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <p class="card-category mb-1">Red-flag open cases (top 25)</p>
+                <div class="table-responsive">
+                  <table class="table table-sm" id="iris-mtx-redflags-table">
+                    <thead><tr><th>Case</th><th>Opened</th><th>Missing</th><th class="text-right">Notes</th><th class="text-right">IOCs</th><th class="text-right">Assets</th><th class="text-right">Events</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-12">
+                <p class="card-category mb-1">Working-timeline backlog (top 10 cases)</p>
+                <table class="table table-sm" id="iris-mtx-wt-backlog-table"><tbody></tbody></table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# iris-next: Time tracking — analyst hours broken down by case / person
+           / sector / incident type. Time entries store only case+analyst+
+           minutes+date; sector and incident type are joined at report time so
+           analysts never enter them. Honors the page date range. #}
+        <section class="card mt-3 mb-4" id="iris-mtx-time-card">
+          <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
+            <div class="card-title mr-2">Time tracking</div>
+            <div class="text-muted small">15-minute increments &mdash; logged hours within the selected date range.</div>
+            <button class="btn btn-sm btn-link ml-auto" onclick="iris_time_export_csv();" title="Download all breakdowns as CSV">
+              <i class="fas fa-cloud-download-alt mr-1"></i>CSV
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-4"><p class="card-category mb-1">Total logged</p><h5 id="iris-mtx-time-total">&mdash;</h5></div>
+              <div class="col-md-4"><p class="card-category mb-1">Entries</p><h5 id="iris-mtx-time-count">&mdash;</h5></div>
+              <div class="col-md-4"><p class="card-category mb-1">People logging</p><h5 id="iris-mtx-time-people">&mdash;</h5></div>
+            </div>
+            <p class="text-muted small mt-2 mb-0">Breakdowns show <strong>average time per case</strong> in each bucket. Per-case totals are in the CSV export.</p>
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <p class="card-category">By customer</p>
+                <table class="table table-sm" id="iris-mtx-time-by-customer"><thead><tr><th>Customer</th><th class="text-right">Avg time</th></tr></thead><tbody></tbody></table>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">By person</p>
+                <table class="table table-sm" id="iris-mtx-time-by-person"><thead><tr><th>Analyst</th><th class="text-right">Avg time</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-md-6">
+                <p class="card-category">By sector</p>
+                <table class="table table-sm" id="iris-mtx-time-by-sector"><thead><tr><th>Sector</th><th class="text-right">Avg time</th></tr></thead><tbody></tbody></table>
+              </div>
+              <div class="col-md-6">
+                <p class="card-category">By incident type</p>
+                <table class="table table-sm" id="iris-mtx-time-by-type"><thead><tr><th>Incident type</th><th class="text-right">Avg time</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    {# /Metrics pane #}
+
+    {# iris-next: Inventory pane — physical evidence-drive lookup + management.
+       Scan/key a barcode to resolve the drive's location, current case, and the
+       evidence items on it. Open to any logged-in user (evidence-locker flow). #}
+    <div class="tab-pane fade" id="iris-dash-inventory" role="tabpanel">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card card-round">
+            <div class="card-body">
+              <h4 class="card-title">Scan or enter a bar code</h4>
+              <p class="text-muted small mb-2">Look up a physical evidence drive by its bar code to see its location, associated case, and the evidence items it holds.</p>
+              <div class="input-group input-group-lg" style="max-width: 640px;">
+                <input type="text" class="form-control" id="iris-inv-scan" autocomplete="off"
+                       placeholder="Scan barcode or type and press Enter">
+                <div class="input-group-append">
+                  <button class="btn btn-primary" type="button" onclick="iris_inventory_lookup();">
+                    <i class="fas fa-search mr-1"></i> Look up
+                  </button>
+                </div>
+              </div>
+              <div id="iris-inv-lookup-msg" class="mt-2 small"></div>
+              <div id="iris-inv-lookup-result" class="mt-3" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# iris-next: drive status summary — donut + stat tiles. Populated by iris_inventory_load_drives(). #}
+      <style>
+        .iris-inv-stat-tile { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid; border-radius: 6px; padding: 12px 20px; min-width: 100px; flex: 1 1 auto; }
+        .iris-inv-tile-count { font-size: 28px; font-weight: 700; color: #fff; line-height: 1.1; }
+        .iris-inv-tile-label { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; margin-top: 3px; text-transform: uppercase; }
+        .iris-inv-overdue-badge { display:inline-block; margin-left:6px; padding:1px 6px; background:rgba(255,166,0,0.15); border:1px solid rgba(255,166,0,0.35); border-radius:4px; color:#ffad46; font-size:10px; font-weight:600; white-space:nowrap; }
+      </style>
+      <div class="row" id="iris-inv-summary-row" style="display:none;">
+        <div class="col-md-12">
+          <div class="card card-round">
+            <div class="card-body" style="padding:16px 24px;">
+              <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;">
+                <div style="position:relative;width:160px;height:160px;flex-shrink:0;">
+                  <canvas id="iris-inv-status-chart"></canvas>
+                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;line-height:1.25;">
+                    <div id="iris-inv-chart-total" style="font-size:26px;font-weight:700;color:#fff;"></div>
+                    <div style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,0.4);">DRIVES</div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:12px;flex:1;flex-wrap:wrap;">
+                  <div class="iris-inv-stat-tile" style="border-left-color:#2dce89;">
+                    <div class="iris-inv-tile-count" id="iris-inv-tile-wiped">0</div>
+                    <div class="iris-inv-tile-label">Wiped</div>
+                  </div>
+                  <div class="iris-inv-stat-tile" style="border-left-color:#f4c430;">
+                    <div class="iris-inv-tile-count" id="iris-inv-tile-available">0</div>
+                    <div class="iris-inv-tile-label">Available</div>
+                  </div>
+                  <div class="iris-inv-stat-tile" style="border-left-color:#5e72e4;">
+                    <div class="iris-inv-tile-count" id="iris-inv-tile-in_use">0</div>
+                    <div class="iris-inv-tile-label">In use</div>
+                  </div>
+                  <div class="iris-inv-stat-tile" style="border-left-color:#f5365c;">
+                    <div class="iris-inv-tile-count" id="iris-inv-tile-retired">0</div>
+                    <div class="iris-inv-tile-label">Retired</div>
+                  </div>
+                </div>
+              </div>
+              <div id="iris-inv-overdue-alert" style="display:none;margin-top:12px;padding:8px 12px;background:rgba(255,166,0,0.08);border:1px solid rgba(255,166,0,0.3);border-radius:6px;color:#ffad46;font-size:12px;">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                <span id="iris-inv-overdue-count"></span> drive(s) have exceeded the configured retention period — consider wiping and rotating them.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# iris-next: capacity planning — order-more indicator. Shown when drives exist
+         and case history covers the rolling window. Populated by iris_inventory_load_capacity(). #}
+      <div class="row" id="iris-inv-capacity-row" style="display:none;">
+        <div class="col-md-12">
+          <div class="card card-round">
+            <div class="card-body" style="padding:16px 24px;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+                <div style="flex-shrink:0;">
+                  <div style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px;">Drive runway</div>
+                  <div id="iris-inv-cap-runway" style="display:inline-block;padding:5px 14px;border-radius:20px;font-weight:700;font-size:16px;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"></div>
+                </div>
+                <div style="flex:1;min-width:200px;">
+                  <div style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px;">Effective 30-day supply</div>
+                  <div id="iris-inv-cap-supply" style="font-size:13px;color:rgba(255,255,255,0.8);"></div>
+                  <div id="iris-inv-cap-rate" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;"></div>
+                </div>
+              </div>
+              <div id="iris-inv-cap-order-alert" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.35);border-radius:6px;color:#f87171;font-size:13px;"></div>
+              <div id="iris-inv-cap-insufficient" style="display:none;margin-top:8px;font-size:12px;color:rgba(255,255,255,0.35);font-style:italic;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card card-round">
+            <div class="card-header d-flex align-items-center">
+              <h4 class="card-title mb-0">Drive inventory</h4>
+              <div class="ml-auto">
+                <button class="btn btn-sm btn-primary" type="button" onclick="iris_inventory_open_register();">
+                  <i class="fas fa-plus mr-1"></i> Register drive
+                </button>
+                <button class="btn btn-sm btn-light" type="button" onclick="iris_inventory_load_drives();" title="Refresh">
+                  <i class="fas fa-sync"></i>
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-striped table-hover" id="iris-inv-drives-table" style="width:100%; font-size: 12px;">
+                  <thead>
+                    <tr>
+                      <th data-sort-key="barcode">Bar code<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="label">Label<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="status">Status<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="location">Physical location<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="case">Case<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="capacity">Capacity<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="added">Added<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="iris-inv-drives-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {# /Inventory pane #}
+
+    {# iris-next: Correlation pane — IOC cross-case overlap table + force-directed graph + campaign tag tool. #}
+    <div class="tab-pane fade" id="iris-dash-correlation" role="tabpanel">
+
+      {# Controls row #}
+      <div class="row mb-3">
+        <div class="col-md-12 d-flex align-items-center flex-wrap" style="gap: 10px;">
+          {# Quick range buttons #}
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="30">30d</button>
+            <button type="button" class="btn btn-dark iris-corr-range-btn active" data-days="60">60d</button>
+            <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="90">90d</button>
+            <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="180">180d</button>
+            <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="0">All time</button>
+          </div>
+          {# Custom date range #}
+          <label class="mb-0 small text-muted">From</label>
+          <input type="date" id="iris-corr-start" class="form-control form-control-sm" style="width:140px;">
+          <label class="mb-0 small text-muted">To</label>
+          <input type="date" id="iris-corr-end" class="form-control form-control-sm" style="width:140px;">
+          {# Min-shared threshold #}
+          <label class="mb-0 small text-muted ml-2">Min shared IOCs</label>
+          <input type="number" id="iris-corr-min-shared" class="form-control form-control-sm" style="width:70px;" value="2" min="1" max="50">
+          <button class="btn btn-primary btn-sm" onclick="iris_correlation_run();">
+            <i class="fas fa-sync-alt mr-1"></i> Refresh
+          </button>
+          <span id="iris-corr-status" class="small text-muted ml-2"></span>
+        </div>
+      </div>
+
+      {# Summary cards #}
+      <div class="row mb-3" id="iris-corr-summary-row" style="display:none;">
+        <div class="col-md-3">
+          <div class="card card-stats card-round">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-5"><div class="icon-big text-center"><i class="fas fa-link text-primary"></i></div></div>
+                <div class="col-7 col-stats">
+                  <div class="numbers">
+                    <p class="card-category">Shared IOCs</p>
+                    <h4 class="card-title" id="iris-corr-stat-iocs">—</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card card-stats card-round">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-5"><div class="icon-big text-center"><i class="fas fa-sitemap text-warning"></i></div></div>
+                <div class="col-7 col-stats">
+                  <div class="numbers">
+                    <p class="card-category">Clusters</p>
+                    <h4 class="card-title" id="iris-corr-stat-clusters">—</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card card-stats card-round">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-5"><div class="icon-big text-center"><i class="fas fa-folder-open text-success"></i></div></div>
+                <div class="col-7 col-stats">
+                  <div class="numbers">
+                    <p class="card-category">Correlated cases</p>
+                    <h4 class="card-title" id="iris-corr-stat-cases">—</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card card-stats card-round">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-5"><div class="icon-big text-center"><i class="fas fa-tag text-danger"></i></div></div>
+                <div class="col-7 col-stats">
+                  <div class="numbers">
+                    <p class="card-category">Untagged clusters</p>
+                    <h4 class="card-title" id="iris-corr-stat-untagged">—</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Cluster cards + campaign tag tool #}
+      <div class="row mb-3" id="iris-corr-clusters-row" style="display:none;">
+        <div class="col-md-12">
+          <section class="card">
+            <div class="card-header">
+              <div class="card-title">Case clusters
+                <small class="text-muted ml-2">Groups of cases sharing ≥ threshold IOCs. Apply a campaign tag to all cases in a cluster with one click.</small>
+              </div>
+            </div>
+            <div class="card-body" id="iris-corr-clusters-body">
+              <p class="text-muted">No clusters found.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {# IOC overlap table #}
+      <div class="row mb-3" id="iris-corr-table-row" style="display:none;">
+        <div class="col-md-12">
+          <section class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap">
+              <div class="card-title mb-0">Shared IOCs
+                <small class="text-muted ml-2" id="iris-corr-table-subtitle">IOC values that appear in 2 or more cases.</small>
+              </div>
+              <div id="iris-corr-filter-badge" style="display:none;">
+                <span class="badge badge-light border" style="font-size:11px;padding:4px 8px;border-color:rgba(139,92,246,0.5)!important;">
+                  <i class="fas fa-filter mr-1" style="color:rgba(139,92,246,0.8);"></i>
+                  <span id="iris-corr-filter-label">Cluster</span>
+                </span>
+                <button class="btn btn-sm btn-link text-muted ml-1 p-0" id="iris-corr-filter-clear" title="Show all IOCs" style="font-size:11px;">
+                  Clear filter
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover table-sm" id="iris-corr-table">
+                  <thead>
+                    <tr>
+                      <th>IOC value</th>
+                      <th>Type</th>
+                      <th>Cases</th>
+                      <th>Count</th>
+                    </tr>
+                  </thead>
+                  <tbody id="iris-corr-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {# Force-directed graph #}
+      <div class="row mb-3" id="iris-corr-graph-row" style="display:none;">
+        <div class="col-md-12">
+          <section class="card">
+            <div class="card-header">
+              <div class="card-title">Case relationship graph
+                <small class="text-muted ml-2">Nodes = cases, edges = shared IOCs (thicker = more shared). Click a node to open the case.</small>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <div id="iris-corr-graph" style="position:relative; height:480px; width:100%;"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+    </div>
+    {# /Correlation pane #}
+
+    {# iris-next: IOC cross-case detail drawer — slides in from right when a row
+       in the Shared IOCs table is clicked. Calls GET /api/v2/correlation/ioc-context
+       and renders per-case facts + tags + linked notes (with content). #}
+    <style>
+    .iris-corr-ioc-drawer {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: min(520px, 96vw);
+      z-index: 1060;
+      background: #15151a;
+      border-left: 1px solid rgba(255,255,255,0.10);
+      box-shadow: -16px 0 40px rgba(0,0,0,0.60);
+      color: #fafafa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      transform: translateX(100%);
+      transition: transform 220ms cubic-bezier(0.4,0.0,0.2,1);
+      display: flex; flex-direction: column;
+    }
+    .iris-corr-ioc-drawer.open { transform: translateX(0); }
+    .iris-corr-ioc-drawer * { box-sizing: border-box; }
+    .iris-corr-ioc-drawer-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1059;
+      opacity: 0; pointer-events: none;
+      transition: opacity 200ms ease;
+    }
+    .iris-corr-ioc-drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+    .iris-corr-ioc-dh {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      flex-shrink: 0;
+    }
+    .iris-corr-ioc-dh-title {
+      font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em;
+      text-transform: uppercase; color: rgba(250,250,250,0.62);
+    }
+    .iris-corr-ioc-dh-close {
+      background: transparent; border: none; color: rgba(250,250,250,0.62);
+      font-size: 18px; line-height: 1; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+    }
+    .iris-corr-ioc-dh-close:hover { color: #fafafa; background: rgba(255,255,255,0.05); }
+    .iris-corr-ioc-dh-ioc {
+      padding: 10px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.015);
+      flex-shrink: 0;
+    }
+    .iris-corr-ioc-dh-ioc-val {
+      font-family: ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+      font-size: 13px; font-weight: 600; color: #fafafa; word-break: break-all;
+    }
+    .iris-corr-ioc-dh-ioc-type {
+      font-size: 11px; color: rgba(250,250,250,0.55); margin-top: 2px;
+    }
+    .iris-corr-ioc-db {
+      flex: 1 1 auto; overflow-y: auto; padding: 16px 18px;
+    }
+    .iris-corr-ioc-case-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .iris-corr-ioc-case-title {
+      font-size: 13px; font-weight: 600; color: #fafafa; margin-bottom: 4px;
+    }
+    .iris-corr-ioc-case-title a { color: #a78bfa; text-decoration: none; }
+    .iris-corr-ioc-case-title a:hover { text-decoration: underline; }
+    .iris-corr-ioc-case-meta {
+      font-size: 11px; color: rgba(250,250,250,0.55);
+      display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 6px;
+    }
+    .iris-corr-ioc-chip {
+      display: inline-block; padding: 2px 8px; border-radius: 9999px;
+      font-size: 10.5px; font-weight: 500;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(250,250,250,0.75);
+    }
+    .iris-corr-ioc-chip-violet {
+      background: rgba(139,92,246,0.12);
+      border-color: rgba(139,92,246,0.35);
+      color: #d4c4ff;
+    }
+    .iris-corr-ioc-section-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.10em;
+      text-transform: uppercase; color: rgba(250,250,250,0.40);
+      margin: 8px 0 4px 0;
+    }
+    .iris-corr-ioc-desc {
+      font-size: 12.5px; color: rgba(250,250,250,0.80); margin-bottom: 4px;
+    }
+    .iris-corr-ioc-note {
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.20);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .iris-corr-ioc-note-title {
+      font-weight: 600; color: #c4b5fd; margin-bottom: 4px; font-size: 12px;
+    }
+    .iris-corr-ioc-note-body {
+      color: rgba(250,250,250,0.72); word-break: break-word;
+      max-height: 200px; overflow-y: auto;
+    }
+    .iris-md-rendered p { margin: 0 0 4px; }
+    .iris-md-rendered p:last-child { margin-bottom: 0; }
+    .iris-md-rendered table {
+      width: 100%; border-collapse: collapse; font-size: 11px; margin: 4px 0;
+    }
+    .iris-md-rendered th, .iris-md-rendered td {
+      border: 1px solid rgba(139,92,246,0.30);
+      padding: 3px 6px; text-align: left; vertical-align: top;
+    }
+    .iris-md-rendered th {
+      background: rgba(139,92,246,0.18); color: #c4b5fd; font-weight: 600;
+    }
+    .iris-md-rendered tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+    .iris-md-rendered code {
+      background: rgba(0,0,0,0.30); border-radius: 3px; padding: 1px 4px; font-size: 11px;
+    }
+    .iris-md-rendered pre {
+      background: rgba(0,0,0,0.30); border-radius: 4px; padding: 6px 8px;
+      overflow-x: auto; font-size: 11px;
+    }
+    .iris-md-rendered ul, .iris-md-rendered ol { margin: 2px 0 4px 16px; padding: 0; }
+    .iris-md-rendered li { margin-bottom: 2px; }
+    .iris-corr-ioc-row:hover td { background: rgba(139,92,246,0.06); }
+    </style>
+
+    <div class="iris-corr-ioc-drawer-backdrop" id="iris-corr-ioc-drawer-backdrop"></div>
+    <div class="iris-corr-ioc-drawer" id="iris-corr-ioc-drawer" aria-hidden="true">
+      <div class="iris-corr-ioc-dh">
+        <span class="iris-corr-ioc-dh-title">IOC — Cross-case details</span>
+        <button class="iris-corr-ioc-dh-close" id="iris-corr-ioc-drawer-close" aria-label="Close">×</button>
+      </div>
+      <div class="iris-corr-ioc-dh-ioc" id="iris-corr-ioc-drawer-iocbar">
+        <div class="iris-corr-ioc-dh-ioc-val" id="iris-corr-ioc-drawer-val"></div>
+        <div class="iris-corr-ioc-dh-ioc-type" id="iris-corr-ioc-drawer-type"></div>
+      </div>
+      <div class="iris-corr-ioc-db" id="iris-corr-ioc-drawer-body">
+        <div style="color:rgba(250,250,250,0.4);text-align:center;padding:40px 18px;font-size:12.5px;">
+          Click a row in the Shared IOCs table to load details.
+        </div>
+      </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      'use strict';
+      var drawer   = document.getElementById('iris-corr-ioc-drawer');
+      var backdrop = document.getElementById('iris-corr-ioc-drawer-backdrop');
+      var closeBtn = document.getElementById('iris-corr-ioc-drawer-close');
+      var bodyEl   = document.getElementById('iris-corr-ioc-drawer-body');
+      var valEl    = document.getElementById('iris-corr-ioc-drawer-val');
+      var typeEl   = document.getElementById('iris-corr-ioc-drawer-type');
+      if (!drawer) return;
+
+      function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = String(s == null ? '' : s);
+        return d.innerHTML;
+      }
+
+      function openDrawer() {
+        drawer.classList.add('open');
+        drawer.setAttribute('aria-hidden', 'false');
+        backdrop.classList.add('open');
+      }
+      function closeDrawer() {
+        drawer.classList.remove('open');
+        drawer.setAttribute('aria-hidden', 'true');
+        backdrop.classList.remove('open');
+      }
+
+      closeBtn.addEventListener('click', closeDrawer);
+      backdrop.addEventListener('click', closeDrawer);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer();
+      });
+
+      function showLoading() {
+        bodyEl.innerHTML = '<div style="padding:30px 0;text-align:center;color:rgba(250,250,250,0.45);font-size:12.5px;">'
+          + '<span class="spinner-border spinner-border-sm mr-2" role="status"></span>Loading cross-case context…</div>';
+      }
+      function showError(msg) {
+        bodyEl.innerHTML = '<div style="color:#fda4af;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);'
+          + 'padding:12px 14px;border-radius:8px;font-size:12.5px;"><b>Error loading IOC context.</b><br>' + esc(msg) + '</div>';
+      }
+
+      function chipHtml(text, violet) {
+        return '<span class="iris-corr-ioc-chip' + (violet ? ' iris-corr-ioc-chip-violet' : '') + '">' + esc(text) + '</span> ';
+      }
+
+      function renderContext(ctx) {
+        var appearances = ctx.appearances || [];
+        if (!appearances.length) {
+          bodyEl.innerHTML = '<div style="color:rgba(250,250,250,0.45);font-size:12.5px;padding:20px 0;">No appearances found.</div>';
+          return;
+        }
+        var html = '';
+        appearances.forEach(function (a) {
+          var statusBadge = a.close_date
+            ? '<span style="font-size:10px;color:#9ca3af;margin-left:6px;">closed</span>'
+            : '<span style="font-size:10px;color:#34d399;margin-left:6px;">open</span>';
+
+          html += '<div class="iris-corr-ioc-case-card">';
+
+          html += '<div class="iris-corr-ioc-case-title">'
+            + '<a href="/case?cid=' + esc(a.case_id) + '" target="_blank">#' + esc(a.case_id) + ' — ' + esc(a.case_name) + '</a>'
+            + statusBadge + '</div>';
+
+          html += '<div class="iris-corr-ioc-case-meta">';
+          if (a.client)         html += '<span>Client: <strong>' + esc(a.client) + '</strong></span>';
+          if (a.classification) html += '<span>Classification: <strong>' + esc(a.classification) + '</strong></span>';
+          if (a.severity)       html += '<span>Severity: <strong>' + esc(a.severity) + '</strong></span>';
+          if (a.open_date)      html += '<span>Opened: ' + esc(a.open_date.slice(0,10)) + '</span>';
+          html += '</div>';
+
+          if (a.ioc_tags) {
+            var iocTags = a.ioc_tags.split(/[,|]/).map(function(t){return t.trim();}).filter(Boolean);
+            if (iocTags.length) {
+              html += '<div class="iris-corr-ioc-section-label">IOC tags</div>';
+              html += '<div style="margin-bottom:6px;">';
+              iocTags.forEach(function(t){ html += chipHtml(t, false); });
+              html += '</div>';
+            }
+          }
+
+          if (a.case_tags && a.case_tags.length) {
+            html += '<div class="iris-corr-ioc-section-label">Case tags</div>';
+            html += '<div style="margin-bottom:6px;">';
+            a.case_tags.forEach(function(t){ html += chipHtml(t, true); });
+            html += '</div>';
+          }
+
+          if (a.ioc_description) {
+            html += '<div class="iris-corr-ioc-section-label">Analyst note on this IOC</div>';
+            html += '<div class="iris-corr-ioc-desc">' + esc(a.ioc_description) + '</div>';
+          }
+
+          if (a.linked_notes && a.linked_notes.length) {
+            html += '<div class="iris-corr-ioc-section-label">Linked notes (' + a.linked_notes.length + ')</div>';
+            a.linked_notes.forEach(function (n) {
+              var sourceLabel = n.source === 'linked' ? 'sourced from' : 'mentioned in';
+              html += '<div class="iris-corr-ioc-note">';
+              html += '<div class="iris-corr-ioc-note-title">'
+                + esc(n.note_title || 'Untitled note')
+                + ' <span style="font-size:10px;font-weight:400;color:rgba(196,181,253,0.6);">(' + sourceLabel + ')</span></div>';
+              if (n.snippet) {
+                html += '<div class="iris-corr-ioc-note-body iris-md-rendered">' + n.snippet + '</div>';
+              }
+              html += '</div>';
+            });
+          }
+
+          html += '</div>';
+        });
+
+        bodyEl.innerHTML = html;
+      }
+
+      function loadIoc(iocValue, iocTypeId, iocTypeName) {
+        valEl.textContent  = iocValue;
+        typeEl.textContent = iocTypeName;
+        openDrawer();
+        showLoading();
+
+        var url = '/api/v2/correlation/ioc-context?ioc_value=' + encodeURIComponent(iocValue)
+                  + '&ioc_type_id=' + encodeURIComponent(iocTypeId);
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+          .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+          })
+          .then(function (resp) {
+            renderContext(resp);
+          })
+          .catch(function (e) {
+            showError(e.message || String(e));
+          });
+      }
+
+      // Delegated click on IOC table rows — registered on document so it works
+      // on rows injected dynamically by CORR.refresh()
+      document.addEventListener('click', function (e) {
+        var row = e.target.closest('.iris-corr-ioc-row');
+        if (!row) return;
+        // Let case-link anchors navigate normally
+        if (e.target.closest('a')) return;
+        var iocValue    = row.getAttribute('data-ioc-value');
+        var iocTypeId   = parseInt(row.getAttribute('data-ioc-type-id'), 10);
+        var iocTypeName = row.getAttribute('data-ioc-type-name');
+        if (!iocValue || isNaN(iocTypeId)) return;
+        loadIoc(iocValue, iocTypeId, iocTypeName);
+      });
+    });
+    </script>
+
+    </div>
+    {# /tab-content #}
+    </div>
+    {# /page-inner #}
+
+    {# iris-next: Register / edit drive modal (Inventory tab). #}
+    <div class="modal" tabindex="-1" role="dialog" id="iris-inv-drive-modal" data-backdrop="true">
+      <div class="modal-lg modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="iris-inv-modal-title">Register drive</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="iris-inv-drive-id" value="">
+            <div class="form-group">
+              <label class="placeholder">Bar code *</label>
+              <input class="form-control" id="iris-inv-f-barcode" placeholder="Bar code number">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Label</label>
+              <input class="form-control" id="iris-inv-f-label" placeholder="e.g. WD 4TB #3">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Serial number</label>
+              <input class="form-control" id="iris-inv-f-serial" placeholder="Drive serial number">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Physical location</label>
+              <input class="form-control" id="iris-inv-f-location" placeholder="e.g. Evidence Locker A, Shelf 3, Bin 7">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Status</label>
+              <select class="form-control" id="iris-inv-f-status">
+                <option value="available">Available</option>
+                <option value="in_use">In use</option>
+                <option value="wiped">Wiped</option>
+                <option value="retired">Retired</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Associated case</label>
+              <select class="form-control" id="iris-inv-f-case" style="width:100%;">
+                <option value="">— none —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Capacity</label>
+              <input class="form-control" id="iris-inv-f-capacity" placeholder="e.g. 4TB">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Notes</label>
+              <textarea class="form-control" id="iris-inv-f-notes" rows="2"></textarea>
+            </div>
+            <div id="iris-inv-modal-msg" class="small text-danger"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-danger mr-auto" id="iris-inv-wipe-btn" style="display:none;"
+                    onclick="iris_inventory_wipe();">Wipe &amp; return to rotation</button>
+            <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="iris-inv-save-btn" onclick="iris_inventory_save();">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal " tabindex="-1" role="dialog" id="modal_add_gtask" data-backdrop="true">
+        <div class="modal-xl modal-dialog" role="document">
+            <div class="modal-content" id="modal_add_gtask_content">
+
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+
+    {# iris-next: portable case import modal — decrypts and POSTs a .iris-case file to /api/v2/cases/import. #}
+    <div class="modal" tabindex="-1" role="dialog" id="iris-import-case-modal" data-backdrop="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title"><i class="fa-solid fa-lock mr-1"></i> Import case</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Select an encrypted <code>.iris-case</code> file previously produced by
+                        <em>Export</em> on a case-info modal. A brand-new case will be created
+                        with the notes, IOCs, assets, tasks, evidence metadata, and timeline
+                        events from the export. Evidence file contents and working-timeline rows
+                        are not included.
+                    </p>
+                    <div class="form-group">
+                        <label for="iris-import-case-file">Export file (.iris-case)</label>
+                        <input type="file" class="form-control-file" id="iris-import-case-file"
+                               accept=".iris-case,.json,application/json,application/octet-stream">
+                    </div>
+                    <div class="form-group" id="iris-import-pw-group">
+                        <label for="iris-import-case-pw" class="small font-weight-bold">
+                            <i class="fa-solid fa-key mr-1"></i> Export password
+                        </label>
+                        <input type="password" class="form-control form-control-sm"
+                               id="iris-import-case-pw" placeholder="Password used during export"
+                               autocomplete="current-password">
+                        <small class="text-muted">Required for encrypted <code>.iris-case</code> files.</small>
+                    </div>
+                    <div id="iris-import-case-status" class="small text-muted mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark" data-dismiss="modal" id="iris-import-case-cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="iris-import-case-submit" onclick="submit_import_case();">
+                        <i class="fa fa-upload mr-1"></i> Import
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="/static/assets/js/plugin/tagsinput/suggesttag.js"></script>
+    <script src="/static/assets/js/plugin/select/select2.js"></script>
+
+    <script src="/static/assets/js/plugin/datatables/dataTables.cellEdit.js"></script>
+    <script src="/static/assets/js/plugin/datatables/dataTables.buttons.min.js"></script>
+    <script src="/static/assets/js/plugin/datatables/dataTables.contextualActions.min.js"></script>
+    <script src="/static/assets/js/plugin/datatables/dataTables.select.min.js"></script>
+    <script src="/static/assets/js/plugin/datatables/buttons.html5.min.js"></script>
+    <script src="/static/assets/js/plugin/datatables/buttons.print.min.js"></script>
+    <script src="/static/assets/js/iris/dashboard.js"></script>
+    <script src="/static/assets/js/core/charts.js"></script>
+    <script src="/static/assets/js/core/Chart.PieceLabel.min.js"></script>
+
+    {# iris-next: dashboard metrics tab — load on first activation, re-load on date-range change. #}
+    <script>
+        let _irisMtxLoaded = false;
+        let _irisMtxState = {start: null, end: null};
+        let _irisMtxCharts = {tl: null, cls: null, sev: null, tagNs: null, tagDonut: null, ciDonut: null, tagBar: null, ciBar: null};
+
+        // Multi-year bar chart state. availableYears = every year with data,
+        // selectedYears = currently checked years, defaultYear = donut card year.
+        const _irisMtxBarMeta = {
+            tag: {availableYears: [], selectedYears: null, defaultYear: null},
+            ci:  {availableYears: [], selectedYears: null, defaultYear: null},
+        };
+        const _BAR_PALETTE = ['#177dff','#31ce36','#ffad46','#f25961','#9b59b6','#1abc9c','#e67e22','#e74c3c','#3498db','#f39c12','#8e44ad'];
+
+        // Build / refresh the year checkbox list inside a bar slot header.
+        // The container `#iris-mtx-{prefix}-bar-years` is rendered in the HTML.
+        function _irisMtxSyncBarYearCheckboxes(prefix) {
+            const meta = _irisMtxBarMeta[prefix];
+            if (!meta.availableYears.length) { return; }
+            // First call: seed selectedYears to all available years so the bar
+            // shows all years by default (analyst can uncheck to narrow).
+            if (!meta.selectedYears) {
+                meta.selectedYears = new Set(meta.availableYears.length ? meta.availableYears : [meta.defaultYear]);
+            }
+            const $c = $('#iris-mtx-' + prefix + '-bar-years');
+            $c.empty();
+            meta.availableYears.forEach(function(y) {
+                const checked = meta.selectedYears.has(y) ? ' checked' : '';
+                $c.append(
+                    '<label class="iris-bar-year-label" style="margin-right:10px; cursor:pointer; user-select:none;">' +
+                      '<input type="checkbox" value="' + y + '"' + checked +
+                        ' onchange="event.stopPropagation(); _irisMtxBarYearToggle(\'' + prefix + '\', ' + y + ', this.checked);"' +
+                        ' style="margin-right:3px; accent-color:#8b5cf6;"> ' + y +
+                    '</label>'
+                );
+            });
+        }
+
+        function _irisMtxBarYearToggle(prefix, year, checked) {
+            const meta = _irisMtxBarMeta[prefix];
+            if (checked) { meta.selectedYears.add(year); }
+            else { meta.selectedYears.delete(year); }
+            if (!meta.selectedYears.size) {
+                // Prevent deselecting all — re-check what was just unchecked.
+                meta.selectedYears.add(year);
+                $('#iris-mtx-' + prefix + '-bar-years input[value="' + year + '"]').prop('checked', true);
+            }
+            _irisMtxLoadBarData(prefix);
+        }
+
+        // Fetch multi-year bar data and render/update the grouped bar chart.
+        function _irisMtxLoadBarData(prefix) {
+            const meta = _irisMtxBarMeta[prefix];
+            const section = prefix === 'tag' ? 'tagging' : 'ci';
+            const years = Array.from(meta.selectedYears || [meta.defaultYear]).join(',');
+            $.ajax({
+                url: '/api/v2/dashboard/metrics/bar-data?section=' + section + '&years=' + years,
+                method: 'GET',
+                success: function(resp) {
+                    _irisMtxRenderBarChart(prefix, resp);
+                },
+                error: function() {
+                    $('#iris-mtx-' + prefix + '-bar-caption').text('Failed to load bar data.');
+                },
+            });
+        }
+
+        function _irisMtxRenderBarChart(prefix, data) {
+            const isTag = prefix === 'tag';
+            const labels = isTag
+                ? (data.tags || [])
+                : (data.sectors || []).map(function(s) { return s.label || s.key; });
+            const years  = data.years || [];
+            const series = data.series || {};
+            const datasets = years.map(function(y, i) {
+                return {
+                    label: String(y),
+                    data: series[y] || [],
+                    backgroundColor: _BAR_PALETTE[i % _BAR_PALETTE.length],
+                    borderWidth: 0,
+                };
+            });
+            const canvasId = 'iris-mtx-' + prefix + '-bar';
+            const canvasEl = document.getElementById(canvasId);
+            const chartKey = prefix + 'Bar';
+            if (_irisMtxCharts[chartKey]) { _irisMtxCharts[chartKey].destroy(); }
+            // Replace canvas to reset any stale Chart.js instance state.
+            const newCanvas = document.createElement('canvas');
+            newCanvas.id = canvasId;
+            canvasEl.parentNode.replaceChild(newCanvas, canvasEl);
+            const ctx = newCanvas.getContext('2d');
+            _irisMtxCharts[chartKey] = new Chart(ctx, {
+                type: 'bar',
+                data: {labels: labels, datasets: datasets},
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {position: 'bottom', labels: {boxWidth: 12, fontColor: '#94a3b8'}},
+                    scales: {
+                        xAxes: [{ticks: {fontColor: '#cbd5e1', fontSize: 11}, gridLines: {display: false}}],
+                        yAxes: [{ticks: {beginAtZero: true, precision: 0, fontColor: '#94a3b8'}, gridLines: {color: 'rgba(148,163,184,0.12)'}}],
+                    },
+                },
+            });
+            const captionEl = document.getElementById('iris-mtx-' + prefix + '-bar-caption');
+            if (captionEl) { captionEl.textContent = years.join(' vs ') + ' — cases by ' + (isTag ? 'tag' : 'sector'); }
+        }
+
+        // Inline Chart.js v2 plugin that draws a total count in the center of a doughnut.
+        function _irisMtxDonutCenterPlugin(total, label) {
+            return {
+                afterDraw: function(chart) {
+                    if (chart.config.type !== 'doughnut') { return; }
+                    var meta = chart.getDatasetMeta(0);
+                    if (!meta || !meta.data || !meta.data[0]) { return; }
+                    // _model carries the resolved inner circle geometry (Chart.js v2).
+                    var model = meta.data[0]._model;
+                    var cx = model.x, cy = model.y;
+                    var innerR = model.innerRadius;
+                    // Scale to fit inside the hole; cap so single-digit numbers aren't huge.
+                    var numSize = Math.max(14, Math.min(28, Math.round(innerR * 0.50)));
+                    var lblSize = Math.max(10, Math.min(13, Math.round(innerR * 0.20)));
+                    var gap = Math.round(numSize * 0.28);
+                    var ctx = chart.ctx;
+                    ctx.save();
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.font = 'bold ' + numSize + 'px sans-serif';
+                    ctx.fillStyle = '#f1f5f9';
+                    ctx.fillText(total, cx, cy - gap);
+                    ctx.font = lblSize + 'px sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillText(label, cx, cy + numSize * 0.52);
+                    ctx.restore();
+                }
+            };
+        }
+
+        // Year override flags — null = follow end-date range, int = analyst-pinned year.
+        // Set when analyst changes a local selector; cleared when the top-level range changes.
+        let _irisMtxTagYearOverride = null;
+        let _irisMtxCiYearOverride = null;
+
+        // 3-state flip: 0 = table (front), 1 = donut (back), 2 = bar (back).
+        // Clicking front → state 1 (flip to back, show donut).
+        // Clicking back while on donut → state 2 (stay flipped, swap to bar).
+        // Clicking back while on bar → state 0 (flip back to table).
+        const _irisMtxFlipState = {'iris-mtx-tag-card': 0, 'iris-mtx-ci-card': 0};
+
+        function _irisMtxFlipAdvance(cardId) {
+            const state = _irisMtxFlipState[cardId];
+            const $card = $('#' + cardId);
+            const isTag = cardId === 'iris-mtx-tag-card';
+            const prefix = isTag ? 'iris-mtx-tag' : 'iris-mtx-ci';
+
+            if (state === 0) {
+                // Front → donut
+                _irisMtxFlipState[cardId] = 1;
+                $card.addClass('is-flipped');
+                _irisMtxShowChartSlot(prefix, 'donut');
+                _irisMtxUpdateBackLabels(prefix, 1);
+            } else if (state === 1) {
+                // Donut → bar (in-place swap, no re-flip)
+                _irisMtxFlipState[cardId] = 2;
+                _irisMtxShowChartSlot(prefix, 'bar');
+                _irisMtxUpdateBackLabels(prefix, 2);
+                // Defer bar render one frame so the slot has its layout height
+                // before Chart.js reads the canvas dimensions.
+                var barPrefix = isTag ? 'tag' : 'ci';
+                setTimeout(function() { _irisMtxLoadBarData(barPrefix); }, 50);
+            } else {
+                // Bar → front (unflip, reset to donut ready for next visit)
+                _irisMtxFlipState[cardId] = 0;
+                $card.removeClass('is-flipped');
+                // Reset back face to donut so the next flip starts there
+                setTimeout(function () {
+                    _irisMtxShowChartSlot(prefix, 'donut');
+                    _irisMtxUpdateBackLabels(prefix, 1);
+                }, 650); // after the CSS flip animation completes
+            }
+        }
+
+        function _irisMtxShowChartSlot(prefix, which) {
+            // which = 'donut' or 'bar'
+            var showId = '#' + prefix + '-slot-' + which;
+            var hideId = '#' + prefix + '-slot-' + (which === 'donut' ? 'bar' : 'donut');
+            $(hideId).addClass('iris-hidden');
+            $(showId).removeClass('iris-hidden');
+        }
+
+        function _irisMtxUpdateBackLabels(prefix, state) {
+            var isTag = prefix === 'iris-mtx-tag';
+            var title, hint;
+            if (state === 1) {
+                title = (isTag ? 'Case tagging' : 'Sectors') + ' — donut';
+                hint  = 'Click for bar view — click again to go back to table.';
+            } else {
+                title = (isTag ? 'Case tagging' : 'Sectors') + ' — bar';
+                hint  = 'Click to go back to table.';
+            }
+            $('#' + prefix + '-back-title').text(title);
+            $('#' + prefix + '-back-hint').text(hint);
+        }
+
+        $(document).on('click', '#iris-mtx-tag-card, #iris-mtx-ci-card', function () {
+            _irisMtxFlipAdvance(this.id);
+        });
+
+        function _irisMtxIso(d) { return d.toISOString().slice(0, 10); }
+        function _irisMtxSetRange(days) {
+            const end = new Date();
+            const start = new Date();
+            if (days === 'ytd') {
+                start.setMonth(0); start.setDate(1);
+            } else {
+                start.setDate(end.getDate() - parseInt(days, 10));
+            }
+            $('#iris-mtx-start').val(_irisMtxIso(start));
+            $('#iris-mtx-end').val(_irisMtxIso(end));
+        }
+        function _irisMtxFmt(n) { return (n === null || n === undefined) ? '—' : n; }
+        function _irisMtxEsc(s) {
+            const div = document.createElement('div');
+            div.textContent = s == null ? '' : String(s);
+            return div.innerHTML;
+        }
+
+        function _irisMtxClearYearOverrides() {
+            _irisMtxTagYearOverride = null;
+            _irisMtxCiYearOverride  = null;
+        }
+
+        function iris_dashboard_metrics_load_if_needed() {
+            if (_irisMtxLoaded) {
+                // Already loaded once — re-fetch on re-entry so freshly logged
+                // time (and any other changes) show up without a full page
+                // reload. Keeps whatever date range the user last selected.
+                iris_dashboard_metrics_reload();
+                return;
+            }
+            _irisMtxSetRange(30);
+            iris_dashboard_metrics_reload();
+            _irisMtxLoaded = true;
+        }
+
+        function iris_dashboard_metrics_reload() {
+            const start = $('#iris-mtx-start').val();
+            const end = $('#iris-mtx-end').val();
+            $('#iris-mtx-loading').show();
+            $('#iris-mtx-error').hide().text('');
+            $('#iris-mtx-content').hide();
+            const params = {start: start, end: end};
+            // Only send year overrides when the analyst has explicitly pinned them.
+            // Omitting the param lets the backend default to the year of `end`.
+            if (_irisMtxCiYearOverride)  { params.ci_year  = _irisMtxCiYearOverride; }
+            if (_irisMtxTagYearOverride) { params.tag_year = _irisMtxTagYearOverride; }
+            $.ajax({
+                url: '/api/v2/dashboard/metrics',
+                type: 'GET',
+                data: params,
+                dataType: 'json',
+            }).done(function (resp) {
+                const data = (resp && resp.data) || resp;
+                _irisMtxRender(data);
+                $('#iris-mtx-loading').hide();
+                $('#iris-mtx-content').show();
+            }).fail(function (xhr) {
+                $('#iris-mtx-loading').hide();
+                let msg = 'Failed to load metrics';
+                try {
+                    const j = xhr.responseJSON || JSON.parse(xhr.responseText);
+                    msg = (j && (j.message || j.error)) || msg;
+                } catch (_) {}
+                $('#iris-mtx-error').text(msg).show();
+            });
+        }
+
+        // Range button selection visual state
+        $(document).on('click', '.iris-mtx-range-btn', function () {
+            $('.iris-mtx-range-btn').removeClass('btn-dark').addClass('btn-outline-dark');
+            $(this).removeClass('btn-outline-dark').addClass('btn-dark');
+            _irisMtxSetRange($(this).data('range'));
+            _irisMtxClearYearOverrides();
+            iris_dashboard_metrics_reload();
+        });
+
+        var g_iris_metrics_last = null;   // cached for CSV export
+
+        function _irisMtxRender(d) {
+            g_iris_metrics_last = d;
+            // KPI strip
+            $('#iris-mtx-kpi-open').text(_irisMtxFmt(d.kpi.open_cases));
+            $('#iris-mtx-kpi-closed').text(_irisMtxFmt(d.kpi.closed_in_range));
+            $('#iris-mtx-kpi-mttr').text(d.kpi.median_mttr_days === null ? '—' : d.kpi.median_mttr_days);
+            $('#iris-mtx-kpi-untriaged').text(_irisMtxFmt(d.kpi.untriaged_working_tl));
+
+            // Range label
+            if (d.range) {
+                $('#iris-mtx-range-label').text(
+                    d.range.start.slice(0,10) + ' → ' + d.range.end.slice(0,10) +
+                    ' (' + d.range.days + ' days)'
+                );
+            }
+
+            // Analyst
+            $('#iris-mtx-my-open').text(_irisMtxFmt(d.analyst.my_open_cases));
+            $('#iris-mtx-my-closed').text(_irisMtxFmt(d.analyst.my_closed_in_range));
+            $('#iris-mtx-my-mttr').text(d.analyst.my_median_mttr_days === null ? '—' : d.analyst.my_median_mttr_days);
+            $('#iris-mtx-my-notes').text(_irisMtxFmt(d.analyst.my_notes_in_range));
+            const wt = d.analyst.my_wt_reviews || {};
+            const wtParts = Object.keys(wt).map(k => _irisMtxEsc(k) + ': <strong>' + wt[k] + '</strong>');
+            $('#iris-mtx-my-wt-reviews').html(wtParts.length ? wtParts.join(' &middot; ') : '<span class="text-muted">no reviews in range</span>');
+
+            // SOC manager — charts
+            _irisMtxRenderTimelineChart(d.soc.timeline);
+            _irisMtxRenderDonut('iris-mtx-class-chart', 'cls', d.soc.classifications, 'name');
+            _irisMtxRenderDonut('iris-mtx-sev-chart', 'sev', d.soc.severities, 'name');
+            _irisMtxRenderRankTable('iris-mtx-owners-table', d.soc.top_owners, 'name', 'count');
+            _irisMtxRenderRankTable('iris-mtx-customers-table', d.soc.top_customers, 'name', 'count');
+
+            // Admin
+            _irisMtxRenderRankTable('iris-mtx-ai-model-table', d.admin.ai_by_model, 'model', 'count');
+            _irisMtxRenderRankTable('iris-mtx-ai-kind-table', d.admin.ai_by_kind, 'kind', 'count');
+            const m = d.admin.misp || {};
+            const mispParts = [
+                'Total links: <strong>' + (m.total_links || 0) + '</strong>',
+                'Synced: <strong>' + (m.synced || 0) + '</strong>',
+                'Unsynced: <strong>' + (m.unsynced || 0) + '</strong>',
+            ];
+            if (m.oldest_unsynced_at) {
+                mispParts.push('Oldest unsynced: <span class="text-warning">' + _irisMtxEsc(m.oldest_unsynced_at.slice(0,16).replace('T',' ')) + '</span>');
+            }
+            $('#iris-mtx-misp').html(mispParts.join('<br>'));
+            _irisMtxRenderRankTable('iris-mtx-wt-imports-table', d.admin.wt_imports, 'source', 'count');
+            const ws = d.admin.wt_status || {};
+            const wsParts = Object.keys(ws).map(k => _irisMtxEsc(k) + ': <strong>' + ws[k] + '</strong>');
+            $('#iris-mtx-wt-status').html(wsParts.length ? wsParts.join(' &middot; ') : '<span class="text-muted">empty</span>');
+
+            // Case tagging (non-sector) — same shape as Critical Infra
+            _irisMtxRenderCaseTagging(d.tagging || {});
+
+            // Critical Infrastructure
+            _irisMtxRenderCriticalInfra(d.critical_infra || {});
+
+            // Investigation quality
+            $('#iris-mtx-redflag-count').text(_irisMtxFmt(d.quality.red_flag_total));
+            $('#iris-mtx-total-events').text(_irisMtxFmt(d.quality.total_events));
+            $('#iris-mtx-crosslink-pct').text(
+                d.quality.events_with_crosslink_pct === null ? '—' : d.quality.events_with_crosslink_pct + '%'
+            );
+            _irisMtxRenderRedflagTable(d.quality.red_flags || []);
+            _irisMtxRenderRankTable('iris-mtx-wt-backlog-table',
+                (d.quality.wt_backlog_top || []).map(r => ({name: '#' + r.case_id + ' ' + r.case_name, count: r.pending})),
+                'name', 'count'
+            );
+
+            // Time tracking
+            _irisMtxRenderTimeTracking(d.time_tracking || {});
+        }
+
+        // Minutes -> "H:MM"
+        function _irisFmtMins(mins) {
+            mins = parseInt(mins, 10) || 0;
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return h + ':' + (m < 10 ? '0' + m : m);
+        }
+
+        // valueKey defaults to total minutes; pass 'avg_minutes' for the
+        // per-case-average breakdowns. When showing averages, the title attr
+        // surfaces the underlying total + case count for hover context.
+        function _irisMtxRenderTimeRows(tableId, rows, valueKey) {
+            valueKey = valueKey || 'minutes';
+            const $body = $('#' + tableId + ' tbody').empty();
+            if (!rows || !rows.length) {
+                $body.append('<tr><td colspan="2" class="text-muted small">No time logged in range</td></tr>');
+                return;
+            }
+            rows.forEach(r => {
+                let title = '';
+                if (valueKey === 'avg_minutes') {
+                    title = ' title="' + _irisFmtMins(r.minutes || 0) + ' across ' +
+                            (r.case_count || 0) + ' case' + ((r.case_count === 1) ? '' : 's') + '"';
+                }
+                $body.append('<tr' + title + '><td>' + _irisMtxEsc(r.label) +
+                             '</td><td class="text-right">' + _irisFmtMins(r[valueKey] || 0) + '</td></tr>');
+            });
+        }
+
+        function _irisMtxRenderTimeTracking(t) {
+            $('#iris-mtx-time-total').text(_irisFmtMins(t.total_minutes || 0));
+            $('#iris-mtx-time-count').text(_irisMtxFmt(t.entry_count || 0));
+            $('#iris-mtx-time-people').text(_irisMtxFmt((t.by_person || []).length));
+            // By customer / person / sector / incident type show the per-case
+            // average; By case is intentionally off the card (CSV only).
+            _irisMtxRenderTimeRows('iris-mtx-time-by-customer', t.by_customer, 'avg_minutes');
+            _irisMtxRenderTimeRows('iris-mtx-time-by-person', t.by_person, 'avg_minutes');
+            _irisMtxRenderTimeRows('iris-mtx-time-by-sector', t.by_sector, 'avg_minutes');
+            _irisMtxRenderTimeRows('iris-mtx-time-by-type', t.by_incident_type, 'avg_minutes');
+        }
+
+        // CSV export — all four breakdowns stacked, hours as decimal + H:MM.
+        function iris_time_export_csv() {
+            const t = (g_iris_metrics_last && g_iris_metrics_last.time_tracking) || {};
+            const rng = (g_iris_metrics_last && g_iris_metrics_last.range) || {};
+            const esc = (s) => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+            const lines = [];
+            lines.push('IRIS-NG time tracking export');
+            lines.push('Range,' + esc((rng.start || '').slice(0,10)) + ' to ' + esc((rng.end || '').slice(0,10)));
+            lines.push('Total minutes,' + (t.total_minutes || 0) + ',(' + _irisFmtMins(t.total_minutes || 0) + ')');
+            lines.push('');
+            // by_case: totals only (per-case average == its total).
+            const sectionTotals = (title, rows) => {
+                lines.push(esc(title) + ',Minutes,Hours');
+                (rows || []).forEach(r => {
+                    lines.push(esc(r.label) + ',' + (r.minutes || 0) + ',' + ((r.minutes || 0) / 60).toFixed(2));
+                });
+                lines.push('');
+            };
+            // averaged breakdowns: total + per-case average + case count.
+            const sectionAvg = (title, rows) => {
+                lines.push(esc(title) + ',Cases,Total minutes,Total hours,Avg minutes/case,Avg hours/case');
+                (rows || []).forEach(r => {
+                    const mins = r.minutes || 0;
+                    const avg = r.avg_minutes || 0;
+                    lines.push(esc(r.label) + ',' + (r.case_count || 0) + ',' +
+                               mins + ',' + (mins / 60).toFixed(2) + ',' +
+                               avg + ',' + (avg / 60).toFixed(2));
+                });
+                lines.push('');
+            };
+            sectionAvg('By customer', t.by_customer);
+            sectionAvg('By person', t.by_person);
+            sectionTotals('By case', t.by_case);
+            sectionAvg('By sector', t.by_sector);
+            sectionAvg('By incident type', t.by_incident_type);
+
+            const blob = new Blob([lines.join('\r\n')], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'iris-time-tracking-' + (rng.start || '').slice(0,10) + '_' + (rng.end || '').slice(0,10) + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function _irisMtxRenderRankTable(tableId, rows, labelKey, countKey) {
+            const $body = $('#' + tableId + ' tbody').empty();
+            if (!rows || !rows.length) {
+                $body.append('<tr><td colspan="2" class="text-muted small">No data in range</td></tr>');
+                return;
+            }
+            rows.forEach(r => {
+                $body.append('<tr><td>' + _irisMtxEsc(r[labelKey]) +
+                             '</td><td class="text-right">' + r[countKey] + '</td></tr>');
+            });
+        }
+
+        function _irisMtxRenderRedflagTable(rows) {
+            const $body = $('#iris-mtx-redflags-table tbody').empty();
+            if (!rows.length) {
+                $body.append('<tr><td colspan="7" class="text-muted small">All open cases have notes/IOCs/assets/events 🎉</td></tr>');
+                return;
+            }
+            rows.forEach(r => {
+                const missing = (r.missing || []).map(m =>
+                    '<span class="badge badge-pill" style="background:#f5a623;color:#000;">' + _irisMtxEsc(m) + '</span>'
+                ).join(' ');
+                $body.append(
+                    '<tr>' +
+                    '<td><a href="/case?cid=' + r.case_id + '">' + _irisMtxEsc(r.case_name) + '</a></td>' +
+                    '<td class="small">' + _irisMtxEsc(r.open_date ? r.open_date.slice(0,10) : '') + '</td>' +
+                    '<td>' + missing + '</td>' +
+                    '<td class="text-right">' + r.notes + '</td>' +
+                    '<td class="text-right">' + r.iocs + '</td>' +
+                    '<td class="text-right">' + r.assets + '</td>' +
+                    '<td class="text-right">' + r.events + '</td>' +
+                    '</tr>'
+                );
+            });
+        }
+
+        function _irisMtxRenderCaseTagging(tg) {
+            const totals = tg.totals || {};
+            const ytd = tg.ytd || {};
+
+            // Year selectors (front + back face) — same sticky pattern as the CI card.
+            const $tagSel = $('#iris-mtx-tag-year-select');
+            const $tagSelBack = $('#iris-mtx-tag-year-select-back');
+            const tagCurrentVal = $tagSel.val();
+            const tagYears = tg.available_years || (tg.year ? [tg.year] : []);
+            if (tagYears.length) {
+                const wantVal = String(tagCurrentVal || tg.year || tagYears[0]);
+                [$tagSel, $tagSelBack].forEach(function($s) {
+                    if ($s.children().length !== tagYears.length ||
+                        $s.children().toArray().some((opt, i) => opt.value !== String(tagYears[i]))) {
+                        $s.empty();
+                        tagYears.forEach(y => $s.append(
+                            '<option value="' + y + '"' + (String(y) === wantVal ? ' selected' : '') + '>' + y + '</option>'
+                        ));
+                    }
+                    if (String($s.val()) !== wantVal) { $s.val(wantVal); }
+                });
+            }
+            $('#iris-mtx-tag-tagged').text(
+                _irisMtxFmt(totals.tagged_cases) + ' / ' + _irisMtxFmt(totals.total_cases)
+            );
+            $('#iris-mtx-tag-untagged-count').text(_irisMtxFmt(totals.untagged_cases));
+            $('#iris-mtx-tag-ytd-top').html(
+                ytd.top_tag
+                    ? _irisMtxEsc(ytd.top_tag) + ' <span class="text-muted small">(' + (ytd.top_tag_count || 0) + ')</span>'
+                    : '—'
+            );
+            $('#iris-mtx-tag-totals').html(
+                _irisMtxFmt(totals.unique_tags) + ' <span class="text-muted small">/</span> ' + _irisMtxFmt(totals.tag_applications)
+            );
+
+            // Top tag per quarter — mirrors the sector pills.
+            const quarters = tg.quarters || [];
+            const $top = $('#iris-mtx-tag-top-quarter').empty();
+            (tg.top_per_quarter || []).forEach(q => {
+                const label = q.top_tag || '—';
+                const total = q.total_cases || 0;
+                const count = q.top_tag_count || 0;
+                const cardClass = total > 0 ? 'card card-stats card-round mb-0' : 'card card-stats card-round mb-0 opacity-50';
+                $top.append(
+                    '<div class="' + cardClass + '" style="min-width: 200px; flex: 1 1 200px; max-width: 260px;">' +
+                      '<div class="card-body py-3">' +
+                        '<p class="card-category mb-1">' + _irisMtxEsc(q.quarter) + ' &middot; ' + total + ' cases</p>' +
+                        '<h5 class="mb-0 text-truncate" title="' + _irisMtxEsc(label) + '">' + _irisMtxEsc(label) +
+                        (count ? ' <span class="text-muted small">(' + count + ')</span>' : '') +
+                        '</h5>' +
+                      '</div>' +
+                    '</div>'
+                );
+            });
+            if (!quarters.length) {
+                $top.append('<div class="text-muted small">No quarters configured.</div>');
+            }
+
+            // Tag × quarter matrix
+            const $head = $('#iris-mtx-tag-matrix thead tr');
+            $head.empty();
+            $head.append('<th>Tag</th>');
+            quarters.forEach(q => $head.append('<th class="text-right">' + _irisMtxEsc(q) + '</th>'));
+            $head.append('<th class="text-right">Total</th>');
+            const $body = $('#iris-mtx-tag-matrix tbody').empty();
+            (tg.matrix || []).forEach(row => {
+                let tds = '<td><code class="text-monospace">' + _irisMtxEsc(row.tag) + '</code></td>';
+                (row.counts || []).forEach(c => {
+                    tds += '<td class="text-right">' + (c || '—') + '</td>';
+                });
+                tds += '<td class="text-right"><strong>' + (row.total || 0) + '</strong></td>';
+                $body.append('<tr>' + tds + '</tr>');
+            });
+            if (!(tg.matrix || []).length) {
+                $body.append('<tr><td colspan="' + (quarters.length + 2) + '" class="text-muted small">No non-sector case tags in selected year.</td></tr>');
+            }
+
+            // Donut + bar on the back face — same year totals as the matrix's `total` column.
+            const matrixRows = tg.matrix || [];
+            const palette = ['#177dff','#31ce36','#ffad46','#f25961','#9b59b6','#1abc9c','#34495e','#e67e22','#7f8c8d','#2ecc71','#e74c3c','#3498db','#f39c12','#8e44ad','#16a085'];
+            const captionYear = tg.year ? (' in ' + tg.year) : '';
+            const captionText = matrixRows.length
+                ? ('Top ' + matrixRows.length + ' case tags by case count' + captionYear)
+                : ('No non-sector case tags' + captionYear);
+            $('#iris-mtx-tag-chart-caption').text(captionText);
+
+            // Donut
+            const tagTotal = matrixRows.reduce((s, r) => s + (r.total || 0), 0);
+            const ctxTagDonut = document.getElementById('iris-mtx-tag-donut').getContext('2d');
+            if (_irisMtxCharts.tagDonut) { _irisMtxCharts.tagDonut.destroy(); }
+            _irisMtxCharts.tagDonut = new Chart(ctxTagDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: matrixRows.map(r => r.tag),
+                    datasets: [{
+                        data: matrixRows.map(r => r.total || 0),
+                        backgroundColor: matrixRows.map((_, i) => palette[i % palette.length]),
+                        borderWidth: 0,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {position: 'right', labels: {boxWidth: 12}},
+                },
+                plugins: [_irisMtxDonutCenterPlugin(tagTotal, 'cases')],
+            });
+
+            // Bar slot is populated on demand by _irisMtxLoadBarData when the
+            // user flips to state 2. Store available years for the checkbox list.
+            _irisMtxBarMeta.tag.availableYears = tg.available_years || [tg.year || new Date().getFullYear()];
+            _irisMtxBarMeta.tag.defaultYear    = tg.year || new Date().getFullYear();
+            // Seed checkboxes and load bar data if already in bar state.
+            _irisMtxSyncBarYearCheckboxes('tag');
+            if (_irisMtxFlipState['iris-mtx-tag-card'] === 2) { _irisMtxLoadBarData('tag'); }
+        }
+
+        function _irisMtxRenderCriticalInfra(ci) {
+            const comp = ci.compliance || {};
+            const ytd = ci.ytd || {};
+
+            // Year selectors (front + back face) — populate from `available_years`.
+            const $sel = $('#iris-mtx-ci-year-select');
+            const $selBack = $('#iris-mtx-ci-year-select-back');
+            const currentVal = $sel.val();
+            const years = ci.available_years || (ci.year ? [ci.year] : []);
+            if (years.length) {
+                const wantVal = String(currentVal || ci.year || years[0]);
+                [$sel, $selBack].forEach(function($s) {
+                    if ($s.children().length !== years.length ||
+                        $s.children().toArray().some((opt, i) => opt.value !== String(years[i]))) {
+                        $s.empty();
+                        years.forEach(y => $s.append(
+                            '<option value="' + y + '"' + (String(y) === wantVal ? ' selected' : '') + '>' + y + '</option>'
+                        ));
+                    }
+                    if (String($s.val()) !== wantVal) { $s.val(wantVal); }
+                });
+            }
+
+            $('#iris-mtx-ci-tagged').text(_irisMtxFmt(comp.tagged_cases) + ' / ' + _irisMtxFmt(comp.total_cases));
+            $('#iris-mtx-ci-missing').text(_irisMtxFmt(comp.missing_cases_count));
+            $('#iris-mtx-ci-ytd-total').text(_irisMtxFmt(ytd.total_cases));
+            $('#iris-mtx-ci-ytd-top').html(
+                ytd.top_sector_label
+                    ? _irisMtxEsc(ytd.top_sector_label) + ' <span class="text-muted small">(' + (ytd.top_sector_count || 0) + ')</span>'
+                    : '—'
+            );
+
+            // Top sector per quarter — small pill cards for all four quarters of the year.
+            // Quarters with zero cases still render so management sees Q1 was quiet vs Q2 hot.
+            const quarters = ci.quarters || [];
+            const $top = $('#iris-mtx-ci-top-quarter').empty();
+            (ci.top_per_quarter || []).forEach(q => {
+                const label = q.top_sector_label || '—';
+                const total = q.total_cases || 0;
+                const count = q.top_sector_count || 0;
+                const cardClass = total > 0 ? 'card card-stats card-round mb-0' : 'card card-stats card-round mb-0 opacity-50';
+                $top.append(
+                    '<div class="' + cardClass + '" style="min-width: 200px; flex: 1 1 200px; max-width: 260px;">' +
+                      '<div class="card-body py-3">' +
+                        '<p class="card-category mb-1">' + _irisMtxEsc(q.quarter) + ' &middot; ' + total + ' cases</p>' +
+                        '<h5 class="mb-0">' + _irisMtxEsc(label) +
+                        (count ? ' <span class="text-muted small">(' + count + ')</span>' : '') +
+                        '</h5>' +
+                      '</div>' +
+                    '</div>'
+                );
+            });
+            if (!quarters.length) {
+                $top.append('<div class="text-muted small">No quarters configured.</div>');
+            }
+
+            // Sector × quarter matrix
+            const $head = $('#iris-mtx-ci-matrix thead tr');
+            $head.empty();
+            $head.append('<th>Sector</th>');
+            quarters.forEach(q => $head.append('<th class="text-right">' + _irisMtxEsc(q) + '</th>'));
+            $head.append('<th class="text-right">Total</th>');
+            const $body = $('#iris-mtx-ci-matrix tbody').empty();
+            (ci.matrix || []).forEach(row => {
+                let tds = '<td>' + _irisMtxEsc(row.label) + '</td>';
+                (row.counts || []).forEach(c => {
+                    tds += '<td class="text-right">' + (c || '—') + '</td>';
+                });
+                tds += '<td class="text-right"><strong>' + (row.total || 0) + '</strong></td>';
+                $body.append('<tr>' + tds + '</tr>');
+            });
+            if (!(ci.matrix || []).length) {
+                $body.append('<tr><td colspan="' + (quarters.length + 2) + '" class="text-muted small">No sector-tagged cases opened this year.</td></tr>');
+            }
+
+            // Donut + bar on the back face — sector year totals from the matrix.
+            const matrixRows = ci.matrix || [];
+            const palette = ['#177dff','#31ce36','#ffad46','#f25961','#9b59b6','#1abc9c','#34495e','#e67e22','#7f8c8d','#2ecc71','#e74c3c','#3498db','#f39c12','#8e44ad','#16a085','#d35400'];
+            const captionYear = ci.year ? (' in ' + ci.year) : '';
+            const captionText = matrixRows.length
+                ? ('Cases per sector' + captionYear)
+                : ('No sector-tagged cases' + captionYear);
+            $('#iris-mtx-ci-chart-caption').text(captionText);
+
+            // Donut
+            const ciTotal = matrixRows.reduce((s, r) => s + (r.total || 0), 0);
+            const ctxCiDonut = document.getElementById('iris-mtx-ci-donut').getContext('2d');
+            if (_irisMtxCharts.ciDonut) { _irisMtxCharts.ciDonut.destroy(); }
+            _irisMtxCharts.ciDonut = new Chart(ctxCiDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: matrixRows.map(r => r.label || r.sector),
+                    datasets: [{
+                        data: matrixRows.map(r => r.total || 0),
+                        backgroundColor: matrixRows.map((_, i) => palette[i % palette.length]),
+                        borderWidth: 0,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {position: 'right', labels: {boxWidth: 12}},
+                },
+                plugins: [_irisMtxDonutCenterPlugin(ciTotal, 'cases')],
+            });
+
+            // Bar slot populated on demand.
+            _irisMtxBarMeta.ci.availableYears = ci.available_years || [ci.year || new Date().getFullYear()];
+            _irisMtxBarMeta.ci.defaultYear    = ci.year || new Date().getFullYear();
+            _irisMtxSyncBarYearCheckboxes('ci');
+            if (_irisMtxFlipState['iris-mtx-ci-card'] === 2) { _irisMtxLoadBarData('ci'); }
+        }
+
+        function _irisMtxRenderTimelineChart(timeline) {
+            const ctx = document.getElementById('iris-mtx-tl-chart').getContext('2d');
+            if (_irisMtxCharts.tl) { _irisMtxCharts.tl.destroy(); }
+            _irisMtxCharts.tl = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeline.labels,
+                    datasets: [
+                        {label: 'Opened', data: timeline.opened, borderColor: '#177dff', backgroundColor: 'rgba(23,125,255,0.15)', borderWidth: 2, pointRadius: 0, fill: true, tension: 0.3},
+                        {label: 'Closed', data: timeline.closed, borderColor: '#31ce36', backgroundColor: 'rgba(49,206,54,0.15)', borderWidth: 2, pointRadius: 0, fill: true, tension: 0.3},
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {position: 'bottom'},
+                    scales: {
+                        yAxes: [{ticks: {beginAtZero: true, precision: 0}}],
+                        xAxes: [{ticks: {maxTicksLimit: 12, maxRotation: 0}}],
+                    },
+                },
+            });
+        }
+
+        function _irisMtxRenderDonut(canvasId, key, rows, labelKey) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (_irisMtxCharts[key]) { _irisMtxCharts[key].destroy(); }
+            const palette = ['#177dff','#31ce36','#ffad46','#f25961','#9b59b6','#1abc9c','#34495e','#e67e22','#7f8c8d','#2ecc71'];
+            _irisMtxCharts[key] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: rows.map(r => r[labelKey]),
+                    datasets: [{data: rows.map(r => r.count),
+                                backgroundColor: rows.map((_, i) => palette[i % palette.length]),
+                                borderWidth: 0}],
+                },
+                options: {responsive: true, maintainAspectRatio: false, legend: {position: 'right'}},
+            });
+        }
+    </script>
+
+    {# iris-next: case import — decrypts .iris-case files server-side using the provided password. #}
+    <script>
+        function open_import_case_modal() {
+            $('#iris-import-case-file').val('');
+            $('#iris-import-case-pw').val('');
+            $('#iris-import-case-status').text('').removeClass('text-danger text-success');
+            $('#iris-import-case-submit').prop('disabled', false);
+            $('#iris-import-case-modal').modal({show: true});
+        }
+
+        function submit_import_case() {
+            const fileInput = document.getElementById('iris-import-case-file');
+            const statusEl = $('#iris-import-case-status');
+            statusEl.text('').removeClass('text-danger text-success');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                statusEl.addClass('text-danger').text('Pick an export file first.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const password = $('#iris-import-case-pw').val().trim();
+
+            // Encrypted .iris-case files require a password; reject early to save a round-trip.
+            if (file.name.endsWith('.iris-case') && !password) {
+                statusEl.addClass('text-danger').text('Enter the export password for this file.');
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append('file', file);
+            if (password) {
+                fd.append('password', password);
+            }
+            // Multipart CSRF: the validator reads request.form, not headers — append as field.
+            fd.append('csrf_token', $('#csrf_token').val());
+
+            $('#iris-import-case-submit').prop('disabled', true);
+            statusEl.text('Decrypting and importing…');
+
+            $.ajax({
+                url: '/api/v2/cases/import',
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                headers: {'X-CSRFToken': $('#csrf_token').val()},
+            }).done(function (resp) {
+                // v2 API returns data directly (no {status, data} wrapper).
+                const data = (resp && resp.data) ? resp.data : resp;
+                const counts = data.counts || {};
+                const warnings = data.warnings || [];
+                const summary =
+                    `${counts.notes || 0} notes · ${counts.iocs || 0} iocs · ` +
+                    `${counts.assets || 0} assets · ${counts.tasks || 0} tasks · ` +
+                    `${counts.evidences || 0} evidences · ${counts.timeline_events || 0} events`;
+                statusEl.removeClass('text-danger')
+                    .addClass('text-success')
+                    .text(`Imported case "${data.case_name}" (id ${data.case_id}) — ${summary}`);
+                if (warnings.length) {
+                    console.warn('Case import warnings:', warnings);
+                }
+                setTimeout(function () {
+                    window.location.href = '/case?cid=' + data.case_id;
+                }, 1500);
+            }).fail(function (xhr) {
+                let msg = 'Import failed';
+                try {
+                    const j = xhr.responseJSON || JSON.parse(xhr.responseText);
+                    msg = (j && (j.message || j.error)) || msg;
+                    if (j && j.data) {
+                        msg += ' — ' + JSON.stringify(j.data);
+                    }
+                } catch (_) {}
+                statusEl.removeClass('text-success').addClass('text-danger').text(msg);
+                $('#iris-import-case-submit').prop('disabled', false);
+            });
+        }
+    </script>
+
+  <script>
+
+		htmlLegendsChart = document.getElementById('htmlLegendsChart').getContext('2d');
+
+        $.ajax({
+            url: '/dashboard/case_charts' + case_param(),
+            type: "GET",
+            dataType: "JSON",
+            success: function (data) {
+                jsdata = data;
+                if (jsdata.status == "success") {
+                    // Chart with HTML Legends
+                    var gradientStroke = htmlLegendsChart.createLinearGradient(500, 0, 100, 0);
+                    gradientStroke.addColorStop(0, '#177dff');
+                    gradientStroke.addColorStop(1, '#80b6f4');
+
+                    var gradientFill = htmlLegendsChart.createLinearGradient(500, 0, 100, 0);
+                    gradientFill.addColorStop(0, "rgba(23, 125, 255, 0.7)");
+                    gradientFill.addColorStop(1, "rgba(128, 182, 244, 0.3)");
+
+
+                    var myHtmlLegendsChart = new Chart(htmlLegendsChart, {
+                        type: 'line',
+                        data: {
+                            labels: jsdata.data[0],
+                            datasets: [  {
+                                label: "Open case",
+                                borderColor: gradientStroke,
+                                pointBackgroundColor: gradientStroke,
+                                pointRadius: 0,
+                                backgroundColor: gradientFill,
+                                legendColor: '#fff',
+                                fill: true,
+                                borderWidth: 1,
+                                data: jsdata.data[1]
+                            }]
+                        },
+                        options : {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            legend: {
+                                display: false
+                            },
+                            tooltips: {
+                                bodySpacing: 4,
+                                mode:"nearest",
+                                intersect: 0,
+                                position:"nearest",
+                                xPadding:10,
+                                yPadding:10,
+                                caretPadding:10
+                            },
+                            layout:{
+                                padding:{left:15,right:15,top:15,bottom:15}
+                            },
+                            scales: {
+                                yAxes: [{
+                                    ticks: {
+                                        display: false
+                                    },
+                                    gridLines: {
+                                        drawTicks: false,
+                                        display: false
+                                    }
+                                }],
+                                xAxes: [{
+                                    gridLines: {
+                                        zeroLineColor: "transparent",
+                                        display: false
+                                    },
+                                    ticks: {
+                                        padding: 20,
+                                        fontColor: "rgba(0,0,0,0.5)",
+                                        fontStyle: "500",
+                                        display: false
+                                    }
+                                }]
+                            },
+                            legendCallback: function(chart) {
+                                var text = [];
+                                text.push('<ul class="' + chart.id + '-legend html-legend">');
+                                for (var i = 0; i < chart.data.datasets.length; i++) {
+                                    text.push('<li><span style="background-color:' + chart.data.datasets[i].legendColor + '"></span>');
+                                    if (chart.data.datasets[i].label) {
+                                        text.push(chart.data.datasets[i].label);
+                                    }
+                                    text.push('</li>');
+                                }
+                                text.push('</ul>');
+                                return text.join('');
+                            }
+                        }
+                    });
+
+                    //var myLegendContainer = document.getElementById("myChartLegend");
+
+                    // generate HTML legend
+                    //myLegendContainer.innerHTML = myHtmlLegendsChart.generateLegend();
+                }
+            },
+            error: function (error) {
+                notify_error(error);
+            }
+        });
+
+
+
+  </script>
+
+    {# iris-next: Inventory tab — physical evidence-drive lookup + management.
+       Inline (like Metrics) to avoid a JS-bundle rebuild for this feature. #}
+    <style>
+        #iris-inv-drives-table thead th[data-sort-key] {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        #iris-inv-drives-table thead th[data-sort-key]:hover {
+            background: rgba(139,92,246,0.10);
+        }
+        .iris-inv-sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            opacity: 0.35;
+            font-size: 10px;
+        }
+        #iris-inv-drives-table thead th[data-sort-key].iris-inv-sort-active .iris-inv-sort-icon {
+            opacity: 1;
+            color: #8b5cf6;
+        }
+    </style>
+    <script>
+        var IRIS_INV = { loaded: false, casesLoaded: false, _chart: null, _drives: [], _sortCol: null, _sortDir: 1 };
+
+        function iris_inv_csrf() {
+            var el = document.getElementById('csrf_token');
+            return el ? el.value : '';
+        }
+        function iris_inv_esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+            });
+        }
+        function iris_inv_status_badge(st) {
+            var map = { available: 'badge-success', in_use: 'badge-primary', wiped: 'badge-secondary', retired: 'badge-dark' };
+            var label = { available: 'Available', in_use: 'In use', wiped: 'Wiped', retired: 'Retired' }[st] || iris_inv_esc(st);
+            return '<span class="badge ' + (map[st] || 'badge-light') + '">' + label + '</span>';
+        }
+
+        function iris_inventory_on_show() {
+            if (!IRIS_INV.loaded) {
+                IRIS_INV.loaded = true;
+                iris_inventory_load_drives();
+            }
+            setTimeout(function () { $('#iris-inv-scan').trigger('focus'); }, 200);
+        }
+
+        function iris_inventory_lookup() {
+            var bc = ($('#iris-inv-scan').val() || '').trim();
+            var msg = $('#iris-inv-lookup-msg');
+            var res = $('#iris-inv-lookup-result');
+            msg.text('').removeClass('text-danger text-success');
+            if (!bc) { msg.addClass('text-danger').text('Enter or scan a bar code.'); return; }
+            msg.text('Looking up…');
+            $.ajax({
+                url: '/api/v2/dashboard/inventory/lookup?barcode=' + encodeURIComponent(bc),
+                method: 'GET', dataType: 'json'
+            }).done(function (resp) {
+                msg.text('');
+                // v2 API returns the payload directly (no {status,data} envelope).
+                var d = (resp && resp.data) ? resp.data : resp;
+                if (!d || !d.barcode) { res.hide(); msg.addClass('text-danger').text('No result.'); return; }
+                iris_inventory_render_result(d);
+            }).fail(function (xhr) {
+                res.hide();
+                var m = 'Lookup failed.';
+                try { m = JSON.parse(xhr.responseText).message || m; } catch (e) {}
+                msg.addClass('text-danger').text(m);
+            });
+        }
+
+        function iris_inventory_render_result(d) {
+            var res = $('#iris-inv-lookup-result');
+            var caseHtml = d.case
+                ? '<a href="/case?cid=' + d.case.case_id + '">#' + d.case.case_id + ' - ' + iris_inv_esc(d.case.case_name) + '</a>'
+                : '<span class="text-muted">— none —</span>';
+            var rows = (d.evidences || []).map(function (e) {
+                return '<tr>'
+                    + '<td><a href="/case/evidences?cid=' + e.case_id + '&shared=' + e.id + '">' + iris_inv_esc(e.filename || ('#' + e.id)) + '</a></td>'
+                    + '<td>' + iris_inv_esc(e.type_name || 'Unspecified') + '</td>'
+                    + '<td><code>' + iris_inv_esc(e.file_hash || '') + '</code></td>'
+                    + '<td>' + iris_inv_esc(e.file_size != null ? e.file_size : '') + '</td>'
+                    + '</tr>';
+            }).join('');
+            if (!rows) { rows = '<tr><td colspan="4" class="text-muted text-center">No evidence items linked to this drive.</td></tr>'; }
+
+            var html = ''
+                + '<div class="card" style="border:1px solid rgba(139,92,246,0.35);">'
+                + '  <div class="card-body">'
+                + '    <div class="d-flex align-items-center mb-2" style="gap:10px;">'
+                + '      <h4 class="mb-0">' + iris_inv_esc(d.label || d.barcode) + '</h4>'
+                + '      ' + iris_inv_status_badge(d.status)
+                + '      <button class="btn btn-sm btn-light ml-auto" onclick="iris_inventory_open_edit(' + d.id + ');"><i class="fas fa-pen mr-1"></i>Edit</button>'
+                + '    </div>'
+                + '    <div class="row">'
+                + '      <div class="col-md-4"><small class="text-muted">Bar code</small><div><code>' + iris_inv_esc(d.barcode) + '</code></div></div>'
+                + '      <div class="col-md-4"><small class="text-muted">Physical location</small><div>' + (d.physical_location ? iris_inv_esc(d.physical_location) : '<span class="text-muted">—</span>') + '</div></div>'
+                + '      <div class="col-md-4"><small class="text-muted">Associated case</small><div>' + caseHtml + '</div></div>'
+                + '    </div>'
+                + '    <div class="row mt-2">'
+                + '      <div class="col-md-4"><small class="text-muted">Serial number</small><div>' + (d.serial_number ? iris_inv_esc(d.serial_number) : '<span class="text-muted">—</span>') + '</div></div>'
+                + '      <div class="col-md-4"><small class="text-muted">Capacity</small><div>' + (d.capacity ? iris_inv_esc(d.capacity) : '<span class="text-muted">—</span>') + '</div></div>'
+                + '      <div class="col-md-4"><small class="text-muted">Notes</small><div>' + (d.notes ? iris_inv_esc(d.notes) : '<span class="text-muted">—</span>') + '</div></div>'
+                + '    </div>'
+                + '    <hr>'
+                + '    <h5>Evidence items on this drive (' + (d.evidences ? d.evidences.length : 0) + ')</h5>'
+                + '    <div class="table-responsive"><table class="table table-sm table-striped" style="font-size:12px;">'
+                + '      <thead><tr><th>Name</th><th>Type</th><th>Hash</th><th>Size</th></tr></thead>'
+                + '      <tbody>' + rows + '</tbody>'
+                + '    </table></div>'
+                + '  </div>'
+                + '</div>';
+            res.html(html).show();
+        }
+
+        function iris_inv_capacity_bytes(s) {
+            if (!s) { return -1; }
+            var m = String(s).match(/^([\d.]+)\s*(TB|GB|MB|KB)?$/i);
+            if (!m) { return 0; }
+            var n = parseFloat(m[1]);
+            var u = (m[2] || '').toUpperCase();
+            if (u === 'TB') { return n * 1e12; }
+            if (u === 'GB') { return n * 1e9; }
+            if (u === 'MB') { return n * 1e6; }
+            if (u === 'KB') { return n * 1e3; }
+            return n;
+        }
+
+        function iris_inv_sort_key(d, col) {
+            switch (col) {
+                case 'barcode':  return (d.barcode || '').toLowerCase();
+                case 'label':    return (d.label || '').toLowerCase();
+                case 'status':   return (d.status || '').toLowerCase();
+                case 'location': return (d.physical_location || '').toLowerCase();
+                case 'case':     return d.case_id ? d.case_id : Infinity;
+                case 'capacity': return iris_inv_capacity_bytes(d.capacity);
+                case 'added':    return d.date_added || '';
+                default:         return '';
+            }
+        }
+
+        function iris_inv_render_rows() {
+            var body = $('#iris-inv-drives-body');
+            var rows = IRIS_INV._drives.slice();
+            var col = IRIS_INV._sortCol;
+            var dir = IRIS_INV._sortDir;
+            if (col) {
+                rows.sort(function (a, b) {
+                    var av = iris_inv_sort_key(a, col);
+                    var bv = iris_inv_sort_key(b, col);
+                    if (av === Infinity && bv !== Infinity) { return 1; }
+                    if (bv === Infinity && av !== Infinity) { return -1; }
+                    if (av < bv) { return -dir; }
+                    if (av > bv) { return dir; }
+                    return 0;
+                });
+            }
+            body.html(rows.map(function (d) {
+                var caseTxt = d.case_id ? ('#' + d.case_id + (d.case_name ? ' - ' + iris_inv_esc(d.case_name) : '')) : '<span class="text-muted">—</span>';
+                var added = d.date_added ? iris_inv_esc(d.date_added.substring(0, 10)) : '';
+                return '<tr>'
+                    + '<td><a href="javascript:void(0);" class="iris-inv-scan-link" data-barcode="' + iris_inv_esc(d.barcode) + '"><code>' + iris_inv_esc(d.barcode) + '</code></a></td>'
+                    + '<td>' + iris_inv_esc(d.label || '') + '</td>'
+                    + '<td>' + iris_inv_status_badge(d.status) + (d.overdue ? '<span class="iris-inv-overdue-badge" title="In use longer than the configured retention period"><i class="fas fa-exclamation-triangle"></i> Overdue</span>' : '') + '</td>'
+                    + '<td>' + iris_inv_esc(d.physical_location || '') + '</td>'
+                    + '<td>' + caseTxt + '</td>'
+                    + '<td>' + iris_inv_esc(d.capacity || '') + '</td>'
+                    + '<td>' + added + '</td>'
+                    + '<td>'
+                    + '  <button class="btn btn-xs btn-light" title="Edit" onclick="iris_inventory_open_edit(' + d.id + ');"><i class="fas fa-pen"></i></button>'
+                    + '  <button class="btn btn-xs btn-light" title="Delete" onclick="iris_inventory_delete(' + d.id + ');"><i class="fas fa-trash"></i></button>'
+                    + '</td>'
+                    + '</tr>';
+            }).join(''));
+            body.off('click', '.iris-inv-scan-link').on('click', '.iris-inv-scan-link', function () {
+                iris_inventory_scan_value($(this).attr('data-barcode'));
+            });
+            // Update header indicators.
+            $('#iris-inv-drives-table thead th[data-sort-key]').each(function () {
+                var $th = $(this);
+                var $icon = $th.find('.iris-inv-sort-icon');
+                if ($th.attr('data-sort-key') === col) {
+                    $th.addClass('iris-inv-sort-active');
+                    $icon.text(dir === 1 ? '▲' : '▼');
+                } else {
+                    $th.removeClass('iris-inv-sort-active');
+                    $icon.text('⇅');
+                }
+            });
+        }
+
+        function iris_inventory_load_drives() {
+            var body = $('#iris-inv-drives-body');
+            body.html('<tr><td colspan="8" class="text-center text-muted">Loading…</td></tr>');
+            $.ajax({ url: '/api/v2/dashboard/inventory/drives', method: 'GET', dataType: 'json' })
+            .done(function (resp) {
+                // v2 API returns the array directly (no {status,data} envelope).
+                var rows = Array.isArray(resp) ? resp : ((resp && resp.data) ? resp.data : []);
+                var counts = { available: 0, in_use: 0, wiped: 0, retired: 0 };
+                var overdueCount = 0;
+                rows.forEach(function (d) {
+                    if (counts.hasOwnProperty(d.status)) { counts[d.status]++; }
+                    if (d.overdue) { overdueCount++; }
+                });
+                if (!rows.length) {
+                    IRIS_INV._drives = [];
+                    body.html('<tr><td colspan="8" class="text-center text-muted">No drives registered yet.</td></tr>');
+                    iris_inventory_render_chart(counts, 0);
+                    var capRow = document.getElementById('iris-inv-capacity-row');
+                    if (capRow) { capRow.style.display = 'none'; }
+                    return;
+                }
+                IRIS_INV._drives = rows;
+                iris_inventory_render_chart(counts, overdueCount);
+                iris_inv_render_rows();
+                iris_inventory_load_capacity();
+            })
+            .fail(function () { body.html('<tr><td colspan="8" class="text-center text-danger">Failed to load drives.</td></tr>'); });
+        }
+
+        function iris_inventory_scan_value(bc) {
+            $('a[href="#iris-dash-inventory"]').tab('show');
+            $('#iris-inv-scan').val(bc);
+            iris_inventory_lookup();
+        }
+
+        function iris_inventory_render_chart(counts, overdueCount) {
+            var total = (counts.available || 0) + (counts.in_use || 0) + (counts.wiped || 0) + (counts.retired || 0);
+            var row = document.getElementById('iris-inv-summary-row');
+            if (!row) { return; }
+            if (!total) { row.style.display = 'none'; return; }
+            row.style.display = '';
+
+            // Update total center label and individual tiles.
+            var totalEl = document.getElementById('iris-inv-chart-total');
+            if (totalEl) { totalEl.textContent = total; }
+            ['available', 'in_use', 'wiped', 'retired'].forEach(function (k) {
+                var el = document.getElementById('iris-inv-tile-' + k);
+                if (el) { el.textContent = counts[k] || 0; }
+            });
+
+            // Show/hide the overdue retention alert.
+            var alert = document.getElementById('iris-inv-overdue-alert');
+            var alertCount = document.getElementById('iris-inv-overdue-count');
+            if (alert) {
+                if (overdueCount > 0) {
+                    if (alertCount) { alertCount.textContent = overdueCount; }
+                    alert.style.display = '';
+                } else {
+                    alert.style.display = 'none';
+                }
+            }
+
+            // Destroy previous instance before recreating (handles Refresh clicks).
+            if (IRIS_INV._chart) { IRIS_INV._chart.destroy(); IRIS_INV._chart = null; }
+            var ctx = document.getElementById('iris-inv-status-chart');
+            if (!ctx) { return; }
+            IRIS_INV._chart = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Wiped', 'Available', 'In use', 'Retired'],
+                    datasets: [{
+                        data: [counts.wiped || 0, counts.available || 0, counts.in_use || 0, counts.retired || 0],
+                        backgroundColor: ['#2dce89', '#f4c430', '#5e72e4', '#f5365c'],
+                        borderColor: '#15151a',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutoutPercentage: 74,
+                    legend: { display: false },
+                    tooltips: {
+                        callbacks: {
+                            label: function (tooltipItem, data) {
+                                var val = data.datasets[0].data[tooltipItem.index];
+                                var label = data.labels[tooltipItem.index];
+                                var pct = total > 0 ? Math.round(val / total * 100) : 0;
+                                return ' ' + label + ': ' + val + '  (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function iris_inventory_load_capacity() {
+            fetch('/api/v2/dashboard/inventory/capacity')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    // v2 endpoint returns the dict directly; error shape has status:'error'.
+                    if (!d || d.status === 'error') {
+                        var row = document.getElementById('iris-inv-capacity-row');
+                        if (row) { row.style.display = 'none'; }
+                        return;
+                    }
+                    iris_inventory_render_capacity(d);
+                })
+                .catch(function () {
+                    var row = document.getElementById('iris-inv-capacity-row');
+                    if (row) { row.style.display = 'none'; }
+                });
+        }
+
+        function iris_inventory_render_capacity(d) {
+            var row     = document.getElementById('iris-inv-capacity-row');
+            var runway  = document.getElementById('iris-inv-cap-runway');
+            var supply  = document.getElementById('iris-inv-cap-supply');
+            var rate    = document.getElementById('iris-inv-cap-rate');
+            var order   = document.getElementById('iris-inv-cap-order-alert');
+            var insuf   = document.getElementById('iris-inv-cap-insufficient');
+            if (!row || !runway) { return; }
+
+            if (d.insufficient_data) {
+                runway.textContent = '—';
+                runway.style.background = '';
+                runway.style.color = 'rgba(255,255,255,0.35)';
+                runway.style.border = '1px solid rgba(255,255,255,0.1)';
+                supply.textContent = d.available_count + ' available, ' + d.wipe_eligible_count + ' wipe-eligible';
+                rate.textContent = '';
+                order.style.display = 'none';
+                insuf.textContent = 'Insufficient case history in the last ' + d.window_months + ' months — cannot estimate intake rate.';
+                insuf.style.display = '';
+                row.style.display = '';
+                return;
+            }
+
+            insuf.style.display = 'none';
+            var months  = d.runway_months;
+            var isLow   = d.order_recommended;
+            var isWarn  = !isLow && months < d.target_runway_months * 1.5;
+            runway.textContent = months + ' mo';
+            if (isLow) {
+                runway.style.background = 'rgba(239,68,68,0.12)';
+                runway.style.color = '#f87171';
+                runway.style.border = '1px solid rgba(239,68,68,0.35)';
+            } else if (isWarn) {
+                runway.style.background = 'rgba(255,166,0,0.10)';
+                runway.style.color = '#ffad46';
+                runway.style.border = '1px solid rgba(255,166,0,0.35)';
+            } else {
+                runway.style.background = 'rgba(45,206,137,0.10)';
+                runway.style.color = '#2dce89';
+                runway.style.border = '1px solid rgba(45,206,137,0.3)';
+            }
+
+            var wipeNote = d.wipe_eligible_count > 0
+                ? ' + ' + d.wipe_eligible_count + ' wipe-eligible'
+                : (d.wipe_eligible_count === 0 && !d.insufficient_data ? '' : '');
+            supply.textContent = d.available_count + ' available' + wipeNote + ' = ' + d.effective_supply + ' drives';
+            rate.textContent = d.avg_cases_per_month + ' avg cases/month over ' + d.window_months + '-month window';
+
+            if (isLow) {
+                order.innerHTML = '<i class="fas fa-cart-plus mr-1"></i>'
+                    + ' Order approximately <b>' + d.order_quantity + ' drive(s)</b>'
+                    + ' to restore a ' + d.target_runway_months + '-month runway.';
+                order.style.display = '';
+            } else {
+                order.style.display = 'none';
+            }
+            row.style.display = '';
+        }
+
+        function iris_inv_ensure_cases() {
+            if (IRIS_INV.casesLoaded) { return $.Deferred().resolve().promise(); }
+            return $.ajax({ url: '/manage/cases/list', method: 'GET', dataType: 'json' })
+                .done(function (resp) {
+                    var cases = (resp && resp.data) ? resp.data : [];
+                    var sel = $('#iris-inv-f-case');
+                    sel.find('option:not(:first)').remove();
+                    cases.forEach(function (c) {
+                        var cid = c.case_id != null ? c.case_id : c.id;
+                        var nm = c.case_name || c.name || ('#' + cid);
+                        sel.append($('<option>').val(cid).text('#' + cid + ' - ' + nm));
+                    });
+                    IRIS_INV.casesLoaded = true;
+                });
+        }
+
+        function iris_inventory_open_register() {
+            $('#iris-inv-drive-id').val('');
+            $('#iris-inv-modal-title').text('Register drive');
+            $('#iris-inv-f-barcode, #iris-inv-f-label, #iris-inv-f-serial, #iris-inv-f-location, #iris-inv-f-capacity, #iris-inv-f-notes').val('');
+            $('#iris-inv-f-status').val('available');
+            $('#iris-inv-modal-msg').text('');
+            $('#iris-inv-wipe-btn').hide();
+            iris_inv_ensure_cases().always(function () { $('#iris-inv-f-case').val(''); });
+            $('#iris-inv-drive-modal').modal({ show: true });
+        }
+
+        function iris_inventory_open_edit(id) {
+            iris_inv_ensure_cases().always(function () {
+                $.ajax({ url: '/api/v2/dashboard/inventory/drives', method: 'GET', dataType: 'json' })
+                .done(function (resp) {
+                    var list = Array.isArray(resp) ? resp : ((resp && resp.data) ? resp.data : []);
+                    var d = list.filter(function (x) { return x.id === id; })[0];
+                    if (!d) { return; }
+                    $('#iris-inv-drive-id').val(d.id);
+                    $('#iris-inv-modal-title').text('Edit drive — ' + (d.label || d.barcode));
+                    $('#iris-inv-f-barcode').val(d.barcode || '');
+                    $('#iris-inv-f-label').val(d.label || '');
+                    $('#iris-inv-f-serial').val(d.serial_number || '');
+                    $('#iris-inv-f-location').val(d.physical_location || '');
+                    $('#iris-inv-f-status').val(d.status || 'available');
+                    $('#iris-inv-f-case').val(d.case_id != null ? String(d.case_id) : '');
+                    $('#iris-inv-f-capacity').val(d.capacity || '');
+                    $('#iris-inv-f-notes').val(d.notes || '');
+                    $('#iris-inv-modal-msg').text('');
+                    $('#iris-inv-wipe-btn').show();
+                    $('#iris-inv-drive-modal').modal({ show: true });
+                });
+            });
+        }
+
+        function iris_inventory_save() {
+            var id = $('#iris-inv-drive-id').val();
+            var caseVal = $('#iris-inv-f-case').val();
+            var payload = {
+                barcode: $('#iris-inv-f-barcode').val(),
+                label: $('#iris-inv-f-label').val(),
+                serial_number: $('#iris-inv-f-serial').val(),
+                physical_location: $('#iris-inv-f-location').val(),
+                status: $('#iris-inv-f-status').val(),
+                case_id: caseVal ? parseInt(caseVal, 10) : null,
+                capacity: $('#iris-inv-f-capacity').val(),
+                notes: $('#iris-inv-f-notes').val(),
+                csrf_token: iris_inv_csrf()
+            };
+            if (!(payload.barcode || '').trim()) { $('#iris-inv-modal-msg').text('Bar code is required.'); return; }
+            var url = '/api/v2/dashboard/inventory/drives' + (id ? ('/' + id) : '');
+            $.ajax({
+                url: url, method: id ? 'PUT' : 'POST',
+                contentType: 'application/json',
+                headers: { 'X-CSRFToken': iris_inv_csrf() },
+                data: JSON.stringify(payload)
+            }).done(function () {
+                $('#iris-inv-drive-modal').modal('hide');
+                iris_inventory_load_drives();
+            }).fail(function (xhr) {
+                var m = 'Save failed.';
+                try { m = JSON.parse(xhr.responseText).message || m; } catch (e) {}
+                $('#iris-inv-modal-msg').text(m);
+            });
+        }
+
+        function iris_inventory_wipe() {
+            var id = $('#iris-inv-drive-id').val();
+            if (!id) { return; }
+            if (!confirm('Wipe this drive and return it to rotation? Evidence records are kept but unlinked from the drive, and the case + location assignment is cleared.')) { return; }
+            $.ajax({
+                url: '/api/v2/dashboard/inventory/drives/' + id + '/wipe', method: 'POST',
+                contentType: 'application/json',
+                headers: { 'X-CSRFToken': iris_inv_csrf() },
+                data: JSON.stringify({ csrf_token: iris_inv_csrf() })
+            }).done(function () {
+                $('#iris-inv-drive-modal').modal('hide');
+                iris_inventory_load_drives();
+            }).fail(function (xhr) {
+                var m = 'Wipe failed.';
+                try { m = JSON.parse(xhr.responseText).message || m; } catch (e) {}
+                $('#iris-inv-modal-msg').text(m);
+            });
+        }
+
+        function iris_inventory_delete(id) {
+            if (!confirm('Delete this drive record? Evidence items on it are kept (unlinked). This does not delete any evidence.')) { return; }
+            $.ajax({
+                url: '/api/v2/dashboard/inventory/drives/' + id, method: 'DELETE',
+                contentType: 'application/json',
+                headers: { 'X-CSRFToken': iris_inv_csrf() },
+                data: JSON.stringify({ csrf_token: iris_inv_csrf() })
+            }).done(function () { iris_inventory_load_drives(); })
+            .fail(function () { alert('Delete failed.'); });
+        }
+
+        // Enter-to-scan on the lookup box.
+        $(document).on('keydown', '#iris-inv-scan', function (e) {
+            if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); iris_inventory_lookup(); }
+        });
+
+        // Column sort on Drive inventory table headers.
+        $(document).on('click', '#iris-inv-drives-table thead th[data-sort-key]', function () {
+            var col = $(this).attr('data-sort-key');
+            if (IRIS_INV._sortCol === col) {
+                IRIS_INV._sortDir = IRIS_INV._sortDir === 1 ? -1 : 1;
+            } else {
+                IRIS_INV._sortCol = col;
+                IRIS_INV._sortDir = 1;
+            }
+            iris_inv_render_rows();
+        });
+    </script>
+
+    {# iris-next: Correlation tab JS. D3 loaded lazily on first tab show. #}
+    <script>
+    (function () {
+        'use strict';
+
+        var CORR = {
+            loaded: false,
+            loading: false,
+            d3Loaded: false,
+            report: null,
+            _narrativeCache: {},   // cluster_id → {suggested_name, narrative, confidence}
+            _narrativeLoading: {}, // cluster_id → true while in-flight
+        };
+
+        // ----------------------------------------------------------------
+        // Entry point — called by the tab nav onclick
+        // ----------------------------------------------------------------
+        window.iris_correlation_on_show = function () {
+            if (!CORR.loaded && !CORR.loading) {
+                iris_correlation_run();
+            }
+        };
+
+        // ----------------------------------------------------------------
+        // Quick-range buttons
+        // ----------------------------------------------------------------
+        $(document).on('click', '.iris-corr-range-btn', function () {
+            $('.iris-corr-range-btn').removeClass('btn-dark active').addClass('btn-outline-dark');
+            $(this).removeClass('btn-outline-dark').addClass('btn-dark active');
+
+            var days = parseInt($(this).data('days'), 10);
+            var end = new Date();
+            var start = new Date();
+            if (days > 0) {
+                start.setDate(start.getDate() - days);
+                $('#iris-corr-start').val(start.toISOString().slice(0, 10));
+                $('#iris-corr-end').val(end.toISOString().slice(0, 10));
+            } else {
+                $('#iris-corr-start').val('');
+                $('#iris-corr-end').val('');
+            }
+        });
+
+        // Pre-fill 60d range on page load
+        (function () {
+            var end = new Date();
+            var start = new Date();
+            start.setDate(start.getDate() - 60);
+            $('#iris-corr-start').val(start.toISOString().slice(0, 10));
+            $('#iris-corr-end').val(end.toISOString().slice(0, 10));
+        })();
+
+        // ----------------------------------------------------------------
+        // Main fetch + render
+        // ----------------------------------------------------------------
+        window.iris_correlation_run = function () {
+            if (CORR.loading) return;
+            CORR.loading = true;
+            CORR.loaded = false;
+
+            var minShared = parseInt($('#iris-corr-min-shared').val(), 10) || 2;
+            var startDate = $('#iris-corr-start').val() || '';
+            var endDate   = $('#iris-corr-end').val() || '';
+
+            var params = { min_shared: minShared };
+            if (startDate) params.start_date = startDate;
+            if (endDate)   params.end_date   = endDate;
+
+            $('#iris-corr-status').text('Loading…');
+            $('#iris-corr-summary-row, #iris-corr-clusters-row, #iris-corr-table-row, #iris-corr-graph-row').hide();
+
+            $.ajax({
+                url: '/api/v2/correlation/report',
+                method: 'GET',
+                data: params,
+                dataType: 'json',
+            }).done(function (resp) {
+                CORR.loading = false;
+                CORR.loaded = true;
+                CORR.report = resp;
+                iris_corr_render(resp);
+                $('#iris-corr-status').text('Updated ' + new Date().toLocaleTimeString());
+            }).fail(function (xhr) {
+                CORR.loading = false;
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Request failed';
+                $('#iris-corr-status').text('Error: ' + msg);
+            });
+        };
+
+        // ----------------------------------------------------------------
+        // Render
+        // ----------------------------------------------------------------
+        function iris_corr_esc(s) {
+            return $('<div>').text(String(s || '')).html();
+        }
+
+        // IOC overlap confidence pill — rendered from server-computed ioc_confidence
+        function iris_corr_confidence_pill(cl) {
+            var conf = typeof cl.ioc_confidence === 'number' ? cl.ioc_confidence : null;
+            if (conf === null) return '';
+            var pct = Math.round(conf * 100);
+            // Colour tiers: ≥80% blue-violet (strong), ≥55% muted blue, <55% grey
+            var style;
+            if (pct >= 80) {
+                style = 'background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.45);color:#a5b4fc;';
+            } else if (pct >= 55) {
+                style = 'background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.38);color:#93c5fd;';
+            } else {
+                style = 'background:rgba(107,114,128,0.12);border:1px solid rgba(107,114,128,0.35);color:#9ca3af;';
+            }
+            var count = cl.shared_ioc_count || 0;
+            var tooltip = iris_corr_esc(pct + '% cluster confidence — based on ' + count + ' shared IOC(s). More overlapping IOCs = stronger signal that these cases share an actor/campaign.');
+            return '<span class="ml-1" title="' + tooltip + '" style="'
+                + 'display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;'
+                + style
+                + 'cursor:default;vertical-align:middle;">'
+                + '⬡ ' + pct + '% conf'
+                + '</span>';
+        }
+
+        // Decay freshness pill — rendered from server-computed decay_label / decay_score / decay_detail
+        function iris_corr_decay_pill(cl) {
+            var label = cl.decay_label || '';
+            var score = typeof cl.decay_score === 'number' ? cl.decay_score : null;
+            var detail = cl.decay_detail || '';
+            if (!label) return '';
+
+            var cfg = {
+                'Active': { bg: 'rgba(34,197,94,0.15)',  border: 'rgba(34,197,94,0.45)',  color: '#86efac', icon: '●' },
+                'Aging':  { bg: 'rgba(234,179,8,0.12)',  border: 'rgba(234,179,8,0.40)',  color: '#fde047', icon: '◑' },
+                'Stale':  { bg: 'rgba(107,114,128,0.12)', border: 'rgba(107,114,128,0.35)', color: '#9ca3af', icon: '○' },
+            };
+            var c = cfg[label] || cfg['Stale'];
+            var scoreStr = score !== null ? ' · ' + Math.round(score * 100) + '%' : '';
+            var tooltip = iris_corr_esc(label + (scoreStr ? ' (' + Math.round(score * 100) + '%)' : '') + ' — ' + detail);
+            return '<span class="ml-1" title="' + tooltip + '" style="'
+                + 'display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;'
+                + 'background:' + c.bg + ';border:1px solid ' + c.border + ';color:' + c.color + ';'
+                + 'cursor:default;vertical-align:middle;">'
+                + c.icon + ' ' + iris_corr_esc(label) + scoreStr
+                + '</span>';
+        }
+
+        // Short 6-char hex hash of the narrative text — lets analysts tell at a
+        // glance whether a Re-run produced different output without reading word-for-word.
+        function iris_corr_narrative_hash(s) {
+            var h = 5381;
+            for (var i = 0; i < s.length; i++) {
+                h = ((h << 5) + h) ^ s.charCodeAt(i);
+                h = h >>> 0; // keep unsigned 32-bit
+            }
+            return h.toString(16).padStart(8, '0').slice(0, 6);
+        }
+
+        function iris_corr_render(r) {
+            // Reset any active cluster filter so it doesn't bleed into the freshly-rendered table
+            CORR._activeClusterFilter = null;
+            CORR._clusterPairs = {};  // cluster_id → [{ioc_value, ioc_type_id}]
+            $('#iris-corr-filter-badge').hide();
+            $('#iris-corr-table-subtitle').show();
+
+            var pairs    = r.pairs    || [];
+            var clusters = r.clusters || [];
+            var caseMeta = r.case_meta || {};
+
+            // Summary cards
+            var allCaseIds = new Set();
+            pairs.forEach(function (p) { p.case_ids.forEach(function (c) { allCaseIds.add(c); }); });
+            var untagged = clusters.filter(function (cl) {
+                return !cl.case_ids.every(function (cid) {
+                    var tags = (caseMeta[cid] || {}).tags || [];
+                    return tags.indexOf(cl.suggested_campaign_tag) !== -1;
+                });
+            }).length;
+
+            $('#iris-corr-stat-iocs').text(pairs.length);
+            $('#iris-corr-stat-clusters').text(clusters.length);
+            $('#iris-corr-stat-cases').text(allCaseIds.size);
+            $('#iris-corr-stat-untagged').text(untagged);
+            $('#iris-corr-summary-row').show();
+
+            // Cluster cards
+            var clusterHtml = '';
+            if (clusters.length === 0) {
+                clusterHtml = '<p class="text-muted">No clusters meeting the threshold. Try reducing "Min shared IOCs" or widening the date range.</p>';
+            } else {
+                clusters.forEach(function (cl) {
+                    // Pairs whose case_ids are a subset of this cluster (= shared within cluster).
+                    // Stored on CORR._clusterPairs to avoid JSON-in-HTML-attribute encoding issues.
+                    var memberSet = new Set(cl.case_ids);
+                    var clusterPairs = pairs.filter(function (p) {
+                        return p.case_ids.every(function (cid) { return memberSet.has(cid); });
+                    }).map(function (p) {
+                        return { ioc_value: p.ioc_value, ioc_type_id: p.ioc_type_id };
+                    });
+                    CORR._clusterPairs[cl.cluster_id] = clusterPairs;
+
+                    var caseChips = cl.case_ids.map(function (cid) {
+                        var meta = caseMeta[cid] || {};
+                        var label = '#' + cid + (meta.name ? ' – ' + iris_corr_esc(meta.name) : '');
+                        var client = meta.client ? ' <span class="text-muted small">(' + iris_corr_esc(meta.client) + ')</span>' : '';
+                        return '<a href="/case?cid=' + cid + '" class="badge badge-light border mr-1" target="_blank">' + label + client + '</a>';
+                    }).join('');
+
+                    var iocChips = cl.shared_iocs.slice(0, 8).map(function (v) {
+                        return '<code class="mr-1 small">' + iris_corr_esc(v) + '</code>';
+                    }).join('') + (cl.shared_iocs.length > 8 ? '<span class="text-muted small">+' + (cl.shared_iocs.length - 8) + ' more</span>' : '');
+
+                    // Safe cluster_id for DOM id (already a short hex string, but be defensive)
+                    var safeId = cl.cluster_id.replace(/[^a-zA-Z0-9-]/g, '');
+
+                    clusterHtml += '<div class="card card-body mb-2 p-3 iris-corr-cluster-card"'
+                        + ' style="border-left: 3px solid rgba(139,92,246,0.6); cursor:pointer;"'
+                        + ' data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '"'
+                        + ' data-case-ids="' + iris_corr_esc(JSON.stringify(cl.case_ids)) + '"'
+                        + ' title="Click to filter Shared IOCs to this cluster">'
+                        + '<div class="d-flex align-items-start justify-content-between">'
+                        + '<div style="min-width:0;flex:1 1 auto;">'
+                        + '<strong>Cluster ' + iris_corr_esc(cl.cluster_id) + '</strong>'
+                        + ' <span class="badge badge-secondary ml-1">' + cl.case_ids.length + ' cases</span>'
+                        + ' <span class="badge badge-info ml-1" title="Distinct IOC values shared across cases in this cluster">' + cl.shared_ioc_count + ' shared IOC(s)</span>'
+                        + iris_corr_decay_pill(cl)
+                        + iris_corr_confidence_pill(cl)
+                        + '<div class="mt-1">' + caseChips + '</div>'
+                        + '<div class="mt-1 text-muted small">Shared values: ' + iocChips + '</div>'
+                        + '</div>'
+                        + '<div class="ml-3 mt-1 text-right" style="min-width:220px;flex-shrink:0;">'
+                        + '<code class="small d-block mb-1" title="Suggested campaign tag">' + iris_corr_esc(cl.suggested_campaign_tag) + '</code>'
+                        + '<div class="d-flex flex-column align-items-end" style="gap:6px;">'
+                        + (cl.case_ids.every(function (cid) {
+                            var tags = (caseMeta[cid] || {}).tags || [];
+                            return tags.indexOf(cl.suggested_campaign_tag) !== -1;
+                          })
+                          ? '<span class="badge badge-success" style="font-size:12px;padding:6px 10px;"><i class="fas fa-check mr-1"></i>Tagged</span>'
+                          : '<button class="btn btn-sm btn-outline-primary iris-corr-apply-tag-btn"'
+                            + ' data-case-ids="' + iris_corr_esc(JSON.stringify(cl.case_ids)) + '"'
+                            + ' data-tag="' + iris_corr_esc(cl.suggested_campaign_tag) + '"'
+                            + ' data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '">'
+                            + '<i class="fas fa-tag mr-1"></i> Apply to ' + cl.case_ids.length + ' case(s)'
+                            + '</button>'
+                        )
+                        + '<button class="btn btn-sm btn-outline-secondary iris-corr-filter-btn"'
+                        + ' data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '"'
+                        + ' data-case-ids="' + iris_corr_esc(JSON.stringify(cl.case_ids)) + '"'
+                        + ' title="Filter Shared IOCs table to this cluster">'
+                        + '<i class="fas fa-filter mr-1"></i> Filter IOCs'
+                        + '</button>'
+                        + '<button class="btn btn-sm btn-outline-secondary iris-corr-narrative-btn" data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '">'
+                        + '<i class="fas fa-magic mr-1" style="color:rgba(139,92,246,0.9);"></i> Analyze cluster'
+                        + '</button>'
+                        + '<button class="btn btn-sm btn-outline-secondary iris-corr-stix-btn"'
+                        + ' data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '"'
+                        + ' title="Download STIX 2.1 bundle for this cluster">'
+                        + '<i class="fas fa-download mr-1"></i> Export STIX'
+                        + '</button>'
+                        + '</div>'
+                        + '</div>'
+                        + '</div>'
+                        // Narrative slot — hidden until the AI response arrives
+                        + '<div class="iris-corr-narrative-slot mt-3" id="iris-corr-narrative-' + safeId + '" style="display:none;">'
+                        + '</div>'
+                        + '</div>';
+                });
+            }
+            $('#iris-corr-clusters-body').html(clusterHtml);
+            $('#iris-corr-clusters-row').show();
+
+            // IOC overlap table — rows are clickable (open IOC detail drawer)
+            var tbody = '';
+            pairs.forEach(function (p) {
+                var caseLinks = p.case_ids.map(function (cid) {
+                    var meta = caseMeta[cid] || {};
+                    var nm = meta.name ? iris_corr_esc(meta.name) : '';
+                    return '<a href="/case/ioc?cid=' + cid + '" target="_blank" title="' + nm + '" onclick="event.stopPropagation();">#' + cid + '</a>';
+                }).join(' ');
+                tbody += '<tr class="iris-corr-ioc-row" style="cursor:pointer;"'
+                    + ' data-ioc-value="' + iris_corr_esc(p.ioc_value) + '"'
+                    + ' data-ioc-type-id="' + iris_corr_esc(p.ioc_type_id) + '"'
+                    + ' data-ioc-type-name="' + iris_corr_esc(p.ioc_type_name) + '"'
+                    + ' data-case-ids="' + iris_corr_esc(JSON.stringify(p.case_ids)) + '"'
+                    + ' title="Click to see full cross-case details">'
+                    + '<td><code>' + iris_corr_esc(p.ioc_value) + '</code>'
+                    + ' <span class="text-muted" style="font-size:10px;opacity:0.5;">▸ details</span></td>'
+                    + '<td><span class="badge badge-light">' + iris_corr_esc(p.ioc_type_name) + '</span></td>'
+                    + '<td>' + caseLinks + '</td>'
+                    + '<td><strong>' + p.case_count + '</strong></td>'
+                    + '</tr>';
+            });
+            $('#iris-corr-table-body').html(tbody || '<tr><td colspan="4" class="text-center text-muted">No shared IOCs found.</td></tr>');
+            $('#iris-corr-table-row').show();
+
+            // Force-directed graph — show the row now, but defer the actual
+            // D3 draw until the tab pane is visible so offsetWidth is real.
+            // If the tab is already visible (re-run from within the tab), draw immediately.
+            if (pairs.length > 0) {
+                $('#iris-corr-graph-row').show();
+                CORR._pendingGraphArgs = [pairs, clusters, caseMeta];
+                CORR._lastGraphArgs   = [pairs, clusters, caseMeta];
+                var pane = document.getElementById('iris-dash-correlation');
+                var isVisible = pane && pane.classList.contains('show');
+                if (isVisible) {
+                    iris_corr_load_d3(function () {
+                        iris_corr_draw_graph(CORR._pendingGraphArgs[0], CORR._pendingGraphArgs[1], CORR._pendingGraphArgs[2], null);
+                        CORR._pendingGraphArgs = null;
+                    });
+                }
+                // Otherwise drawn by the shown.bs.tab handler below
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // Campaign tag application
+        // ----------------------------------------------------------------
+
+        // ----------------------------------------------------------------
+        // AI cluster narrative — delegated click handler + renderer
+        // ----------------------------------------------------------------
+        $(document).on('click', '.iris-corr-narrative-btn', function () {
+            var clusterId = $(this).attr('data-cluster-id');  // .data() auto-casts numeric strings to int → breaks === comparison
+            if (!clusterId) return;
+            iris_corr_analyze_cluster(clusterId);
+        });
+
+        $(document).on('click', '.iris-corr-stix-btn', function () {
+            var clusterId = $(this).attr('data-cluster-id');
+            if (!clusterId) return;
+            // Read current filter state from the same DOM inputs iris_correlation_run uses
+            var minShared = parseInt($('#iris-corr-min-shared').val(), 10) || 2;
+            var startDate = $('#iris-corr-start').val() || '';
+            var endDate   = $('#iris-corr-end').val() || '';
+            var url = '/api/v2/correlation/clusters/' + encodeURIComponent(clusterId) + '/stix'
+                    + '?min_shared=' + minShared;
+            if (startDate) url += '&start_date=' + encodeURIComponent(startDate);
+            if (endDate)   url += '&end_date='   + encodeURIComponent(endDate);
+            // Trigger browser download without navigation
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'iris-ng-cluster-' + clusterId + '-stix21.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        $(document).on('click', '.iris-corr-apply-tag-btn', function () {
+            var $btn    = $(this);
+            var caseIds        = JSON.parse($btn.attr('data-case-ids') || '[]');
+            var tag            = $btn.attr('data-tag') || '';
+            var clusterId      = $btn.attr('data-cluster-id') || '';
+            var sharedIocPairs = CORR._clusterPairs[clusterId] || [];
+            if (!caseIds.length || !tag) return;
+            if (!confirm('Apply tag "' + tag + '" to ' + caseIds.length + ' case(s) and their ' + sharedIocPairs.length + ' shared IOC(s)?')) return;
+
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Applying…');
+
+            $.ajax({
+                url: '/api/v2/correlation/apply-campaign-tag',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ case_ids: caseIds, tag: tag, shared_ioc_pairs: sharedIocPairs, csrf_token: $('#csrf_token').val() }),
+                dataType: 'json',
+            }).done(function (resp) {
+                var applied = (resp.applied || []).length;
+                var skipped = (resp.already_tagged || []).length;
+                notify_success('Tag applied to ' + applied + ' case(s)' + (skipped ? ', ' + skipped + ' already tagged.' : '.'));
+                $btn.replaceWith(
+                    '<span class="badge badge-success" style="font-size:12px;padding:6px 10px;">'
+                    + '<i class="fas fa-check mr-1"></i>Tagged</span>'
+                );
+            }).fail(function () {
+                notify_error('Failed to apply campaign tag. Check console.');
+                $btn.prop('disabled', false).html('<i class="fas fa-tag mr-1"></i> Apply to ' + caseIds.length + ' case(s)');
+            });
+        });
+
+        // ----------------------------------------------------------------
+        // Cluster IOC filter
+        // ----------------------------------------------------------------
+        CORR._activeClusterFilter = null; // cluster_id string or null
+
+        function iris_corr_filter_by_cluster(clusterId, caseIds, clusterLabel) {
+            var activating = (CORR._activeClusterFilter !== clusterId);
+            CORR._activeClusterFilter = activating ? clusterId : null;
+
+            // Update cluster card highlight states
+            $('.iris-corr-cluster-card').each(function () {
+                var $card = $(this);
+                var isActive = activating && $card.attr('data-cluster-id') === clusterId;
+                $card.css('border-left-color', isActive
+                    ? 'rgba(139,92,246,1)'
+                    : 'rgba(139,92,246,0.6)');
+                $card.css('background-color', isActive
+                    ? 'rgba(139,92,246,0.07)'
+                    : '');
+                // Swap filter button label
+                var $btn = $card.find('.iris-corr-filter-btn');
+                if (isActive) {
+                    $btn.html('<i class="fas fa-filter mr-1"></i> Showing');
+                    $btn.removeClass('btn-outline-secondary').addClass('btn-secondary');
+                } else {
+                    $btn.html('<i class="fas fa-filter mr-1"></i> Filter IOCs');
+                    $btn.removeClass('btn-secondary').addClass('btn-outline-secondary');
+                }
+            });
+
+            // Filter IOC table rows
+            var memberSet = activating ? new Set(caseIds) : null;
+            $('#iris-corr-table-body tr.iris-corr-ioc-row').each(function () {
+                if (!memberSet) {
+                    $(this).show();
+                    return;
+                }
+                var rowCaseIds = JSON.parse($(this).attr('data-case-ids') || '[]');
+                // Show row only if ALL its case_ids fall within this cluster's members
+                var subset = rowCaseIds.every(function (cid) { return memberSet.has(cid); });
+                $(this).toggle(subset);
+            });
+
+            // Update table header badge
+            if (activating) {
+                $('#iris-corr-filter-label').text('Cluster ' + clusterLabel);
+                $('#iris-corr-filter-badge').show();
+                $('#iris-corr-table-subtitle').hide();
+            } else {
+                $('#iris-corr-filter-badge').hide();
+                $('#iris-corr-table-subtitle').show();
+            }
+
+            // Scroll to the table
+            if (activating) {
+                var $table = $('#iris-corr-table-row');
+                if ($table.length) {
+                    $('html,body').animate({ scrollTop: $table.offset().top - 80 }, 250);
+                }
+            }
+
+            // Redraw the graph to match the active filter
+            iris_corr_refresh_graph();
+        }
+
+        // Click on cluster card body (not a button/link inside it) — same as Filter IOCs button
+        $(document).on('click', '.iris-corr-cluster-card', function (e) {
+            if ($(e.target).closest('button, a').length) return; // let buttons/links handle themselves
+            var $card = $(this);
+            var clusterId = $card.attr('data-cluster-id');
+            var caseIds   = JSON.parse($card.attr('data-case-ids') || '[]');
+            iris_corr_filter_by_cluster(clusterId, caseIds, clusterId);
+        });
+
+        $(document).on('click', '.iris-corr-filter-btn', function (e) {
+            e.stopPropagation(); // don't also fire the card click
+            var clusterId = $(this).attr('data-cluster-id');
+            var caseIds   = JSON.parse($(this).attr('data-case-ids') || '[]');
+            iris_corr_filter_by_cluster(clusterId, caseIds, clusterId);
+        });
+
+        $('#iris-corr-filter-clear').on('click', function () {
+            iris_corr_filter_by_cluster(CORR._activeClusterFilter, [], '');
+        });
+
+        function iris_corr_narrative_slot(clusterId) {
+            var safeId = String(clusterId).replace(/[^a-zA-Z0-9-]/g, '');
+            return document.getElementById('iris-corr-narrative-' + safeId);
+        }
+
+        window.iris_corr_analyze_cluster = function (clusterId, forceRegen) {
+            if (CORR._narrativeLoading[clusterId]) return;
+
+            // If already cached, toggle visibility
+            if (CORR._narrativeCache[clusterId]) {
+                var slot = iris_corr_narrative_slot(clusterId);
+                if (slot) {
+                    $(slot).toggle();
+                }
+                return;
+            }
+
+            // Find the cluster + full case_meta from the last report
+            var report = CORR.report;
+            if (!report || !report.clusters) {
+                notify_error('Correlation data not loaded. Click Refresh first.');
+                return;
+            }
+            var cluster = null;
+            for (var i = 0; i < report.clusters.length; i++) {
+                if (report.clusters[i].cluster_id === clusterId) {
+                    cluster = report.clusters[i];
+                    break;
+                }
+            }
+            if (!cluster) {
+                notify_error('Cluster not found in current report.');
+                return;
+            }
+
+            var slot = iris_corr_narrative_slot(clusterId);
+            if (!slot) return;
+
+            CORR._narrativeLoading[clusterId] = true;
+
+            // Show spinner inside the slot
+            $(slot).html(
+                '<div class="d-flex align-items-center text-muted small py-2">'
+                + '<span class="spinner-border spinner-border-sm mr-2" role="status"></span>'
+                + 'Analyzing cluster with AI…'
+                + '</div>'
+            ).show();
+
+            // Update the button label while loading
+            $('.iris-corr-narrative-btn[data-cluster-id="' + clusterId + '"]')
+                .prop('disabled', true)
+                .html('<i class="fas fa-spinner fa-spin mr-1"></i> Analyzing…');
+
+            $.ajax({
+                url: '/api/v2/correlation/cluster-narrative',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    cluster: cluster,
+                    case_meta: report.case_meta || {},
+                    force: forceRegen ? true : false,
+                    csrf_token: $('#csrf_token').val(),
+                }),
+                dataType: 'json',
+            }).done(function (resp) {
+                CORR._narrativeLoading[clusterId] = false;
+                CORR._narrativeCache[clusterId] = resp;
+
+                var confColor = { high: '#4caf50', medium: '#ff9800', low: '#9e9e9e' }[resp.confidence] || '#9e9e9e';
+                var confLabel = (resp.confidence || 'low').charAt(0).toUpperCase() + (resp.confidence || 'low').slice(1) + ' confidence';
+
+                var html = '<div style="'
+                    + 'background: rgba(139,92,246,0.07);'
+                    + 'border: 1px solid rgba(139,92,246,0.2);'
+                    + 'border-radius: 6px;'
+                    + 'padding: 14px 16px;'
+                    + '">'
+                    + '<div class="d-flex align-items-center justify-content-between mb-2" style="flex-wrap:wrap;gap:6px;">'
+                    + '<span style="font-weight:600;font-size:13px;color:#c4b5fd;">'
+                    + '<i class="fas fa-magic mr-1"></i>'
+                    + iris_corr_esc(resp.suggested_name || 'Cluster analysis')
+                    + '</span>'
+                    + '<span style="font-size:11px;color:' + confColor + ';font-weight:500;">'
+                    + '● ' + confLabel
+                    + '</span>'
+                    + '</div>'
+                    + '<div style="font-size:13px;line-height:1.6;white-space:pre-wrap;color:inherit;">'
+                    + iris_corr_esc(resp.narrative || '')
+                    + '</div>'
+                    + '<div class="text-muted mt-2" style="font-size:11px;">'
+                    + iris_corr_esc(resp.prompt_id || '')
+                    + (resp.model ? ' · ' + iris_corr_esc(resp.model) : '')
+                    + (resp.cached ? ' · <span title="Served from cache">cached</span>' : '')
+                    + ' · ' + (resp.generated_at ? new Date(resp.generated_at).toLocaleString() : new Date().toLocaleString())
+                    + ' · #' + iris_corr_narrative_hash(resp.narrative || '')
+                    + ' · <a href="javascript:void(0);" class="text-muted iris-corr-narrative-rerun" data-cluster-id="' + iris_corr_esc(clusterId) + '">Re-run</a>'
+                    + '</div>'
+                    + '</div>';
+
+                $(slot).html(html).show();
+
+                // Update the cluster card header with the AI-suggested name
+                var card = $(slot).closest('.iris-corr-cluster-card');
+                if (resp.suggested_name && card.length) {
+                    var nameSpan = card.find('.iris-corr-ai-name');
+                    if (!nameSpan.length) {
+                        card.find('strong').first().after(
+                            '<span class="iris-corr-ai-name text-muted small ml-2" style="font-style:italic;">'
+                            + '— ' + iris_corr_esc(resp.suggested_name)
+                            + '</span>'
+                        );
+                    }
+                }
+
+                // Restore button
+                $('.iris-corr-narrative-btn[data-cluster-id="' + clusterId + '"]')
+                    .prop('disabled', false)
+                    .html('<i class="fas fa-magic mr-1" style="color:rgba(139,92,246,0.9);"></i> Hide analysis');
+
+            }).fail(function (xhr) {
+                CORR._narrativeLoading[clusterId] = false;
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'AI call failed';
+                $(slot).html(
+                    '<div class="text-danger small py-1"><i class="fas fa-exclamation-circle mr-1"></i>' + iris_corr_esc(msg) + '</div>'
+                ).show();
+                $('.iris-corr-narrative-btn[data-cluster-id="' + clusterId + '"]')
+                    .prop('disabled', false)
+                    .html('<i class="fas fa-magic mr-1" style="color:rgba(139,92,246,0.9);"></i> Analyze cluster');
+            });
+        };
+
+        // Re-run link — forces a fresh AI call (bypasses server cache) then updates JS cache
+        $(document).on('click', '.iris-corr-narrative-rerun', function () {
+            var clusterId = $(this).attr('data-cluster-id');  // .data() auto-casts to int → use .attr()
+            if (!clusterId) return;
+            delete CORR._narrativeCache[clusterId];
+            var slot = iris_corr_narrative_slot(clusterId);
+            if (slot) { $(slot).hide().html(''); }
+            $('.iris-corr-narrative-btn[data-cluster-id="' + clusterId + '"]')
+                .html('<i class="fas fa-magic mr-1" style="color:rgba(139,92,246,0.9);"></i> Analyze cluster');
+            iris_corr_analyze_cluster(clusterId, true);
+        });
+
+        // ----------------------------------------------------------------
+        // D3 lazy loader — local copy, no CDN dependency
+        // ----------------------------------------------------------------
+        function iris_corr_load_d3(cb) {
+            if (CORR.d3Loaded) { cb(); return; }
+            if (window.d3) { CORR.d3Loaded = true; cb(); return; }
+            var s = document.createElement('script');
+            s.src = '/static/assets/js/plugin/d3.v7.min.js';
+            s.onload = function () { CORR.d3Loaded = true; cb(); };
+            s.onerror = function () { console.error('iris-corr: failed to load D3 from /static/assets/js/plugin/d3.v7.min.js'); };
+            document.head.appendChild(s);
+        }
+
+        // ----------------------------------------------------------------
+        // Force-directed graph (D3 v7)
+        // filterCaseIds: optional Set of case IDs to include (null = all)
+        // ----------------------------------------------------------------
+        function iris_corr_draw_graph(pairs, clusters, caseMeta, filterCaseIds) {
+            var container = document.getElementById('iris-corr-graph');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // offsetWidth is 0 when the tab pane is hidden (display:none).
+            // Walk up to the nearest visible ancestor to get a real width,
+            // falling back to the window width minus a margin.
+            var W = container.offsetWidth;
+            if (!W) {
+                var parent = container.parentElement;
+                while (parent && !parent.offsetWidth) { parent = parent.parentElement; }
+                W = (parent && parent.offsetWidth) ? parent.offsetWidth - 40 : (window.innerWidth - 80);
+            }
+            var H = 480;
+
+            // Apply cluster filter if active
+            var activePairs = pairs;
+            if (filterCaseIds && filterCaseIds.size > 0) {
+                activePairs = pairs.filter(function (p) {
+                    return p.case_ids.every(function (cid) { return filterCaseIds.has(cid); });
+                });
+            }
+
+            // Build nodes + links from (filtered) pairs
+            var nodeMap = {};
+            var links = [];
+
+            // edge_weights: { "cid1-cid2": count }
+            var edgeWeights = {};
+            activePairs.forEach(function (p) {
+                var cids = p.case_ids;
+                for (var i = 0; i < cids.length; i++) {
+                    for (var j = i + 1; j < cids.length; j++) {
+                        var key = Math.min(cids[i], cids[j]) + '-' + Math.max(cids[i], cids[j]);
+                        edgeWeights[key] = (edgeWeights[key] || 0) + 1;
+                        nodeMap[cids[i]] = true;
+                        nodeMap[cids[j]] = true;
+                    }
+                }
+            });
+
+            // Also include isolated cluster nodes with no shared-IOC edges
+            // when a filter is active (so single-node clusters aren't invisible)
+            if (filterCaseIds && filterCaseIds.size > 0) {
+                filterCaseIds.forEach(function (cid) { nodeMap[cid] = true; });
+            }
+
+            // Cluster colour map
+            var clusterColors = ['#7c3aed','#2563eb','#059669','#d97706','#dc2626','#7e22ce'];
+            var caseCluster = {};
+            clusters.forEach(function (cl, idx) {
+                cl.case_ids.forEach(function (cid) {
+                    caseCluster[cid] = idx;
+                });
+            });
+
+            var nodes = Object.keys(nodeMap).map(function (cid) {
+                cid = parseInt(cid, 10);
+                var meta = caseMeta[cid] || {};
+                return { id: cid, name: meta.name || ('#' + cid), client: meta.client || '', clusterIdx: caseCluster[cid] };
+            });
+
+            Object.entries(edgeWeights).forEach(function (kv) {
+                var parts = kv[0].split('-');
+                links.push({ source: parseInt(parts[0], 10), target: parseInt(parts[1], 10), weight: kv[1] });
+            });
+
+            var svg = d3.select('#iris-corr-graph')
+                .append('svg')
+                .attr('width', W)
+                .attr('height', H)
+                .style('background', '#0f0f13')
+                .style('cursor', 'grab');
+
+            // Arrow marker
+            svg.append('defs').append('marker')
+                .attr('id', 'iris-corr-arrow')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 20).attr('refY', 0)
+                .attr('markerWidth', 6).attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#555');
+
+            // Pan + zoom: all graph content lives inside this group;
+            // the zoom transform is applied to the group, not the SVG itself,
+            // so the SVG viewport stays fixed.
+            var g = svg.append('g').attr('class', 'iris-corr-graph-root');
+
+            var zoomBehavior = d3.zoom()
+                .scaleExtent([0.2, 4])
+                .on('zoom', function (event) {
+                    g.attr('transform', event.transform);
+                    svg.style('cursor', event.sourceEvent && event.sourceEvent.buttons ? 'grabbing' : 'grab');
+                });
+
+            svg.call(zoomBehavior)
+               .on('dblclick.zoom', null); // disable double-click zoom (it's surprising UX)
+
+            // Hint label
+            svg.append('text')
+                .attr('x', 8).attr('y', H - 8)
+                .attr('fill', 'rgba(255,255,255,0.2)')
+                .attr('font-size', '10px')
+                .attr('pointer-events', 'none')
+                .text('Drag to pan · Scroll to zoom');
+
+            var simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(function (d) { return d.id; }).distance(120).strength(0.6))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(W / 2, H / 2))
+                .force('collision', d3.forceCollide(30));
+
+            var linkSel = g.append('g').selectAll('line')
+                .data(links).join('line')
+                .attr('stroke', 'rgba(139,92,246,0.4)')
+                .attr('stroke-width', function (d) { return Math.min(d.weight * 1.5 + 1, 8); });
+
+            var nodeSel = g.append('g').selectAll('g')
+                .data(nodes).join('g')
+                .attr('cursor', 'pointer')
+                .call(d3.drag()
+                    .on('start', function (event, d) {
+                        if (!event.active) simulation.alphaTarget(0.3).restart();
+                        d.fx = d.x; d.fy = d.y;
+                        event.sourceEvent.stopPropagation(); // don't start a pan on node drag
+                    })
+                    .on('drag', function (event, d) { d.fx = event.x; d.fy = event.y; })
+                    .on('end', function (event, d) {
+                        if (!event.active) simulation.alphaTarget(0);
+                        d.fx = null; d.fy = null;
+                    })
+                )
+                .on('click', function (event, d) {
+                    window.open('/case?cid=' + d.id, '_blank');
+                });
+
+            nodeSel.append('circle')
+                .attr('r', 18)
+                .attr('fill', function (d) {
+                    return d.clusterIdx !== undefined ? clusterColors[d.clusterIdx % clusterColors.length] : '#374151';
+                })
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 1.5);
+
+            nodeSel.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', '#fff')
+                .attr('font-size', '10px')
+                .attr('font-weight', 'bold')
+                .text(function (d) { return '#' + d.id; });
+
+            nodeSel.append('title')
+                .text(function (d) { return '#' + d.id + ' – ' + d.name + (d.client ? ' (' + d.client + ')' : ''); });
+
+            // Edge weight labels — keep a named selection so the tick handler
+            // can update positions without relying on fragile :last-of-type.
+            var edgeLabelSel = g.append('g').selectAll('text')
+                .data(links.filter(function (l) { return l.weight > 1; }))
+                .join('text')
+                .attr('font-size', '9px')
+                .attr('fill', 'rgba(255,255,255,0.5)')
+                .attr('text-anchor', 'middle')
+                .attr('pointer-events', 'none')
+                .text(function (d) { return d.weight + ' IOCs'; });
+
+            simulation.on('tick', function () {
+                linkSel
+                    .attr('x1', function (d) { return d.source.x; })
+                    .attr('y1', function (d) { return d.source.y; })
+                    .attr('x2', function (d) { return d.target.x; })
+                    .attr('y2', function (d) { return d.target.y; });
+                nodeSel.attr('transform', function (d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+                edgeLabelSel
+                    .attr('x', function (d) { return (d.source.x + d.target.x) / 2; })
+                    .attr('y', function (d) { return (d.source.y + d.target.y) / 2; });
+            });
+        }
+
+        // Redraw the graph respecting the current cluster filter state.
+        function iris_corr_refresh_graph() {
+            var args = CORR._pendingGraphArgs || CORR._lastGraphArgs;
+            if (!args) return;
+            if (!window.d3) return;
+            var filterSet = null;
+            if (CORR._activeClusterFilter) {
+                // Find the cluster's case_ids from the stored report
+                var report = CORR.report;
+                if (report && report.clusters) {
+                    for (var i = 0; i < report.clusters.length; i++) {
+                        if (report.clusters[i].cluster_id === CORR._activeClusterFilter) {
+                            filterSet = new Set(report.clusters[i].case_ids);
+                            break;
+                        }
+                    }
+                }
+            }
+            iris_corr_draw_graph(args[0], args[1], args[2], filterSet);
+        }
+
+        // Draw the graph when the Correlation tab becomes fully visible.
+        // Bootstrap fires 'shown.bs.tab' AFTER the CSS transition completes,
+        // so offsetWidth is real at that point.
+        $('a[href="#iris-dash-correlation"]').on('shown.bs.tab', function () {
+            if (CORR._pendingGraphArgs) {
+                iris_corr_load_d3(function () {
+                    CORR._lastGraphArgs = CORR._pendingGraphArgs;
+                    iris_corr_draw_graph(CORR._pendingGraphArgs[0], CORR._pendingGraphArgs[1], CORR._pendingGraphArgs[2], null);
+                    CORR._pendingGraphArgs = null;
+                });
+            }
+        });
+
+    })();
+    </script>
+{% endblock javascripts %}
