@@ -1,0 +1,229 @@
+{% if current_user.is_authenticated and session['current_case'] %}
+<style>
+.iris-notif-badge {
+	position: absolute; top: 4px; right: 2px; min-width: 16px; height: 16px;
+	padding: 0 4px; border-radius: 8px; background: #f5365c; color: #fff;
+	font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
+}
+.iris-notif-panel {
+	width: 380px; max-width: 92vw; padding: 0; border: 1px solid rgba(139, 92, 246, 0.35);
+	border-radius: 8px; background: #17171c; overflow: hidden;
+}
+.iris-notif-head {
+	display: flex; align-items: center; justify-content: space-between;
+	padding: 12px 14px; border-bottom: 1px solid rgba(139, 92, 246, 0.22);
+}
+.iris-notif-title { color: #e8e6f0; font-size: 13px; font-weight: 600; letter-spacing: .3px; }
+.iris-notif-sub { color: #8a8798; font-size: 11px; margin-top: 2px; }
+.iris-notif-ack {
+	border: 1px solid rgba(139, 92, 246, 0.35); background: rgba(139, 92, 246, 0.12);
+	color: #d4c4ff; font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer;
+}
+.iris-notif-ack:disabled { opacity: .4; cursor: default; }
+.iris-notif-ack:not(:disabled):hover { background: rgba(139, 92, 246, 0.22); }
+.iris-notif-body { max-height: 380px; overflow-y: auto; }
+.iris-notif-row {
+	display: flex; gap: 10px; padding: 10px 14px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.iris-notif-row:last-child { border-bottom: none; }
+.iris-notif-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: #8b5cf6; }
+.iris-notif-dot.ioc { background: #f5365c; }
+.iris-notif-dot.asset { background: #5e72e4; }
+.iris-notif-dot.timeline { background: #f4c430; }
+.iris-notif-dot.note { background: #2dce89; }
+.iris-notif-dot.task { background: #fb6340; }
+.iris-notif-dot.evidence { background: #11cdef; }
+.iris-notif-text { color: #d8d6e0; font-size: 12px; line-height: 1.4; word-break: break-word; }
+.iris-notif-meta { color: #7e7b8c; font-size: 10.5px; margin-top: 3px; }
+.iris-notif-api {
+	display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px;
+	background: rgba(139, 92, 246, 0.15); color: #b9a6f0; font-size: 9.5px;
+}
+.iris-notif-empty { padding: 24px 14px; text-align: center; color: #7e7b8c; font-size: 12px; }
+.iris-notif-foot {
+	padding: 8px 14px; border-top: 1px solid rgba(139, 92, 246, 0.22);
+	color: #7e7b8c; font-size: 10.5px; text-align: center;
+}
+</style>
+<script>
+/* Case-updates bell. Scoped to the case currently in session context: the
+   badge, the list and the acknowledgement all key off this one case id, so
+   switching context switches the whole feed.
+
+   Vanilla JS on purpose - this include renders well before jQuery loads, and
+   everything here is wired from DOMContentLoaded. */
+(function () {
+	var CASE_ID = {{ session['current_case'].case_id }};
+	var POLL_MS = 60000;
+	var latestSeen = null;
+
+	function el(id) { return document.getElementById(id); }
+
+	function relTime(iso) {
+		if (!iso) { return ''; }
+		var then = new Date(iso).getTime();
+		if (isNaN(then)) { return ''; }
+		var secs = Math.floor((Date.now() - then) / 1000);
+		if (secs < 60) { return 'just now'; }
+		if (secs < 3600) { return Math.floor(secs / 60) + 'm ago'; }
+		if (secs < 86400) { return Math.floor(secs / 3600) + 'h ago'; }
+		if (secs < 2592000) { return Math.floor(secs / 86400) + 'd ago'; }
+		return new Date(iso).toISOString().slice(0, 10);
+	}
+
+	function setBadge(count) {
+		var badge = el('iris-notif-badge');
+		if (!badge) { return; }
+		if (count > 0) {
+			badge.textContent = count > 99 ? '99+' : String(count);
+			badge.style.display = '';
+		} else {
+			badge.style.display = 'none';
+		}
+	}
+
+	function api(path, options) {
+		return fetch('/api/v2/cases/' + CASE_ID + '/notifications' + path,
+			options || { credentials: 'same-origin' })
+			.then(function (r) {
+				if (!r.ok) { throw new Error('HTTP ' + r.status); }
+				return r.json();
+			});
+	}
+
+	function loadCount() {
+		api('/count').then(function (data) {
+			setBadge(data.unread || 0);
+		}).catch(function () { /* transient - the next poll retries */ });
+	}
+
+	function renderRows(data) {
+		var body = el('iris-notif-body');
+		var foot = el('iris-notif-foot');
+		var ackBtn = el('iris-notif-ack');
+		if (!body) { return; }
+
+		body.textContent = '';
+		latestSeen = data.latest_at || null;
+
+		if (!data.items || !data.items.length) {
+			var empty = document.createElement('div');
+			empty.className = 'iris-notif-empty';
+			empty.textContent = 'No new updates for this case.';
+			body.appendChild(empty);
+			if (ackBtn) { ackBtn.disabled = true; }
+		} else {
+			data.items.forEach(function (item) {
+				var row = document.createElement('div');
+				row.className = 'iris-notif-row';
+
+				var dot = document.createElement('div');
+				dot.className = 'iris-notif-dot ' + (item.kind || 'activity');
+				row.appendChild(dot);
+
+				var col = document.createElement('div');
+
+				var text = document.createElement('div');
+				text.className = 'iris-notif-text';
+				/* textContent, not innerHTML - activity descriptions carry
+				   analyst-supplied object names. */
+				text.textContent = item.text || '';
+				col.appendChild(text);
+
+				var meta = document.createElement('div');
+				meta.className = 'iris-notif-meta';
+				meta.textContent = (item.by || 'system') + ' · ' + relTime(item.at);
+				if (item.from_api) {
+					var tag = document.createElement('span');
+					tag.className = 'iris-notif-api';
+					tag.textContent = 'API';
+					meta.appendChild(tag);
+				}
+				col.appendChild(meta);
+
+				row.appendChild(col);
+				body.appendChild(row);
+			});
+			if (ackBtn) { ackBtn.disabled = false; }
+		}
+
+		var scope = el('iris-notif-scope');
+		if (scope) {
+			scope.textContent = data.acknowledged_at
+				? '#' + CASE_ID + ' · since you last read'
+				: '#' + CASE_ID + ' · last ' + (data.window_days || 14) + ' days';
+		}
+
+		if (foot) {
+			if (data.truncated) {
+				foot.textContent = 'Showing ' + data.items.length + ' of ' + data.total;
+				foot.style.display = '';
+			} else {
+				foot.style.display = 'none';
+			}
+		}
+
+		setBadge(data.total || 0);
+	}
+
+	function loadList() {
+		var body = el('iris-notif-body');
+		if (body) { body.innerHTML = '<div class="iris-notif-empty">Loading&hellip;</div>'; }
+		api('').then(renderRows).catch(function () {
+			if (body) {
+				body.innerHTML = '<div class="iris-notif-empty">Could not load updates.</div>';
+			}
+		});
+	}
+
+	function acknowledge() {
+		var token = document.getElementById('csrf_token');
+		/* Echo back the newest timestamp actually rendered, so anything that
+		   arrives between the load and this click stays unread. */
+		api('/ack', {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRFToken': token ? token.value : ''
+			},
+			body: JSON.stringify({ up_to: latestSeen })
+		}).then(function (data) {
+			setBadge(data.unread || 0);
+			loadList();
+		}).catch(function () {
+			var body = el('iris-notif-body');
+			if (body) {
+				body.innerHTML = '<div class="iris-notif-empty">Could not mark as read.</div>';
+			}
+		});
+	}
+
+	document.addEventListener('DOMContentLoaded', function () {
+		var bell = el('iris-notif-bell');
+		var ackBtn = el('iris-notif-ack');
+		if (!bell) { return; }
+
+		bell.addEventListener('click', function () { loadList(); });
+
+		if (ackBtn) {
+			ackBtn.addEventListener('click', function (ev) {
+				ev.preventDefault();
+				ev.stopPropagation();
+				acknowledge();
+			});
+		}
+
+		/* Keep the panel open when clicking inside it. */
+		var panel = document.querySelector('.iris-notif-panel');
+		if (panel) {
+			panel.addEventListener('click', function (ev) { ev.stopPropagation(); });
+		}
+
+		loadCount();
+		setInterval(loadCount, POLL_MS);
+	});
+})();
+</script>
+{% endif %}

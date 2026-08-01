@@ -1,0 +1,290 @@
+{
+  "namespace": "GrayZone",
+  "description": "Gray Zone of Active defense includes all elements which lay between reactive defense elements and offensive operations. It does fill the gray spot between them. Taxo may be used for active defense planning or modeling.",
+  "version": 3,
+  "predicates": [
+    {
+      "value": "Adversary Emulation",
+      "expanded": "Adversary Emulation",
+      "uuid": "9b2e72b0-02a7-550b-bbb7-6d967b132228"
+    },
+    {
+      "value": "Beacons",
+      "expanded": "Beacons",
+      "uuid": "8ee82045-d8b6-57c2-86fe-75a44efe02af"
+    },
+    {
+      "value": "Deterrence",
+      "expanded": "Deterrence",
+      "uuid": "0be43042-71d5-5a0f-9ee2-0b599e5fae60"
+    },
+    {
+      "value": "Deception",
+      "expanded": "Deception",
+      "uuid": "d10b6a21-e34d-58df-b3de-f6dbbf793b76"
+    },
+    {
+      "value": "Tarpits, Sandboxes and Honeypots",
+      "expanded": "Tarpits, Sandboxes and Honeypots",
+      "uuid": "bb421ee8-7a76-577e-85f5-a83b6aec785c"
+    },
+    {
+      "value": "Intelligence and Counterintelligence",
+      "expanded": "Intelligence and Counterintelligence",
+      "uuid": "e40c118e-dd57-5b9c-9456-50711dae2994"
+    },
+    {
+      "value": "Adversary Takedowns",
+      "expanded": "Adversary Takedowns",
+      "uuid": "59e49e4d-1e1b-544d-b924-c8078b952ccd"
+    },
+    {
+      "value": "Ransomware",
+      "expanded": "Ransomware",
+      "uuid": "077d68ac-12f6-5232-b631-6e81fa744ffd"
+    },
+    {
+      "value": "Rescue Missions",
+      "expanded": "Rescue Missions",
+      "uuid": "6dcebf5f-bd38-556e-819b-430b2d73a7d8"
+    },
+    {
+      "value": "Sanctions, Indictments & Trade Remedies",
+      "expanded": "Sanctions, Indictments & Trade Remedies",
+      "uuid": "dec11103-86d0-525e-97b4-6d074b3fa7f4"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "Adversary Emulation",
+      "entry": [
+        {
+          "value": "Threat Modeling",
+          "expanded": "Arch threat modeling",
+          "description": "Modeling threat in services or/and in applications",
+          "uuid": "4b366224-5915-5923-acc8-385e8452c5ec"
+        },
+        {
+          "value": "Purple Teaming",
+          "expanded": "Purple team collaboration",
+          "description": "Collaboration between red and blue team",
+          "uuid": "d72b0c8d-ee29-5a5d-896c-e033b3d14d14"
+        },
+        {
+          "value": "Blue Team",
+          "expanded": "Blue Team activities",
+          "description": "Defenders team actions, TTPs etc.",
+          "uuid": "4b6934e5-f464-52e0-af0d-1a2164237e79"
+        },
+        {
+          "value": "Red Team",
+          "expanded": "Red Team activities",
+          "description": "Actions, TTPs etc.of Red Team",
+          "uuid": "669fa21c-06cd-5734-a952-72786a63f0db"
+        }
+      ]
+    },
+    {
+      "predicate": "Beacons",
+      "entry": [
+        {
+          "value": "Inform",
+          "expanded": "Information from beacon",
+          "description": "Provide defender with informations about beacon user, intentional or not",
+          "uuid": "ae901444-a2ef-5ad3-bc88-debc342e85ef"
+        },
+        {
+          "value": "Notify",
+          "expanded": "Notification from beacon",
+          "description": "Beacon will just send alert, that has been accessed",
+          "uuid": "846369c9-9b59-56a2-9916-ac4cd36710b7"
+        }
+      ]
+    },
+    {
+      "predicate": "Deterrence",
+      "entry": [
+        {
+          "value": "by Retaliation",
+          "expanded": "Retaliation risk",
+          "description": "Adversary is threatened by retaliation if it will continue in actions",
+          "uuid": "79bab38f-4d55-5855-8b1d-6bcbd90fe7fa"
+        },
+        {
+          "value": "by Denial",
+          "expanded": "Risk of Denial",
+          "description": "Deny action ever happened - example: if the attribution is important for adversary",
+          "uuid": "16c7b6c4-4f8d-5228-a67f-0c396161ac70"
+        },
+        {
+          "value": "by Entanglement",
+          "expanded": "Risk of reputation loss",
+          "description": "By continuing in action adversary may be exhibited to punishment from defenders ally",
+          "uuid": "7521de1d-a1ad-570a-94ce-c0009ea9bc63"
+        }
+      ]
+    },
+    {
+      "predicate": "Deception",
+      "entry": [
+        {
+          "value": "Deception",
+          "expanded": "Deceptive actions",
+          "description": "Confuse adversary by deception, can be either whole campaign or just simple word in internal manuals",
+          "uuid": "157aac82-135d-5b07-ac05-3cea303fe6e8"
+        },
+        {
+          "value": "Denial",
+          "expanded": "Suppress anything",
+          "description": "You can deny any part of infrastructure or whole including servers, personal computers, users, machine accounts etc.",
+          "uuid": "7cb13181-ee5a-5f25-a017-5848e6ec94ee"
+        },
+        {
+          "value": "CounterDeception",
+          "expanded": "Answer to deception",
+          "description": "Answer to deception from adversary is counter-deception, for example: answer to phish with shadow user account to uncover next adversary actions",
+          "uuid": "fb196eea-608d-5619-8665-860d9b6e8319"
+        }
+      ]
+    },
+    {
+      "predicate": "Tarpits, Sandboxes and Honeypots",
+      "entry": [
+        {
+          "value": "Honeypots",
+          "expanded": "Honeypots",
+          "description": "Emulating technical resources as services or whole machines or identities",
+          "uuid": "69e72e4e-04c1-5b3c-a9b0-1e50d6501603"
+        },
+        {
+          "value": "Sandboxes",
+          "expanded": "Sandboxes",
+          "description": "Place for secure detonation of anything",
+          "uuid": "cb2f1d21-e797-5489-ac99-75810fa64439"
+        },
+        {
+          "value": "Tarpits",
+          "expanded": "Slow Downs",
+          "description": "You can slow adversary from action for example by sending slow responses to request",
+          "uuid": "b58c3532-031b-55f1-b00a-5d69423368b0"
+        }
+      ]
+    },
+    {
+      "predicate": "Intelligence and Counterintelligence",
+      "entry": [
+        {
+          "value": "Intel Passive",
+          "expanded": "Passive gathering, managing etc. of threat intelligence. Ie. getting data from public, available resources",
+          "description": "Getting threat intel from open and publicly available resources",
+          "uuid": "006ae516-8c13-5e8c-ab27-e5e62cea8ed4"
+        },
+        {
+          "value": "Intel Active",
+          "expanded": "Active or proactive intel gathering, collecting etc. Ie. closed resources as private forums, gossip ...",
+          "description": "Getting threat intel from closed resources or trusted parties as private chats or exploitation of groups etc.",
+          "uuid": "ce130142-91c1-56c3-9ce8-1f42fad00750"
+        },
+        {
+          "value": "Counterintel Defensive",
+          "expanded": "Includes subcategories as Deterrence and Detection ",
+          "description": "Focuses on detecting and neutralizing adversary efforts to compromise or exploit digital systems.",
+          "uuid": "3dbb83cc-4412-56ca-9c9c-d11b3dcceeb6"
+        },
+        {
+          "value": "Counterintel Defensive - Deterrence",
+          "expanded": "Deterrende in cyber space as part of strategy",
+          "description": "Aims to discourage adversary actions by demonstrating strong protective measures and potential consequences.",
+          "uuid": "e7c1108e-66e7-5f4a-989d-e934383f5695"
+        },
+        {
+          "value": "Counterintel Defensive - Detection",
+          "expanded": "Detection Engineering",
+          "description": "Ideally focuses on identifying and exposing adversary activities before they can cause harm.",
+          "uuid": "c4a08810-c2ca-5b8e-9868-a87a6e85ceff"
+        },
+        {
+          "value": "Counterintel Offensive",
+          "expanded": "Includes subcategories as Detection, Deception and Neutralization",
+          "description": "Involves actively disrupting or deceiving adversary intelligence operations to gain strategic advantage",
+          "uuid": "bf807fb0-b24b-5b6b-9379-5223c42d53fd"
+        },
+        {
+          "value": "Counterintel Offensive - Detection",
+          "expanded": "Detect operations of adversary before they reach friendly environment",
+          "description": "Detection involves actively identifying and exposing adversary cyber operations to disrupt their efforts.",
+          "uuid": "eb9dd656-c74c-5bb4-b2b4-56abad56eb56"
+        },
+        {
+          "value": "Counterintel Offensive - Deception",
+          "expanded": "Creating deception campaigns, fake accounts, penetrating adversary communication with use of deception...",
+          "description": "Uses false information and tactics to mislead and confuse adversaries in their cyber operations.",
+          "uuid": "099c060a-1dd4-559b-891b-3708083928ec"
+        },
+        {
+          "value": "Counterintel Offensive - Neutralization",
+          "expanded": "Adversary disruption as influence operation, environment disturbance to prevent adversary operations...",
+          "description": "Neutralization aims to disrupt and eliminate adversary cyber threats before they can inflict damage.",
+          "uuid": "3fddae3b-033e-5022-a3f8-219dd799fed5"
+        }
+      ]
+    },
+    {
+      "predicate": "Adversary Takedowns",
+      "entry": [
+        {
+          "value": "Botnet Takedowns",
+          "expanded": "Botnet Takedowns",
+          "description": "Activity with approval of legal governmental entities ie. courts to stop unwanted actions or prevent them",
+          "uuid": "9eda1bb8-1f7b-515d-84f1-e6ed6885f7a4"
+        },
+        {
+          "value": "Domain Takedowns",
+          "expanded": "Domain Takedowns",
+          "description": "Activity with approval of legal governmental entities ie. courts to stop unwanted actions or prevent them",
+          "uuid": "3451597c-5eda-5fc5-aab2-3a623f8a279f"
+        },
+        {
+          "value": "Infrastructure Takedowns",
+          "expanded": "Whole environment takedowns",
+          "description": "Activity with approval of legal governmental entities ie. courts to stop unwanted actions or prevent them",
+          "uuid": "2349ddf5-a791-56c4-a427-a17b9a7fc385"
+        }
+      ]
+    },
+    {
+      "predicate": "Ransomware",
+      "entry": [
+        {
+          "value": "Ransomware",
+          "expanded": "Ransomware by defenders",
+          "description": "Activity with approval of legal governmental entities ie. courts to stop unwanted actions or prevent them",
+          "uuid": "981a422f-7c93-5aaf-8fc0-68fcc7411a93"
+        }
+      ]
+    },
+    {
+      "predicate": "Rescue Missions",
+      "entry": [
+        {
+          "value": "Rescue Missions",
+          "expanded": "Rescue Missions",
+          "description": "Activity with approval of legal governmental entities ie. courts to stop unwanted actions or prevent them",
+          "uuid": "038a8171-321a-5705-b98a-b0234c162c7e"
+        }
+      ]
+    },
+    {
+      "predicate": "Sanctions, Indictments & Trade Remedies",
+      "entry": [
+        {
+          "value": "Sanctions, Indictments & Trade Remedies",
+          "expanded": "Business and diplomatic actions and counteractions",
+          "description": "Activity with approval of legal governmental entities ie. courts, states, governments to stop unwanted actions or prevent them",
+          "uuid": "b680e4ea-f64c-588b-b895-f7190972fabf"
+        }
+      ]
+    }
+  ],
+  "uuid": "7bed6f9e-63f6-502d-8b65-ab4444a73a92"
+}

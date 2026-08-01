@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "description": "Attack vectors used in social engineering as described in 'A Taxonomy of Social Engineering Defense Mechanisms' by Dalal Alharthi and others.",
+  "expanded": "Social Engineering Attack Vectors",
+  "namespace": "social-engineering-attack-vectors",
+  "exclusive": false,
+  "predicates": [
+    {
+      "value": "technical",
+      "expanded": "Technical",
+      "uuid": "260ef745-4900-5d42-8a4f-7cc544fceab2"
+    },
+    {
+      "value": "non-technical",
+      "expanded": "Non-technical",
+      "uuid": "c67b4e30-56bb-51f1-acd0-d037ed55fa3d"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "technical",
+      "entry": [
+        {
+          "value": "vishing",
+          "expanded": "Vishing",
+          "uuid": "2ca088a8-6f8d-523a-9c26-4593e5b506f0"
+        },
+        {
+          "value": "spear-phishing",
+          "expanded": "Spear phishing",
+          "uuid": "c39e6bbc-aff6-5177-9a63-c9593ffc1193"
+        },
+        {
+          "value": "interesting-software",
+          "expanded": "Interesting software",
+          "uuid": "728f9186-3749-59e6-8753-149c121665e0"
+        },
+        {
+          "value": "baiting",
+          "expanded": "Baiting",
+          "uuid": "39d834c2-a2c8-5418-ade5-7edfe73935ca"
+        },
+        {
+          "value": "waterholing",
+          "expanded": "Waterholing",
+          "uuid": "67e6f802-84ac-53ac-a769-29ead41dc00e"
+        },
+        {
+          "value": "phishing-and-trojan-email",
+          "expanded": "Phishing and Trojan email",
+          "uuid": "3679e1ee-c009-5e83-9038-2716adf3da5c"
+        },
+        {
+          "value": "spam-email",
+          "expanded": "Spam Email",
+          "uuid": "fd33c793-bdf0-5b8e-b744-6090a099bd2f"
+        },
+        {
+          "value": "popup-window",
+          "expanded": "Popup Window",
+          "uuid": "a39d3b95-f643-5b74-ba1a-acf2224b0103"
+        },
+        {
+          "value": "tailgating",
+          "expanded": "Tailgating",
+          "uuid": "ef5e4334-3582-53b7-ae88-a456124ddeb0"
+        }
+      ]
+    },
+    {
+      "predicate": "non-technical",
+      "entry": [
+        {
+          "value": "pretexting-impersonation",
+          "expanded": "Pretexting/Impersonation",
+          "uuid": "f0ab14d0-3328-57c4-8100-27638ad5a7c8"
+        },
+        {
+          "value": "hoaxing",
+          "expanded": "Hoaxing",
+          "uuid": "2d03ae56-fad7-5e21-8cd0-15851a3f8d01"
+        },
+        {
+          "value": "authoritative-voice",
+          "expanded": "Authoritative voice",
+          "uuid": "88974f7c-1da2-50a6-909b-b9f919c97256"
+        },
+        {
+          "value": "technical-expert",
+          "expanded": "Technical expert",
+          "uuid": "8c0b8857-1f55-567f-add6-0539cbb5a2be"
+        },
+        {
+          "value": "smudge-attack",
+          "expanded": "Smudge Attack",
+          "uuid": "02fa5028-0d5f-5fb4-9922-f06818650282"
+        },
+        {
+          "value": "dumpser-diving",
+          "expanded": "Dumpster Diving",
+          "uuid": "9c3011aa-75d8-5ad4-ad95-65c8fc3624ed"
+        },
+        {
+          "value": "shoulder-surfing",
+          "expanded": "Shoulder surfing",
+          "uuid": "9395d126-51c0-5c57-a609-ac1531430259"
+        },
+        {
+          "value": "spying",
+          "expanded": "Spying",
+          "uuid": "c42d0b75-03b2-53be-9374-9220e19b4236"
+        },
+        {
+          "value": "support-staff",
+          "expanded": "Support staff",
+          "uuid": "9b9fd96f-a764-505d-996a-3413ec8fe4de"
+        }
+      ]
+    }
+  ],
+  "refs": [
+    "https://www.researchgate.net/publication/339224082_A_Taxonomy_of_Social_Engineering_Defense_Mechanisms"
+  ],
+  "uuid": "6b5ba18c-d2ab-5949-b495-63f4149b099b"
+}

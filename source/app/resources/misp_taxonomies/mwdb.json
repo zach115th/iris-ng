@@ -1,0 +1,566 @@
+{
+  "namespace": "mwdb",
+  "description": "Malware Database (mwdb) Taxonomy - Tags used across the platform",
+  "version": 2,
+  "predicates": [
+    {
+      "value": "location_type",
+      "expanded": "Location Type",
+      "description": "Type of malicious URL.",
+      "uuid": "33be08e7-eee7-56b6-b09c-fd4b6f61152c"
+    },
+    {
+      "value": "family",
+      "expanded": "Malware Family",
+      "uuid": "51027f3e-af9d-533b-b7bf-969d4bc2fbf9"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "location_type",
+      "entry": [
+        {
+          "value": "cnc",
+          "expanded": "CNC",
+          "description": "C&C server, usually administrated by criminals. Malware connects to it (usually with a custom protocol) to get new commands and updates.",
+          "uuid": "60b96a89-c002-5ee1-a8b5-d4b88fe7c363"
+        },
+        {
+          "value": "download_url",
+          "expanded": "Download URL",
+          "description": "Download url. Used to download more malware samples. Sometimes just a hacked legitimate website.",
+          "uuid": "9a6955fa-0e4d-5b4f-96e7-940643a1ed99"
+        },
+        {
+          "value": "panel",
+          "expanded": "Panel",
+          "description": "Malware panel. HTTP service used by criminals to manage the botnet.",
+          "uuid": "5b616c65-e32c-5cb9-9382-bc2907068274"
+        },
+        {
+          "value": "peer",
+          "expanded": "Peer",
+          "description": "Peer. IP/port of infected machine of a legitimate computer user.",
+          "uuid": "67e4a8c1-37e5-5365-b572-93e7156fc183"
+        },
+        {
+          "value": "other",
+          "expanded": "Other",
+          "description": "Other kind of URL found in the malware.",
+          "uuid": "41eefdce-dc76-5691-8264-83ffb1a0ab7e"
+        }
+      ]
+    },
+    {
+      "predicate": "family",
+      "entry": [
+        {
+          "value": "agenttesla",
+          "expanded": "agenttesla",
+          "uuid": "a2777481-7403-5655-aea6-1ab19f20ed62"
+        },
+        {
+          "value": "andromeda",
+          "expanded": "andromeda",
+          "uuid": "b1f8814b-a592-5451-a2c4-b198fa806183"
+        },
+        {
+          "value": "anubis",
+          "expanded": "anubis",
+          "uuid": "b797c048-5a96-51b0-962f-9eeb69883249"
+        },
+        {
+          "value": "avemaria",
+          "expanded": "avemaria",
+          "uuid": "7362235e-f9da-5c0c-9bf2-969612d3c864"
+        },
+        {
+          "value": "azorult",
+          "expanded": "azorult",
+          "uuid": "cd93287a-9256-5df7-9a53-88d4c36398e6"
+        },
+        {
+          "value": "brushaloader",
+          "expanded": "brushaloader",
+          "uuid": "6e7db91f-61fd-5b37-b269-7c6e6834598a"
+        },
+        {
+          "value": "bublik",
+          "expanded": "bublik",
+          "uuid": "594d0b79-81f3-5b00-8e41-44e8272d49e9"
+        },
+        {
+          "value": "bunitu",
+          "expanded": "bunitu",
+          "uuid": "2fbb8f2d-0579-5307-960b-ba7a36b3273f"
+        },
+        {
+          "value": "cerber",
+          "expanded": "cerber",
+          "uuid": "337b1af5-d0ce-56d3-b72a-c28b3cad426f"
+        },
+        {
+          "value": "chthonic",
+          "expanded": "chthonic",
+          "uuid": "2fd2b7e5-a1dd-5060-8d1a-6dd0ccb7208d"
+        },
+        {
+          "value": "citadel",
+          "expanded": "citadel",
+          "uuid": "169958b9-5111-5eb8-bd33-8ed25540f4c4"
+        },
+        {
+          "value": "corebot",
+          "expanded": "corebot",
+          "uuid": "422210a0-2ade-589d-ae36-3c9d684ab3ee"
+        },
+        {
+          "value": "cryptomix",
+          "expanded": "cryptomix",
+          "uuid": "e6efea2e-2ffd-51c9-9fb8-af7b0517b59e"
+        },
+        {
+          "value": "cryptoshield",
+          "expanded": "cryptoshield",
+          "uuid": "f035a34f-d86f-521e-a6d2-0b6fde0fbdcb"
+        },
+        {
+          "value": "cryptowall",
+          "expanded": "cryptowall",
+          "uuid": "4bc339f1-61d5-5de0-a1f2-4b221ce81715"
+        },
+        {
+          "value": "danabot",
+          "expanded": "danabot",
+          "uuid": "7c95c259-0031-5cfe-9ba3-6f4653f4d427"
+        },
+        {
+          "value": "danaloader",
+          "expanded": "danaloader",
+          "uuid": "f8fb93de-18a3-5b49-86b4-1ddd528f3583"
+        },
+        {
+          "value": "dridex",
+          "expanded": "dridex",
+          "uuid": "e879fd63-e0e0-55d4-8dcb-c76437c218f2"
+        },
+        {
+          "value": "dridex-worker",
+          "expanded": "dridex-worker",
+          "uuid": "46402d34-7976-537a-9a69-90c3a7316232"
+        },
+        {
+          "value": "dyre",
+          "expanded": "dyre",
+          "uuid": "62e8fa21-8e23-5810-856e-9fa7fa910b88"
+        },
+        {
+          "value": "emotet",
+          "expanded": "emotet",
+          "uuid": "c7c697a6-8228-5103-a260-5b42ccea8d63"
+        },
+        {
+          "value": "emotet5_upnp",
+          "expanded": "emotet5_upnp",
+          "uuid": "fdba9ffa-5246-5bb0-97db-9e257a5878cd"
+        },
+        {
+          "value": "emotet_doc",
+          "expanded": "emotet_doc",
+          "uuid": "1bc1f927-ea7b-5476-8260-0cf295c741c0"
+        },
+        {
+          "value": "emotet_spam",
+          "expanded": "emotet_spam",
+          "uuid": "0249b540-c672-5e27-b31f-0f1dcc1ed8e2"
+        },
+        {
+          "value": "emotet_upnp",
+          "expanded": "emotet_upnp",
+          "uuid": "3845edc1-b4fa-5e9e-b295-c22f5786a363"
+        },
+        {
+          "value": "evil-pony",
+          "expanded": "evil-pony",
+          "uuid": "bc2ba5a6-f882-5090-9fa7-ba4f25de20c5"
+        },
+        {
+          "value": "flokibot",
+          "expanded": "flokibot",
+          "uuid": "76dfe417-31fb-584b-99e7-045bc231c6dc"
+        },
+        {
+          "value": "formbook",
+          "expanded": "formbook",
+          "uuid": "dc3fda84-9bd1-5e9f-8002-d9696563d242"
+        },
+        {
+          "value": "gandcrab",
+          "expanded": "gandcrab",
+          "uuid": "54a27611-7c65-5ecf-9681-4cd451cebbcb"
+        },
+        {
+          "value": "get2",
+          "expanded": "get2",
+          "uuid": "b6303ecf-c1a4-5b16-af98-7edf4d2c768b"
+        },
+        {
+          "value": "globeimposter",
+          "expanded": "globeimposter",
+          "uuid": "c840d2af-2fe1-54bb-89cf-41a448746825"
+        },
+        {
+          "value": "gluedropper",
+          "expanded": "gluedropper",
+          "uuid": "1d607b0d-7d67-5378-90e8-deaf4f0ab90b"
+        },
+        {
+          "value": "gootkit",
+          "expanded": "gootkit",
+          "uuid": "0f383091-3b35-5f0c-ad27-599536af6790"
+        },
+        {
+          "value": "h1n1",
+          "expanded": "h1n1",
+          "uuid": "0b560b8d-c470-588e-8c04-32dfdafa51d0"
+        },
+        {
+          "value": "hancitor",
+          "expanded": "hancitor",
+          "uuid": "02eff2d5-236b-552b-8434-6103c0b60879"
+        },
+        {
+          "value": "hawkeye",
+          "expanded": "hawkeye",
+          "uuid": "d86ddff3-a3f0-549b-9c79-f2a0906ea5a0"
+        },
+        {
+          "value": "icedid",
+          "expanded": "icedid",
+          "uuid": "cd5adffa-f3dd-5b53-a508-75cd70ba8326"
+        },
+        {
+          "value": "iceid",
+          "expanded": "iceid",
+          "uuid": "214a4616-26a4-59f0-be9f-0e0c63c6129a"
+        },
+        {
+          "value": "iceix",
+          "expanded": "iceix",
+          "uuid": "958d4fbe-3b13-5cb4-bd53-778cedd5c2cb"
+        },
+        {
+          "value": "isfb",
+          "expanded": "isfb",
+          "uuid": "11b48b2d-8262-5ffc-b8a4-7117ba971a2f"
+        },
+        {
+          "value": "jaff",
+          "expanded": "jaff",
+          "uuid": "d7bd8ca6-00cf-5214-a980-fe826a09401b"
+        },
+        {
+          "value": "kbot",
+          "expanded": "kbot",
+          "uuid": "7950a2f9-3241-58fa-a454-6b88c66cb92c"
+        },
+        {
+          "value": "kegotip",
+          "expanded": "kegotip",
+          "uuid": "88628586-1d47-5893-9b2b-226c9e3d280a"
+        },
+        {
+          "value": "kins",
+          "expanded": "kins",
+          "uuid": "6473b136-ca67-53f7-b5db-e72a6b50f566"
+        },
+        {
+          "value": "kovter",
+          "expanded": "kovter",
+          "uuid": "0bf5555f-70a0-529f-8c7f-8142801fdc8d"
+        },
+        {
+          "value": "kpot",
+          "expanded": "kpot",
+          "uuid": "75ad86b8-47e5-515a-af77-044718d1fa14"
+        },
+        {
+          "value": "kronos",
+          "expanded": "kronos",
+          "uuid": "2a5301df-c4d4-5b44-9c9e-e228ea03cc63"
+        },
+        {
+          "value": "locky",
+          "expanded": "locky",
+          "uuid": "38d1605c-f465-5e86-bef1-89977ac5685a"
+        },
+        {
+          "value": "lokibot",
+          "expanded": "lokibot",
+          "uuid": "aad87a76-bb60-5c73-a6c8-e9a90ea6c379"
+        },
+        {
+          "value": "madlocker",
+          "expanded": "madlocker",
+          "uuid": "dafe190a-5e6d-53f9-a3f7-0c629e06a6fc"
+        },
+        {
+          "value": "madness_pro",
+          "expanded": "madness_pro",
+          "uuid": "2859a3ee-7382-532e-ae86-3551312073dd"
+        },
+        {
+          "value": "maoloa",
+          "expanded": "maoloa",
+          "uuid": "8085b91d-d78c-5bc0-840c-5912010d1c6f"
+        },
+        {
+          "value": "mirai",
+          "expanded": "mirai",
+          "uuid": "2f54edf1-7961-530a-acbc-7d3ae5107fab"
+        },
+        {
+          "value": "mmbb",
+          "expanded": "mmbb",
+          "uuid": "00a2f955-8610-5254-bc65-77ee4a9a7d60"
+        },
+        {
+          "value": "nanocore",
+          "expanded": "nanocore",
+          "uuid": "2c147e35-3361-562f-bf69-4f3a93c5e352"
+        },
+        {
+          "value": "necurs",
+          "expanded": "necurs",
+          "uuid": "ffe7dd78-5a34-59b1-b4cf-f47da2bee08d"
+        },
+        {
+          "value": "netwire",
+          "expanded": "netwire",
+          "uuid": "3430addb-e524-5cde-9720-2fe370ecedac"
+        },
+        {
+          "value": "neutrino",
+          "expanded": "neutrino",
+          "uuid": "ff951b4a-97dc-5548-b55b-505a3af9506f"
+        },
+        {
+          "value": "njrat",
+          "expanded": "njrat",
+          "uuid": "722904c5-019c-5f90-a2bb-1d1758c2e8fd"
+        },
+        {
+          "value": "nymaim",
+          "expanded": "nymaim",
+          "uuid": "2bf0de47-6ce3-51ba-a161-db2f2503166e"
+        },
+        {
+          "value": "odinaff",
+          "expanded": "odinaff",
+          "uuid": "328b3811-a8b1-5bbf-a7b8-f94e0e1c7110"
+        },
+        {
+          "value": "onliner",
+          "expanded": "onliner",
+          "uuid": "7ed06018-e890-5f74-ba6e-d436c964dceb"
+        },
+        {
+          "value": "ostap",
+          "expanded": "ostap",
+          "uuid": "e36c77af-48f2-5f92-8d6f-8eecfa6f2859"
+        },
+        {
+          "value": "panda",
+          "expanded": "panda",
+          "uuid": "86cae363-83a3-53b5-8ff6-8a781788ab49"
+        },
+        {
+          "value": "phorpiex",
+          "expanded": "phorpiex",
+          "uuid": "1ee61e47-941a-5567-b9f0-754a7a68d777"
+        },
+        {
+          "value": "pony",
+          "expanded": "pony",
+          "uuid": "b6d86a2f-e31c-51f6-93d7-759b17e9557a"
+        },
+        {
+          "value": "pushdo",
+          "expanded": "pushdo",
+          "uuid": "d0f16c1d-915a-55f1-a479-2c94c8f4bf6f"
+        },
+        {
+          "value": "qadars",
+          "expanded": "qadars",
+          "uuid": "8dc971a9-fc2f-522a-a0e8-2713cb17bcf4"
+        },
+        {
+          "value": "qakbot",
+          "expanded": "qakbot",
+          "uuid": "5cc44fb3-8686-5c46-875f-085b8b8083da"
+        },
+        {
+          "value": "quantloader",
+          "expanded": "quantloader",
+          "uuid": "b1dbe80e-62b0-5b96-842b-75c8098eeb13"
+        },
+        {
+          "value": "quasarrat",
+          "expanded": "quasarrat",
+          "uuid": "a4ee57cc-dfaa-5bc8-b5a1-5a960ada422b"
+        },
+        {
+          "value": "ramnit",
+          "expanded": "ramnit",
+          "uuid": "55bc324a-4a63-50d9-9cb2-f398ded3053e"
+        },
+        {
+          "value": "remcos",
+          "expanded": "remcos",
+          "uuid": "f1c21966-71b0-5bfe-984b-764cc20c528c"
+        },
+        {
+          "value": "retefe",
+          "expanded": "retefe",
+          "uuid": "484060b3-7818-547a-a978-dad7bc46a388"
+        },
+        {
+          "value": "ruckguv",
+          "expanded": "ruckguv",
+          "uuid": "0c092969-a0df-54fd-a59c-d964da2d7701"
+        },
+        {
+          "value": "sage",
+          "expanded": "sage",
+          "uuid": "c8bd7dd5-a117-59eb-841e-4113592fe7ce"
+        },
+        {
+          "value": "sendsafe",
+          "expanded": "sendsafe",
+          "uuid": "89460cb0-13d6-5041-bb7e-67302172692a"
+        },
+        {
+          "value": "shifu",
+          "expanded": "shifu",
+          "uuid": "bdbd5a33-3abc-530a-9b7b-a4b86c3bf460"
+        },
+        {
+          "value": "slave",
+          "expanded": "slave",
+          "uuid": "ab4a1ab0-6b02-545e-a128-20b4091f0376"
+        },
+        {
+          "value": "smokeloader",
+          "expanded": "smokeloader",
+          "uuid": "eb145974-3017-567b-a416-b4654e3a2bf1"
+        },
+        {
+          "value": "systembc",
+          "expanded": "systembc",
+          "uuid": "8a3a1dda-32ed-5b1d-8dfc-641882fbefad"
+        },
+        {
+          "value": "teslacrypt",
+          "expanded": "teslacrypt",
+          "uuid": "b01cd6eb-2647-580b-b5fc-dd820725b597"
+        },
+        {
+          "value": "test",
+          "expanded": "test",
+          "uuid": "5df66fc5-5d19-592b-ac92-8be71166e572"
+        },
+        {
+          "value": "testmod",
+          "expanded": "testmod",
+          "uuid": "7595c337-d131-5d5d-90a7-13ed2c22ee05"
+        },
+        {
+          "value": "tinba",
+          "expanded": "tinba",
+          "uuid": "614a315f-926d-5786-a448-bc32cee9b4a2"
+        },
+        {
+          "value": "tinba_dga",
+          "expanded": "tinba_dga",
+          "uuid": "3030e232-dac9-5e61-96be-ade5869b958f"
+        },
+        {
+          "value": "tinynuke",
+          "expanded": "tinynuke",
+          "uuid": "f400cd71-5e34-5c19-aa8c-83a71d38e17c"
+        },
+        {
+          "value": "tofsee",
+          "expanded": "tofsee",
+          "uuid": "05008991-503c-5906-bf58-08365a1bf248"
+        },
+        {
+          "value": "torment",
+          "expanded": "torment",
+          "uuid": "c24f612b-4d6c-5169-8403-ad09c255bd92"
+        },
+        {
+          "value": "torrentlocker",
+          "expanded": "torrentlocker",
+          "uuid": "88676fcc-766c-56c5-82a9-4ee90ba0b528"
+        },
+        {
+          "value": "trickbot",
+          "expanded": "trickbot",
+          "uuid": "12265016-b309-5c5f-9943-1898e3f24967"
+        },
+        {
+          "value": "troldesh",
+          "expanded": "troldesh",
+          "uuid": "0b3a361d-2e4f-58a7-aabc-1825fa926625"
+        },
+        {
+          "value": "unknown",
+          "expanded": "unknown",
+          "uuid": "65c418ce-b66e-54de-a707-734b6179d980"
+        },
+        {
+          "value": "vawtrak",
+          "expanded": "vawtrak",
+          "uuid": "771d3826-603f-5655-ac90-db97672805e5"
+        },
+        {
+          "value": "vjworm",
+          "expanded": "vjworm",
+          "uuid": "55807175-cff4-58de-82b2-f480dbd97ed0"
+        },
+        {
+          "value": "vmzeus",
+          "expanded": "vmzeus",
+          "uuid": "95a89706-349a-5779-9abd-6590767b72b9"
+        },
+        {
+          "value": "vmzeus2",
+          "expanded": "vmzeus2",
+          "uuid": "e0b7c53e-2ea4-5799-8623-30220c3cfddc"
+        },
+        {
+          "value": "wannacry",
+          "expanded": "wannacry",
+          "uuid": "77124247-a3be-55c6-a525-70fd3eeb86d0"
+        },
+        {
+          "value": "xagent",
+          "expanded": "xagent",
+          "uuid": "31a7ff5c-d398-5a68-a70c-6d2b0bc6dc0a"
+        },
+        {
+          "value": "zeus",
+          "expanded": "zeus",
+          "uuid": "cb63bcc1-31b9-5f85-91cb-0a7342eba5be"
+        },
+        {
+          "value": "zloader",
+          "expanded": "zloader",
+          "uuid": "f1196643-67e1-5fe5-9bfe-62e0582853aa"
+        }
+      ]
+    }
+  ],
+  "uuid": "87794ce2-de9d-58dd-8445-aedcb566fb21"
+}
