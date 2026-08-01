@@ -1,0 +1,145 @@
+{
+  "namespace": "adversary",
+  "description": "An overview and description of the adversary infrastructure",
+  "version": 6,
+  "predicates": [
+    {
+      "value": "infrastructure-status",
+      "expanded": "Infrastructure Status",
+      "uuid": "ffdb2006-7dc4-5cca-81d2-e016985f3206"
+    },
+    {
+      "value": "infrastructure-action",
+      "expanded": "Infrastructure Action",
+      "uuid": "416c295b-39ee-5c2d-abe8-ddcf29a20761"
+    },
+    {
+      "value": "infrastructure-state",
+      "expanded": "Infrastructure State",
+      "uuid": "93c22b97-e957-5968-a548-bfed6dd609ca"
+    },
+    {
+      "value": "infrastructure-type",
+      "expanded": "Infrastructure Type",
+      "uuid": "44a1ee2b-5cf0-5d2b-9000-a1a8f8aa4e45"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "infrastructure-status",
+      "entry": [
+        {
+          "value": "unknown",
+          "expanded": "Infrastructure ownership and status is unknown",
+          "uuid": "64a731f7-3dfa-5e62-b7bb-ae6b47173774"
+        },
+        {
+          "value": "compromised",
+          "expanded": "Infrastructure compromised by or in the benefit of the adversary",
+          "uuid": "31c2bf3c-0b13-5e74-9c41-eb06c463d975"
+        },
+        {
+          "value": "own-and-operated",
+          "expanded": "Infrastructure own and operated by the adversary",
+          "uuid": "643b7266-b1bf-53c8-a90b-d05945a702ca"
+        }
+      ]
+    },
+    {
+      "predicate": "infrastructure-action",
+      "entry": [
+        {
+          "value": "passive-only",
+          "expanded": "Only passive requests shall be performed to avoid detection by the adversary",
+          "uuid": "69cd4332-ae5b-557f-a03d-e94ea152dd7b"
+        },
+        {
+          "value": "take-down",
+          "expanded": "Take down requests can be performed in order to deactivate the adversary infrastructure",
+          "uuid": "f62fc235-58f8-50c5-9113-20ccb275d851"
+        },
+        {
+          "value": "monitoring-active",
+          "expanded": "Monitoring requests are ongoing on the adversary infrastructure",
+          "uuid": "41cbc46e-4417-5ff0-96a5-ade0d13e8e7a"
+        },
+        {
+          "value": "pending-law-enforcement-request",
+          "expanded": "Law enforcement requests are ongoing on the adversary infrastructure",
+          "uuid": "5a226e4a-87ca-5eb7-8414-fbf2f89c7d09"
+        },
+        {
+          "value": "sinkholed",
+          "expanded": "Infrastructure of the adversary is sinkholed and information is collected",
+          "uuid": "45562a70-ba1f-5c67-80ea-b8b1cf386f2e"
+        }
+      ]
+    },
+    {
+      "predicate": "infrastructure-state",
+      "entry": [
+        {
+          "value": "unknown",
+          "expanded": "Infrastructure state is unknown or cannot be evaluated",
+          "uuid": "00b299d8-44e6-581e-8523-48a1999909c8"
+        },
+        {
+          "value": "active",
+          "expanded": "Infrastructure state is active and actively used by the adversary",
+          "uuid": "13949ffe-f086-5f3d-90b2-23d18eae8744"
+        },
+        {
+          "value": "down",
+          "expanded": "Infrastructure state is known to be down",
+          "uuid": "cf3203eb-7a7f-55a4-89b1-ae7f96473a3d"
+        }
+      ]
+    },
+    {
+      "predicate": "infrastructure-type",
+      "entry": [
+        {
+          "value": "unknown",
+          "expanded": "Infrastructure usage by the adversary is unknown",
+          "uuid": "891518df-f05b-52be-a6b2-99e9a4bef44c"
+        },
+        {
+          "value": "proxy",
+          "expanded": "Infrastructure used as proxy between the target and the adversary",
+          "uuid": "5fa20481-4ad2-50a0-88c1-13434392423b"
+        },
+        {
+          "value": "drop-zone",
+          "expanded": "Infrastructure used by the adversary to store information related to his campaigns",
+          "uuid": "e36fb356-ee56-5c00-991c-d545b8c02684"
+        },
+        {
+          "value": "exploit-distribution-point",
+          "expanded": "Infrastructure used to distribute exploit towards target(s)",
+          "uuid": "fde0c05b-91dc-570c-9917-22334824adde"
+        },
+        {
+          "value": "vpn",
+          "expanded": "Infrastructure used by the adversary as Virtual Private Network to hide activities and reduce the traffic analysis surface",
+          "uuid": "bf9982f5-f424-50df-99f5-72e2fcf8d5da"
+        },
+        {
+          "value": "panel",
+          "expanded": "Panel used by the adversary to control or maintain his infrastructure",
+          "uuid": "6c53d8f8-8deb-531c-b9b1-5fb3d16c0b3f"
+        },
+        {
+          "value": "tds",
+          "expanded": "Traffic Distribution Systems including exploit delivery or/and web monetization channels",
+          "uuid": "be07b0f5-757e-5e30-a3f8-707df6e0433d"
+        },
+        {
+          "value": "c2",
+          "expanded": "C2 infrastructure without known specific type.",
+          "uuid": "4d55a0a0-a5c5-57d0-82f2-32daad4221e1"
+        }
+      ]
+    }
+  ],
+  "uuid": "a13370c9-8114-5936-b6df-a7841db82280"
+}

@@ -1,0 +1,120 @@
+---    
+# Here I have used a hostpath
+# Local volumes can only be used as a statically created PersistentVolume. Dynamic provisioning is not supported.
+# If you need to go with Dynamic volumes you may choose AWS EBS or EFS
+
+{{- if .Values.postgres.persistence.enabled }}
+{{- if .Values.postgres.persistence.hostPath.enabled }}
+# hostPath is node-local: only for single-node dev clusters with no dynamic
+# provisioner. On a multi-node or managed cluster this loses the database when the
+# pod reschedules.
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: postgres-pv-volume
+  labels:
+    app: {{ .Values.postgres.app }}
+spec:
+  {{- if .Values.postgres.persistence.storageClass }}
+  storageClassName: {{ .Values.postgres.persistence.storageClass }}
+  {{- end }}
+  capacity:
+    storage: {{ .Values.postgres.persistence.size }}
+  accessModes:
+    - {{ .Values.postgres.persistence.accessMode }}
+  hostPath:
+    path: {{ .Values.postgres.persistence.hostPath.path }}
+---
+{{- end }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-pv-claim
+  labels:
+    app: {{ .Values.postgres.app }}
+spec:
+  {{- if .Values.postgres.persistence.storageClass }}
+  storageClassName: {{ .Values.postgres.persistence.storageClass }}
+  {{- end }}
+  accessModes:
+    - {{ .Values.postgres.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.postgres.persistence.size }}
+---
+{{- end }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.postgres.name }}
+spec:
+  replicas: {{ .Values.postgres.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.postgres.app }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.postgres.app }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.postgres.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.postgres.name }}
+          securityContext:
+            {{- toYaml .Values.postgres.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          image: "{{ .Values.postgres.image}}:{{ .Values.postgres.tag }}"
+          imagePullPolicy: "{{ .Values.postgres.imagePullPolicy }}"
+
+          env:
+
+          - name: POSTGRES_DB  # Setting Database name
+            value: {{ .Values.postgres.POSTGRES_DB | quote }}
+
+          - name: POSTGRES_USER  # Setting Database username
+            value: {{ .Values.postgres.POSTGRES_USER | quote }}
+
+          - name:  POSTGRES_PASSWORD # Setting Database password
+            value: {{ .Values.postgres.POSTGRES_PASSWORD | quote }}
+
+          - name:  POSTGRES_ADMIN_USER # Setting Database admin user 
+            value: {{ .Values.postgres.POSTGRES_ADMIN_USER | quote }}
+
+          - name:  POSTGRES_ADMIN_PASSWORD # Setting Database admin password 
+            value: {{ .Values.postgres.POSTGRES_ADMIN_PASSWORD | quote }}
+
+          - name:  POSTGRES_PORT # Setting Database port
+            value: {{ .Values.postgres.POSTGRES_PORT | quote }}
+
+          - name: POSTGRES_HOST_AUTH_METHOD
+            value: {{ .Values.postgres.POSTGRES_HOST_AUTH_METHOD | quote }}
+
+          ports:
+            - containerPort: 5432
+
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.postgres.name }}
+  labels:
+    app: {{ .Values.postgres.app }}
+spec:
+  type: ClusterIP
+  ports:
+   - port: {{ .Values.postgres.service.port }}
+  selector:
+   app: {{ .Values.postgres.app }}
+---  

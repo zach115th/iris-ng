@@ -1,0 +1,146 @@
+{{- if .Values.irisaiworker.enabled }}
+{{- if .Values.certificates.enabled }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iris-root-ca-cert-secret-ai-worker
+  labels:
+    app: {{ .Values.irisaiworker.app }}
+type: Opaque
+data:
+{{ (.Files.Glob "certificates/rootCA/irisRootCACert.pem").AsSecrets | indent 2 }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iris-ldap-certs-secret-ai-worker
+  labels:
+    app: {{ .Values.irisaiworker.app }}
+type: Opaque
+data:
+{{ (.Files.Glob "certificates/ldap/*").AsSecrets | indent 2 }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iris-certs-dir-rootca-secrets-ai-worker
+  labels:
+    app: {{ .Values.irisaiworker.app }}
+type: Opaque
+data:
+{{ (.Files.Glob "certificates/rootCA/*").AsSecrets | indent 2 }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: iris-certs-dir-webcerts-secrets-ai-worker
+  labels:
+    app: {{ .Values.irisaiworker.app }}
+type: Opaque
+data:
+{{ (.Files.Glob "certificates/web_certificates/*").AsSecrets | indent 2 }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.irisaiworker.name }}
+spec:
+  replicas: {{ .Values.irisaiworker.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.irisaiworker.app }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.irisaiworker.app }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.irisaiworker.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.irisaiworker.name }}
+          securityContext:
+            {{- toYaml .Values.irisaiworker.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.irisaiworker.resources | nindent 12 }}
+          image: "{{ .Values.irisaiworker.image }}:{{ .Values.irisaiworker.tag }}"
+          imagePullPolicy: "{{ .Values.irisaiworker.imagePullPolicy }}"
+          # `iris-ai-worker` runs celery against the dedicated ai_queue at
+          # concurrency 1. Do not pass NUMBER_OF_CHILD here - unlike iris-worker,
+          # the concurrency is fixed in the entrypoint on purpose, so exactly one
+          # model call is in flight per worker.
+          command: ['./wait-for-iriswebapp.sh', "{{ .Values.irisapp.name }}:{{ .Values.irisapp.service.port }}", './iris-entrypoint.sh', 'iris-ai-worker']
+
+          env:
+
+          - name: DOCKERIZED
+            value: {{ .Values.irisworker.DOCKERIZED | quote }}
+
+          - name: POSTGRES_USER
+            value: {{ .Values.irisaiworker.POSTGRES_USER | quote }}
+
+          - name:  POSTGRES_PASSWORD
+            value: {{ .Values.irisaiworker.POSTGRES_PASSWORD | quote }}
+
+          - name:  POSTGRES_ADMIN_USER
+            value: {{ .Values.irisaiworker.POSTGRES_ADMIN_USER | quote }}
+
+          - name:  POSTGRES_ADMIN_PASSWORD
+            value: {{ .Values.irisaiworker.POSTGRES_ADMIN_PASSWORD | quote }}
+
+          - name:  POSTGRES_PORT
+            value: {{ .Values.irisaiworker.POSTGRES_PORT | quote }}
+
+          - name:  POSTGRES_SERVER
+            value: {{ .Values.irisaiworker.POSTGRES_SERVER | quote }}
+
+          - name:  IRIS_SECRET_KEY
+            value: {{ .Values.irisaiworker.IRIS_SECRET_KEY | quote }}
+
+          - name:  IRIS_SECURITY_PASSWORD_SALT
+            value: {{ .Values.irisaiworker.IRIS_SECURITY_PASSWORD_SALT | quote }}
+
+          volumeMounts:
+            - mountPath: /home/iris/downloads
+              name: iris-downloads
+            - mountPath: /home/iris/user_templates
+              name: user-templates
+            - mountPath: /home/iris/server_data
+              name: server-data
+{{- if .Values.certificates.enabled }}
+            - mountPath: /etc/irisRootCACert.pem
+              name: iris-root-ca-cert
+              subPath: irisRootCACert.pem
+              readOnly: true
+            - mountPath: /home/iris/certificates/rootCA
+              name: iris-certs-dir-rootca
+              readOnly: true
+            - mountPath: /home/iris/certificates/web_certificates
+              name: iris-certs-dir-webcerts
+              readOnly: true
+            - mountPath: /iriswebapp/certificates/ldap/
+              name: iris-ldap-certs
+              readOnly: true
+{{- end }}
+      volumes:
+        - name: iris-downloads
+          emptyDir: {}
+        - name: user-templates
+          emptyDir: {}
+        - name: server-data
+          emptyDir: {}
+{{- if .Values.certificates.enabled }}
+        - name: iris-root-ca-cert
+          secret:
+            secretName: iris-root-ca-cert-secret-ai-worker
+        - name: iris-certs-dir-rootca
+          secret:
+            secretName: iris-certs-dir-rootca-secrets-ai-worker
+        - name: iris-ldap-certs
+          secret:
+            secretName: iris-ldap-certs-secret-ai-worker
+        - name: iris-certs-dir-webcerts
+          secret:
+            secretName: iris-certs-dir-webcerts-secrets-ai-worker
+{{- end }}
+{{- end }}
