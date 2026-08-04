@@ -1,0 +1,151 @@
+{
+  "predicates": [
+    {
+      "value": "distribution",
+      "exclusive": true,
+      "uuid": "ca27127c-ea76-5a7e-a299-0dda91934d36"
+    },
+    {
+      "colour": "#750806",
+      "description": "This TAG will insure you that these Event Attributes will be blocked on the Thales DIS Proxy (More to come). Distribution: All communities",
+      "expanded": "Use it when you want to block Event Attributes on the Thales DIS Proxy (More to come). Distribution: All communities",
+      "value": "to_block",
+      "numerical_value": 4,
+      "uuid": "6ca5100a-c74e-53cd-a7d9-6483202b4ec5"
+    },
+    {
+      "colour": "#0A1EF7",
+      "description": "This TAG will insure you to share ONLY to the Thales Group MinArm alliance. Distribution: All communities",
+      "expanded": "Use it when you want to share to the Thales Group MinArm alliance ONLY. Distribution: All communities",
+      "value": "minarm",
+      "numerical_value": 5,
+      "uuid": "ade7a680-504e-5928-bccc-cd3a97ebe8f0"
+    },
+    {
+      "colour": "#A107E3",
+      "description": "This TAG will insure you to share ONLY to the Thales Group ACN alliance. Distribution: All communities",
+      "expanded": "Use it when you want to share to the Thales Group ACN alliance ONLY. Distribution: All communities",
+      "value": "acn",
+      "numerical_value": 6,
+      "uuid": "a72231eb-bdd0-59a2-8507-5d73ba22e8c0"
+    },
+    {
+      "colour": "#FF6F00",
+      "description": "This TAG will insure you to share ONLY to the Thales Group Sigpart alliance. Distribution: All communities",
+      "expanded": "Use it when you want to share to the Thales Group Sigpart alliance ONLY. Distribution: All communities",
+      "value": "sigpart",
+      "numerical_value": 7,
+      "uuid": "9c0a64ba-7bf9-518a-ac0c-c8a4231fc525"
+    },
+    {
+      "colour": "#043C86",
+      "description": "This TAG will insure you to share ONLY to the Thales Group ISAC alliance. Distribution: All communities",
+      "expanded": "Use it when you want to share to the Thales Group ISAC alliance ONLY. Distribution: All communities",
+      "value": "a_isac",
+      "numerical_value": 8,
+      "uuid": "0ac317db-5dc5-5186-8baa-e31b0a1e835c"
+    },
+    {
+      "colour": "#12294D",
+      "description": "This TAG will insure you to share ONLY to the Thales Group InterCERT France alliance. Distribution: All communities",
+      "expanded": "Use it when you want to share to the Thales Group InterCERT France alliance ONLY. Distribution: All communities",
+      "value": "intercert_france",
+      "numerical_value": 9,
+      "uuid": "b1b267c0-0363-5568-a2e6-b4a1b7a778b5"
+    },
+    {
+      "colour": "#75646A",
+      "description": "Distribution: All communities",
+      "expanded": "Use it when you want to assign a trust category to an Attribute or Globally to an Event. Distribution: All communities",
+      "value": "ioc_confidence",
+      "exclusive": true,
+      "uuid": "d1429ccd-9c29-5da7-a07a-fa4c4a696772"
+    },
+    {
+      "colour": "#000000",
+      "description": "Distribution: Restricted Sharing Group",
+      "expanded": "(TLP:BLACK) Information cannot be effectively acted outside of strict and reduced circle of a trust. Distribution: Restricted Sharing Group",
+      "value": "tlp:black",
+      "numerical_value": 13,
+      "uuid": "5e882a35-8ddf-5a8f-bae5-f9e14f1bb736"
+    },
+    {
+      "colour": "#375a7f",
+      "description": "Distribution: All communities",
+      "expanded": "Use it when this came from Watcher Platform. Distribution: All communities",
+      "value": "Watcher",
+      "numerical_value": 14,
+      "uuid": "64c68f56-e6b5-5f39-84d5-f5ada2db6801"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "distribution",
+      "entry": [
+        {
+          "colour": "#CC0033",
+          "description": "This TAG will insure you that this Event will be kept on your side. This Event will NOT be shared to the Thales Group community. Distribution: Your organisation only",
+          "expanded": "Use it when you want to keep the Event on your Organization ONLY. Distribution: Your organisation only",
+          "value": "team_eyes_only",
+          "numerical_value": 0,
+          "uuid": "01764ca8-b46b-5ed5-8e03-3582d558422b"
+        },
+        {
+          "colour": "#FFC000",
+          "description": "This TAG will insure you to share ONLY to the Thales Group Community. Distribution: All communities",
+          "expanded": "Use it when you want to share to the Thales Group Community ONLY. Distribution: All communities",
+          "value": "limited_distribution",
+          "numerical_value": 1,
+          "uuid": "856719d5-467e-55d6-b581-42ad110ef65d"
+        },
+        {
+          "colour": "#339900",
+          "description": "This TAG will insure you to share to the Thales Group External Alliances. Distribution: All communities",
+          "expanded": "Use it when you want to share to the Thales Group External Alliances (MinArm, ACN, InterCERT-FR). Distribution: All communities",
+          "value": "external_alliances",
+          "numerical_value": 2,
+          "uuid": "0846912a-3498-5268-b1e1-285fc496f6ce"
+        },
+        {
+          "colour": "#ffffff",
+          "description": "This TAG will insure you to share to the Thales Group Customers. Distribution: All communities",
+          "expanded": "Use it when you want to share to the Thales Group Customers. Distribution: All communities",
+          "value": "customers",
+          "numerical_value": 3,
+          "uuid": "44ebf539-2557-512d-8626-c81e80b57069"
+        }
+      ]
+    },
+    {
+      "predicate": "ioc_confidence",
+      "entry": [
+        {
+          "value": "high",
+          "expanded": "High",
+          "numerical_value": 10,
+          "uuid": "dfd16537-0eee-5c79-a6c1-a5eb07afb424"
+        },
+        {
+          "value": "medium",
+          "expanded": "Medium",
+          "numerical_value": 11,
+          "uuid": "23d0e162-87c2-5795-9a2f-6e5bf0c8717d"
+        },
+        {
+          "value": "low",
+          "expanded": "Low",
+          "numerical_value": 12,
+          "uuid": "69a17e7c-d814-5251-ab32-854e196087ea"
+        }
+      ]
+    }
+  ],
+  "refs": [
+    "https://www.thalesgroup.com/en/cert"
+  ],
+  "version": 4,
+  "description": "Thales Group Taxonomy - was designed with the aim of enabling desired sharing and preventing unwanted sharing between Thales Group security communities.",
+  "expanded": "Thales Group Taxonomy",
+  "namespace": "thales_group",
+  "uuid": "c76581f5-9cc1-532e-98fd-9d1518871849"
+}

@@ -1,0 +1,319 @@
+## @section rabbitmq Configuration
+##
+rabbitmq:
+  ## @param rabbitmq.app App name for rabbitmq
+  ##
+  app: rabbitmq
+  ## @param rabbitmq.name Name for rabbitmq
+  ##
+  name: rabbitmq
+  ## @param rabbitmq.image Image rabbitmq deployment
+  ##
+  image: rabbitmq
+  ## @param rabbitmq.tag Tag for rabbitmq
+  ##
+  tag: 3-management-alpine
+  ## @param rabbitmq.imagePullPolicy Policy for rabbitmq
+  ##
+  imagePullPolicy: "IfNotPresent"
+  ## @param rabbitmq.replicaCount ReplicaCount for rabbitmq
+  ##
+  replicaCount: 1
+  ## @param rabbitmq.resources Resources for rabbitmq
+  ##
+  resources: {}
+  ## @param rabbitmq.securityContext securityContext for rabbitmq
+  ##
+  securityContext: {}
+  ## @param rabbitmq.podSecurityContext podSecurityContext for rabbitmq
+  ##
+  podSecurityContext: {}
+   
+
+## @section PostgreSQL Configuration
+##
+postgres:
+  ## @param postgres.app PostgreSQL App
+  ##
+  app: postgres
+  ## @param postgres.name PostgreSQL Name
+  ##
+  name: postgres
+  ## @param postgres.image PostgreSQL Image
+  ##
+  image: ghcr.io/zach115th/iriswebapp_db
+  ## @param postgres.tag PostgreSQL Tag
+  ## Published on a release tag. The image tag matches the release name exactly
+  ## under the IRIS-NG-v<x.y.z> scheme (the previous +iris-ng.N scheme needed the
+  ## "+" rewritten to "-", since "+" is not valid in a Docker tag).
+  ## Empty = follow the chart's appVersion, which is the release this chart
+  ## shipped with. Pinning here is supported but rarely wanted: the images for
+  ## a release only exist once its tag has built, so a hardcoded pin can only be
+  ## corrected after the fact — which is how the chart packaged into
+  ## IRIS-NG-v1.0.0 ended up pinning the previous release's images.
+  tag: ""
+  ## @param postgres.imagePullPolicy PostgreSQL PullPolicy
+  ##
+  imagePullPolicy: "IfNotPresent"
+  ## @param postgres.replicaCount PostgreSQL ReplicaCount
+  ##
+  replicaCount: 1
+  ## @param postgres.resources Resources for postgres
+  ##
+  resources: {}
+  
+  
+  ## @param postgres.service PostgreSQL Service
+  ##
+  service:
+   port: 5432
+
+  ## @param  PostgreSQL Environments
+  ##
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_ADMIN_USER: raptor
+  POSTGRES_ADMIN_PASSWORD: postgres
+  POSTGRES_DB: iris_db
+  POSTGRES_PORT: 5432
+  ## @param postgres.POSTGRES_HOST_AUTH_METHOD Auth method for remote connections.
+  ## Was hardcoded to "trust" in the template, which accepts ANY connection that can
+  ## reach the service with no password at all. Defaults to password auth instead;
+  ## set back to "trust" only if you are deliberately running an unauthenticated DB.
+  POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+  ## @param postgres.persistence Where case data actually lives - read this before
+  ## putting real cases on it.
+  ##
+  ## The chart previously hardcoded a hostPath PersistentVolume with
+  ## ReadWriteMany. On a managed cluster that is wrong twice over: hostPath is
+  ## node-local, so the database is silently EMPTY if the pod ever reschedules to
+  ## another node, and ReadWriteMany is not supported by most block-storage CSI
+  ## drivers (DigitalOcean Block Storage is ReadWriteOnce). The default below
+  ## instead asks the cluster default StorageClass for a normal volume.
+  persistence:
+    enabled: true
+    ## Empty string = use the cluster default StorageClass (do-block-storage on
+    ## DOKS). Set explicitly to pin a class.
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 20Gi
+    ## Static hostPath PV for local single-node clusters (kind, minikube) that have
+    ## no dynamic provisioner. Leave false on any managed or multi-node cluster.
+    hostPath:
+      enabled: false
+      path: /var/lib/data
+
+  ## @param postgres.securityContext securityContext for postgres
+  ##
+  securityContext: {}
+  ## @param postgres.podSecurityContext podSecurityContext for postgres
+  ##
+  podSecurityContext: {}
+
+## @section Iris Frontend Configuration
+##
+irisapp:
+  ## @param irisapp.app Iris Frontend App
+  ##
+  app: iriswebapp-app
+  ## @param irisapp.name Iris Frontend Name
+  ##
+  name: iriswebapp-app
+  ## @param irisapp.image Iris Frontend Image
+  ##
+  image: ghcr.io/zach115th/iriswebapp_app
+  ## @param irisapp.tag Iris Frontend Tag
+  ##
+  ## Empty = follow the chart's appVersion, which is the release this chart
+  ## shipped with. Pinning here is supported but rarely wanted: the images for
+  ## a release only exist once its tag has built, so a hardcoded pin can only be
+  ## corrected after the fact — which is how the chart packaged into
+  ## IRIS-NG-v1.0.0 ended up pinning the previous release's images.
+  tag: ""
+  ## @param irisapp.imagePullPolicy Iris Frontend imagePullPolicy
+  ##
+  imagePullPolicy: "IfNotPresent"
+  ## @param irisapp.replicaCount Iris Frontend replicaCount
+  ##
+  replicaCount: 1
+  ## @param irisapp.resources Resources for irisapp
+  ##
+  resources: {}
+
+  ## @param irisapp.service Iris Frontend Service
+  ##
+  service:
+    port: 8000
+    
+  ## @param irisapp.type Iris Frontend Service type
+  ##
+  type: NodePort
+
+  ## @param  Iris Frontend Environments
+  ##
+  POSTGRES_USER: raptor
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_ADMIN_USER: raptor
+  POSTGRES_ADMIN_PASSWORD: postgres
+  POSTGRES_PORT: 5432
+  ## Resolves in-namespace. Use the FQDN (postgres.<namespace>.svc.cluster.local) only if the database lives
+  ## in a different namespace than this release.
+  POSTGRES_SERVER: postgres
+  IRIS_SECRET_KEY: AVerySuperSecretKey-SoNotThisOne
+  IRIS_SECURITY_PASSWORD_SALT: ARandomSalt-NotThisOneEither
+  IRIS_ADM_USERNAME: administrator
+  # Must be 12 characters minimum and contains a capital letter and a number. 
+  IRIS_ADM_PASSWORD: Hello12345!
+  DB_RETRY_COUNT: 5
+  DB_RETRY_DELAY: 5
+  INTERFACE_HTTPS_PORT: 443
+  ## @param irisapp.securityContext securityContext for irisapp
+  ##
+  securityContext: {}
+  ## @param irisapp.podSecurityContext podSecurityContext for irisapp
+  ##
+  podSecurityContext: {}
+
+## @section Iris Backend Configuration
+##
+irisworker:
+  ## @param irisworker.app Iris Backend App
+  ##    
+  app: iriswebapp-worker
+  ## @param irisworker.name Iris Backend Name
+  ##
+  name: iriswebapp-worker
+  ## @param irisworker.image Iris Backend Image
+  ##
+  ## Same image as irisapp - the entrypoint target selects the role.
+  image: ghcr.io/zach115th/iriswebapp_app
+  ## @param irisworker.tag Iris Backend Tag
+  ##
+  ## Empty = follow the chart's appVersion, which is the release this chart
+  ## shipped with. Pinning here is supported but rarely wanted: the images for
+  ## a release only exist once its tag has built, so a hardcoded pin can only be
+  ## corrected after the fact — which is how the chart packaged into
+  ## IRIS-NG-v1.0.0 ended up pinning the previous release's images.
+  tag: ""
+  ## @param irisworker.imagePullPolicy Iris Backend imagePullPolicy
+  ##
+  imagePullPolicy: "IfNotPresent"
+  ## @param irisworker.replicaCount Iris Backend replicaCount
+  ##
+  replicaCount: 1
+  ## @param irisworker.resources Resources for irisworker
+  ##
+  resources: {}
+
+  ## @param  Iris Backend Environments
+  ##
+  POSTGRES_USER: raptor
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_ADMIN_USER: raptor
+  POSTGRES_ADMIN_PASSWORD: postgres
+  POSTGRES_PORT: 5432
+  ## Resolves in-namespace. Use the FQDN (postgres.<namespace>.svc.cluster.local) only if the database lives
+  ## in a different namespace than this release.
+  POSTGRES_SERVER: postgres
+  IRIS_SECRET_KEY: AVerySuperSecretKey-SoNotThisOne
+  IRIS_SECURITY_PASSWORD_SALT: ARandomSalt-NotThisOneEither
+  ## @param irisworker.securityContext securityContext for irisworker
+  ##
+  securityContext: {}
+  ## @param irisworker.podSecurityContext podSecurityContext for irisworker
+  ##
+  podSecurityContext: {}
+
+## @section Iris AI Worker Configuration
+##
+## Consumes the dedicated `ai_queue` at concurrency 1 (one model call in flight at
+## a time). WITHOUT this deployment the executive case summary and case chat enqueue
+## jobs that are never consumed - the UI shows them queued forever rather than
+## reporting an error, while every non-AI feature works normally.
+irisaiworker:
+  ## @param irisaiworker.enabled Deploy the AI worker
+  ##
+  enabled: true
+  ## @param irisaiworker.app Iris AI Worker App
+  ##
+  app: iriswebapp-ai-worker
+  ## @param irisaiworker.name Iris AI Worker Name
+  ##
+  name: iriswebapp-ai-worker
+  ## @param irisaiworker.image Iris AI Worker Image
+  ##
+  ## Same image as irisapp - the entrypoint target selects the role.
+  image: ghcr.io/zach115th/iriswebapp_app
+  ## @param irisaiworker.tag Iris AI Worker Tag
+  ##
+  ## Empty = follow the chart's appVersion, which is the release this chart
+  ## shipped with. Pinning here is supported but rarely wanted: the images for
+  ## a release only exist once its tag has built, so a hardcoded pin can only be
+  ## corrected after the fact — which is how the chart packaged into
+  ## IRIS-NG-v1.0.0 ended up pinning the previous release's images.
+  tag: ""
+  ## @param irisaiworker.imagePullPolicy Iris AI Worker imagePullPolicy
+  ##
+  imagePullPolicy: "IfNotPresent"
+  ## @param irisaiworker.replicaCount Iris AI Worker replicaCount
+  ##
+  ## Keep at 1. Concurrency is bounded to one model call per worker on purpose;
+  ## scaling this up multiplies concurrent load on the AI backend.
+  replicaCount: 1
+  ## @param irisaiworker.resources Resources for irisaiworker
+  ##
+  resources: {}
+
+  ## @param  Iris AI Worker Environments
+  ##
+  POSTGRES_USER: raptor
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_ADMIN_USER: raptor
+  POSTGRES_ADMIN_PASSWORD: postgres
+  POSTGRES_PORT: 5432
+  POSTGRES_SERVER: postgres
+  IRIS_SECRET_KEY: AVerySuperSecretKey-SoNotThisOne
+  IRIS_SECURITY_PASSWORD_SALT: ARandomSalt-NotThisOneEither
+  ## @param irisaiworker.securityContext securityContext for irisaiworker
+  ##
+  securityContext: {}
+  ## @param irisaiworker.podSecurityContext podSecurityContext for irisaiworker
+  ##
+  podSecurityContext: {}
+
+## @section TLS material
+##
+## The app and worker templates mount four Secrets built from files under
+## charts/certificates/ via .Files.Glob. That directory is NOT shipped with the
+## chart, so with this disabled (the default) those Secrets, volumes and mounts are
+## omitted entirely - otherwise the pods reference Secret keys that do not exist and
+## never leave ContainerCreating.
+##
+## Enable only after placing the files under charts/certificates/:
+##   rootCA/irisRootCACert.pem, rootCA/*, web_certificates/*, ldap/*
+certificates:
+  enabled: false
+
+## @section Nginx Ingress Configuration
+##
+ingress:
+  enabled: true
+  name: iris-ingress
+  className: nginx
+  annotations:
+    # Add any annotations specific to your Ingress controller
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    ## CHANGE THIS - the hostname you will point at the ingress load balancer.
+    - host: iris.example.com
+      paths:
+        - path: /(.*)
+          pathType: ImplementationSpecific
+          serviceName: iriswebapp-app
+          servicePort: 8000
+  tls:
+    - secretName: iris-ingress-tls-secret
+      hosts:
+        - iris.example.com
