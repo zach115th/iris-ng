@@ -1,0 +1,67 @@
+{
+  "namespace": "dcso-sharing",
+  "description": "Taxonomy defined in the DCSO MISP Event Guide. It provides guidance for the creation and consumption of MISP events in a way that minimises the extra effort for the sending party, while enhancing the usefulness for receiving parties.",
+  "version": 2,
+  "predicates": [
+    {
+      "value": "event-type",
+      "uuid": "8b229cbd-97ea-5677-8016-73b57e30e675"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "event-type",
+      "entry": [
+        {
+          "value": "Observation",
+          "expanded": "This event describes traits and indicators closely related to a single entity, like an email campaign or sighting of a reference sample on VirusTotal. Events of this type are typically created by CSOC staff and may be verified by analysts. Observed and verified indicators would be consumed by automated filtering systems in order to support near-time threat prevention. In retrospect, observations could be correlated with reports and analysis events in order to help understand the motivation for an attack and to reassess the associated risk.",
+          "colour": "#00233e",
+          "uuid": "640bebd1-7df9-5634-8448-57f36eed5d33"
+        },
+        {
+          "value": "Incident",
+          "expanded": "This event describes traits and indicators related to a security incident. As such, the event may refer to multiple entities like organizations, bank account numbers, files, and URLs. Events of this type contain first-hand information, that is, the reporting organization took part in the analysis of the incident. Use event type \"Report\" for second-hand information. Events of this type are typically created and consumed by analysts.",
+          "colour": "#005d81",
+          "uuid": "dba72d24-3d3e-5f34-9a82-122b32bff9bf"
+        },
+        {
+          "value": "Report",
+          "expanded": "Traceability of indicators can be essential to document compliance of processes with legal obligations or company regulations. This event preserves a report to document the origin and context of indicators. Events of this type need to be checked by a human to ensure correct reproduction of indicators and context. Intended consumers are automated processes. Events may also serve as a basis for analysis reports or to justify preventive measures. If your organization is or was directly involved in an incident and you want to provide a first-hand account, then please use event type \"Incident\" instead.",
+          "colour": "#3f97b8",
+          "uuid": "45a1102a-73c3-5d74-a668-e0afb336f44e"
+        },
+        {
+          "value": "Analysis",
+          "expanded": "This event builds on \"observation\", \"incident\", and \"report\" events; adds enrichments; and provides context. Events of this type will be created by analysts with support by automated tools. Analysts are also the main consumers.",
+          "colour": "#5a8915",
+          "uuid": "f55b3a41-d8d1-58a0-b7ea-87a913abf94b"
+        },
+        {
+          "value": "Collection",
+          "expanded": "This event collects unrelated IoCs. For example, an event could combine all network IoCs that were learned of during a day or a week from events of other types.",
+          "colour": "#94a850",
+          "uuid": "73fc28be-1543-5829-a05e-ac176419fa2a"
+        },
+        {
+          "value": "Public Reporting",
+          "expanded": "This event contains indicators that are the result of enriched OSINT data.",
+          "colour": "#5a8910",
+          "uuid": "e692aced-5b6a-467d-98fa-de1d24b2bddf"
+        },
+        {
+          "value": "Focus",
+          "expanded": "This event contains indicators that are the result of original research and in-depth analysis.",
+          "colour": "#227594",
+          "uuid": "ebec519a-9692-46e1-8247-63d7d6c1e99d"
+        },
+        {
+          "value": "Tracking",
+          "expanded": "This event contains indicators that are the result of continuous monitoring and tracking of various sources.",
+          "colour": "#5c121b",
+          "uuid": "576445bb-2ab3-4ef0-96f9-780a77b54e9a"
+        }
+      ]
+    }
+  ],
+  "uuid": "fd8872e4-9be0-5c24-be70-3b3fd95257f2"
+}

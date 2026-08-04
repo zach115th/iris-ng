@@ -1,0 +1,65 @@
+{
+  "namespace": "gdpr",
+  "description": "Taxonomy related to the REGULATION (EU) 2016/679 OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL on the protection of natural persons with regard to the processing of personal data and on the free movement of such data, and repealing Directive 95/46/EC (General Data Protection Regulation)",
+  "version": 0,
+  "predicates": [
+    {
+      "value": "special-categories",
+      "expanded": "Special Categories",
+      "description": "Special categories of personal data, refer to Art. 9 of the GDPR",
+      "uuid": "7f643b6e-55dc-5da8-9508-ae73ea4b74c2"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "special-categories",
+      "entry": [
+        {
+          "value": "racial-or-ethnic-origin",
+          "expanded": "Racial or ethnic origin",
+          "uuid": "5c7baa2a-60ae-5a7f-bdfb-25533dde862f"
+        },
+        {
+          "value": "political-opinions",
+          "expanded": "Political opinions",
+          "uuid": "7266d866-b972-5654-9c26-02a218a74fda"
+        },
+        {
+          "value": "religious-or-philosophical-beliefs",
+          "expanded": "Religious or philosophical beliefs",
+          "uuid": "9d361c9b-63d8-5eb6-9ebc-9d498bb8284e"
+        },
+        {
+          "value": "trade-union-membership",
+          "expanded": "Trade union membership",
+          "uuid": "e19e8d1f-9b14-5eb9-9ce3-e643ce507108"
+        },
+        {
+          "value": "genetic-data",
+          "expanded": "Genetic data",
+          "description": "Genetic data means personal data relating to the inherited or acquired genetic characteristics of a natural person which give unique information about the physiology or the health of that natural person and which result, in particular, from an analysis of a biological sample from the natural person in question.",
+          "uuid": "413abae6-8bf3-5827-aad9-d33d4b205b8c"
+        },
+        {
+          "value": "biometric-data",
+          "expanded": "Biometric data",
+          "description": "Biometric data for the purpose of uniquely identifying a natural person. Biometric data means personal data resulting from specific technical processing relating to the physical, physiological or behavioural characteristics of a natural person, which allow or confirm the unique identification of that natural person, such as facial images or dactyloscopic data.",
+          "uuid": "2fa42d1a-7981-5816-a5e7-0b680388ad54"
+        },
+        {
+          "value": "health",
+          "expanded": "Health",
+          "description": "Data concerning health. Data concerning health means personal data related to the physical or mental health of a natural person, including the provision of health care services, which reveal information about his or her health status.",
+          "uuid": "5cd39c5d-4010-5be5-b0c0-0596e913642b"
+        },
+        {
+          "value": "sex-life-or-sexual-orientation",
+          "expanded": "Sex life or sexual orientation",
+          "description": "Data concerning a natural person's sex life or sexual orientation",
+          "uuid": "b1031149-f65a-5b6c-99f8-fc4f88731964"
+        }
+      ]
+    }
+  ],
+  "uuid": "f36e2b34-a097-5ce1-b92d-cc289103f623"
+}

@@ -1,0 +1,26 @@
+# Default to LF for text files in the repo (Linux containers run IRIS).
+# Working copies on Windows can still have CRLF — git won't touch existing files.
+* text=auto eol=lf
+
+# Binary files (no normalization, no diff/merge attempts).
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.gz        binary
+*.tar       binary
+*.docx      binary
+*.xlsx      binary
+*.whl       binary
+*.pem       binary
+
+# Shell scripts must be LF — bash refuses CRLF in some distros.
+*.sh        text eol=lf
+*.bash      text eol=lf
+
+# Windows batch files want CRLF.
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
