@@ -31,7 +31,7 @@ pyminizip~=0.2.6
 PyJWT==2.13.0
 cryptography>=39.0.1
 ldap3==2.9.1
-pyintelowl>=4.4.0
+pyintelowl>=5.1.0
 pyotp==2.9.0
 graphene==3.3
 qrcode[pil]==7.4.2
