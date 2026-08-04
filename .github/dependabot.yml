@@ -1,48 +1,66 @@
-version: 1
+version: 2
+
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
-      interval: "weekly"
-    assignees:
-      - "zach115th"
-    reviewers:
-      - "zach115th"
-    open-pull-requests-limit: 10
-    rebase-strategy: "auto"  # Auto-rebase when base branch changes
-    labels:
-      - "dependencies"
-      - "github-actions"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
+    schedule: { interval: "weekly" }
+    open-pull-requests-limit: 3
+    rebase-strategy: "disabled"     # publishes force-push a fresh history
+    assignees: ["zach115th"]
+    labels: ["dependencies", "github-actions", "apply-in-iris-next"]
+    commit-message: { prefix: "chore", include: "scope" }
+    ignore:
+      # Deliberately held at node20 majors: download-artifact v8 stops
+      # unzipping (breaks the upload-tar -> docker load pattern) and
+      # ruff-action v3+ resolves its version from pyproject.toml.
+      - dependency-name: "actions/upload-artifact"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "actions/download-artifact"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "astral-sh/ruff-action"
+        update-types: ["version-update:semver-major"]
     groups:
-      # Group all github-actions updates together
       github-actions:
-        patterns:
-          - "*"
- 
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
   - package-ecosystem: "pip"
-    directory: "/"  # keep only if requirements.txt exists at repo root
-    schedule:
-      interval: "weekly"
-    assignees:
-      - "zach115th"
-    reviewers:
-      - "zach115th"
+    directories: ["/source", "/tests"]
+    schedule: { interval: "weekly" }
     open-pull-requests-limit: 5
-    rebase-strategy: "auto"  # Auto-rebase when base branch changes
-    labels:
-      - "dependencies"
-      - "python"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
+    rebase-strategy: "disabled"
+    assignees: ["zach115th"]
+    labels: ["dependencies", "python", "apply-in-iris-next"]
+    commit-message: { prefix: "chore", include: "scope" }
+    ignore:
+      # DOCX reporter stack is frozen: the vendored docx_generator-0.8.0
+      # wheel hard-pins these, and bumping them breaks report generation.
+      - dependency-name: "docxcompose"
+      - dependency-name: "python-docx"
+      - dependency-name: "docxtpl"
     groups:
-      # Group all minor and patch Python dependency updates
-      python-dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
+      python-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directories: ["/ui", "/e2e"]
+    schedule: { interval: "weekly" }
+    open-pull-requests-limit: 5
+    rebase-strategy: "disabled"
+    assignees: ["zach115th"]
+    labels: ["dependencies", "javascript", "apply-in-iris-next"]
+    commit-message: { prefix: "chore", include: "scope" }
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "docker"
+    directories: ["/docker/db", "/docker/nginx", "/docker/webApp", "/.devcontainer"]
+    schedule: { interval: "weekly" }
+    open-pull-requests-limit: 3
+    rebase-strategy: "disabled"
+    assignees: ["zach115th"]
+    labels: ["dependencies", "docker", "apply-in-iris-next"]
+    commit-message: { prefix: "chore", include: "scope" }
