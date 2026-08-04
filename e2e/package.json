@@ -13,7 +13,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@types/node": "^22.5.4",
-    "wait-on": "^7.2.0"
+    "wait-on": "^9.1.0"
   },
   "dependencies": {
     "dotenv": "^16.4.5"
