@@ -3,7 +3,7 @@
 # shipped is worse than none - it fails, or passes, for reasons production
 # will not reproduce. This sat on 3.9 long enough to stop importing the app
 # at all (PEP 604 unions in access_controls.py and 6 other modules).
-FROM mcr.microsoft.com/devcontainers/python:3.12-trixie
+FROM mcr.microsoft.com/devcontainers/python:3.14-trixie
 
 ENV PYTHONUNBUFFERED 1
 
