@@ -38,7 +38,7 @@ qrcode[pil]==8.2
 dictdiffer==0.10.0
 oic==1.7.0
 # unfortunately we are relying on a beta version here. I hope a definitive version gets released soon
-graphql-server[flask]==3.0.0b7
+graphql-server[flask]==3.0.0
 graphene-sqlalchemy==3.0.0rc1
 
 dependencies/docx_generator-0.8.0-py3-none-any.whl
