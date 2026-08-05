@@ -1,0 +1,1429 @@
+{
+  "authors": [
+    "MITRE"
+  ],
+  "category": "data-component",
+  "description": "Data components are parts of data sources. ",
+  "name": "mitre-data-component",
+  "source": "https://github.com/mitre/cti",
+  "type": "mitre-data-component",
+  "uuid": "d2c1cf9e-c581-4a70-b1c5-12e6de3f0e83",
+  "values": [
+    {
+      "description": "The action of opening a specific Windows Registry key, typically to read its associated value. This activity can be used for system configuration, application settings retrieval, and security policies.",
+      "meta": {
+        "external_id": "DC0050",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0050"
+        ]
+      },
+      "related": [],
+      "uuid": "ed0dd8aa-1677-4551-bb7d-8da767617e1b",
+      "value": "Windows Registry Key Access - DC0050"
+    },
+    {
+      "description": "Object access refers to activities where AD objects (e.g., user accounts, groups, policies) are accessed or queried. Example: Windows Event ID 4661 logs object access attempts. Examples:\n\n- Attribute Access: e.g., `userPassword`, `memberOf`, `securityDescriptor`.\n- Group Enumeration: Enumerating critical group members (e.g., Domain Admins).\n- User Attributes: Commonly accessed attributes like `samAccountName`, `lastLogonTimestamp`.\n- Policy Access: Accessing GPOs to understand security settings.\n\n*Data Collection Measures:*\n\n- Audit Policies:\n    - Enable \"Audit Directory Service Access\" under Advanced Audit Policies (Success and Failure).\n    - Path: `Computer Configuration > Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies > Object AccessEnable: Audit Directory Service Access` (Success and Failure).\n    - Captured Events: IDs 4661, 4662.\n- Event Forwarding: Use WEF to centralize logs for SIEM analysis.\n- SIEM Integration: Collect and parse logs (e.g., 4661, 4662) using tools like Splunk or Azure Sentinel.\n- Log Filtering:\n- Focus on sensitive objects/attributes like:\n    - `Domain Admins` group.\n    - `userPassword`, `ntSecurityDescriptor`.\n- Enable EDR Monitoring:\n    - Detect processes accessing sensitive AD objects (e.g., samAccountName, securityDescriptor).\n    - Log all attempts to enumerate critical groups (e.g., \"Domain Admins\").",
+      "meta": {
+        "external_id": "DC0071",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0071"
+        ]
+      },
+      "related": [],
+      "uuid": "5c6de881-bc70-4070-855a-7a9631a407f7",
+      "value": "Active Directory Object Access - DC0071"
+    },
+    {
+      "description": "Changes made to an existing registry key or its values. These modifications can include altering permissions, modifying stored data, or updating configuration settings.\n\n*Data Collection Measures:*\n\n- Windows Event Logs\n    - Event ID 4657 - Registry Value Modified: Logs changes to registry values, including modifications to startup entries, security settings, or system configurations.\n- Sysmon (System Monitor) for Windows\n    - Sysmon Event ID 13 - Registry Value Set: Captures changes to specific registry values.\n    - Sysmon Event ID 14 - Registry Key & Value Renamed: Logs renaming of registry keys, which may indicate evasion attempts.\n- Endpoint Detection and Response (EDR) Solutions\n    - Monitor registry modifications for suspicious behavior.",
+      "meta": {
+        "external_id": "DC0063",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0063"
+        ]
+      },
+      "related": [],
+      "uuid": "da85d358-741a-410d-9433-20d6269a6170",
+      "value": "Windows Registry Key Modification - DC0063"
+    },
+    {
+      "description": "The removal of a registry key within the Windows operating system.\n\n*Data Collection Measures:*\n\n- Windows Event Logs\n    - Event ID 4658 - Registry Key Handle Closed: Captures when a handle to a registry key is closed, which may indicate deletion.\n    - Event ID 4660 - Object Deleted: Logs when a registry key is deleted.\n- Sysmon (System Monitor) for Windows\n    - Sysmon Event ID 12 - Registry Key Deleted: Logs when a registry key is removed.\n    - Sysmon Event ID 13 - Registry Value Deleted: Captures removal of specific registry values.\n- Endpoint Detection and Response (EDR) Solutions\n    - Monitor registry deletions for suspicious behavior.",
+      "meta": {
+        "external_id": "DC0045",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0045"
+        ]
+      },
+      "related": [],
+      "uuid": "1177a4c5-31c8-400c-8544-9071166afa0e",
+      "value": "Windows Registry Key Deletion - DC0045"
+    },
+    {
+      "description": "Requests for authentication credentials via Kerberos or other methods like NTLM and LDAP queries. Examples:\n\n- Kerberos TGT and Service Tickets (Event IDs 4768, 4769)\n- NTLM Authentication Events\n- LDAP Bind Requests.",
+      "meta": {
+        "external_id": "DC0084",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0084"
+        ]
+      },
+      "related": [],
+      "uuid": "02d090b6-8157-48da-98a2-517f7edd49fc",
+      "value": "Active Directory Credential Request - DC0084"
+    },
+    {
+      "description": "Initial construction of a new registry key within the Windows operating system. ",
+      "meta": {
+        "external_id": "DC0056",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0056"
+        ]
+      },
+      "related": [],
+      "uuid": "7f70fae7-a68d-4730-a83a-f260b9606129",
+      "value": "Windows Registry Key Creation - DC0056"
+    },
+    {
+      "description": "Changes to AD objects (e.g., users, groups, OUs) are logged as Event ID 5136 (Object Modification) or 5163 (Attribute Changes). Examples:\n\n- User Account: Modifying attributes (e.g., group membership, enabling/disabling accounts).\n- Group Membership: Adding/removing members.\n- OU: Changing properties/permissions (e.g., delegation).\n- Service Account: Modifying SPNs or other attributes.\n- Object Attributes: Changes to passwords, logon hours, or control flags.",
+      "meta": {
+        "external_id": "DC0066",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0066"
+        ]
+      },
+      "related": [],
+      "uuid": "5b8b466b-2c81-4fe7-946f-d677a74ae3db",
+      "value": "Active Directory Object Modification - DC0066"
+    },
+    {
+      "description": "Object deletion in AD (e.g., user accounts, groups, OUs) is logged as Event ID 5141. Examples:\n\n- User Account: Deleted user.\n- Group: Deleted security/distribution group.\n- Organizational Unit (OU): Loss of configurations or policies.\n- Service Account: Disrupted operations or cover tracks.\n- Trust Object: Removed domain trust, disrupting connectivity.\n\n*Data Collection Measures:*\n\n- Audit Policy:\n    - Enable \"Audit Directory Service Changes\" (Success and Failure).\n    - Path: `Computer Configuration > Policies > Windows Settings > Security Settings > Advanced Audit Policy Configuration > Audit Policies > Directory Service Changes`.\n    - Key Event: Event ID 5141.\n- Log Forwarding: Use WEF to centralize logs for SIEM tools (e.g., Splunk).\n- Enable EDR Monitoring:\n    - Detect processes or users that initiate unauthorized object deletions.\n    - Monitor tools and scripts that may delete key directory objects.",
+      "meta": {
+        "external_id": "DC0068",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0068"
+        ]
+      },
+      "related": [],
+      "uuid": "9085a576-636a-455b-91d2-c2921bbe6d1d",
+      "value": "Active Directory Object Deletion - DC0068"
+    },
+    {
+      "description": "Creating new objects in AD, such as user accounts, groups, organizational units (OUs), or trust relationships. Logged as Event ID 5137. Examples:\n\n- User Account Creation: New user account.\n- Group Creation: New security/distribution group.\n- OU Creation: New organizational unit.\n- Service Account Creation: New service account for automation or malicious tasks.\n- Trust Object Creation: Trust relationship with another domain.",
+      "meta": {
+        "external_id": "DC0087",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0087"
+        ]
+      },
+      "related": [],
+      "uuid": "18b236d8-7224-488f-9d2f-50076a0f653a",
+      "value": "Active Directory Object Creation - DC0087"
+    },
+    {
+      "description": "Changes made to an existing user, service, or machine account, including alterations to attributes, permissions, roles, authentication methods, or group memberships.",
+      "meta": {
+        "external_id": "DC0010",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0010"
+        ]
+      },
+      "related": [],
+      "uuid": "d27b0089-2c39-4b6c-84ff-303e48657e77",
+      "value": "User Account Modification - DC0010"
+    },
+    {
+      "description": "The establishment of a task or job that will execute at a predefined time or based on specific triggers.",
+      "meta": {
+        "external_id": "DC0001",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0001"
+        ]
+      },
+      "related": [],
+      "uuid": "f42df6f0-6395-4f0c-9376-525a031f00c3",
+      "value": "Scheduled Job Creation - DC0001"
+    },
+    {
+      "description": "An attempt (successful and failed login attempts) by a user, service, or application to gain access to a network, system, or cloud-based resource. This typically involves credentials such as passwords, tokens, multi-factor authentication (MFA), or biometric validation.",
+      "meta": {
+        "external_id": "DC0002",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0002"
+        ]
+      },
+      "related": [],
+      "uuid": "a953ca55-921a-44f7-9b8d-3d40141aa17e",
+      "value": "User Account Authentication - DC0002"
+    },
+    {
+      "description": "Contextual data about a scheduled job, which may include information such as name, timing, command(s), etc.",
+      "meta": {
+        "external_id": "DC0005",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0005"
+        ]
+      },
+      "related": [],
+      "uuid": "7b375092-3a61-448d-900a-77c9a4bde4dc",
+      "value": "Scheduled Job Metadata - DC0005"
+    },
+    {
+      "description": "Initial construction of new web credential material (ex: Windows EID 1200 or 4769)",
+      "meta": {
+        "external_id": "DC0006",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0006"
+        ]
+      },
+      "related": [],
+      "uuid": "5f7c9def-0ddf-423b-b1f8-fb2ddeed0ce3",
+      "value": "Web Credential Creation - DC0006"
+    },
+    {
+      "description": "Cloud service metadata refers to the contextual and descriptive information about cloud services, including their name, type, purpose, configuration, and activity around them. This metadata is essential for understanding the roles and functions of cloud services, their operational status, and their potential misuse. Examples: \n\n- Azure Service Metadata: Metadata describing a resource in Azure, such as an Azure Storage Account or a Virtual Machine.\n- AWS Cloud Service Metadata: Metadata for an AWS EC2 instance collected using the `DescribeInstances` API call.\n- Google Cloud Service Metadata: Metadata for a Google Compute Engine instance collected using `gcloud compute instances describe`.\n- Office 365 Metadata: Metadata about an Office 365 SharePoint site.",
+      "meta": {
+        "external_id": "DC0070",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0070"
+        ]
+      },
+      "related": [],
+      "uuid": "b33d36e3-d7ea-4895-8eed-19a08a8f7c4f",
+      "value": "Cloud Service Metadata - DC0070"
+    },
+    {
+      "description": "An attempt by a user to gain access to a network or computing resource by providing web credentials (ex: Windows EID 1202)",
+      "meta": {
+        "external_id": "DC0007",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0007"
+        ]
+      },
+      "related": [],
+      "uuid": "ff93f688-d7a4-49cf-9c79-a14454da8428",
+      "value": "Web Credential Usage - DC0007"
+    },
+    {
+      "description": "The removal of a user, service, or machine account from an operating system, cloud identity management system, or directory service.",
+      "meta": {
+        "external_id": "DC0009",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0009"
+        ]
+      },
+      "related": [],
+      "uuid": "d6257b8e-869c-41c0-8731-fdca40858a91",
+      "value": "User Account Deletion - DC0009"
+    },
+    {
+      "description": "This data component refers to monitoring actions that deactivate or stop a cloud service in a cloud control plane. Examples include disabling essential logging services like AWS CloudTrail (`StopLogging` API call), Microsoft Azure Monitor Logs, or Google Cloud's Operations Suite (formerly Stackdriver). Disabling such services can hinder visibility into adversary activities within the cloud environment. Examples: \n\n- AWS CloudTrail StopLogging: This action stops logging of API activity for a particular trail, effectively reducing the monitoring and visibility of AWS resources and activities.\n- Microsoft Azure Monitor Logs: Disabling these logs hinders the organization’s ability to detect anomalous activities and trace malicious actions.\n- Google Cloud Logging: Disabling cloud logging removes visibility into resource activity, preventing monitoring of service access or configuration changes.\n- SaaS Applications: Stopping logging removes visibility into user activities, such as email access or file downloads, enabling undetected malicious behavior.",
+      "meta": {
+        "external_id": "DC0090",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0090"
+        ]
+      },
+      "related": [],
+      "uuid": "ec0612c5-2644-4c50-bcac-82586974fedd",
+      "value": "Cloud Service Disable - DC0090"
+    },
+    {
+      "description": "Calls made by a process to operating system-provided Application Programming Interfaces (APIs). These calls are essential for interacting with system resources such as memory, files, and hardware, or for performing system-level tasks. Monitoring these calls can provide insight into a process's intent, especially if the process is malicious.",
+      "meta": {
+        "external_id": "DC0021",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0021"
+        ]
+      },
+      "related": [],
+      "uuid": "9bde2f9d-a695-4344-bfac-f2dce13d121e",
+      "value": "OS API Execution - DC0021"
+    },
+    {
+      "description": "Opening a network share, which makes the contents available to the requestor (ex: Windows EID 5140 or 5145)",
+      "meta": {
+        "external_id": "DC0102",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0102"
+        ]
+      },
+      "related": [],
+      "uuid": "f5468e67-51c7-4756-9b4f-65707708e7fa",
+      "value": "Network Share Access - DC0102"
+    },
+    {
+      "description": "Changes made to an existing scheduled job, including modifications to its execution parameters, command payload, or execution timing.",
+      "meta": {
+        "external_id": "DC0012",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0012"
+        ]
+      },
+      "related": [],
+      "uuid": "faa34cf6-cf32-4dc9-bd6a-8f7a606ff65b",
+      "value": "Scheduled Job Modification - DC0012"
+    },
+    {
+      "description": "Contextual data about an account, which may include a username, user ID, environmental data, etc.",
+      "meta": {
+        "external_id": "DC0013",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0013"
+        ]
+      },
+      "related": [],
+      "uuid": "b5d0492b-cda4-421c-8e51-ed2b8d85c5d0",
+      "value": "User Account Metadata - DC0013"
+    },
+    {
+      "description": "The process of loading a kernel module into the operating system kernel. Kernel modules are object files that extend the kernel’s functionality, such as adding support for device drivers, new filesystems, or additional system calls. This action can be legitimate (e.g., loading a driver) or malicious (e.g., adding a rootkit). \n\n*Data Collection Measures:*\n\n- Linux:\n    - Auditd: Enable auditing of kernel module loading. Example rule: `-a always,exit -F arch=b64 -S init_module,delete_module`.\n    - Syslog: Monitor `/var/log/syslog` or `/var/log/messages` for entries related to kernel module loads.\n    - Systemd Journal: Use `journalctl` to query logs for module loading events: `journalctl -k | grep \"Loading kernel module\"`\n- macOS:\n    - Unified Logs: Use the `log` command to query kernel module events: `log show --predicate 'eventMessage contains \"kextload\"' --info`\n    - Endpoint Security Framework (ESF): Monitor for `ES_EVENT_TYPE_AUTH_KEXTLOAD` (kernel extension loading events).\n- Kernel-Specific Tools:\n    - Lsmod: Use `lsmod` to list loaded kernel modules in real-time.\n    - Kprobe/eBPF: Use extended Berkeley Packet Filter (eBPF) or Kernel Probes (kprobes) to monitor kernel events, including module loading. Example using eBPF tools like BCC:\n`sudo python /path/to/bcc/tools/kprobe -v do_init_module`\n- Enable EDR Monitoring:\n    - Configure alerts for: Suspicious kernel module loads from non-standard paths (e.g., /tmp). Unexpected or unsigned kernel modules.\n    - Review detailed telemetry data provided by the EDR for insight into who initiated the module load, the file path, and whether the module was signed.",
+      "meta": {
+        "external_id": "DC0031",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0031"
+        ]
+      },
+      "related": [],
+      "uuid": "23e4ee78-26f3-4fcf-ba43-ab953962f96c",
+      "value": "Kernel Module Load - DC0031"
+    },
+    {
+      "description": "The initial establishment of a new user, service, or machine account within an operating system, cloud environment, or identity management system.",
+      "meta": {
+        "external_id": "DC0014",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0014"
+        ]
+      },
+      "related": [],
+      "uuid": "deb22295-7e37-4a3b-ac6f-c86666fbe63d",
+      "value": "User Account Creation - DC0014"
+    },
+    {
+      "description": "The creation, deletion, or alteration of firewall rules to allow or block specific network traffic. Monitoring changes to these rules is critical for detecting misconfigurations, unauthorized access, or malicious attempts to bypass network protections. Examples: \n\n- Rule Creation: Adding a new rule to allow inbound traffic on port 3389 (RDP).\n- Rule Deletion: Deleting a rule that blocks inbound traffic from untrusted IP ranges.\n- Rule Modification: Changing a rule to allow traffic from \"any\" source IP instead of a specific trusted range.\n- Audit Log Metadata: Logs indicating \"Firewall rule modified by admin@domain.com.\"\n- Platform-Specific Scenarios\n    - Azure: Altering rules in an Azure Network Security Group (NSG).\n    - AWS: Modifying Security Group rules to allow traffic.\n    - Windows: Changes tracked in Security Event Logs (EID 4950 or 4951).\n\nThis data component can be collected through the following measures:\n\nCloud Control Plane\n\n- Azure: Collect rule modification logs from Azure Firewall Activity Logs.\n    - Example Command: `az network firewall policy rule-collection-group rule-collection list --policy-name <policy-name>`\n- AWS: Use CloudTrail to track `AuthorizeSecurityGroupIngress` or `RevokeSecurityGroupIngress` actions.\n    Example: `aws ec2 describe-security-groups`\n- Google Cloud: Use gcloud commands to extract firewall rules: `gcloud compute firewall-rules list --format=json`\n\nHost-Based Firewalls\n\n- Windows: \n    - Collect events from the Windows Security Event Log (EID 4950: A rule has been modified).\n    - Use PowerShell to track rule changes: `Get-NetFirewallRule -PolicyStore PersistentStore`\n- Linux:\n    - Monitor iptables or nftables rule modifications: `iptables -L -v`\n    - Use auditd for real-time monitoring: `auditctl -w /etc/iptables.rules -p wa`\n- macOS: Use pfctl to monitor rule changes: `sudo pfctl -sr`\n\nSIEM Integration\n\n- Collect logs from cloud platforms, host systems, and network appliances for centralized monitoring.\n\nAPI Monitoring\n\n- Monitor API calls for firewall rule modifications.",
+      "meta": {
+        "external_id": "DC0051",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0051"
+        ]
+      },
+      "related": [],
+      "uuid": "d2ff4b56-8351-4ed8-b0fb-d8605366005f",
+      "value": "Firewall Rule Modification - DC0051"
+    },
+    {
+      "description": "Cloud Storage Enumeration involves retrieving a list of available cloud storage infrastructure, such as buckets, containers, or objects, within a cloud environment. This activity may be performed for legitimate administrative purposes or malicious reconnaissance by adversaries seeking to identify accessible storage resources.Examples:\n\n- AWS S3 Bucket Enumeration: An AWS user lists all buckets using the `ListBuckets` API call.\n- Azure Blob Storage Container Enumeration: A user retrieves a list of all containers within a storage account using the Azure Storage SDK or API.\n- Google Cloud Storage Bucket Enumeration: A Google Cloud user lists all buckets within a project using the `storage.buckets.list` API.\n- OpenStack Swift Container Enumeration: A user retrieves a list of containers in OpenStack Swift using the `GET` method on the storage endpoint.",
+      "meta": {
+        "external_id": "DC0017",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0017"
+        ]
+      },
+      "related": [],
+      "uuid": "fcc4811f-9cc8-4db5-8097-4d8242a380de",
+      "value": "Cloud Storage Enumeration - DC0017"
+    },
+    {
+      "description": "Cloud Storage Deletion refers to the removal or destruction of cloud storage infrastructure, such as buckets, containers, or directories, within a cloud environment. Monitoring this activity is critical to detecting potential unauthorized or malicious actions, such as data destruction by adversaries or accidental deletions that may lead to data loss. Examples: \n\n- AWS S3 Bucket Deletion: An AWS user deletes an S3 bucket using the `DeleteBucket` API call.\n- Azure Blob Storage Container Deletion: A user deletes a container in Azure Blob Storage using the `Delete Container` operation.\n- Google Cloud Storage Bucket Deletion: A Google Cloud user deletes a bucket using the `storage.buckets.delete` API.\n- OpenStack Swift Container Deletion: A user deletes a container in OpenStack Swift using the `DELETE` method.\n\nThis data component can be collected through the following measures:\n\nEnable Logging for Cloud Storage Services\n\n- AWS S3: Enable AWS CloudTrail to log DeleteBucket API actions.\n- Azure Blob Storage: Enable Azure Monitor and Diagnostic Logs to capture Delete Container operations. Use Azure Event Grid to capture and trigger alerts for container deletion.\n- Google Cloud Storage: Enable Data Access logs in Cloud Audit Logs to monitor storage.buckets.delete API calls.\n- OpenStack Swift: Configure Swift logging to capture DELETE requests for containers.\n\nCentralized Logging and Analysis\n\n- Use platforms like Splunk or native SIEMs to forward and analyze logs for anomalies in cloud storage deletions.",
+      "meta": {
+        "external_id": "DC0022",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0022"
+        ]
+      },
+      "related": [],
+      "uuid": "4c41e296-b8d2-4a37-b789-eb565c87c00c",
+      "value": "Cloud Storage Deletion - DC0022"
+    },
+    {
+      "description": "Cloud Storage Modification involves tracking changes made to cloud storage infrastructure, including updates to settings, permissions, or stored data. Examples include modifying object access control lists (ACLs), uploading new objects, or updating bucket policies. Examples: \n\nAWS S3: An object is uploaded or its ACL is modified.\n- Azure Blob Storage: A blob's metadata or permissions are updated.\n- Google Cloud Storage: An object's lifecycle policy is updated, or a bucket policy is changed.\n- OpenStack Swift: Modifications to container settings or uploading of new objects.",
+      "meta": {
+        "external_id": "DC0023",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0023"
+        ]
+      },
+      "related": [],
+      "uuid": "45977f14-1bcc-4ec4-ac14-a30fd3a11f44",
+      "value": "Cloud Storage Modification - DC0023"
+    },
+    {
+      "description": "Cloud Storage Creation refers to the initial creation of a new cloud storage resource, such as buckets, containers, or directories, within a cloud environment. This action is critical to track as it might indicate the legitimate provisioning of resources or unauthorized actions taken by adversaries to stage, store, or exfiltrate data. Examples: \n\n- AWS S3 Bucket Creation: An AWS user creates a new S3 bucket using the `CreateBucket` API call.\n- Azure Blob Storage Container Creation: A user creates a new container in Azure Blob Storage using the `Create Container` operation.\n- Google Cloud Storage Bucket Creation: A Google Cloud user creates a new bucket using `storage.buckets.create`.\n- OpenStack Swift Container Creation: A user creates a new container in OpenStack Swift using the `PUT` method.",
+      "meta": {
+        "external_id": "DC0024",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0024"
+        ]
+      },
+      "related": [],
+      "uuid": "59ec10d9-546b-4b8e-bccb-fa85f71e5055",
+      "value": "Cloud Storage Creation - DC0024"
+    },
+    {
+      "description": "Cloud storage access refers to the retrieval or interaction with data stored in cloud infrastructure. This data component includes activities such as reading, downloading, or accessing files and objects within cloud storage systems. Common examples include API calls like GetObject in AWS S3, which retrieves objects from cloud buckets. Examples: \n\n- AWS S3 Access: An adversary uses the `GetObject` API to retrieve sensitive data from an AWS S3 bucket.\n- Azure Blob Storage Access: A user accesses a blob in Azure Storage using `Get Blob` or `Get Blob Properties`.\n- Google Cloud Storage Access: An adversary uses `storage.objects.get` to download objects from - OpenStack Swift Storage Access: A user retrieves an object from OpenStack Swift using the `GET` method.",
+      "meta": {
+        "external_id": "DC0025",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0025"
+        ]
+      },
+      "related": [],
+      "uuid": "58ef998c-f3bf-4985-b487-b1005f5c05d1",
+      "value": "Cloud Storage Access - DC0025"
+    },
+    {
+      "description": "Cloud Storage Metadata provides contextual information about cloud storage infrastructure and its associated activity. This data may include attributes such as storage name, size, owner, permissions, creation date, region, and activity metadata. It is essential for monitoring, auditing, and identifying anomalies in cloud storage environments. Examples: \n\n- AWS S3 Bucket Metadata: Metadata about an S3 bucket includes the bucket name, region, creation date, owner, storage class, and permissions.\n- Azure Blob Storage Metadata: Metadata for an Azure Blob container includes container name, access level (e.g., private or public), size, and tags.\n- Google Cloud Storage Metadata: Metadata includes bucket name, storage class, location, labels, lifecycle policies, and versioning status.\n- OpenStack Swift Metadata: Metadata for a Swift container includes name, access level, quota, and custom attributes.",
+      "meta": {
+        "external_id": "DC0027",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0027"
+        ]
+      },
+      "related": [],
+      "uuid": "e214eb6d-de8f-4154-9015-6d47915fbed1",
+      "value": "Cloud Storage Metadata - DC0027"
+    },
+    {
+      "description": "The initial establishment of a network session, where a system or process initiates a connection to a local or remote endpoint. This typically involves capturing socket information (source/destination IP, ports, protocol) and tracking session metadata. Monitoring these events helps detect lateral movement, exfiltration, and command-and-control (C2) activities.\n\n*Data Collection Measures:*\n\n- Windows:\n    - Event ID 5156 – Filtering Platform Connection - Logs network connections permitted by Windows Filtering Platform (WFP).\n    - Sysmon Event ID 3 – Network Connection Initiated - Captures process, source/destination IP, ports, and parent process.\n- Linux/macOS:\n    - Netfilter (iptables), nftables logs - Tracks incoming and outgoing network connections.\n    - AuditD (`connect` syscall) - Logs TCP, UDP, and ICMP connections.\n    - Zeek (`conn.log`) - Captures protocol, duration, and bytes transferred.\n- Cloud & Network Infrastructure:\n    - AWS VPC Flow Logs / Azure NSG Flow Logs - Logs IP traffic at the network level in cloud environments.\n    - Zeek (conn.log) or Suricata (network events) - Captures packet metadata for detection and correlation.\n- Endpoint Detection & Response (EDR):\n    - Detect anomalous network activity such as new C2 connections or data exfiltration attempts.",
+      "meta": {
+        "external_id": "DC0082",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0082"
+        ]
+      },
+      "related": [],
+      "uuid": "181a9f8c-c780-4f1f-91a8-edb770e904ba",
+      "value": "Network Connection Creation - DC0082"
+    },
+    {
+      "description": "Application Log Content refers to logs generated by applications or services, providing a record of their activity. These logs may include metrics, errors, performance data, and operational alerts from web, mail, or other applications. These logs are vital for monitoring application behavior and detecting malicious activities or anomalies. Examples: \n\n- Web Application Logs: These logs include information about requests, responses, errors, and security events (e.g., unauthorized access attempts).\n- Email Application Logs: Logs contain metadata about emails sent, received, or blocked (e.g., sender/receiver addresses, message IDs).\n- SaaS Application Logs: Activity logs include user logins, configuration changes, and access to sensitive resources.\n- Cloud Application Logs: Logs detail control plane activities, including API calls, instance modifications, and network changes.\n- System/Application Monitoring Logs: Logs provide insights into application performance, errors, and anomalies.",
+      "meta": {
+        "external_id": "DC0038",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0038"
+        ]
+      },
+      "related": [],
+      "uuid": "9c2fa0ae-7abc-485a-97f6-699e3b6cf9fa",
+      "value": "Application Log Content - DC0038"
+    },
+    {
+      "description": "Cloud service enumeration involves listing or querying available cloud services in a cloud control plane. This activity is often performed to identify resources such as virtual machines, storage buckets, compute clusters, or other services within a cloud environment. Examples include API calls like `AWS ECS ListServices`, `Azure ListAllResources`, or `Google Cloud ListInstances`. Examples: \n\nAWS Cloud Service Enumeration: The adversary gathers details about existing ECS services to identify opportunities for privilege escalation or exfiltration.\n- Azure Resource Enumeration: The adversary collects information about virtual machines, resource groups, and other Azure assets for reconnaissance purposes.\n- Google Cloud Resource Enumeration: The attacker seeks to map the environment and find misconfigured or underutilized resources for exploitation.\n- Office 365 Service Enumeration: The attacker may look for data repositories or collaboration tools to exfiltrate sensitive information.",
+      "meta": {
+        "external_id": "DC0083",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0083"
+        ]
+      },
+      "related": [],
+      "uuid": "8c826308-2760-492f-9e36-4f0f7e23bcac",
+      "value": "Cloud Service Enumeration - DC0083"
+    },
+    {
+      "description": "Contextual data about a named pipe on a system, including pipe name and creating process (ex: Sysmon EIDs 17-18)\n\n*Data Collection Measures:*\n\n- Windows:\n    - Sysmon Event ID 17: Logs the creation of a named pipe.\n    - Sysmon Event ID 18: Logs connection attempts to a named pipe.\n    - Windows Security Event ID 5145: Logs access attempts to named pipes via SMB shares.\n    - ETW (Event Tracing for Windows): Provides deep telemetry into named pipe interactions.\n- Linux/macOS:\n    - AuditD (`mkfifo`, `open`, `read`, `write` syscalls): Tracks FIFO (named pipe) creation and usage.\n    - Lsof (`lsof -p <PID>` or `lsof | grep PIPE`): Lists active named pipes and associated processes.\n    - Strace (`strace -e open <process>`): Monitors named pipe interactions.\n- Endpoint Detection & Response (EDR):\n    - Capture named pipe events as part of process tracking.\n- Memory Forensics:\n    - Volatility Plugin (`pipescan`): Enumerates named pipes in system memory.\n    - Rekall Framework: Identifies active named pipes and associated processes.",
+      "meta": {
+        "external_id": "DC0048",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0048"
+        ]
+      },
+      "related": [],
+      "uuid": "b9a1578e-8653-4103-be23-cb52e0b1816e",
+      "value": "Named Pipe Metadata - DC0048"
+    },
+    {
+      "description": "The full packet capture (PCAP) or session data that logs both protocol headers and payload content. This allows analysts to inspect command and control (C2) traffic, exfiltration, and other suspicious activity within network communications. Unlike metadata-based logs, full content analysis enables deeper protocol inspection, payload decoding, and forensic investigations.\n\n*Data Collection Measures:*\n\n- Network Packet Capture (Full Content Logging)\n    - Wireshark / tcpdump / tshark\n        - Full packet captures (PCAP files) for manual analysis or IDS correlation. `tcpdump -i eth0 -w capture.pcap`\n    - Zeek (formerly Bro)\n        - Extracts protocol headers and payload details into structured logs. `echo \"redef Log::default_store = Log::ASCII;\" > local.zeek | zeek -Cr capture.pcap local.zeek`\n    - Suricata / Snort (IDS/IPS with PCAP Logging)\n        - Deep packet inspection (DPI) with signature-based and behavioral analysis. `suricata -c /etc/suricata/suricata.yaml -i eth0 -l /var/log/suricata`\n- Host-Based Collection\n    - Sysmon Event ID 22 – DNS Query Logging, Captures DNS requests made by processes, useful for detecting C2 domains.\n    - Sysmon Event ID 3 – Network Connection Initiated, Logs process-to-network connection relationships.\n    - AuditD (Linux) – syscall=connect, Monitors outbound network requests from processes. `auditctl -a always,exit -F arch=b64 -S connect -k network_activity`\n- Cloud & SaaS Traffic Collection\n    - AWS VPC Flow Logs / Azure NSG Flow Logs / Google VPC Flow Logs, Captures metadata about inbound/outbound network traffic.\n    - Cloud IDS (AWS GuardDuty, Azure Sentinel, Google Chronicle), Detects malicious activity in cloud environments by analyzing network traffic patterns.",
+      "meta": {
+        "external_id": "DC0085",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0085"
+        ]
+      },
+      "related": [],
+      "uuid": "3772e279-27d6-477a-9fe3-c6beb363594c",
+      "value": "Network Traffic Content - DC0085"
+    },
+    {
+      "description": "The successful establishment of a new user session following a successful authentication attempt. This typically signifies that a user has provided valid credentials or authentication tokens, and the system has initiated a session associated with that user account. This data is crucial for tracking authentication events and identifying potential unauthorized access. Examples: \n\n- Windows Systems\n    - Event ID: 4624\n        - Logon Type: 2 (Interactive) or 10 (Remote Interactive via RDP).\n        - Account Name: JohnDoe\n        - Source Network Address: 192.168.1.100\n        - Authentication Package: NTLM\n- Linux Systems\n    - /var/log/utmp or /var/log/wtmp:\n        - Log format: login user [tty] from [source_ip]\n        - User: jane\n        - IP: 10.0.0.5\n        - Timestamp: 2024-12-28 08:30:00\n- macOS Systems\n    - /var/log/asl.log or unified logging framework:\n        - Log: com.apple.securityd: Authentication succeeded for user 'admin'\n- Cloud Environments\n    - Azure Sign-In Logs:\n        - Activity: Sign-in successful\n        - Client App: Browser\n        - Location: Unknown (Country: X)\n- Google Workspace\n    - Activity: Login\n        - Event Type: successful_login\n        - Source IP: 203.0.113.55",
+      "meta": {
+        "external_id": "DC0067",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0067"
+        ]
+      },
+      "related": [],
+      "uuid": "9ce98c86-8d30-4043-ba54-0784d478d0b5",
+      "value": "Logon Session Creation - DC0067"
+    },
+    {
+      "description": "Cloud service modification refers to changes made to the configuration, settings, or data of a cloud service. These modifications can include administrative changes such as enabling or disabling features, altering permissions, or deleting critical components. Monitoring these changes is critical to detect potential misconfigurations or malicious activity. Examples: \n\n- AWS Cloud Service Modifications: A user disables AWS CloudTrail logging (StopLogging) or deletes a CloudWatch configuration rule (DeleteConfigRule).\n- Azure Cloud Service Modifications: Changes to Azure Role-Based Access Control (RBAC) roles, such as adding a new Contributor role to a sensitive resource.\n- Google Cloud Service Modifications: Deletion of a Google Cloud Storage bucket or disabling a Google Cloud Function.\n- Office 365 Cloud Service Modifications: Altering mailbox permissions or disabling auditing in Microsoft 365.",
+      "meta": {
+        "external_id": "DC0069",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0069"
+        ]
+      },
+      "related": [],
+      "uuid": "e52d89f9-1710-4708-88a5-cbef77c4cd5e",
+      "value": "Cloud Service Modification - DC0069"
+    },
+    {
+      "description": "Summarized network packet data that captures session-level details such as source/destination IPs, ports, protocol types, timestamps, and data volume, without storing full packet payloads. This is commonly used for traffic analysis, anomaly detection, and network performance monitoring.",
+      "meta": {
+        "external_id": "DC0078",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0078"
+        ]
+      },
+      "related": [],
+      "uuid": "a7f22107-02e5-4982-9067-6625d4a1765a",
+      "value": "Network Traffic Flow - DC0078"
+    },
+    {
+      "description": "Contextual data about a logon session, such as username, logon type, access tokens (security context, user SIDs, logon identifiers, and logon SID), and any activity associated within it",
+      "meta": {
+        "external_id": "DC0088",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0088"
+        ]
+      },
+      "related": [],
+      "uuid": "39b9db72-8b48-4595-a18d-db5bbba3091b",
+      "value": "Logon Session Metadata - DC0088"
+    },
+    {
+      "description": "Contextual data about a cloud volume and activity around it, such as id, type, state, and size",
+      "meta": {
+        "external_id": "DC0100",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0100"
+        ]
+      },
+      "related": [],
+      "uuid": "0f72bf50-35b3-419d-ab95-70f9b6a818dd",
+      "value": "Volume Metadata - DC0100"
+    },
+    {
+      "description": "Changes made to a running process, such as writing data into memory, modifying execution behavior, or injecting code into an existing process. Adversaries frequently modify processes to execute malicious payloads, evade detection, or gain escalated privileges.",
+      "meta": {
+        "external_id": "DC0020",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0020"
+        ]
+      },
+      "related": [],
+      "uuid": "d5fca4e4-e47a-487b-873f-3d22f8865e96",
+      "value": "Process Modification - DC0020"
+    },
+    {
+      "description": "Contextual data about a malicious payload, such as compilation times, file hashes, as well as watermarks or other identifiable configuration information",
+      "meta": {
+        "external_id": "DC0003",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0003"
+        ]
+      },
+      "related": [],
+      "uuid": "93a6e38c-02a5-44d8-9035-b2e08459f31f",
+      "value": "Malware Metadata - DC0003"
+    },
+    {
+      "description": "Changes made to a pod’s configuration or control data within a containerized cluster. This can include updating settings such as resource limits, environment variables, annotations, labels, or even the containers running within the pod. Pod modifications are often executed using commands like kubectl set, kubectl patch, or kubectl edit.\n\n*Data Collection Measures:* \n\n- Kubernetes API Server Audit Logs:\n    - Capture all API calls related to pod modification, such as PATCH, PUT, or UPDATE methods on v1/pods.\n- Runtime Security Tools:\n    - Tools like Falco, Sysdig, and Kube-bench can monitor pod modifications at runtime and alert on policy violations.\n- Container Orchestration Logs:\n    - Monitor events logged by Kubernetes itself (e.g., `kubectl logs -n kube-system kube-controller-manager`).\n- SIEM and EDR Solutions:\n    - Use SIEM platforms (e.g., Splunk) to aggregate API server logs and detect patterns of unauthorized or suspicious pod modifications.\n    - Endpoint Detection and Response (EDR) tools configured with container visibility can monitor commands like `kubectl` set or `kubectl patch`.\n- Host-Based Monitoring:\n    - Collect and analyze logs for processes executing `kubectl` commands or interacting with Kubernetes configuration files (e.g., `.kube/config`).",
+      "meta": {
+        "external_id": "DC0030",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0030"
+        ]
+      },
+      "related": [],
+      "uuid": "672b2ebd-4310-4efe-bf03-7ab005298a74",
+      "value": "Pod Modification - DC0030"
+    },
+    {
+      "description": "Refers to events where files are removed from a system or storage device. These events can indicate legitimate housekeeping activities or malicious actions such as attackers attempting to cover their tracks. Monitoring file deletions helps organizations identify unauthorized or suspicious activities.",
+      "meta": {
+        "external_id": "DC0040",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0040"
+        ]
+      },
+      "related": [],
+      "uuid": "e905dad2-00d6-477c-97e8-800427abd0e8",
+      "value": "File Deletion - DC0040"
+    },
+    {
+      "description": "Changes made to firmware, which may include its settings, configurations, or underlying data. This can encompass alterations to the Master Boot Record (MBR), Volume Boot Record (VBR), or other firmware components critical to system boot and functionality. Such modifications are often indicators of adversary activity, including malware persistence and system compromise. Examples: \n\n- Changes to Master Boot Record (MBR): Modifying the MBR to load malicious code during the boot process.\n- Changes to Volume Boot Record (VBR): Altering the VBR to redirect boot processes to malicious locations.\n- Firmware Configuration Changes: Modifying BIOS/UEFI settings such as disabling Secure Boot.\n- Firmware Image Tampering: Updating firmware with a malicious or unauthorized image.\n- Logs or Errors Indicating Firmware Changes: Logs showing unauthorized firmware updates or checksum mismatches.\n\nThis data component can be collected through the following measures:\n\n- BIOS/UEFI Logs: Enable and monitor BIOS/UEFI logs to capture settings changes or firmware updates.\n- Firmware Integrity Monitoring: Use tools or firmware security features to detect changes to firmware components.\n- Endpoint Detection and Response (EDR) Solutions: Many EDR platforms can detect abnormal firmware activity, such as changes to MBR/VBR or unauthorized firmware updates.\n- File System Monitoring: Monitor changes to MBR/VBR-related files using tools like Sysmon or auditd.\n    - Windows Example (Sysmon): Monitor Event ID 7 (Raw disk access).\n    - Linux Example (auditd): `auditctl -w /dev/sda -p wa -k firmware_modification`\n- Network Traffic Analysis: Capture firmware updates downloaded over the network, particularly from untrusted sources. Use network monitoring tools like Zeek or Wireshark to analyze firmware-related traffic.\n- Secure Boot Logs: Collect and analyze Secure Boot logs for signs of tampering or unauthorized configurations. Example: Use PowerShell to retrieve Secure Boot settings on Windows: `Confirm-SecureBootUEFI`\n- Vendor-Specific Firmware Tools: Many hardware vendors provide tools for firmware integrity checks.Examples:\n    - Intel Platform Firmware Resilience (PFR).\n    - Lenovo UEFI diagnostics.",
+      "meta": {
+        "external_id": "DC0004",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0004"
+        ]
+      },
+      "related": [],
+      "uuid": "b9d031bb-d150-4fc6-8025-688201bf3ffd",
+      "value": "Firmware Modification - DC0004"
+    },
+    {
+      "description": "The registration of a new service or daemon on an operating system.\n\n*Data Collection Measures:*\n\n- Windows Event Logs\n    - Event ID 4697 - Captures the creation of a new Windows service.\n    - Event ID 7045 - Captures services installed by administrators or adversaries.\n    - Event ID 7034 - Could indicate malicious service modification or exploitation.\n- Sysmon Logs\n    - Sysmon Event ID 1 - Process Creation (captures service executables).\n    - Sysmon Event ID 4 - Service state changes (detects service installation).\n    - Sysmon Event ID 13 - Registry modifications (captures service persistence changes).\n- PowerShell Logging\n    - Monitor `New-Service` and `Set-Service` PowerShell cmdlets in Event ID 4104 (Script Block Logging).\n- Linux/macOS Collection Methods\n    - AuditD & Syslog Daemon Logs (`/var/log/syslog`, `/var/log/messages`, `/var/log/daemon.log`)\n    - AuditD Rules:\n        - `auditctl -w /etc/systemd/system -p wa -k service_creation`\n        - Detects changes to `systemd` service configurations.\n- Systemd Journals (`journalctl -u <service_name>`)\n    - Captures newly created systemd services.\n- LaunchDaemons & LaunchAgents (macOS)\n    - Monitor `/Library/LaunchDaemons/` and `/Library/LaunchAgents/` for new plist files.",
+      "meta": {
+        "external_id": "DC0060",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0060"
+        ]
+      },
+      "related": [],
+      "uuid": "5297a638-1382-4f0c-8472-0d21830bf705",
+      "value": "Service Creation - DC0060"
+    },
+    {
+      "description": "Initial construction of a WMI object, such as a filter, consumer, subscription, binding, or providers.",
+      "meta": {
+        "external_id": "DC0008",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0008"
+        ]
+      },
+      "related": [],
+      "uuid": "05645013-2fed-4066-8bdc-626b2e201dd4",
+      "value": "WMI Creation - DC0008"
+    },
+    {
+      "description": "The initiation or activation of a virtual machine instance within a cloud infrastructure. This action typically involves starting an existing instance that had been stopped or paused, allowing it to resume operation. Examples: \n\n- Google Cloud Platform (GCP): Starting an instance through `instance.start` API activity.\n- AWS: Logging of `StartInstances` in AWS CloudTrail for EC2 instances.\n- Azure: `Microsoft.Compute/virtualMachines/start` entries indicate a VM instance being started.",
+      "meta": {
+        "external_id": "DC0080",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0080"
+        ]
+      },
+      "related": [],
+      "uuid": "f8213cde-6b3a-420d-9ab7-41c9af1a919f",
+      "value": "Instance Start - DC0080"
+    },
+    {
+      "description": "Code, strings, signatures, and other identifying characteristics of a malicious payload stored within a malware repository. It includes both static (file-based) and dynamic (behavioral or execution-based) components that can be analyzed for threat intelligence, detection, and prevention purposes. Examples:\n\n- Static Analysis:\n    - Executable Code: Analyze binary data to identify unique patterns, obfuscated code, or embedded resources.\n    - Strings Extraction: Use tools like strings or YARA rules to identify hardcoded URLs, IPs, filenames, or suspicious function calls.\n    - Signatures: Extract cryptographic hashes (MD5, SHA256) of files to track known malware variants or detect previously unseen samples.\n- Dynamic Analysis:\n    - Behavioral Observations: Monitor execution traces to capture API calls, registry modifications, or network traffic patterns indicative of malicious behavior.\n    - Memory Analysis: Examine memory dumps to uncover injected code or runtime-decrypted payloads.\n    - Artifacts: Record file system changes, process creation events, and command-line arguments.\n- Threat Intelligence Integration:\n    - Campaign Attribution: Associate observed code snippets or signatures with known APT campaigns or ransomware families.\n    - Indicator Sharing: Share identified Indicators of Compromise (IOCs) with threat intelligence platforms (e.g., MISP, OpenCTI).\n- Examples of Malware Content:\n    - Embedded C2 domains (e.g., malicious-domain.com hardcoded in the payload).\n    - Fileless malware indicators, such as PowerShell scripts invoking Invoke-Mimikatz.\n    - Malware-specific signatures, such as unique PE header values for a particular strain.\n\n*Data Collection Measures:*\n\n- Collection from Public Malware Repositories:\n    - VirusTotal: Obtain samples for static analysis.\n    - Hybrid Analysis: Gather execution data from sandbox analysis.\n    - Any.Run: Access interactive malware execution traces.\n    - MalwareBazaar: Download malware samples for research and signature generation.\n    - Automate data extraction using repository APIs (e.g., VirusTotal API for hash lookups or sample retrieval).\n- Internal Malware Labs:\n    - Sandbox Environments: Use dynamic malware analysis tools such as Cuckoo Sandbox or Joe Sandbox to execute and monitor malware in a controlled environment. Capture runtime behavior logs, memory dumps, and file system changes.\n    - Reverse Engineering: Disassemble binaries with tools like IDA Pro, Ghidra, or Radare2 to identify malicious functionality and extract code patterns.\n- EDR/Endpoint Telemetry:\n    - Collect samples of malicious binaries or scripts from infected endpoints using tools like CrowdStrike, Carbon Black, or SentinelOne.\n    - Extract memory-resident payloads from live systems for analysis.\n- Threat Intelligence Platforms:\n    - Gather contextual metadata for identified malware using tools like OpenCTI, Recorded Future, or ThreatConnect. Participate in intelligence-sharing groups such as ISACs (e.g., FS-ISAC, IT-ISAC).\n- Custom Data Collection Pipelines: Use open-source tools like malwoverview or Maltrail to automate sample downloads, hash extraction, and IOC generation.",
+      "meta": {
+        "external_id": "DC0011",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0011"
+        ]
+      },
+      "related": [],
+      "uuid": "167b48f7-76e9-4fcb-9e8d-7121f7bf56c3",
+      "value": "Malware Content - DC0011"
+    },
+    {
+      "description": "\"Domain Name: Domain Registration\" data component captures information about the assignment, ownership, and metadata of domain names. This information is often sourced from registries like WHOIS and includes details such as registrant names, contact information, registration dates, expiration dates, and registrar details. This data is invaluable for tracking domain ownership, detecting malicious domain registrations, and identifying trends in adversary behavior. Examples: \n\n- Registrant Information: WHOIS lookup of example.com \n- Registration and Expiration Dates: A domain registered a week before being used in phishing attacks.\n- Domain Status: Status codes like clientTransferProhibited or serverHold indicate domain restrictions or potential hijacking activity.\n- Name Server Information: Name servers point to a public DNS provider often associated with malicious campaigns.\n- Privacy Protection: A domain uses WHOIS privacy protection to hide registrant details.\n\nThis data component can be collected through the following measures:\n\n- WHOIS Services: Use tools or services to perform WHOIS lookups:\n- WHOIS APIs: Automate domain registration lookups with APIs:\n- Registrar Platforms: Directly query domain registrars (e.g., GoDaddy, Namecheap) for detailed registration data.\n- Threat Intelligence Platforms: Integrate domain registration data from services like Recorded Future, RiskIQ, or PassiveTotal for enriched analysis.",
+      "meta": {
+        "external_id": "DC0101",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0101"
+        ]
+      },
+      "related": [],
+      "uuid": "ff9b665a-598b-4bcb-8b2a-a87566aa1256",
+      "value": "Domain Registration - DC0101"
+    },
+    {
+      "description": "Contextual data about a cluster and activity around it such as name, namespace, age, or status",
+      "meta": {
+        "external_id": "DC0120",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0120"
+        ]
+      },
+      "related": [],
+      "uuid": "fafaa705-ec08-4405-ac62-288c252e520d",
+      "value": "Cluster Metadata - DC0120"
+    },
+    {
+      "description": "\"Domain Name: Active DNS\" data component captures queried DNS registry data that highlights current domain-to-IP address resolutions. This data includes both direct queries to DNS servers and records that provide mappings between domain names and associated IP addresses. It serves as a critical resource for tracking active infrastructure and understanding the network footprint of an organization or adversary. Examples: \n\n- DNS Query Example: `nslookup example.com`, `dig example.com A`\n- PTR Record Example: `dig -x 192.168.1.1`\n- Tracking Malicious Domains: DNS logs reveal repeated queries to suspicious domains like malicious-site.com. The IPs resolved by these domains may be indicators of compromise (IOCs).\n- DNS Record Types\n    - A/AAAA Record: Maps domain names to IP addresses (IPv4/IPv6).\n    - CNAME Record: Canonical name records, often used for redirects.\n    - MX Record: Mail exchange records, used to route emails.\n    - TXT Record: Can include security information like SPF or DKIM policies.\n    - SOA Record: Start of authority record for domain management.\n    - NS Record: Lists authoritative name servers for the domain.\n\nThis data component can be collected through the following measures:\n\n- System Utilities: Use built-in tools like `nslookup`, `dig`, or host on Linux, macOS, and Windows to perform active DNS queries.\n- DNS Logging\n    - Windows DNS Server: Enable DNS Analytical Logging to capture DNS queries and responses.\n    - Bind DNS: Enable query logging in the named.conf file.\n- Cloud Provider DNS Logging\n    - AWS Route 53: Enable query logging through CloudWatch or S3:\n    - Google Cloud DNS: Enable logging for Cloud DNS queries through Google Cloud Logging.\n- Network Traffic Monitoring: Use tools like Wireshark or Zeek to analyze DNS queries within network traffic.\n- Security Information and Event Management (SIEM) Integration: Aggregate DNS logs in a SIEM like Splunk to create alerts and monitor patterns.\n- Public OSINT Tools: Use OSINT platforms like VirusTotal, or PassiveTotal to collect information on domains and their associated IP addresses.",
+      "meta": {
+        "external_id": "DC0103",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0103"
+        ]
+      },
+      "related": [],
+      "uuid": "2e521444-7295-4dec-96c1-7595b2df7811",
+      "value": "Active DNS - DC0103"
+    },
+    {
+      "description": "Captured network traffic that provides details about responses received during an internet scan. This data includes both protocol header values (e.g., HTTP status codes, IP headers, or DNS response codes) and response body content (e.g., HTML, JSON, or raw data). Examples:\n\n- HTTP Scan: A web server responds to a probe with an HTTP 200 status code and an HTML body indicating the default page is accessible.\n- DNS Scan: A DNS server replies to a query with a resolved IP address for a domain, along with details like Time-To-Live (TTL) and authoritative information.\n- TCP Banner Grab: A service listening on a port (e.g., SSH or FTP) responds with a banner containing service name, version, or other metadata.",
+      "meta": {
+        "external_id": "DC0104",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0104"
+        ]
+      },
+      "related": [],
+      "uuid": "0dcbbf4f-929c-489a-b66b-9b820d3f7f0e",
+      "value": "Response Content - DC0104"
+    },
+    {
+      "description": "Contextual data about a service/daemon, which may include information such as name, service executable, start type, etc.",
+      "meta": {
+        "external_id": "DC0041",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0041"
+        ]
+      },
+      "related": [],
+      "uuid": "74fa567d-bc90-425c-8a41-3c703abb221c",
+      "value": "Service Metadata - DC0041"
+    },
+    {
+      "description": "Initial construction of a virtual machine image within a cloud environment. Virtual machine images are templates containing an operating system and installed applications, which can be deployed to create new virtual machines. Monitoring the creation of these images is important because adversaries may create custom images to include malicious software or misconfigurations for later exploitation. Examples: \n\n- Azure Compute Service Image Creation\n    - Example: Creating a virtual machine image in Azure using Azure CLI: `az image create --resource-group MyResourceGroup --name MyImage --source MyVM`\n- AWS EC2 AMI (Amazon Machine Image) Creation\n    - Example: Creating an AMI from an EC2 instance: `aws ec2 create-image --instance-id i-1234567890abcdef0 --name \"MyAMI\" --description \"An AMI for my app\"`\n- Google Cloud Compute Engine Image Creation\n    - Example: Creating a custom image using gcloud: `gcloud compute images create my-custom-image --source-disk my-disk --source-disk-zone us-central1-a`\n- VMware vSphere\n    - Example: Exporting a VM to create an OVF (Open Virtualization Format) template: This could later be imported into other environments with potential tampering.",
+      "meta": {
+        "external_id": "DC0015",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0015"
+        ]
+      },
+      "related": [],
+      "uuid": "b008766d-f34f-4ded-b712-659f59aaed6e",
+      "value": "Image Creation - DC0015"
+    },
+    {
+      "description": "Group metadata includes attributes like name, permissions, purpose, and associated user accounts or roles, which adversaries may exploit for privilege escalation. Examples:\n\n- Active Directory: `Get-ADGroup -Identity \"Domain Admins\" -Properties Members, Description`\n- Azure AD: `Get-AzureADGroup -ObjectId <GroupId>`\n- Google Workspace: `GET https://admin.googleapis.com/admin/directory/v1/groups/<groupKey>`\n- AWS IAM: `aws iam list-group-policies --group-name <group_name>`\n- Office 365: `GET https://graph.microsoft.com/v1.0/groups/<id>`\n\n*Data Collection Measures:*\n\n- Cloud Logging:\n    - AWS CloudTrail for IAM group-related activities.\n    - Azure AD Sign-In/Audit logs for metadata changes.\n    - Google Admin Activity logs for API calls.\n- Directory Logging: Log metadata access (e.g., Windows Event ID 4662).\n- API Monitoring: Log API calls to modify group metadata (e.g., Microsoft Graph API).\n- SIEM Integration: Centralize group metadata logs for analysis.\n",
+      "meta": {
+        "external_id": "DC0105",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0105"
+        ]
+      },
+      "related": [],
+      "uuid": "8d8c7cac-94cf-4726-8989-cab33851168c",
+      "value": "Group Metadata - DC0105"
+    },
+    {
+      "description": "Changes made to a file, including updates to its contents, metadata, access permissions, or attributes. These modifications may indicate legitimate activity (e.g., software updates) or unauthorized changes (e.g., tampering, ransomware, or adversarial modifications). Examples: \n\n- Content Modifications: Changes to the content of a configuration file, such as modifying `/etc/ssh/sshd_config` on Linux or `C:\\Windows\\System32\\drivers\\etc\\hosts` on Windows.\n- Permission Changes: Altering file permissions to allow broader access, such as changing a file from `644` to `777` on Linux or modifying NTFS permissions on Windows.\n- Attribute Modifications: Changing a file's attributes to hidden, read-only, or system on Windows.\n- Timestamp Manipulation: Adjusting a file's creation or modification timestamp using tools like `touch` in Linux or timestomping tools on Windows.\n- Software or System File Changes: Modifying system files such as `boot.ini`, kernel modules, or application binaries.",
+      "meta": {
+        "external_id": "DC0061",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0061"
+        ]
+      },
+      "related": [],
+      "uuid": "84572de3-9583-4c73-aabd-06ea88123dd8",
+      "value": "File Modification - DC0061"
+    },
+    {
+      "description": "When a process or program dynamically attaches a shared library, module, or plugin into its memory space. This action is typically performed to extend the functionality of an application, access shared system resources, or interact with kernel-mode components.",
+      "meta": {
+        "external_id": "DC0016",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0016"
+        ]
+      },
+      "related": [],
+      "uuid": "c0a4a086-cc20-4e1e-b7cb-29d99dfa3fb1",
+      "value": "Module Load - DC0016"
+    },
+    {
+      "description": "Contextual information about an Internet-facing resource collected during a scan, including details such as open ports, running services, protocols, and versions. This metadata is typically derived from interpreting scan results and helps build a profile of the targeted system. Examples: \n\n- Port and Service Details:\n    - Open ports (e.g., 22, 80, 443).\n    - Identified services running on those ports (e.g., SSH, HTTP, HTTPS).\n- Service Versions: Detected software version information (e.g., Apache 2.4.41, OpenSSH 8.2).\n- Operating System Information: OS fingerprinting data (e.g., Linux Kernel 5.4.0).\n- TLS/SSL Certificate Data: Information about the TLS/SSL certificate, such as the expiration date, issuer, and cipher suites.\n\n*Data Collection Measures:*\n\n- Scanning Tools:\n    - Nmap: Collects port, service, and version information using commands like nmap -sV <IP>.\n    - Masscan: High-speed scanning tool for discovering open ports and active services.\n    - Zmap: Focused on large-scale Internet scanning, collecting metadata about discovered services.\n    - Shodan API: Retrieves scan metadata for publicly exposed devices and services.\n- Network Logs:\n    - Use logs from firewalls, intrusion detection systems (IDS), or intrusion prevention systems (IPS) to gather metadata from scan attempts. Example: Zeek or Suricata logs for incoming scan traffic.\n- OSINT Platforms: Platforms like Censys, GreyNoise, or Shodan provide aggregated metadata about Internet-facing resources.\n- Cloud Metadata Services: AWS Security Hub, Azure Monitor, or GCP Security Command Center can collect and centralize scan-related metadata for Internet-facing resources in cloud environments.",
+      "meta": {
+        "external_id": "DC0106",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0106"
+        ]
+      },
+      "related": [],
+      "uuid": "1067aa74-5796-4d9b-b4f1-a4c9eb6fd9da",
+      "value": "Response Metadata - DC0106"
+    },
+    {
+      "description": "Removal of a virtual machine (VM) or compute instance within a cloud infrastructure. This activity results in the termination and deletion of the allocated resources (e.g., CPU, memory, storage), making the instance unavailable for future use. Examples:\n\n- AWS: instance deletion involves the `TerminateInstances` API call, which is recorded in CloudTrail logs.\n- Azure: VM deletion can be monitored via Azure Activity Logs, showing the `Microsoft.Compute/virtualMachines/delete` operation.\n- GCP: instance deletion is logged as an instance.delete operation within GCP Audit Logs.",
+      "meta": {
+        "external_id": "DC0081",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0081"
+        ]
+      },
+      "related": [],
+      "uuid": "7561ed50-16cb-4826-82c7-c1ddca61785e",
+      "value": "Instance Deletion - DC0081"
+    },
+    {
+      "description": "Logging, messaging, and other artifacts that highlight the health and operational state of host-based security sensors, such as Endpoint Detection and Response (EDR) agents, antivirus software, logging services, and system monitoring tools. Monitoring sensor health is essential for detecting misconfigurations, sensor failures, tampering, or deliberate security control evasion by adversaries.\n\n*Data Collection Measures:*\n\n- Windows Event Logs:\n    - Event ID 1074 (System Shutdown): Detects unexpected system reboots/shutdowns.\n    - Event ID 6006 (Event Log Stopped): Logs when Windows event logging is stopped.\n    - Event ID 16 (Sysmon): Detects configuration state changes that may indicate log tampering.\n    - Event ID 12 (Windows Defender Status Change) – Detects changes in Windows Defender state.\n- Linux/macOS Monitoring:\n    - `/var/log/syslog`, `/var/log/auth.log`, `/var/log/kern.log`\n    - Journald (journalctl) for kernel and system alerts.\n- Endpoint Detection and Response (EDR) Tools:\n    - Monitor agent health status, detect sensor tampering, and alert on missing telemetry.\n- Mobile Threat Intelligence Logs:\n    - Samsung Knox, SafetyNet, iOS Secure Enclave provide sensor health status for mobile endpoints.",
+      "meta": {
+        "external_id": "DC0018",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0018"
+        ]
+      },
+      "related": [],
+      "uuid": "85a533a4-5fa4-4dba-b45d-f0717bedd6e6",
+      "value": "Host Status - DC0018"
+    },
+    {
+      "description": "\"Container Enumeration\" data component captures events and actions related to listing and identifying active or available containers within a containerized environment. This includes information about running, stopped, or configured containers, such as their names, IDs, statuses, or associated images. Monitoring this activity is crucial for detecting unauthorized discovery or reconnaissance efforts. Examples: \n\n- Docker Example: `docker ps`, `docker ps -a`\n- Kubernetes Example: `kubectl get pods`, `kubectl get deployments`\n- Cloud Container Services Example\n    - AWS ECS: API Call: ListTasks or ListContainers\n    - Azure Kubernetes Service: API Call: List pod or container instances.\n    - Google Kubernetes Engine (GKE): API Call: Retrieve deployments and their associated containers.",
+      "meta": {
+        "external_id": "DC0091",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0091"
+        ]
+      },
+      "related": [],
+      "uuid": "91b3ed33-d1b5-4c4b-a896-76c55eb3cfd8",
+      "value": "Container Enumeration - DC0091"
+    },
+    {
+      "description": "The initial deployment or instantiation of a new pod in a containerized environment. This includes creating a pod manually, through orchestration tools (Kubernetes), or via Infrastructure-as-Code (IaC) configurations. A Pod is the smallest deployable unit in Kubernetes, typically containing one or more containers. Creation methods include:\n- Direct pod deployment (`kubectl run`, `kubectl apply`)\n- Automated deployment via CI/CD pipelines (e.g., ArgoCD, Jenkins, GitOps)\n- Infrastructure-as-Code (IaC) templates (e.g., Terraform, Helm Charts)\n- API-based deployments via Kubernetes control plane (create_pod API calls)\n- Pods can be ephemeral (short-lived) or persistent (part of a StatefulSet or Deployment).\n\n*Data Collection Measures:*\n\n- Kubernetes Audit Logs\n    - Captures all API requests, including pod `create` events.\n- Kube-api server Logs\t\n    - Monitors API calls related to pod deployments and modifications. Related Events: `PodSandboxChanged`, `SyncLoop`, `Created pod`\n- Container Runtime Logs\t\n    - Logs from CRI-O, containerd, or Docker capture pod creation events. Related Events: `container start`, `container create`\n- Cloud Provider Logs\t\n    - GKE, EKS, AKS logs provide insights into Kubernetes API interactions.\n- SIEM & Log Aggregation\t\n    - Integrates Kubernetes logs into SIEM solutions.\n- EDR/XDR Solutions\t\n    - Monitors container-based activity for anomalous pod creations.",
+      "meta": {
+        "external_id": "DC0019",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0019"
+        ]
+      },
+      "related": [],
+      "uuid": "5263cb33-08cc-4a68-820f-004e1e400d76",
+      "value": "Pod Creation - DC0019"
+    },
+    {
+      "description": "Refers to the event in which a new process (executable) is initialized by an operating system. This can involve parent-child process relationships, process arguments, and environmental variables. Monitoring process creation is crucial for detecting malicious behaviors, such as execution of unauthorized binaries, scripting abuse, or privilege escalation attempts.. ",
+      "meta": {
+        "external_id": "DC0032",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0032"
+        ]
+      },
+      "related": [],
+      "uuid": "3d20385b-24ef-40e1-9f56-f39750379077",
+      "value": "Process Creation - DC0032"
+    },
+    {
+      "description": "The activity of assigning a new drive letter or creating a mount point for a data storage device, such as a USB, network share, or external hard drive, enabling access to its content on a host system. Examples: \n\n- USB Drive Insertion: A USB drive is plugged in and automatically assigned the letter `E:\\` on a Windows machine.\n- Network Drive Mapping: A network share `\\\\server\\share` is mapped to the drive `Z:\\`.\n- Virtual Drive Creation: A virtual disk is mounted on `/mnt/virtualdrive` using an ISO image or a virtual hard disk (VHD).\n- Cloud Storage Mounting: Google Drive is mounted as `G:\\` on a Windows machine using a cloud sync tool.\n- External Storage Integration: An external HDD or SSD is connected and assigned `/mnt/external` on a Linux system..",
+      "meta": {
+        "external_id": "DC0042",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0042"
+        ]
+      },
+      "related": [],
+      "uuid": "3d6e6b3b-4aa8-40e1-8c47-91db0f313d9f",
+      "value": "Drive Creation - DC0042"
+    },
+    {
+      "description": "Established, compromised, or otherwise acquired by adversaries to conduct reconnaissance, influence operations, social engineering, or other cyber threats.\n\n*Data Collection Measures:*\n\n- API Monitoring\t\n    - Social media APIs (e.g., Twitter API, Facebook Graph API) can extract behavioral patterns of accounts.\n- Web Scraping\n    - Extracts public profile data, friend lists, or interactions to identify impersonation attempts.\n- Threat Intelligence Feeds\t\n    - External feeds track malicious personas linked to disinformation campaigns or phishing.\n- OSINT Tools\n    - Maltego, SpiderFoot, and OpenCTI can map social media persona relationships.\n- Endpoint Detection\t\n    - EDR logs user behavior and alerts on suspicious social media interactions.\n- SIEM Logging\n    - Detects access to known phishing pages or social media abuse via proxy logs.\n- Dark Web Monitoring\t\n    - Identifies compromised social media credentials being sold.",
+      "meta": {
+        "external_id": "DC0052",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0052"
+        ]
+      },
+      "related": [],
+      "uuid": "8fb2f315-1aca-4cef-ae0d-8105e1f95985",
+      "value": "Social Media - DC0052"
+    },
+    {
+      "description": "Removal of a virtual machine image in a cloud infrastructure (ex: Azure Compute Service Images DELETE) Examples: \n\n- Azure Compute Service Image Deletion\n    - Example: Deleting a virtual machine image using Azure CLI: `az image delete --name MyImage --resource-group MyResourceGroup`\n- AWS EC2 AMI (Amazon Machine Image) Deletion\n    - Example: Deregistering an AMI in AWS: `aws ec2 deregister-image --image-id ami-1234567890abcdef0`\n- Google Cloud Compute Engine Image Deletion\n    - Example: Deleting a custom image in Google Cloud: `gcloud compute images delete my-custom-image`\n- VMware vSphere\n    - Example: Deleting a VM image/template from a vSphere environment:\n\nThis data component can be collected through the following measures:\n\nEnable Cloud Platform Logging\n\n- Azure: Enable \"Activity Logs\" to capture DELETE requests to `Microsoft.Compute/images`.\n- AWS: Use AWS CloudTrail to monitor `DeregisterImage` or `DeleteSnapshot` API calls.\n- Google Cloud: Enable \"Cloud Audit Logs\" to track image deletion events under `compute.googleapis.com/images`.\n\nAPI Monitoring\n\n- Monitor API activity to track the deletion of images using:\n    - AWS SDK/CLI `DeregisterImage` or `DeleteSnapshot`.\n    - Azure REST API DELETE operations for images.\n    - Google Cloud Compute Engine APIs for image deletion.\n\nCloud SIEM Integration\n\n- Ingest logs into a centralized SIEM platform for monitoring and alerting:\n\nEvent Correlation\n\n- Correlate image deletion events with unusual account activity or concurrent unauthorized operations.\n",
+      "meta": {
+        "external_id": "DC0026",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0026"
+        ]
+      },
+      "related": [],
+      "uuid": "8b4ca854-ac08-47da-b24f-601b28a39aff",
+      "value": "Image Deletion - DC0026"
+    },
+    {
+      "description": "Contextual data about a snapshot, which may include information such as ID, type, and status",
+      "meta": {
+        "external_id": "DC0062",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0062"
+        ]
+      },
+      "related": [],
+      "uuid": "8bc66f94-54a9-4be4-bdd1-fe90df643774",
+      "value": "Snapshot Metadata - DC0062"
+    },
+    {
+      "description": "\"Container Creation\" data component captures details about the initial construction of a container in a containerized environment. This includes events where a new container is instantiated, such as through Docker, Kubernetes, or other container orchestration platforms. Monitoring these events helps detect unauthorized or potentially malicious container creation. Examples:\n\n- Docker Example: `docker create my-container`, `docker run --name=my-container nginx:latest`\n- Kubernetes Example: `kubectl run my-pod --image=nginx`, `kubectl create deployment my-deployment --image=nginx`\n- Cloud Container Services Example\n    - AWS ECS: Task or service creation (`RunTask` or `CreateService`).\n    - Azure Container Instances: Deployment of a container group.\n    - Google Kubernetes Engine (GKE): Creation of new pods via GCP APIs.",
+      "meta": {
+        "external_id": "DC0072",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0072"
+        ]
+      },
+      "related": [],
+      "uuid": "a5ae90ca-0c4b-481c-959f-0eb18a7ff953",
+      "value": "Container Creation - DC0072"
+    },
+    {
+      "description": "contextual information associated with a virtual machine image, such as its name, resource group, status (active or inactive), type (custom or prebuilt), size, creation date, and permissions. This metadata is critical for understanding the state and configuration of virtual machine images in cloud environments. Examples: \n\n- Azure Compute Service Image Metadata Example:\n    - Name: MyCustomImage\n    - Resource Group: MyResourceGroup\n    - State: Available\n    - Type: Managed Image\n- AWS EC2 AMI Metadata Example:\n    - Image ID: ami-1234567890abcdef0\n    - Name: ProdImage\n    - State: Available\n    - Platform: Windows\n- Google Cloud Compute Engine Image Metadata Example:\n    - Image Name: webserver-image\n    - Project: my-project-id\n    - Family: webserver\n    - Source Disk: my-disk-id\n- VMware vSphere Template Metadata Example:\n    - Name: LinuxTemplate\n    - Disk Size: 40GB\n    - Network Adapter: VM Network",
+      "meta": {
+        "external_id": "DC0028",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0028"
+        ]
+      },
+      "related": [],
+      "uuid": "b597a220-6510-4397-b0d8-342cd2c58827",
+      "value": "Image Metadata - DC0028"
+    },
+    {
+      "description": "The execution of a text file that contains code via the interpreter.",
+      "meta": {
+        "external_id": "DC0029",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0029"
+        ]
+      },
+      "related": [],
+      "uuid": "9f387817-df83-432a-b56b-a8fb7f71eedd",
+      "value": "Script Execution - DC0029"
+    },
+    {
+      "description": "Changes made to a cloud volume, including its settings and control data (ex: AWS modify-volume)",
+      "meta": {
+        "external_id": "DC0092",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0092"
+        ]
+      },
+      "related": [],
+      "uuid": "d46272ce-a0fe-4256-855e-738de7bb63ee",
+      "value": "Volume Modification - DC0092"
+    },
+    {
+      "description": "The exit or termination of a running process on a system. This can occur due to normal operations, user-initiated commands, or malicious actions such as process termination by malware to disable security controls.",
+      "meta": {
+        "external_id": "DC0033",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0033"
+        ]
+      },
+      "related": [],
+      "uuid": "61f1d40e-f3d0-4cc6-aa2d-937b6204194f",
+      "value": "Process Termination - DC0033"
+    },
+    {
+      "description": "The deactivation, misconfiguration, or complete stoppage of firewall services, either on a host or in a cloud control plane. Such activity may involve turning off firewalls, modifying rules to disable protection, or deleting firewall-related configurations and activity logs. Examples: \n\n- Disabling Host-Based Firewalls: Stopping the Windows Defender Firewall service or using `iptables -F` to flush all rules on a Linux system.\n- Cloud Firewall Modification or Deactivation: Modifying or deleting security group rules in AWS or disabling a network firewall in Azure.\n- Activity Log Deletion: Writing or deleting entries in Azure Firewall Activity Logs to hide unauthorized firewall changes.\n- Temporary Disable for Malicious Operations: Temporarily disabling a firewall to allow malicious files or traffic, then re-enabling it to avoid detection.\n- Using Command-Line Tools to Stop Firewalls: Running commands like `Set-NetFirewallProfile -Enabled False on Windows or systemctl stop ufw` on Linux.\n\nThis data component can be collected through the following measures:\n\nCloud Control Plane\n\n- Azure Activity Logs:\n    - Enable logging of administrative actions, such as stopping or modifying Azure Firewall configurations.\n    - Use Azure Monitor to track specific firewall-related actions, including disabling or rule deletion.\n- AWS CloudTrail Logs:\n    - Monitor `RevokeSecurityGroupIngress` or `RevokeSecurityGroupEgress` events to detect rule changes in AWS Security Groups.\n- Google Cloud Platform Logs:\n    - Collect logs from the Firewall Rules resource in Google Cloud Operations Suite to detect rule deletions or modifications.\n\nHost-Level Firewalls\n\n- Windows Firewall Event Logs:\n    - Enable logging of firewall state changes:\n        - Security Event ID 2004: Firewall service stopped.\n        - Security Event ID 2005: Firewall service started.\n    - Use Sysmon for process creation events tied to firewall commands or scripts (Sysmon Event ID 1).\n- Linux Firewall Logs: Use auditd to track commands like iptables, firewalld, or ufw: `auditctl -a always,exit -F arch=b64 -S execve -k firewall_disable`\n- macOS Firewall: Monitor changes to the macOS Application Firewall using the log show command.\n\nNetwork-Level Monitoring\n\n- IDS/IPS Alerts: Deploy IDS/IPS systems to monitor abnormal traffic flows that could indicate firewall disablement.\n- NetFlow Data: Analyze NetFlow or packet capture data for traffic patterns inconsistent with firewall enforcement.\n\nSIEM and CSPM Tools\n\n- SIEM Integration: Use tools like Splunk or QRadar to centralize and analyze firewall disablement events from both hosts and cloud platforms.\n- Cloud Security Posture Management (CSPM): Use CSPM solutions to monitor misconfigurations and track deactivation of critical cloud services like firewalls.",
+      "meta": {
+        "external_id": "DC0043",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0043"
+        ]
+      },
+      "related": [],
+      "uuid": "c97d0171-f6e0-4415-85ff-4082fdb8c72a",
+      "value": "Firewall Disable - DC0043"
+    },
+    {
+      "description": "Contextual data about a running process, which may include information such as environment variables, image name, user/owner, etc.",
+      "meta": {
+        "external_id": "DC0034",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0034"
+        ]
+      },
+      "related": [],
+      "uuid": "ee575f4a-2d4f-48f6-b18b-89067760adc1",
+      "value": "Process Metadata - DC0034"
+    },
+    {
+      "description": "Refers to an event where one process attempts to open another process, typically to inspect or manipulate its memory, access handles, or modify execution flow. Monitoring these access attempts can provide valuable insight into both benign and malicious behaviors, such as debugging, inter-process communication (IPC), or process injection.\n\n*Data Collection Measures:*\n\n- Endpoint Detection and Response (EDR) Tools:\n    -  EDR solutions that provide telemetry on inter-process access and memory manipulation.\n- Sysmon (Windows):\n    - Event ID 10: Captures process access attempts, including:\n        - Source process (initiator)\n        - Target process (victim)\n        - Access rights requested\n        - Process ID correlation\n- Windows Event Logs:\n    - Event ID 4656 (Audit Handle to an Object): Logs access attempts to system objects.\n    - Event ID 4690 (Attempted Process Modification): Can help identify unauthorized process changes.\n- Linux/macOS Monitoring:\n    - AuditD: Monitors process access through syscall tracing (e.g., `ptrace`, `open`, `read`, `write`).\n    - eBPF/XDP: Used for low-level monitoring of kernel process access.\n    - OSQuery: Query process access behavior via structured SQL-like logging.\n- Procmon (Process Monitor) and Debugging Tools:\n    - Windows Procmon: Captures real-time process interactions.\n    - Linux strace / ptrace: Useful for tracking process behavior at the system call level.",
+      "meta": {
+        "external_id": "DC0035",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0035"
+        ]
+      },
+      "related": [],
+      "uuid": "1887a270-576a-4049-84de-ef746b2572d6",
+      "value": "Process Access - DC0035"
+    },
+    {
+      "description": "Contextual information about firewalls, including their configurations, policies, status, and other details such as names and associated rules. This metadata provides valuable insights into the operational state and configurations of firewalls, both in cloud control planes and host systems. Examples: \n\n- Firewall Name and Configuration: The name, type, and purpose of a firewall such as \"Azure Firewall - Production Environment.\"\n- Policy Details: Capturing firewall policy details, such as \"Allow inbound TCP 443 to web servers.\"\n- Firewall Status: Status indicators like \"Active,\" \"Disabled,\" or \"Pending Updates.\"\n- Audit Log Metadata: Log entries showing administrative changes, such as \"Policy modified by admin@domain.com.\"\n- Rules Associated with Firewalls: Rules specifying source/destination IP ranges, protocols, and ports.\n- Tagging Information: Tags like \"Environment: Production\" or \"Owner: NetworkOps.\"\n\nThis data component can be collected through the following measures:\n\nCloud Control Plane\n\n- Azure: Use Azure Activity Logs and Network Watcher to collect metadata for Azure Firewall.\n    - Example: `az network firewall show --name <firewall-name>`\n- AWS: Use AWS CloudTrail and describe commands: `aws ec2 describe-security-groups`\n- Google Cloud: Use gcloud commands to extract metadata: `gcloud compute firewall-rules list --format=json`\n\nHost-Based Firewalls\n\n- Windows: Use PowerShell to gather metadata: `Get-NetFirewallRule -PolicyStore PersistentStore`\n- Linux: Query iptables or nftables rulesets: `iptables -S`\n- macOS: Use pfctl to extract metadata: `sudo pfctl -sr`\n\nSIEM Integration\n\n- Collect logs from cloud platforms, host systems, and network appliances.\n\nAPI Monitoring\n\n- Monitor API calls for metadata requests. Example (AWS): `Capture DescribeSecurityGroups or DescribeNetworkAcls` calls via CloudTrail.\n\nEndpoint Detection and Response (EDR)\n\n- Use EDR solutions to monitor firewall management tools for configuration changes or queries.",
+      "meta": {
+        "external_id": "DC0053",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0053"
+        ]
+      },
+      "related": [],
+      "uuid": "746f095a-f84c-4ccc-90a5-c7caa5c100a2",
+      "value": "Firewall Metadata - DC0053"
+    },
+    {
+      "description": "Changes made to a virtual machine image, including setting and/or control data (ex: Azure Compute Service Images PATCH)",
+      "meta": {
+        "external_id": "DC0036",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0036"
+        ]
+      },
+      "related": [],
+      "uuid": "071a09b1-8945-46fd-8bb7-6bcc89400963",
+      "value": "Image Modification - DC0036"
+    },
+    {
+      "description": "Extracting a list of running or existing pods within a containerized cluster environment. Pods are the smallest deployable units in a Kubernetes cluster and typically represent an application or workload. Enumeration of pods provides insight into the structure and state of applications running in the cluster, such as the names of pods, their namespaces, and their associated metadata.\n\n*Data Collection Measures:*\n\n- Kubernetes API Server Audit Logs:\n    - Enable Audit Logging in Kubernetes to capture API requests, such as GET `/api/v1/pods`.\n- Container Runtime Logs:\n    - Collect runtime-level logs from tools like CRI-O, containerd, or Docker, which might show relevant API calls for pod enumeration.\n- EDR and SIEM:\n    - Endpoint Detection and Response (EDR) tools, if configured with cluster-level visibility, can monitor user commands like `kubectl get pods`.\n    - SIEM platforms (e.g., Splunk) can ingest Kubernetes API logs to detect enumeration patterns.\n- Host-Based Monitoring:\n    - Monitor processes and commands executed on nodes where `kubectl` is installed using tools like auditd, Sysmon for Linux, or kernel modules.",
+      "meta": {
+        "external_id": "DC0037",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0037"
+        ]
+      },
+      "related": [],
+      "uuid": "07688e40-a7fa-4436-937f-1216674341a0",
+      "value": "Pod Enumeration - DC0037"
+    },
+    {
+      "description": "Changes made to a virtual machine (VM) or compute instance, including alterations to its configuration, metadata, attached policies, or operational state. Such modifications can include updating metadata, attaching or detaching resource policies, resizing instances, or modifying network configurations. Examples:\n\n- AWS: instance modifications include API actions like `ModifyInstanceAttribute`, `ModifyInstanceMetadataOptions`, or `RebootInstances`.\n- Azure: modifications can be tracked through operations like `Microsoft.Compute/virtualMachines/write`.\n- GCP: instance modification events include operations like `instances.setMetadata`, `instances.addResourcePolicies`, or `instances.resize`.\n\n*Data Collection Measures:*\n\n- AWS CloudTrail: Log Location: Stored in S3 or forwarded to CloudWatch.\n- Azure Activity Logs: Log Location: Accessible via Azure Monitor or exported to a storage account.\n- GCP Audit Logs: Log Location: Logs Explorer or BigQuery.",
+      "meta": {
+        "external_id": "DC0073",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0073"
+        ]
+      },
+      "related": [],
+      "uuid": "45d0ff14-b9c4-41f5-8603-156657c20b75",
+      "value": "Instance Modification - DC0073"
+    },
+    {
+      "description": "A new file is created on a system or network storage. This action often signifies an operation such as saving a document, writing data, or deploying a file. Logging these events helps identify legitimate or potentially malicious file creation activities. Examples include logging file creation events (e.g., Sysmon Event ID 11 or Linux auditd logs). ",
+      "meta": {
+        "external_id": "DC0039",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0039"
+        ]
+      },
+      "related": [],
+      "uuid": "2b3bfe19-d59a-460d-93bb-2f546adc2d2c",
+      "value": "File Creation - DC0039"
+    },
+    {
+      "description": "Certificate Registration refers to the collection and analysis of information about digital certificates, including current, revoked, and expired certificates. Sources such as Certificate Transparency logs and other public resources provide visibility into certificates issued for specific domains or organizations. Monitoring certificate registrations can help identify potential misuse, such as unauthorized certificates or signs of adversary reconnaissance. Examples: \n\n- Certificate Transparency Logs: These logs record the issuance of SSL/TLS certificates by trusted Certificate Authorities (CAs).\n- Revoked Certificates: Information about certificates that have been invalidated before their expiration date.\n- Expired Certificates: Reports of expired certificates for a domain, which may indicate lax security practices or opportunities for adversaries to exploit expired credentials.\n- Domain Monitoring for Certificates: Maps SSL/TLS certificates to domains and subdomains, helping to identify any rogue certificates.\n- Public Certificate Directories: Services providing APIs to query issued certificates for analysis.\n\nThis data component can be collected through the following measures:\n\nUse Certificate Transparency Monitors\n\n- Tools like crt.sh, CertStream, or APIs provided by certificate authorities (CAs) allow you to monitor issued certificates in real-time.\n- Example: Use CertStream to stream certificate issuance logs and filter for domains of interest.\n\nAnalyze Certificate Revocation Sources\n\n- Monitor CRLs or query OCSP responders to detect revoked certificates.\n- Configure tools like OpenSSL or browsers to validate certificate revocation status automatically.\n\nLeverage Public Scanning Tools\n\n- Use tools such as SSL Labs, Censys, or Shodan to scan for certificate details related to your domain or network.\n\nAutomate Certificate Monitoring\n\n- Set up automated scripts or services to parse Certificate Transparency logs for anomalies.\n- Example: Automate searches on crt.sh to identify certificates issued for typo-squatted domains.\n\nIntegrate with Threat Intelligence\n\n- Enrich certificate data with threat intelligence feeds to detect connections to known adversary-controlled infrastructure.\n- Tools like VirusTotal can identify malicious certificates based on associated indicators.",
+      "meta": {
+        "external_id": "DC0093",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0093"
+        ]
+      },
+      "related": [],
+      "uuid": "1dad5aa4-4bb5-45e4-9e42-55d40003cfa6",
+      "value": "Certificate Registration - DC0093"
+    },
+    {
+      "description": "Querying and extracting a list of available firewalls or their associated configurations and rules. This activity can occur across host systems and cloud control planes, providing insight into the state and configuration of firewalls that protect the environment. Examples: \n\n- Querying Host-Based Firewalls: Using Windows PowerShell commands like `Get-NetFirewallRule` or Linux commands such as `iptables -L` or `firewalld --list-all`.\n- Cloud Firewall Rule Listing: Running commands like `az network firewall list` for Azure or `aws ec2 describe-security-groups` for AWS.\n- Using Management APIs: Leveraging APIs like Google Cloud Firewall's `list` API method or AWS's DescribeSecurityGroups API.\nIdentifying Misconfigurations: Extracting firewall rules to identify “allow all” policies or rules that lack logging.\n- Enumerating with CLI Tools: Using CLI commands like `gcloud compute firewall-rules list` to extract firewall settings in Google Cloud.",
+      "meta": {
+        "external_id": "DC0044",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0044"
+        ]
+      },
+      "related": [],
+      "uuid": "bf91faa8-0049-4870-810a-4df55e0b77ee",
+      "value": "Firewall Enumeration - DC0044"
+    },
+    {
+      "description": "Refers to the act of accessing a data storage device, such as a hard drive, SSD, USB, or network-mounted drive. This data component logs the opening or mounting of drives, capturing activities such as reading, writing, or executing files within an assigned drive letter (e.g., `C:\\`, `/mnt/drive`) or mount point. Examples: \n\n- Removable Drive Insertion: A USB drive is inserted, assigned the letter `F:\\`, and files are accessed.\n- Network Drive Mounting: A network share `\\\\server\\share` is mapped to the drive `Z:\\`.\n- External Hard Drive Access: An external drive is connected, mounted at `/mnt/backup`, and accessed for copying files.\n- System Volume Access: The system volume `C:\\` is accessed for modifications to critical files.\n- Cloud-Synced Drives: Cloud storage drives like OneDrive or Google Drive are accessed via local mounts.",
+      "meta": {
+        "external_id": "DC0054",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0054"
+        ]
+      },
+      "related": [],
+      "uuid": "73ff2dcc-24b1-4368-b9dc-706dd9e68354",
+      "value": "Drive Access - DC0054"
+    },
+    {
+      "description": "Command Execution involves monitoring and capturing the execution of textual commands (including shell commands, cmdlets, and scripts) within an operating system or application. These commands may include arguments or parameters and are typically executed through interpreters such as `cmd.exe`, `bash`, `zsh`, `PowerShell`, or programmatic execution. Examples: \n\n- Windows Command Prompt\n    - dir – Lists directory contents.\n    - net user – Queries or manipulates user accounts.\n    - tasklist – Lists running processes.\n- PowerShell\n    - Get-Process – Retrieves processes running on a system.\n    - Set-ExecutionPolicy – Changes PowerShell script execution policies.\n    - Invoke-WebRequest – Downloads remote resources.\n- Linux Shell\n    - ls – Lists files in a directory.\n    - cat /etc/passwd – Reads the user accounts file.\n    - curl http://malicious-site.com – Retrieves content from a malicious URL.\n- Container Environments\n    - docker exec – Executes a command inside a running container.\n    - kubectl exec – Runs commands in Kubernetes pods.\n- macOS Terminal\n    - open – Opens files or URLs.\n    - dscl . -list /Users – Lists all users on the system.\n    - osascript -e – Executes AppleScript commands.",
+      "meta": {
+        "external_id": "DC0064",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0064"
+        ]
+      },
+      "related": [],
+      "uuid": "685f917a-e95e-4ba0-ade1-c7d354dae6e0",
+      "value": "Command Execution - DC0064"
+    },
+    {
+      "description": "The alteration of a drive letter, mount point, or other attributes of a data storage device, which could involve reassignment, renaming, permissions changes, or other modifications. Examples: \n\n- Drive Letter Reassignment: A USB drive previously assigned `E:\\` is reassigned to `D:\\` on a Windows machine.\n- Mount Point Change: On a Linux system, a mounted storage device at `/mnt/external` is moved to `/mnt/storage`.\n- Drive Permission Changes: A shared drive's permissions are modified to allow write access for unauthorized users or processes.\n- Renaming of a Drive: A network drive labeled \"HR_Share\" is renamed to \"Shared_Resources.\"\n- Modification of Cloud-Integrated Drives: A cloud storage mount such as Google Drive is modified to sync only specific folders.\n\nThis data component can be collected through the following measures:\n\nWindows Event Logs\n\n- Relevant Events:\n    - Event ID 98: Indicates changes to a volume (e.g., drive letter reassignment).\n    - Event ID 1006: Logs permission modifications or changes to removable storage.\n- Configuration: Enable \"Storage Operational Logs\" in the Event Viewer:\n`Applications and Services Logs > Microsoft > Windows > Storage-Tiering > Operational`\n\nLinux System Logs\n\n- Auditd Configuration: Add audit rules to track changes to mounted drives: `auditctl -w /mnt/ -p w -k drive_modification`\n- Command-Line Monitoring: Use `dmesg` or `journalctl` to observe drive modifications.\n\nmacOS System Logs\n\n- Unified Logs: Collect mount or drive modification events: `log show --info | grep \"Volume modified\"`\n- Command-Line Monitoring: Use `diskutil` to track changes:\n\nEndpoint Detection and Response (EDR) Tools\n\n- Configure policies in EDR solutions to monitor and log changes to drive configurations or attributes.\n\nSIEM Tools\n\n- Aggregate logs from multiple systems into a centralized platform like Splunk to correlate events and alert on suspicious drive modification activities.\n",
+      "meta": {
+        "external_id": "DC0046",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0046"
+        ]
+      },
+      "related": [],
+      "uuid": "4dcd8ba3-2075-4f8b-941e-39884ffaac08",
+      "value": "Drive Modification - DC0046"
+    },
+    {
+      "description": "to contextual data about a driver, including its attributes, functionality, and activity. This can involve details such as the driver's origin, integrity, cryptographic signature, issues reported during its use, and runtime behavior. Examples include metadata captured during driver integrity checks, hash validation, or error reporting. Examples: \n\n- Driver Signature Validation: A driver is validated to ensure it is signed by a trusted Certificate Authority (CA).\n- Driver Hash Verification: The hash of a driver is compared to a known good hash stored in a database.\n- Driver Compatibility Issues: A driver error is logged due to compatibility issues with a particular version of the operating system.\n- Vulnerable Driver Identification: Metadata indicates the driver version is outdated or contains a known vulnerability.\n- Monitoring Driver Integrity: Drivers are monitored for any unauthorized modifications to their binary or associated files.\n\nThis data component can be collected through the following measures:\n\nWindows\n\n- Windows Event Logs:\n    - Event ID 3000-3006: Logs metadata about driver signature validation.\n    - Event ID 2000-2011 (Windows Defender Application Control): Tracks driver integrity and policy enforcement.\n- Sysmon Logs: Configure Sysmon to capture driver loading metadata (Event ID 6).\n- Driver Verifier: Use Driver Verifier to collect diagnostic and performance data about drivers, including stability and compatibility metrics.\n- PowerShell: Use commands to retrieve metadata about installed drivers:\n`Get-WindowsDriver -Online | Select-Object Driver, ProviderName, Version`\n\nLinux\n\n- Auditd: Configure audit rules to monitor driver interactions and collect metadata: `auditctl -w /lib/modules/ -p rwxa -k driver_metadata`\n- dmesg: Use `dmesg` to extract kernel logs with driver metadata: `dmesg | grep \"module\"`\n- lsmod and modinfo: Commands to list loaded modules and retrieve metadata about drivers: `lsmod` | `modinfo <module_name>`\n\nmacOS\n\n- Unified Logs: Collect metadata from system logs about kernel extensions (kexts): `log show --predicate 'eventMessage contains \"kext load\"' --info`\n- kextstat: Command to retrieve information about loaded kernel extensions: `kextstat`\n\nSIEM Tools\n\n- Ingest Driver Metadata: Collect driver metadata logs from Sysmon, Auditd, or macOS logs into SIEMs like Splunk or Elastic.\n\nVulnerability Management Tools\n\n- Use these tools to collect metadata about vulnerable drivers across enterprise systems.",
+      "meta": {
+        "external_id": "DC0074",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0074"
+        ]
+      },
+      "related": [],
+      "uuid": "f5a9a1dd-82f9-41a3-85b8-13e5b9cd6c79",
+      "value": "Driver Metadata - DC0074"
+    },
+    {
+      "description": "The process of listing or retrieving metadata about existing snapshots in a cloud environment.\n\n*Data Collection Measures:*\n\n- AWS CloudTrail\n    - Logs API calls such as `DescribeSnapshots`, `ListSnapshots`, and `GetSnapshotAttributes`.\n- Azure Monitor Logs\n    - Tracks snapshot enumeration via `Microsoft.Compute/snapshots/read`.\n- Google Cloud Logging\n    - Detects snapshot listing through `compute.disks.listSnapshots`.\n",
+      "meta": {
+        "external_id": "DC0047",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0047"
+        ]
+      },
+      "related": [],
+      "uuid": "ffd73905-2e51-4f2d-8549-e72fb0eb6c38",
+      "value": "Snapshot Enumeration - DC0047"
+    },
+    {
+      "description": "The removal of a point-in-time backup of a cloud storage volume, virtual machine (VM), or database.\n\n*Data Collection Measures:*\n\n- AWS CloudTrail\n    - Logs `DeleteSnapshot` API calls in EC2, RDS, and EBS services.\n- Azure Monitor Logs\n    - Tracks snapshot deletions via `Microsoft.Compute/snapshots/delete` API calls.\n- Google Cloud Logging\n    - Detects snapshot removal through `compute.disks.deleteSnapshot` events.",
+      "meta": {
+        "external_id": "DC0049",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0049"
+        ]
+      },
+      "related": [],
+      "uuid": "16e07530-764b-4d83-bae0-cdbfc31bf21d",
+      "value": "Snapshot Deletion - DC0049"
+    },
+    {
+      "description": "Changes made to a group, such as membership, name, or permissions (ex: Windows EID 4728 or 4732, AWS IAM UpdateGroup). Examples: \n\n- Active Directory:\n    - Event ID 4728: Member added to a global group.\n    - Event ID 4732: Member added to a local group.\n- Azure AD: `Set-AzureADGroup -ObjectId <GroupId> -DisplayName \"New Name\"`\n- AWS IAM: `aws iam update-group --group-name <GroupName> --new-path \"/admin/\"`\n- Google Workspace: Modify permissions via Admin SDK API: `PATCH https://admin.googleapis.com/admin/directory/v1/groups/<groupKey>`\n- Office 365: Modify groups via Graph API: `PATCH https://graph.microsoft.com/v1.0/groups/<groupId>`\n\n*Data Collection Measures:*\n\n- Directory Logging:\n    - Windows: Log EIDs 4728 (add), 4729 (remove).\n    - Azure AD: Enable \"Audit logs.\"\n    - Google Workspace: Enable Admin Activity logs.\n    - Office 365: Use Unified Audit Logs.\n- Cloud Monitoring:\n    - AWS: Log `UpdateGroup`, `AttachGroupPolicy`, `RemoveUserFromGroup`.\n    - Azure: Track modifications via Audit logs.\n- API Monitoring: Log Google Admin SDK and Microsoft Graph API calls.\n- SIEM Integration: Centralize and monitor group modification logs.",
+      "meta": {
+        "external_id": "DC0094",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0094"
+        ]
+      },
+      "related": [],
+      "uuid": "05d5b5b4-ef93-4807-b05f-33d8c5a35bc5",
+      "value": "Group Modification - DC0094"
+    },
+    {
+      "description": "To events where a file is opened or accessed, making its contents available to the requester. This includes reading, executing, or interacting with files by authorized or unauthorized entities. Examples include logging file access events (e.g., Windows Event ID 4663), monitoring file reads, and detecting unusual file access patterns. Examples: \n\n- File Read Operations: A user opens a sensitive document (e.g., financial_report.xlsx) on a shared drive.\n- File Execution: A script or executable file is accessed and executed (e.g., malware.exe is run from a temporary directory).\n- Unauthorized File Access: An unauthorized user attempts to access a protected configuration file (e.g., `/etc/passwd` on Linux or `System32` files on Windows).\n- File Access Patterns: Bulk access to multiple files in a short time (e.g., mass access to documents on a file server).\n- File Access via Network: Files on a network share are accessed remotely (e.g., logs of SMB file access).",
+      "meta": {
+        "external_id": "DC0055",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0055"
+        ]
+      },
+      "related": [],
+      "uuid": "235b7491-2d2b-4617-9a52-3c0783680f71",
+      "value": "File Access - DC0055"
+    },
+    {
+      "description": "Changes made to an existing service or daemon, such as modifying the service name, start type, execution parameters, or security configurations.",
+      "meta": {
+        "external_id": "DC0065",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0065"
+        ]
+      },
+      "related": [],
+      "uuid": "66531bc6-a509-4868-8314-4d599e91d222",
+      "value": "Service Modification - DC0065"
+    },
+    {
+      "description": "The process of taking a point-in-time copy of a cloud storage volume (files, settings, configurations, etc.), virtual machine (VM), or database that can be created and deployed in cloud environments.",
+      "meta": {
+        "external_id": "DC0057",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0057"
+        ]
+      },
+      "related": [],
+      "uuid": "3da222e6-53f3-451c-a239-0b405c009432",
+      "value": "Snapshot Creation - DC0057"
+    },
+    {
+      "description": "The process of retrieving or querying a list of virtual machine instances or compute instances within a cloud infrastructure. This activity provides a view of all available or running instances, typically including their associated metadata such as instance ID, name, state, and configuration details. Examples:\n\n- AWS: instance enumeration involves the `DescribeInstances` API call, which retrieves information about running or stopped EC2 instances.\n- Azure: VM enumeration can be monitored via the `Microsoft.Compute/virtualMachines/read` operation.\n- GCP: instance enumeration is logged as an `instance.list` operation within GCP Audit Logs.\n\n*Data Collection Measures:*\n\n- AWS CloudTrail: CloudTrail logs stored in S3 or forwarded to CloudWatch.\n- Azure Activity Logs: Accessible via Azure Monitor or exported to a storage account.\n- GCP Audit Logs: Logs Explorer or BigQuery.",
+      "meta": {
+        "external_id": "DC0075",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0075"
+        ]
+      },
+      "related": [],
+      "uuid": "2a80d95f-08c4-48e3-833e-151ef19d90f5",
+      "value": "Instance Enumeration - DC0075"
+    },
+    {
+      "description": "Changes made to a cloud snapshot's metadata, attributes, or control settings. These modifications may involve adjusting access permissions, changing retention policies, or altering encryption settings. \n\n*Data Collection Measures:*\n\n- AWS CloudTrail\n    - Tracks API calls such as `ModifySnapshotAttribute`, `ResetSnapshotAttribute`, and `ModifySnapshotTier`.\n- Azure Monitor Logs\n    - Logs changes via `Microsoft.Compute/snapshots/write`.\n- Google Cloud Logging\n    - Captures modifications through `compute.snapshots.setIamPolicy` and `compute.snapshots.patch`.",
+      "meta": {
+        "external_id": "DC0058",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0058"
+        ]
+      },
+      "related": [],
+      "uuid": "f1eb6ea9-f3ab-414f-af35-2d5427199984",
+      "value": "Snapshot Modification - DC0058"
+    },
+    {
+      "description": "An extracted list of available volumes within a cloud environment (ex: AWS describe-volumes)",
+      "meta": {
+        "external_id": "DC0095",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0095"
+        ]
+      },
+      "related": [],
+      "uuid": "ec225357-8197-47a4-a9cd-57741d592877",
+      "value": "Volume Enumeration - DC0095"
+    },
+    {
+      "description": "contextual information about a file, including attributes such as the file's name, size, type, content (e.g., signatures, headers, media), user/owner, permissions, timestamps, and other related properties. File metadata provides insights into a file's characteristics and can be used to detect malicious activity, unauthorized modifications, or other anomalies. Examples: \n\n- File Ownership and Permissions: Checking the owner and permissions of a critical configuration file like /etc/passwd on Linux or C:\\Windows\\System32\\config\\SAM on Windows.\n- Timestamps: Analyzing the creation, modification, and access timestamps of a file.\n- File Content and Signatures: Extracting the headers of an executable file to verify its signature or detect packing/obfuscation.\n- File Attributes: Analyzing attributes like hidden, system, or read-only flags in Windows.\n- File Hashes: Generating MD5, SHA-1, or SHA-256 hashes of files to compare against threat intelligence feeds.\n- File Location: Monitoring files located in unusual directories or paths, such as temporary or user folders.",
+      "meta": {
+        "external_id": "DC0059",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0059"
+        ]
+      },
+      "related": [],
+      "uuid": "639e87f3-acb6-448a-9645-258f20da4bc5",
+      "value": "File Metadata - DC0059"
+    },
+    {
+      "description": "The initial provisioning and construction of a virtual machine (VM) or compute instance within a cloud infrastructure environment. This activity involves defining and allocating resources such as CPU, memory, storage, and networking to spin up a new compute instance. Examples:\n\n- AWS: creating an EC2 instance using RunInstances API calls.\n- Azure, creating a VM through the Azure Resource Manager (ARM).\n- GCP, an `instance.insert` action recorded.",
+      "meta": {
+        "external_id": "DC0076",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0076"
+        ]
+      },
+      "related": [],
+      "uuid": "b5b0e8ae-7436-4951-950a-7b83c4dd3f2c",
+      "value": "Instance Creation - DC0076"
+    },
+    {
+      "description": "Contextual data about an instance and activity around it such as name, type, or status",
+      "meta": {
+        "external_id": "DC0086",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0086"
+        ]
+      },
+      "related": [],
+      "uuid": "45fd904d-6eb0-4b50-8478-a961f09f898b",
+      "value": "Instance Metadata - DC0086"
+    },
+    {
+      "description": "\"Domain Name: Passive DNS\" captures logged historical and real-time domain name system (DNS) data. This includes records of domain-to-IP address resolutions over time, enabling analysts to track the evolution of domain infrastructure, uncover historical patterns of use, and detect malicious activities tied to domains and their associated IP addresses. Examples: \n\n- Historical Resolutions\n- Shared IP Usage\n- Temporal Patterns\n- Malicious Domain Clustering\n- Historical Lookback\n\nThis data component can be collected through the following measures:\n\n- Passive DNS Platforms: Use platforms that specialize in passive DNS collection and analysis:\n   - Tools: Farsight DNSDB, RiskIQ PassiveTotal, PassiveDNS.\n- Threat Intelligence Feeds: Integrate passive DNS data from commercial or open-source threat intelligence providers.\n- Custom DNS Collectors: Deploy custom tools to capture DNS traffic at the network level for analysis.\n- Cloud DNS Services: Leverage cloud DNS services (e.g., AWS Route 53, Azure DNS) that maintain DNS query logs.",
+      "meta": {
+        "external_id": "DC0096",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0096"
+        ]
+      },
+      "related": [],
+      "uuid": "cc150ad8-ecfa-4340-9aaa-d21165873bd4",
+      "value": "Passive DNS - DC0096"
+    },
+    {
+      "description": "\"Container Start\" data component captures events related to the activation or invocation of a container within a containerized environment. This includes starting a previously stopped container, restarting an existing container, or initializing a container for runtime. Monitoring these activities is critical for identifying unauthorized or unexpected container activations, which may indicate potential adversarial activity or misconfigurations. Examples: \n\n- Docker Example: `docker start <container_name>`, `docker restart <container_name>`\n- Kubernetes Example: Kubernetes automatically restarts containers as part of pod lifecycle management (e.g., due to health checks or configuration changes).\n- Cloud-Native Example\n    - AWS ECS: API Call: StartTask to activate a stopped ECS task.\n    - Azure Container Instances: Command to restart a container group instance.\n    - GCP Kubernetes Engine: Automatic restarts as part of node or pod management.\n\nThis data component can be collected through the following measures:\n\n- Docker Audit Logging: Enable Docker logging to capture start and restart events. Use tools like auditd to monitor terminal activity involving container lifecycle commands.\n- Kubernetes Audit Logs: Enable Kubernetes API server audit logging.\n- Cloud Provider Logs\n    - AWS CloudTrail: Capture StartTask or related API calls for ECS.\n    - Azure Monitor: Track activity in container groups that indicate start or restart events.\n    - GCP Cloud Logging: Record logs related to pod restarts or scaling events in Kubernetes Engine.\n- SIEM Integration: Collect logs from Docker, Kubernetes, and cloud services to correlate container start events.",
+      "meta": {
+        "external_id": "DC0077",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0077"
+        ]
+      },
+      "related": [],
+      "uuid": "5fe82895-28e5-4aac-845e-dc886b63be2e",
+      "value": "Container Start - DC0077"
+    },
+    {
+      "description": "The initial provisioning of block storage volumes in cloud or on-prem environments, typically used for data storage, backup, or workload scaling.",
+      "meta": {
+        "external_id": "DC0097",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0097"
+        ]
+      },
+      "related": [],
+      "uuid": "dad75cc7-5bae-4175-adb4-ca1962d8650e",
+      "value": "Volume Creation - DC0097"
+    },
+    {
+      "description": "The process of attaching a driver, which is a software component that allows the operating system and applications to interact with hardware devices, to either user-mode or kernel-mode of a system. This can include benign actions (e.g., hardware drivers) or malicious behavior (e.g., rootkits or unsigned drivers). Examples: \n\n- Legitimate Driver Loading: A new graphics driver from a vendor like NVIDIA or AMD is loaded into the system.\n- Unsigned Driver Loading: A driver without a valid digital signature is loaded into the kernel.\n- Rootkit Installation: A malicious rootkit driver is loaded to manipulate kernel-mode processes.\n- Anti-Virus or EDR Driver Loading: An Endpoint Detection and Response (EDR) solution loads its driver to monitor system activities.\n- Driver Misuse: A legitimate driver is loaded and exploited to execute malicious actions, such as using vulnerable drivers for bypassing defenses (e.g., Bring Your Own Vulnerable Driver (BYOVD) attacks).",
+      "meta": {
+        "external_id": "DC0079",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0079"
+        ]
+      },
+      "related": [],
+      "uuid": "3551476e-14f5-4e48-a518-e82135329e03",
+      "value": "Driver Load - DC0079"
+    },
+    {
+      "description": "The removal of a cloud-based or on-premise block storage volume. This action permanently deletes the allocated storage and may result in data loss if not backed up.\n\n*Data Collection Measures:*\n\n- Cloud Logging & APIs\n    - AWS CloudTrail Logs\n        - `eventName: DeleteVolume` (tracks volume deletions)\n    - Azure Monitor Logs\n        - `operationName: Microsoft.Compute/disks/delete`\n        - `status: Success | Failure` (flag unauthorized delete attempts)\n    - Google Cloud Audit Logs\n        - `protoPayload.methodName: \"v1.compute.disks.delete\"`\n        - `authenticationInfo.principalEmail` (identifies the user deleting the volume)\n- System & Host-Based Logging\n    - Linux & macOS Logs:\n        - `/var/log/syslog` or `/var/log/messages` for volume detach/deletion actions\n    - Windows Event Logs:\n        - Event ID 98 (Storage Class Memory)\n        - Event ID 225 (Volume Removal Detected)\n        - Event ID 12 (Disk Removal Notification)",
+      "meta": {
+        "external_id": "DC0098",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0098"
+        ]
+      },
+      "related": [],
+      "uuid": "3acecdde-c327-4498-9bb8-33a2e63c6c57",
+      "value": "Volume Deletion - DC0098"
+    },
+    {
+      "description": "The deactivation or shutdown of a virtual machine instance within a cloud infrastructure. This action typically involves stopping a running instance, which halts its operation and releases certain associated resources, such as CPU and memory. Examples: \n\n- Google Cloud Platform (GCP): `instance.stop` events recorded in GCP Audit Logs indicate the deactivation of an instance.\n- Amazon Web Services (AWS): `StopInstances` actions in AWS CloudTrail indicate EC2 instances being stopped.\n- Microsoft Azure: `Microsoft.Compute/virtualMachines/deallocate` or `stop` events in Azure Activity Logs represent a virtual machine being stopped or deallocated.",
+      "meta": {
+        "external_id": "DC0089",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0089"
+        ]
+      },
+      "related": [],
+      "uuid": "1361e324-b594-4c0e-a517-20cee32b8d7f",
+      "value": "Instance Stop - DC0089"
+    },
+    {
+      "description": "Extracting group lists from identity systems identifies permissions, roles, or configurations. Adversaries may exploit high-privilege groups or misconfigurations. Examples:\n\n- AWS CLI: `aws iam list-groups`\n- PowerShell: `Get-ADGroup -Filter *`\n- (Saas) Google Workspace: Admin SDK Directory API\n- Azure: `Get-AzureADGroup`\n- Microsoft 365:  Graph API `GET https://graph.microsoft.com/v1.0/groups`\n\n*Data Collection Measures:*\n\n- Cloud Logging: Enable AWS CloudTrail, Azure Activity Logs, and Google Workspace Admin Logs for group-related actions.\n- Directory Monitoring: Track logs like AD Event ID 4662 (object operations).\n- API Monitoring: Log API activity like AWS IAM queries.\n- SaaS Monitoring: Use platform logs (e.g., Office 365 Unified Audit Logs).\n- SIEM Integration: Centralize group query tracking.",
+      "meta": {
+        "external_id": "DC0099",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0099"
+        ]
+      },
+      "related": [],
+      "uuid": "8e44412e-3238-4d64-8878-4f11e27784fe",
+      "value": "Group Enumeration - DC0099"
+    },
+    {
+      "description": "API calls utilized by an application that could indicate malicious activity",
+      "meta": {
+        "external_id": "DC0112",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0112"
+        ]
+      },
+      "related": [],
+      "uuid": "5ae32c6a-2d12-4b8f-81ca-f862f2be0962",
+      "value": "API Calls - DC0112"
+    },
+    {
+      "description": "Contextual data about a pod and activity around it such as name, ID, namespace, or status",
+      "meta": {
+        "external_id": "DC0121",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0121"
+        ]
+      },
+      "related": [],
+      "uuid": "c0edd522-0aef-46b3-8efa-2bd334ce4242",
+      "value": "Pod Metadata - DC0121"
+    },
+    {
+      "description": "Network Communication captures outbound or inbound communication initiated by an application or mobile device, including the domains contacted, protocols used, and session metadata associated with the communication.\n\nMonitoring network communication enables defenders to identify command-and-control traffic, data exfiltration, or suspicious communication patterns originating from mobile applications.\n\nExamples\n\n- Connections to previously unseen domains\n- Repeated communication with suspicious infrastructure\n- Communication immediately following application installation\n\nCollection Methods\n\n- Mobile VPN telemetry\n- Secure web gateway logs\n- Network detection and response (NDR)\n- Mobile EDR network monitoring\n",
+      "meta": {
+        "external_id": "DC0113",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0113"
+        ]
+      },
+      "related": [],
+      "uuid": "764ee29e-48d6-4934-8e6b-7a606aaaafc0",
+      "value": "Network Communication - DC0113"
+    },
+    {
+      "description": "Represents the permissions, entitlements, or capability grants associated with a mobile application, including both permissions declared by the application and those granted or requested during runtime.\n\nMonitoring permission state helps defenders identify applications attempting to access protected device resources such as sensors, storage, communications interfaces, or system services.\n\nExamples include:\n\nAndroid\n\n- Permissions declared in AndroidManifest.xml\n- Runtime permission prompts\n- Special access privileges (AccessibilityService, overlay, device admin)\n\niOS\n\n- App entitlements in provisioning profiles\n- Privacy permission prompts\n- Capability grants for device services\n",
+      "meta": {
+        "external_id": "DC0114",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0114"
+        ]
+      },
+      "related": [],
+      "uuid": "b1e0bb80-23d4-44f2-b919-7e9c54898f43",
+      "value": "Application Permission - DC0114"
+    },
+    {
+      "description": "Protected Configuration represents security-sensitive device settings, security policies, or operating system configurations that are normally restricted to administrators, system services, or device management platforms.\nMonitoring these configurations enables detection of adversaries attempting to weaken device security controls or alter trusted device relationships.\n\nExamples\nAndroid:\n\n- USB debugging enabled\n- Unknown app installation allowed\n- Developer options enabled\n\niOS:\n\n- Developer mode enabled\n- Device pairing trust relationships established\n- Configuration profile restrictions modified\n",
+      "meta": {
+        "external_id": "DC0115",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0115"
+        ]
+      },
+      "related": [],
+      "uuid": "6c62144a-cd5c-401c-ada9-58c4c74cd9d2",
+      "value": "Protected Configuration - DC0115"
+    },
+    {
+      "description": "System prompts triggered when an application requests new or additional permissions",
+      "meta": {
+        "external_id": "DC0116",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0116"
+        ]
+      },
+      "related": [],
+      "uuid": "e2f72131-14d1-411f-8e8c-aa3453dd5456",
+      "value": "Permissions Request - DC0116"
+    },
+    {
+      "description": "System Notifications represent operating system alerts, warnings, or status messages generated in response to application actions, system state changes, or security events. These notifications may indicate potentially malicious activity or abnormal application behavior.\n\nExamples\n\n- Application requesting sensitive permissions\n- USB device connected notifications\n- Security warnings triggered by device configuration changes\n\nCollection Methods\n\n- Mobile OS notification monitoring\n- Mobile EDR sensors\n- Device management telemetry\n",
+      "meta": {
+        "external_id": "DC0117",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0117"
+        ]
+      },
+      "related": [],
+      "uuid": "bf0ff551-a5a7-40e5-bff9-f9405011b1f4",
+      "value": "System Notifications - DC0117"
+    },
+    {
+      "description": "System Settings represent user-visible or OS-level configuration settings that influence device behavior, application permissions, connectivity, or system features.\n\nMonitoring system settings changes allows defenders to detect abnormal modifications that may indicate malicious activity or device compromise.\n\n\nCollection Methods\n\n- MDM device telemetry\n- Mobile EDR monitoring\n- OS configuration monitoring\n",
+      "meta": {
+        "external_id": "DC0118",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0118"
+        ]
+      },
+      "related": [],
+      "uuid": "56c2b384-77f8-461f-a71a-76f7888ebfb6",
+      "value": "System Settings - DC0118"
+    },
+    {
+      "description": "Application Assets represent static or packaged resources bundled with an application that may contain executable logic, configuration data, or hidden payloads.\n\nThese assets may include embedded binaries, scripts, configuration files, libraries, or other resources stored within the application package. Adversaries may hide malicious components within application assets to evade detection during installation or initial inspection.\n\nExamples\n\nAndroid:\n\n- Embedded .dex files loaded dynamically\n- Hidden native libraries in APK assets\n- Dropped payloads stored within the app sandbox\n\niOS:\n\n- Embedded frameworks\n- Configuration files within the application bundle\n- Hidden scripts or secondary binaries packaged with the app\n\nCollection Methods\n- Mobile EDR application inspection\n- Static application analysis\n- Application package scanning during install or sideload events\n",
+      "meta": {
+        "external_id": "DC0119",
+        "refs": [
+          "https://attack.mitre.org/data-components/DC0119"
+        ]
+      },
+      "related": [],
+      "uuid": "613788f2-ad72-43f5-b5f7-a93e2adc70fa",
+      "value": "Application Assets - DC0119"
+    },
+    {
+      "description": "Contextual data about a container and activity around it such as name, ID, image, or status",
+      "meta": {
+        "external_id": "DC0122",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0122"
+        ]
+      },
+      "related": [],
+      "uuid": "df508a43-65f5-453f-8b8f-4b5d64e60a21",
+      "value": "Container Metadata - DC0122"
+    },
+    {
+      "description": "Application State represents the operational status and lifecycle context of a mobile application at a given point in time. This includes whether the application is running in the foreground or background, its activity state, recent user interaction, and transitions between lifecycle states.\n\nMonitoring application state helps defenders identify suspicious behavior where an application performs sensitive actions while inactive, in the background, or without recent user interaction.\n\nApplication state is particularly useful when detecting malicious activity that occurs outside normal user-driven workflows.\n\nExamples\nAndroid\n\n- Application transitions from foreground to background\n- Application running as a background service\n- Application started via broadcast receiver\n- Application launched automatically after device boot\n\niOS\n\n- Application entering active, inactive, or background state\n- Background task execution\n- Background fetch activity\n- Application wake events triggered by push notifications or system services\n\nData Collection Measures\n- Mobile EDR / MTD runtime monitoring\n- OS lifecycle event telemetry\n- Application runtime instrumentation\n- Mobile security platform behavioral monitoring\n",
+      "meta": {
+        "external_id": "DC0123",
+        "refs": [
+          "https://attack.mitre.org/datacomponents/DC0123"
+        ]
+      },
+      "uuid": "55c669d9-b42a-4cf6-a38a-07161b228ce9",
+      "value": "Application State - DC0123"
+    }
+  ],
+  "version": 7
+}

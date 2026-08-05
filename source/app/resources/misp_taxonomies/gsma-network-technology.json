@@ -1,0 +1,70 @@
+{
+  "namespace": "gsma-network-technology",
+  "description": "Taxonomy used by GSMA for their information sharing program with telco describing the types of infrastructure. WiP",
+  "version": 3,
+  "predicates": [
+    {
+      "value": "user",
+      "expanded": "User",
+      "uuid": "3f7fe2f6-b9d3-5f0d-9daf-54ae5a1684f5"
+    },
+    {
+      "value": "applications",
+      "expanded": "Applications",
+      "uuid": "9c05980d-d970-5782-a176-e5973d3ea6ad"
+    },
+    {
+      "value": "end-devices-and-components",
+      "expanded": "End devices and components",
+      "uuid": "a14a6954-3ef2-5a99-9dc6-c7e291fa46a3"
+    },
+    {
+      "value": "services",
+      "expanded": "Services",
+      "uuid": "73e60799-28c5-5ea8-8a93-7f28b7c4df15"
+    },
+    {
+      "value": "radio-access-network",
+      "expanded": "Radio Access Network (RAN)",
+      "uuid": "2b2d50d9-8868-5871-a0a5-dc6037c1488f"
+    },
+    {
+      "value": "support-and-provisioning-systems",
+      "expanded": "Support and provisioning systems",
+      "uuid": "1aac3f50-563e-50ee-b5b8-53242a5afa2e"
+    },
+    {
+      "value": "interconnects",
+      "expanded": "Interconnects",
+      "uuid": "beb14714-d4a5-5ef6-a127-f00988ecbdaf"
+    },
+    {
+      "value": "core",
+      "expanded": "Core",
+      "uuid": "aa016981-dfc8-5375-95fe-0b22a2777cbf"
+    },
+    {
+      "value": "sim-secure-element-modules",
+      "expanded": "SIM, Secure Element and Modules",
+      "uuid": "8c6c2293-1ddc-5c08-91c5-bc4d091242d5"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "end-devices-and-components",
+      "entry": [
+        {
+          "value": "ms",
+          "expanded": "Mobile Station",
+          "uuid": "5120eaba-6ebc-56a8-b6b5-94cbe2c5ad06"
+        },
+        {
+          "value": "mobile-equipment-radio",
+          "expanded": "Mobile Equipment Radio",
+          "uuid": "16d98574-4a53-54f3-987f-11cc9c047539"
+        }
+      ]
+    }
+  ],
+  "uuid": "6f4f3b7b-3eed-515f-8934-4b6082746cde"
+}
