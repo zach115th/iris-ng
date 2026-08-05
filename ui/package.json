@@ -27,7 +27,7 @@
     "ace-builds": "^1.44.0",
     "bootstrap": "^4.0.0",
     "bootstrap-slider": "^11.0.2",
-    "chart.js": "^2.7.2",
+    "chart.js": "^4.5.1",
     "dropzone": "^5.7.0",
     "html2canvas": "^1.4.0",
     "jquery": "^3.2.1",
