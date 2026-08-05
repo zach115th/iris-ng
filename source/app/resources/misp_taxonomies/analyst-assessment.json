@@ -1,0 +1,277 @@
+{
+  "values": [
+    {
+      "entry": [
+        {
+          "expanded": "Less than 1 year",
+          "value": "less-than-1-year",
+          "numerical_value": 20,
+          "uuid": "de00fbb8-cc95-597a-bb66-db37e49bb949"
+        },
+        {
+          "expanded": "Between 1 and 5 years",
+          "value": "between-1-and-5-years",
+          "numerical_value": 40,
+          "uuid": "326561f9-864a-5aca-9a1d-45a2e00bce32"
+        },
+        {
+          "expanded": "Between 5 and 10 years",
+          "value": "between-5-and-10-years",
+          "numerical_value": 60,
+          "uuid": "3786e2fd-a960-53d2-8008-a7752515976d"
+        },
+        {
+          "expanded": "Between 10 and 20 years",
+          "value": "between-10-and-20-years",
+          "numerical_value": 80,
+          "uuid": "e9b1b6e7-f879-5071-8b8f-ea78b59c85f3"
+        },
+        {
+          "expanded": "More than 20 years",
+          "value": "more-than-20-years",
+          "numerical_value": 100,
+          "uuid": "5de2aa14-a6d2-5f82-8c16-bd1f0c93816d"
+        }
+      ],
+      "predicate": "experience"
+    },
+    {
+      "entry": [
+        {
+          "expanded": "x86-32 & x86-64",
+          "value": "x86",
+          "uuid": "99ec02ed-09b6-5b71-89aa-a356ee26799f"
+        },
+        {
+          "expanded": "ARM & ARM-64",
+          "value": "arm",
+          "uuid": "eafbb847-3a15-57f6-af9b-258d7bd26bc9"
+        },
+        {
+          "expanded": "mips & mips-64",
+          "value": "mips",
+          "uuid": "eb1d6b80-3ac8-5d0b-87af-dfe3b320c0f8"
+        },
+        {
+          "expanded": "PowerPC",
+          "value": "powerpc",
+          "uuid": "ad8f2711-c944-58ea-b4ca-a11d4696a8d0"
+        }
+      ],
+      "predicate": "binary-reversing-arch"
+    },
+    {
+      "entry": [
+        {
+          "expanded": "Less than 1 year",
+          "value": "less-than-1-year",
+          "numerical_value": 20,
+          "uuid": "c5c6676b-18f2-5646-b87e-a656219da6cb"
+        },
+        {
+          "expanded": "Between 1 and 5 years",
+          "value": "between-1-and-5-years",
+          "numerical_value": 40,
+          "uuid": "7c5e87d2-040c-5216-b569-7fb1c5dd84c2"
+        },
+        {
+          "expanded": "Between 5 and 10 years",
+          "value": "between-5-and-10-years",
+          "numerical_value": 60,
+          "uuid": "cb4be1e0-64ba-5c09-8218-ef82e6a093e7"
+        },
+        {
+          "expanded": "Between 10 and 20 years",
+          "value": "between-10-and-20-years",
+          "numerical_value": 80,
+          "uuid": "cff47674-42e4-5e17-be94-fcba3db4b2e7"
+        },
+        {
+          "expanded": "More than 20 years",
+          "value": "more-than-20-years",
+          "numerical_value": 100,
+          "uuid": "a81790fb-5a36-57c5-86a3-9d9dc7f3e998"
+        }
+      ],
+      "predicate": "binary-reversing-experience"
+    },
+    {
+      "entry": [
+        {
+          "expanded": "Current Microsoft Windows system",
+          "value": "windows",
+          "uuid": "8b262819-2efd-5190-9c92-38487a5d241f"
+        },
+        {
+          "expanded": "GNU/linux derivative OS",
+          "value": "linux",
+          "uuid": "32d96035-aa13-50db-b775-00faa0190470"
+        },
+        {
+          "expanded": "Current IOS",
+          "value": "ios",
+          "uuid": "0cba9982-e246-5938-a7f0-9cd6bb0b26a8"
+        },
+        {
+          "expanded": "Current Apple OS",
+          "value": "macos",
+          "uuid": "fcf4799a-52bc-5740-8fcb-f250cf52305a"
+        },
+        {
+          "expanded": "Current Android OS",
+          "value": "android",
+          "uuid": "b0c35300-6ced-58bb-9e5a-1b2764afd979"
+        },
+        {
+          "expanded": "BSD",
+          "value": "bsd",
+          "uuid": "568df1f2-0f7b-5a5d-bc16-6b0e7a1cd963"
+        }
+      ],
+      "predicate": "os"
+    },
+    {
+      "entry": [
+        {
+          "expanded": "Inter-protocol exploitations",
+          "value": "ipex",
+          "uuid": "79c0f382-39be-53cc-8657-51bee3514ae0"
+        },
+        {
+          "expanded": "Common vulnerabilities as SQL injections, CSRF, XSS, CSP bypasses, etc.",
+          "value": "common",
+          "uuid": "c04f209d-8c67-5d5a-8bfc-0e0e3c66d352"
+        },
+        {
+          "expanded": "De-obfuscation of Javascript payloads",
+          "value": "js-desobfuscation",
+          "uuid": "884458c1-65f5-500a-aa8f-435307273ccd"
+        }
+      ],
+      "predicate": "web"
+    },
+    {
+      "entry": [
+        {
+          "expanded": "Less than 1 year",
+          "value": "less-than-1-year",
+          "numerical_value": 20,
+          "uuid": "0d324731-ed0b-5f03-838d-615f90c6d77c"
+        },
+        {
+          "expanded": "Between 1 and 5 years",
+          "value": "between-1-and-5-years",
+          "numerical_value": 40,
+          "uuid": "67731321-ed0c-5a4a-9d9d-f798d942fafd"
+        },
+        {
+          "expanded": "Between 5 and 10 years",
+          "value": "between-5-and-10-years",
+          "numerical_value": 60,
+          "uuid": "3b8c21a3-749b-55c7-85fa-7dba90f6b575"
+        },
+        {
+          "expanded": "Between 10 and 20 years",
+          "value": "between-10-and-20-years",
+          "numerical_value": 80,
+          "uuid": "37cfa4b8-7d16-5187-93d6-09de64a6028b"
+        },
+        {
+          "expanded": "More than 20 years",
+          "value": "more-than-20-years",
+          "numerical_value": 100,
+          "uuid": "6fb2dccc-29ce-5ba4-adc4-b2fcc9fa9935"
+        }
+      ],
+      "predicate": "web-experience"
+    },
+    {
+      "entry": [
+        {
+          "expanded": "Less than 1 year",
+          "value": "less-than-1-year",
+          "numerical_value": 20,
+          "uuid": "642a9b53-2988-50c0-9b5c-c1a90815c722"
+        },
+        {
+          "expanded": "Between 1 and 5 years",
+          "value": "between-1-and-5-years",
+          "numerical_value": 40,
+          "uuid": "4406c439-4747-506b-a597-522bdfafe879"
+        },
+        {
+          "expanded": "Between 5 and 10 years",
+          "value": "between-5-and-10-years",
+          "numerical_value": 60,
+          "uuid": "e424f7e8-6e80-566a-9120-48e703efe42c"
+        },
+        {
+          "expanded": "Between 10 and 20 years",
+          "value": "between-10-and-20-years",
+          "numerical_value": 80,
+          "uuid": "c3872c00-a4af-5df3-9cc2-81dfafbda4b2"
+        },
+        {
+          "expanded": "More than 20 years",
+          "value": "more-than-20-years",
+          "numerical_value": 100,
+          "uuid": "d7cf1446-050d-5e53-bf96-b60850ad7b3d"
+        }
+      ],
+      "predicate": "crypto-experience"
+    }
+  ],
+  "predicates": [
+    {
+      "description": "The analyst experience expressed in years range in the field tagged. The year range is based on a standard 40-hour work week.",
+      "expanded": "Experience",
+      "value": "experience",
+      "uuid": "f2291604-c5f6-5fcf-aa83-3c89e1584af2"
+    },
+    {
+      "description": "Architecture that the analyst has experience with.",
+      "expanded": "Reversing arch",
+      "value": "binary-reversing-arch",
+      "uuid": "51afb8d7-e6bd-5108-b9c0-399f71a19cbb"
+    },
+    {
+      "description": "The analyst experience in reversing expressed in years range in the field tagged. The year range is based on a standard 40-hour work week.",
+      "expanded": "Reversing experience",
+      "value": "binary-reversing-experience",
+      "uuid": "924e77e6-6281-5caa-a634-0349c9fd16bf"
+    },
+    {
+      "description": "Operating System that the analyst has experience with.",
+      "expanded": "Operating System",
+      "value": "os",
+      "uuid": "a5c4d7b2-7b43-5eee-ab83-c44893254d9f"
+    },
+    {
+      "description": "Web application vulnerabilities and technique that the analyst has experience with.",
+      "expanded": "Web applications-related skills",
+      "value": "web",
+      "uuid": "791387a1-89e2-5f00-ae55-54883729514a"
+    },
+    {
+      "description": "The analyst experience expressed to web application security in years range in the field tagged.",
+      "expanded": "Experience",
+      "value": "web-experience",
+      "uuid": "6d22214d-7353-5bd8-83a7-aa1aa8cce80e"
+    },
+    {
+      "description": "The analyst experience related to cryptography expressed in years range in the field tagged.",
+      "expanded": "Experience",
+      "value": "crypto-experience",
+      "uuid": "e115a856-b508-54f5-9141-9896474f7409"
+    }
+  ],
+  "type": [
+    "org",
+    "user"
+  ],
+  "version": 4,
+  "description": "A series of assessment predicates describing the analyst capabilities to perform analysis. These assessment can be assigned by the analyst him/herself or by another party evaluating the analyst.",
+  "expanded": "Analyst (Self) Assessment",
+  "namespace": "analyst-assessment",
+  "uuid": "9ec3a654-d15e-53a2-ad7b-856bd9971288"
+}

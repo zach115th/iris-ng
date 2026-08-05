@@ -1,0 +1,283 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Teams {% endblock title %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+{{ form.hidden_tag() }}
+<div class="page-inner">
+    <div class="row">
+        <div class="col-md-12">
+
+            {# ----------------------------------------------------------------
+               Analyst Skill Coverage card
+            ---------------------------------------------------------------- #}
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col col-heading" href="#collapse_skill_coverage" data-toggle="collapse"
+                             role="button" aria-expanded="true" aria-controls="collapse_skill_coverage">
+                            <span class="accicon float-left mr-3"><i class="fas fa-angle-right rotate-icon"></i></span>
+                            <div class="card-title">
+                                <i class="fas fa-users-cog mr-2" style="color:#a78bfa;"></i>
+                                Analyst Skill Coverage
+                            </div>
+                        </div>
+                        <div class="col">
+                            <button type="button" class="btn btn-sm btn-dark float-right ml-2"
+                                    onclick="irisTeamsRefreshCoverage();">Refresh</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body collapse show" id="collapse_skill_coverage">
+                    <p class="text-muted small mb-3">
+                        Shows every active analyst with their enabled skills. Use this view to identify gaps
+                        and to plan team assignments. Analyst skills are managed on the
+                        <a href="/user/settings?cid={{ caseid }}">user profile page</a> (self-service) or
+                        the <a href="/manage/access-control?cid={{ caseid }}">Access control</a> admin panel.
+                    </p>
+                    <table class="table display table-striped table-hover" id="iris-teams-coverage-table" width="100%">
+                        <thead>
+                            <tr>
+                                <th>Analyst</th>
+                                <th>Login</th>
+                                <th>Skills</th>
+                                <th>Categories covered</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iris-teams-coverage-tbody">
+                            <tr><td colspan="4" class="text-muted text-center small">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {# ----------------------------------------------------------------
+               Cases with Team Assignments card
+            ---------------------------------------------------------------- #}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col col-heading" href="#collapse_case_teams" data-toggle="collapse"
+                             role="button" aria-expanded="true" aria-controls="collapse_case_teams">
+                            <span class="accicon float-left mr-3"><i class="fas fa-angle-right rotate-icon"></i></span>
+                            <div class="card-title">
+                                <i class="fa-solid fa-folder-open mr-2" style="color:#a78bfa;"></i>
+                                Active Cases with Team Assignments
+                            </div>
+                        </div>
+                        <div class="col">
+                            <button type="button" class="btn btn-sm btn-dark float-right ml-2"
+                                    onclick="irisTeamsRefreshCases();">Refresh</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body collapse show" id="collapse_case_teams">
+                    <p class="text-muted small mb-3">
+                        Open cases with at least one analyst assigned. Click a case row to open the case.
+                    </p>
+                    <table class="table display table-striped table-hover" id="iris-teams-cases-table" width="100%">
+                        <thead>
+                            <tr>
+                                <th>Case #</th>
+                                <th>Case name</th>
+                                <th>Lead</th>
+                                <th>Analysts</th>
+                                <th>Required skills</th>
+                                <th>Coverage</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iris-teams-cases-tbody">
+                            <tr><td colspan="6" class="text-muted text-center small">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+(function () {
+    var _skillCatalog = {{ skill_catalog | tojson }};
+    var _skillMap = {};
+    _skillCatalog.forEach(function (s) { _skillMap[s.skill_id] = s; });
+
+    // Shared analyst-skills data — fetched once, used by both tables
+    var _userSkillMap = {};  // user_id -> Set of skill_ids
+
+    function _loadAnalystSkills(cb) {
+        $.get('/api/v2/teams/analyst-skills', function (users) {
+            _userSkillMap = {};
+            users.forEach(function (u) {
+                _userSkillMap[u.user_id] = new Set(u.skill_ids || []);
+            });
+            cb(users);
+        });
+    }
+
+    // -----------------------------------------------------------------------
+    // Skill coverage table — all active analysts + their skills
+    // -----------------------------------------------------------------------
+    function irisTeamsRefreshCoverage() {
+        var $tbody = $('#iris-teams-coverage-tbody');
+        $tbody.html('<tr><td colspan="4" class="text-muted text-center small">Loading…</td></tr>');
+
+        _loadAnalystSkills(function (users) {
+            var active = users.filter(function (u) { return !u.is_service_account; });
+            if (!active.length) {
+                $tbody.html('<tr><td colspan="4" class="text-muted text-center small">No active analysts found.</td></tr>');
+                return;
+            }
+            $tbody.empty();
+            active.forEach(function (u) {
+                var skillIds = u.skill_ids || [];
+                var chips = skillIds.map(function (sid) {
+                    var s = _skillMap[sid];
+                    if (!s) { return ''; }
+                    return '<span class="badge badge-pill mr-1 mb-1" style="background:rgba(139,92,246,0.18);color:#d4c4ff;border:1px solid rgba(139,92,246,0.35);">' +
+                           $('<span>').text(s.skill_name).html() + '</span>';
+                }).join('');
+                var cats = {};
+                skillIds.forEach(function (sid) {
+                    var s = _skillMap[sid];
+                    if (s) { cats[s.skill_category] = true; }
+                });
+                var catList = Object.keys(cats).sort().join(', ') || '<span class="text-muted">—</span>';
+                $tbody.append(
+                    '<tr>' +
+                    '<td>' + $('<span>').text(u.user_name).html() + '</td>' +
+                    '<td class="text-muted small">' + $('<span>').text(u.user_login || '').html() + '</td>' +
+                    '<td>' + (chips || '<span class="text-muted small">No skills set — <a href="/user/settings">edit on profile</a></span>') + '</td>' +
+                    '<td class="small">' + catList + '</td>' +
+                    '</tr>'
+                );
+            });
+            if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#iris-teams-coverage-table')) {
+                $('#iris-teams-coverage-table').DataTable({paging: false, order: [[0, 'asc']]});
+            }
+        });
+    }
+
+    // -----------------------------------------------------------------------
+    // Case-team table — ALL open cases; owner = lead, analysts from /team
+    // Coverage includes owner's skills + all CaseAnalystLink members' skills
+    // -----------------------------------------------------------------------
+    function irisTeamsRefreshCases() {
+        var $tbody = $('#iris-teams-cases-tbody');
+        $tbody.html('<tr><td colspan="6" class="text-muted text-center small">Loading…</td></tr>');
+
+        // Ensure analyst skills are loaded before computing coverage
+        function _doLoad() {
+            $.get('/manage/cases/list', function (resp) {
+                var open = (resp && resp.data) ? resp.data.filter(function (c) { return !c.case_close_date; }) : [];
+                if (!open.length) {
+                    $tbody.html('<tr><td colspan="6" class="text-muted text-center small">No open cases.</td></tr>');
+                    return;
+                }
+
+                $tbody.empty();
+                var loaded = 0;
+                var rows = [];
+
+                open.forEach(function (c) {
+                    $.get('/api/v2/cases/' + c.case_id + '/team', function (tdata) {
+                        var analysts  = tdata.analysts || [];
+                        var reqSkills = tdata.required_skills || [];
+                        var reqIds    = tdata.required_skill_ids || [];
+
+                        var ownerName    = (typeof c.owner === 'string' ? c.owner : (c.owner && c.owner.user_name)) || '—';
+                        var analystNames = analysts.map(function (a) { return a.user_name; }).join(', ') || '—';
+
+                        var reqChips = reqSkills.map(function (s) {
+                            return '<span class="badge" style="background:rgba(139,92,246,0.12);color:#d4c4ff;border:1px solid rgba(139,92,246,0.25);margin-right:2px;">' +
+                                   $('<span>').text(s.skill_name).html() + '</span>';
+                        }).join('');
+
+                        // Coverage = skills covered by owner + any assigned analysts
+                        var coveredIds = new Set();
+                        if (reqIds.length) {
+                            // Owner skills (keyed by owner_id from manage/cases/list)
+                            var ownerSkills = _userSkillMap[c.owner_id] || new Set();
+                            ownerSkills.forEach(function (sid) {
+                                if (reqIds.indexOf(sid) !== -1) { coveredIds.add(sid); }
+                            });
+                            // Analyst link members' skills
+                            analysts.forEach(function (a) {
+                                var aSkills = _userSkillMap[a.user_id] || new Set(a.skill_ids || []);
+                                aSkills.forEach(function (sid) {
+                                    if (reqIds.indexOf(sid) !== -1) { coveredIds.add(sid); }
+                                });
+                            });
+                        }
+
+                        var covPct = reqIds.length
+                            ? Math.round(coveredIds.size / reqIds.length * 100)
+                            : null;
+                        var covBadge = covPct !== null
+                            ? '<span style="color:' + (covPct >= 80 ? '#28a745' : covPct >= 50 ? '#ffc107' : '#dc3545') + ';font-weight:600;">' + covPct + '%</span>'
+                            : '<span class="text-muted small">—</span>';
+
+                        rows.push({
+                            case_id: c.case_id,
+                            name: c.case_name || '',
+                            leadDisplay: ownerName,
+                            otherNames: analystNames,
+                            reqChips: reqChips || '<span class="text-muted small">—</span>',
+                            covBadge: covBadge,
+                        });
+
+                        loaded++;
+                        if (loaded === open.length) {
+                            rows.sort(function (a, b) { return a.case_id - b.case_id; });
+                            rows.forEach(function (r) {
+                                $tbody.append(
+                                    '<tr style="cursor:pointer;" onclick="window.location=\'/case?cid=' + r.case_id + '\'">' +
+                                    '<td>#' + r.case_id + '</td>' +
+                                    '<td>' + $('<span>').text(r.name).html() + '</td>' +
+                                    '<td>' + $('<span>').text(r.leadDisplay).html() + '</td>' +
+                                    '<td class="small">' + $('<span>').text(r.otherNames).html() + '</td>' +
+                                    '<td>' + r.reqChips + '</td>' +
+                                    '<td class="text-center">' + r.covBadge + '</td>' +
+                                    '</tr>'
+                                );
+                            });
+                            if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#iris-teams-cases-table')) {
+                                $('#iris-teams-cases-table').DataTable({paging: true, order: [[0, 'desc']]});
+                            }
+                        }
+                    }).fail(function () {
+                        loaded++;
+                        if (loaded === open.length && !rows.length) {
+                            $tbody.html('<tr><td colspan="6" class="text-muted text-center small">No cases found.</td></tr>');
+                        }
+                    });
+                });
+            });
+        }
+
+        // If analyst skills already loaded use them; else load first
+        if (Object.keys(_userSkillMap).length) {
+            _doLoad();
+        } else {
+            _loadAnalystSkills(function () { _doLoad(); });
+        }
+    }
+
+    window.irisTeamsRefreshCoverage = irisTeamsRefreshCoverage;
+    window.irisTeamsRefreshCases    = irisTeamsRefreshCases;
+
+    // Auto-load: fetch analyst skills once, then render both tables
+    $(function () {
+        _loadAnalystSkills(function () {
+            irisTeamsRefreshCoverage();
+            irisTeamsRefreshCases();
+        });
+    });
+})();
+</script>
+{% endblock javascripts %}

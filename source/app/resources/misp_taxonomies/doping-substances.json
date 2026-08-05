@@ -1,0 +1,1433 @@
+{
+  "namespace": "doping-substances",
+  "description": "This taxonomy aims to list doping substances",
+  "version": 2,
+  "expanded": "Doping substances",
+  "predicates": [
+    {
+      "value": "anabolic agents",
+      "description": "Anabolic agents are prohibited.",
+      "uuid": "253e2658-1dfc-5695-ba23-30e5a30cae64"
+    },
+    {
+      "value": "peptide hormones, growth factors, related substances and mimetics",
+      "description": "The following substances, and other substances with similar chemical structure or similar biological effect(s), are prohibited.",
+      "uuid": "f94d194f-6dfc-5dcd-b765-391ae7e7c369"
+    },
+    {
+      "value": "beta-2 agonists",
+      "description": "All selective and non-selective beta-2 agonists, including all optical isomers, are prohibited.",
+      "uuid": "218b8962-60d8-5c60-a8bf-d4906af682b4"
+    },
+    {
+      "value": "hormone and metabolic modulators",
+      "description": "The following hormone and metabolic modulators are prohibited.",
+      "uuid": "28183450-d1f2-5bcc-8e69-b2b8c19c2f77"
+    },
+    {
+      "value": "diuretics and masking agents",
+      "description": "All diuretics and masking agents, including all optical isomers, e.g. d- and l- where relevant, are prohibited.",
+      "uuid": "a95af043-dc45-5b86-ab18-c4d462695a33"
+    },
+    {
+      "value": "manipulation of blood and blood components",
+      "description": "The following are prohibited",
+      "uuid": "c7c753fd-0302-58b3-a79b-888e56b5ddae"
+    },
+    {
+      "value": "chemical and physical manipulation",
+      "description": "The following are prohibited",
+      "uuid": "aaaaf365-a593-53b0-bf3d-c7a2c190469c"
+    },
+    {
+      "value": "gene and cell doping",
+      "description": "The following, with the potential to enhance sport performance, are prohibited",
+      "uuid": "418e5dda-f82a-5de0-b60d-a1859c44b293"
+    },
+    {
+      "value": "stimulants",
+      "description": "Substances of Abuse in this section: cocaine and methylenedioxymethamphetamine (MDMA / “ecstasy”).",
+      "uuid": "bf7eb75e-2de8-5237-8792-08244432d722"
+    },
+    {
+      "value": "narcotics",
+      "description": "The following narcotics, including all optical isomers, e.g. d- and l- where relevant, are prohibited.",
+      "uuid": "6254ae15-0156-5e40-bc9d-919501066ef7"
+    },
+    {
+      "value": "cannabinoids",
+      "uuid": "748da590-da16-5839-a0b4-b408f89f6952"
+    },
+    {
+      "value": "glucocorticoids",
+      "description": "All glucocorticoids are prohibited when administered by any injectable, oral [including oromucosal (e.g. buccal, gingival, sublingual)] or rectal route.",
+      "uuid": "0568f7f0-9801-5d8b-9074-3b4978dc61c0"
+    },
+    {
+      "value": "beta-blockers",
+      "description": "Beta-blockers are prohibited In-Competition only, in the following sports, and also prohibited Out-of-Competition where indicated (*).",
+      "uuid": "ec774767-3290-59a7-a307-2fce20e08351"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "anabolic agents",
+      "entry": [
+        {
+          "value": "1-androstenediol",
+          "expanded": "1-androstenediol (5α-androst-1-ene-3β, 17β-diol)",
+          "uuid": "d4bf2a33-2f65-5edc-9f50-d4f1205fffe7"
+        },
+        {
+          "value": "1-androstenedione",
+          "expanded": "1-androstenedione (5α-androst-1-ene-3, 17-dione)",
+          "uuid": "3cf5ecb7-3ca4-5973-850c-27bd43e02462"
+        },
+        {
+          "value": "1-androsterone",
+          "expanded": "1-androsterone (3α-hydroxy-5α-androst-1-ene-17-one)",
+          "uuid": "c5d2def9-c206-544f-b031-384e4cfc881f"
+        },
+        {
+          "value": "1-epiandrosterone",
+          "expanded": "1-epiandrosterone (3β-hydroxy-5α-androst-1-ene-17-one)",
+          "uuid": "4e957eb6-6f0e-566b-8e37-6286483d9e28"
+        },
+        {
+          "value": "1-testosterone",
+          "expanded": "1-testosterone (17β-hydroxy-5α-androst-1-en-3-one)",
+          "uuid": "c08ec23f-8fe6-561a-820a-12541b8d36df"
+        },
+        {
+          "value": "4-androstenediol",
+          "expanded": "4-androstenediol (androst-4-ene-3β,17β-diol)",
+          "uuid": "2a953745-e28e-5fe2-a4de-0da6e636f7e4"
+        },
+        {
+          "value": "4-hydroxytestosterone",
+          "expanded": "4-hydroxytestosterone (4,17β-dihydroxyandrost-4-en-3-one)",
+          "uuid": "c8049381-0de5-54e4-922d-99ce7dffd1a9"
+        },
+        {
+          "value": "5-androstenedione",
+          "expanded": "5-androstenedione (androst-5-ene-3,17-dione)",
+          "uuid": "01745c56-76b1-5637-8889-5f97187ec18c"
+        },
+        {
+          "value": "7α-hydroxy-dhea",
+          "uuid": "2102a0a5-0c9b-55eb-b98e-38caf978a613"
+        },
+        {
+          "value": "7β-hydroxy-dhea",
+          "uuid": "28d5b1b0-899a-5046-a343-ea01a94d8ec3"
+        },
+        {
+          "value": "7-keto-dhea",
+          "uuid": "5a88548f-9d52-5035-9cd2-4461626884fb"
+        },
+        {
+          "value": "17α-methylepithiostanol",
+          "expanded": "17α-methylepithiostanol (epistane)",
+          "uuid": "dac38d8d-63a2-5ca0-9645-fee65e7f5391"
+        },
+        {
+          "value": "19-norandrostenediol",
+          "expanded": "19-norandrostenediol  (estr-4-ene-3,17-diol)",
+          "uuid": "82d0e240-3890-5d9d-9f9a-154243950244"
+        },
+        {
+          "value": "19-norandrostenedione",
+          "expanded": "19-norandrostenedione (estr-4-ene-3,17-dione)",
+          "uuid": "6189d6c9-8a47-532b-83de-f5bccc792bd6"
+        },
+        {
+          "value": "androst-4-ene-3,11,17-trione",
+          "expanded": "androst-4-ene-3,11,17-trione (11-ketoandrostenedione, adrenosterone)",
+          "uuid": "05d1df15-1bab-5c1e-93fb-b92b694952d7"
+        },
+        {
+          "value": "androstanolone",
+          "expanded": "androstanolone (5α-dihydrotestosterone, 17β-hydroxy-5α-androstan-3-one)",
+          "uuid": "ca10b0b6-41c9-5b46-b6c7-03f1fadfec14"
+        },
+        {
+          "value": "androstenediol",
+          "expanded": "androstenediol (androst-5-ene-3β,17β-diol)",
+          "uuid": "40317eb3-51f9-554a-b76a-28f52c5b14fa"
+        },
+        {
+          "value": "androstenedione",
+          "expanded": "androstenedione (androst-4-ene-3,17-dione)",
+          "uuid": "9a6a6ca4-12ae-5032-99d1-919d30bc1aea"
+        },
+        {
+          "value": "bolasterone",
+          "uuid": "918a099e-fdba-5dde-890d-8af7644646f1"
+        },
+        {
+          "value": "boldenone",
+          "uuid": "798a6221-b160-5e9b-b198-1b1ca57a8056"
+        },
+        {
+          "value": "boldione",
+          "expanded": "boldione (androsta-1,4-diene-3,17-dione)",
+          "uuid": "63d3f954-fd25-5e80-9eb6-15fc07f20803"
+        },
+        {
+          "value": "calusterone",
+          "uuid": "b5c26aa6-cb6e-54eb-b901-8f030f73c971"
+        },
+        {
+          "value": "clostebol",
+          "uuid": "43b2dbf5-5770-59a1-83b9-0aa09d90d331"
+        },
+        {
+          "value": "danazol",
+          "expanded": "danazol ([1,2]oxazolo[4’,5’:2,3]pregna-4-en-20-yn-17α-ol)",
+          "uuid": "43ef091d-656f-5c0f-bce9-d8dd18b010ec"
+        },
+        {
+          "value": "dehydrochlormethyltestosterone",
+          "expanded": "dehydrochlormethyltestosterone (4-chloro-17β-hydroxy-17α-methylandrosta-1,4-dien-3-one)",
+          "uuid": "86815d83-0630-52f9-8db2-9850c1cb6bae"
+        },
+        {
+          "value": "desoxymethyltestosterone",
+          "expanded": "desoxymethyltestosterone (17α-methyl-5α-androst-2-en-17β-ol and 17α-methyl-5α-androst-3-en-17β-ol)",
+          "uuid": "9eb45041-b488-5fee-98d8-d52f66374c48"
+        },
+        {
+          "value": "drostanolone",
+          "uuid": "2044616d-c5db-50f2-bdb4-364a7aa2446d"
+        },
+        {
+          "value": "epiandrosterone",
+          "expanded": "epiandrosterone (3β-hydroxy-5α-androstan-17-one)",
+          "uuid": "105c50c4-4880-5844-a42c-8347707a2214"
+        },
+        {
+          "value": "epi-dihydrotestosterone",
+          "expanded": "epi-dihydrotestosterone (17β-hydroxy-5β-androstan-3-one)",
+          "uuid": "d7ff0550-2475-5f48-8ad2-3c6011bfd71c"
+        },
+        {
+          "value": "epitestosterone",
+          "uuid": "875c50d6-95d7-5746-9272-79280fd10b88"
+        },
+        {
+          "value": "ethylestrenol",
+          "expanded": "ethylestrenol  (19-norpregna-4-en-17α-ol)",
+          "uuid": "88d6a364-2cf0-5aa5-869d-21074135990e"
+        },
+        {
+          "value": "fluoxymesterone",
+          "uuid": "43402b26-0ea0-5e32-b23f-0605c8bc20ef"
+        },
+        {
+          "value": "formebolone",
+          "uuid": "4d08d595-a372-5cec-ad61-6187a2429e66"
+        },
+        {
+          "value": "furazabol",
+          "expanded": "furazabol (17α-methyl [1,2,5] oxadiazolo[3’,4’:2,3]-5α-androstan-17β-ol)",
+          "uuid": "ee718fad-f7a0-578d-8be3-d9c98543a667"
+        },
+        {
+          "value": "gestrinone",
+          "uuid": "c4fd3536-5ec1-594e-8d1d-cbc16feac32f"
+        },
+        {
+          "value": "mestanolone",
+          "uuid": "e40d077b-54ca-5890-b2e7-6ab477d02163"
+        },
+        {
+          "value": "mesterolone",
+          "uuid": "13397036-b43b-5b8e-9733-499726aebb40"
+        },
+        {
+          "value": "metandienone",
+          "expanded": "metandienone (17β-hydroxy-17α- methylandrosta-1,4-dien-3-one)",
+          "uuid": "ec61ff25-de6a-502a-ab0e-8ac92a2380aa"
+        },
+        {
+          "value": "metenolone",
+          "uuid": "610b0d43-80c1-5da6-a63a-03ca18ee8c6a"
+        },
+        {
+          "value": "methandriol",
+          "uuid": "e5ca455b-cebe-518c-bacc-a45ff30c1302"
+        },
+        {
+          "value": "methasterone",
+          "expanded": "methasterone (17β-hydroxy-2α,17α- dimethyl-5α-androstan-3-one)",
+          "uuid": "e38717a7-c253-596a-8a39-d003d564586c"
+        },
+        {
+          "value": "methyl-1-testosterone",
+          "expanded": "methyl-1-testosterone (17β-hydroxy-17α- methyl-5α-androst-1-en-3-one)",
+          "uuid": "8a06124e-d55a-5e21-9a4d-049ae73dc065"
+        },
+        {
+          "value": "methylclostebol",
+          "uuid": "969465f4-8d04-5235-94fa-bcf619f8197c"
+        },
+        {
+          "value": "methyldienolone",
+          "expanded": "methyldienolone (17β-hydroxy-17α- methylestra-4,9-dien-3-one)",
+          "uuid": "ff1a88a6-f6b6-5f40-afb3-9b53cbf2816f"
+        },
+        {
+          "value": "methylnortestosterone",
+          "expanded": "methylnortestosterone (17β-hydroxy-17α- methylestr-4-en-3-one)",
+          "uuid": "0390dc97-9b35-57ad-a958-f344c2567461"
+        },
+        {
+          "value": "methyltestosterone",
+          "uuid": "5c76cf6b-d1b0-529f-b192-676b7e778f48"
+        },
+        {
+          "value": "metribolone",
+          "expanded": "metribolone (methyltrienolone, 17β-hydroxy- 17α-methylestra-4,9,11-trien-3-one)",
+          "uuid": "ff6b6708-ef69-542f-9c47-54e1ff7bfa2e"
+        },
+        {
+          "value": "mibolerone",
+          "uuid": "718a4776-2f57-539a-8629-492ea8abdfba"
+        },
+        {
+          "value": "nandrolone",
+          "expanded": "nandrolone (19-nortestosterone)",
+          "uuid": "07baddca-8bdf-5c47-86f3-317a94f00bca"
+        },
+        {
+          "value": "norboletone",
+          "uuid": "00ed389a-223c-57fd-974e-8187d83f1a3c"
+        },
+        {
+          "value": "norclostebol",
+          "expanded": "norclostebol (4-chloro-17β-ol-estr-4-en-3- one)",
+          "uuid": "5ad38120-35ff-55dc-a1d3-a8a2cf014b77"
+        },
+        {
+          "value": "norethandrolone",
+          "uuid": "b97f2672-85c1-5210-a9b8-d0e006fd00ed"
+        },
+        {
+          "value": "oxabolone",
+          "uuid": "1691e885-eeef-5e2b-8290-ba090b7493c5"
+        },
+        {
+          "value": "oxandrolone",
+          "uuid": "dde0fb58-af97-56fa-a769-d63a44f6b0b9"
+        },
+        {
+          "value": "oxymesterone",
+          "uuid": "f63b747b-044a-55cc-b8ba-b32b488bc7a3"
+        },
+        {
+          "value": "oxymetholone",
+          "uuid": "ab252179-f543-557d-bd97-f4a3509972bc"
+        },
+        {
+          "value": "prasterone",
+          "expanded": "prasterone (dehydroepiandrosterone, dhea, 3β-hydroxyandrost-5-en-17-one)",
+          "uuid": "803948b0-200b-51b7-b6a4-e4b981912cd9"
+        },
+        {
+          "value": "prostanozol",
+          "expanded": "prostanozol (17β-[(tetrahydropyran-2-yl) oxy]-1’h-pyrazolo[3,4:2,3]-5α-androstane)",
+          "uuid": "044aef3a-29ed-578e-96fb-caa1c69a8d23"
+        },
+        {
+          "value": "quinbolone",
+          "uuid": "45f04f61-4c2d-5333-8e9f-385ed7011d37"
+        },
+        {
+          "value": "stanozolol",
+          "uuid": "eef40051-1d6d-5e78-beaf-ae382fd45363"
+        },
+        {
+          "value": "stenbolone",
+          "uuid": "bdc89ff1-d373-59a6-8b2f-8f7eb2a75dd2"
+        },
+        {
+          "value": "testosterone",
+          "uuid": "4afdc79e-9333-5d79-a805-e3f976ed4ea8"
+        },
+        {
+          "value": "tetrahydrogestrinone",
+          "expanded": "tetrahydrogestrinone (17-hydroxy-18a- homo-19-nor-17α-pregna-4,9,11-trien-3- one)",
+          "uuid": "7e852886-ac2a-531d-9057-8749eaabec2d"
+        },
+        {
+          "value": "tibolone",
+          "uuid": "2d576743-61c5-5b6c-9fdf-2258d8be0de1"
+        },
+        {
+          "value": "trenbolone",
+          "expanded": "trenbolone (17β-hydroxyestr-4,9,11-trien-3-one) and other substances with a similar chemical structure or similar biological effect(s).",
+          "uuid": "7ebb9979-f6cb-5e32-815c-86cea1932ffc"
+        },
+        {
+          "value": "clenbuterol",
+          "uuid": "72b106d5-25d2-5192-88ab-6a348320c6f3"
+        },
+        {
+          "value": "osilodrostat",
+          "uuid": "fc963f68-9faf-5f4a-9c17-8181bd8b5c27"
+        },
+        {
+          "value": "ractopamine",
+          "uuid": "4030882c-55a4-5017-b165-f7c8dc0569d3"
+        },
+        {
+          "value": "selective androgen receptor modulators",
+          "expanded": "selective androgen receptor modulators [sarms, e.g. andarine, enobosarm (ostarine), lgd-4033 (ligandrol), rad140, s-23 and yk-11]",
+          "uuid": "3196ab5c-6b80-5402-82ed-536715289255"
+        },
+        {
+          "value": "zeranol",
+          "uuid": "d3b9d85b-8a79-5db9-b5d0-b4f5e46d273c"
+        },
+        {
+          "value": "zilpaterol",
+          "uuid": "65e992b8-0b3a-5104-8f6d-986a10397290"
+        }
+      ]
+    },
+    {
+      "predicate": "peptide hormones, growth factors, related substances and mimetics",
+      "entry": [
+        {
+          "value": "darbepoetins",
+          "expanded": "darbepoetins (depo)",
+          "uuid": "5931b5cd-3d3f-5190-aedc-f90eaa34533d"
+        },
+        {
+          "value": "erythropoietins",
+          "expanded": "erythropoietins (epo)",
+          "uuid": "0e552b0e-294d-5c45-aeda-08a056c63e94"
+        },
+        {
+          "value": "epo-based constructs",
+          "expanded": "epo-based constructs [e.g. epo-fc, methoxy polyethylene glycol-epoetin beta (cera)]",
+          "uuid": "a0966ac9-a9ac-5a0d-b34f-b2168f6525de"
+        },
+        {
+          "value": "epo-mimetic agents",
+          "expanded": "epo-mimetic agents and their constructs (e.g. cnto-530, peginesatide)",
+          "uuid": "048e1416-f59a-5d7d-8ced-1284e596c6ed"
+        },
+        {
+          "value": "cobalt",
+          "uuid": "35440603-0604-5503-b304-0bbc99f58e19"
+        },
+        {
+          "value": "daprodustat",
+          "expanded": "daprodustat (gsk1278863)",
+          "uuid": "5119b198-2a6e-5a68-ba07-fd9751b32ea8"
+        },
+        {
+          "value": "iox2",
+          "uuid": "d60a2b8e-b146-5853-b0c2-98d6ff9c60f2"
+        },
+        {
+          "value": "molidustat",
+          "expanded": "molidustat (bay 85-3934)",
+          "uuid": "070de81a-033e-58d8-9fab-414574e22f91"
+        },
+        {
+          "value": "roxadustat",
+          "expanded": "roxadustat (fg-4592)",
+          "uuid": "da8bf7ce-614a-51b7-b5ac-7f41f5f13dc4"
+        },
+        {
+          "value": "vadadustat",
+          "expanded": "vadadustat (akb-6548)",
+          "uuid": "7d054a6f-0c4a-52de-902d-c356949275f6"
+        },
+        {
+          "value": "xenon",
+          "uuid": "fc429104-4e22-5140-8b54-0a25ac27892c"
+        },
+        {
+          "value": "k-11706",
+          "uuid": "fc961dbd-cb17-59da-a8c8-882b33296095"
+        },
+        {
+          "value": "luspatercept",
+          "uuid": "e7e1d5df-4707-5ef8-a7b9-83bb0467e087"
+        },
+        {
+          "value": "sotatercept",
+          "uuid": "ebc023da-ac86-52fd-9474-692389cdfdcd"
+        },
+        {
+          "value": "asialo epo",
+          "uuid": "2ac497fb-8dc2-5b1b-aa4f-644377a289e7"
+        },
+        {
+          "value": "carbamylated epo",
+          "expanded": "carbamylated epo (cepo)",
+          "uuid": "9b0cde51-fd27-5a54-87a0-17b2b0a9b8cf"
+        },
+        {
+          "value": "buserelin",
+          "uuid": "35a7a23c-1550-56d5-b643-a6c54f371ec2"
+        },
+        {
+          "value": "deslorelin",
+          "uuid": "fde0840b-9653-5784-b72a-d7afdbca474c"
+        },
+        {
+          "value": "gonadorelin",
+          "uuid": "6c7be9e9-dd5f-5b7f-aedf-4b3dcafc67bb"
+        },
+        {
+          "value": "goserelin",
+          "uuid": "a8c4c3a7-0e82-5fce-ae21-15e29d21b93d"
+        },
+        {
+          "value": "leuprorelin",
+          "uuid": "96239d3f-746f-5490-83fb-e258c9bb3e93"
+        },
+        {
+          "value": "nafarelin",
+          "uuid": "d6b9db71-16ae-5ca6-9d22-5c85b816893b"
+        },
+        {
+          "value": "triptorelin",
+          "uuid": "b98cc2e6-9b1c-534d-8b54-583577f24cf3"
+        },
+        {
+          "value": "corticorelin",
+          "uuid": "b58566f6-09d7-50c2-bf33-0717945d68f3"
+        },
+        {
+          "value": "growth hormone analogues, e.g. lonapegsomatropin, somapacitan and somatrogon",
+          "uuid": "823cbfa1-b611-5306-a28c-9768a0d28693"
+        },
+        {
+          "value": "growth hormone fragments, e.g. aod-9604 and hgh 176-191",
+          "uuid": "70deb5a3-2795-557d-93ea-9b4d400cd70c"
+        },
+        {
+          "value": "growth hormone-releasing hormone",
+          "expanded": "growth hormone-releasing hormone (ghrh) and its analogues (e.g. cjc-1293, cjc-1295, sermorelin and tesamorelin)",
+          "uuid": "1a1829f4-aec9-5aa6-bb83-4444f18da124"
+        },
+        {
+          "value": "growth hormone secretagogues",
+          "expanded": "growth hormone secretagogues (ghs) and their mimetics [e.g. lenomorelin (ghrelin), anamorelin, ipamorelin, macimorelin and tabimorelin]",
+          "uuid": "9e23e360-2451-5ddc-a505-c0b51ab4ca4c"
+        },
+        {
+          "value": "gh-releasing peptides",
+          "expanded": "gh-releasing peptides (ghrps) [e.g. alexamorelin, ghrp-1, ghrp-2 (pralmorelin), ghrp-3, ghrp-4, ghrp-5, ghrp-6, and examorelin (hexarelin)]",
+          "uuid": "45e51d0e-6546-5b77-ab54-236bf73cdc2d"
+        },
+        {
+          "value": "fibroblast growth factors",
+          "expanded": "fibroblast growth factors (fgfs)",
+          "uuid": "dd901dc6-b9e7-591e-81e5-b7e84222ada2"
+        },
+        {
+          "value": "hepatocyte growth factor",
+          "expanded": "hepatocyte growth factor (hgf)",
+          "uuid": "d5640a30-d319-56e7-86c6-bf2c86c3f8f1"
+        },
+        {
+          "value": "insulin-like growth factor 1",
+          "expanded": "insulin-like growth factor 1 (igf-1) and its analogues",
+          "uuid": "2cd070b1-6cf8-5f8c-bc6c-2f355c80af73"
+        },
+        {
+          "value": "mechano growth factors",
+          "expanded": "mechano growth factors (mgfs)",
+          "uuid": "14e2c5bb-b8b4-56db-92d7-5a0d00283511"
+        },
+        {
+          "value": "platelet-derived growth factor",
+          "expanded": "platelet-derived growth factor (pdgf)",
+          "uuid": "ce4a3268-7736-5e60-bc57-191e667aac36"
+        },
+        {
+          "value": "thymosin-β4 and its derivatives e.g. tb-500",
+          "uuid": "4a7f67b8-89b2-5cdb-9ecb-d34af264d5bc"
+        },
+        {
+          "value": "vascular endothelial growth factor",
+          "expanded": "vascular endothelial growth factor (vegf) and other growth factors or growth factor modulators affecting muscle, tendon or ligament protein synthesis/degradation, vascularisation, energy utilization, regenerative capacity or fibre type switching.",
+          "uuid": "6cc84749-9a68-58d8-9fab-5446c620f511"
+        }
+      ]
+    },
+    {
+      "predicate": "beta-2 agonists",
+      "entry": [
+        {
+          "value": "arformoterol",
+          "uuid": "1e770e0e-418e-50cd-b2ae-c7aa279e0089"
+        },
+        {
+          "value": "fenoterol",
+          "uuid": "0ee1ce97-8a06-5fea-b1c2-3584b00d5c05"
+        },
+        {
+          "value": "higenamine",
+          "uuid": "4bd0e8a3-e169-55da-9fed-dc41cb04c192"
+        },
+        {
+          "value": "indacaterol",
+          "uuid": "54914a0c-9b47-5858-8f5e-f2cf9940b539"
+        },
+        {
+          "value": "levosalbutamol",
+          "uuid": "0bf3c5e2-151f-54bf-8b5d-5f938ed7d7fb"
+        },
+        {
+          "value": "olodaterol",
+          "uuid": "cde8b860-6be7-53aa-a2b3-75d272d8b6d6"
+        },
+        {
+          "value": "procaterol",
+          "uuid": "55b19734-efe8-565d-b7a6-33542a7831f3"
+        },
+        {
+          "value": "reproterol",
+          "uuid": "ac0f980a-0c05-5c1f-a8ff-cf6546d61b5d"
+        },
+        {
+          "value": "terbutaline",
+          "uuid": "576827fd-54f5-5b97-bb79-f299e17bd4f7"
+        },
+        {
+          "value": "tretoquinol",
+          "expanded": "tretoquinol (trimetoquinol)",
+          "uuid": "44c17312-ef1e-56d9-ab0f-b7758b59c702"
+        },
+        {
+          "value": "tulobuterol",
+          "uuid": "5473bf4d-6082-5e25-bf24-12a0bd4afe25"
+        },
+        {
+          "value": "salbutamol",
+          "expanded": "inhaled salbutamol: maximum 1600 micrograms over 24 hours in divided doses not to exceed 600 micrograms over 8 hours starting from any dose",
+          "uuid": "ba633286-d073-59f6-ab4d-8ab10722116b"
+        },
+        {
+          "value": "formoterol",
+          "expanded": "inhaled formoterol: maximum delivered dose of 54 micrograms over 24 hours",
+          "uuid": "64a15339-2bb0-568d-9f0a-4700fef62992"
+        },
+        {
+          "value": "salmeterol",
+          "expanded": "inhaled salmeterol: maximum 200 micrograms over 24 hours",
+          "uuid": "9ccfffdd-e414-59f1-8f45-7b26467a5664"
+        },
+        {
+          "value": "vilanterol",
+          "expanded": "inhaled vilanterol: maximum 25 micrograms over 24 hours",
+          "uuid": "0fda3238-40f2-5168-b228-4f9b7ff90ea8"
+        }
+      ]
+    },
+    {
+      "predicate": "hormone and metabolic modulators",
+      "entry": [
+        {
+          "value": "2-androstenol",
+          "expanded": "2-androstenol  (5α-androst-2-en-17-ol)",
+          "uuid": "15157b9f-25fa-525a-aa20-d56488c459c3"
+        },
+        {
+          "value": "2-androstenone",
+          "expanded": "2-androstenone (5α-androst-2-en-17-one)",
+          "uuid": "d4d8c61c-2344-53ec-9f9e-cebb1cbbcb86"
+        },
+        {
+          "value": "3-androstenol",
+          "expanded": "3-androstenol  (5α-androst-3-en-17-ol)",
+          "uuid": "ecd2699a-05db-5cb8-aa10-d405416a6179"
+        },
+        {
+          "value": "3-androstenone",
+          "expanded": "3-androstenone (5α-androst-3-en-17-one)",
+          "uuid": "672b6ae0-3414-5d4f-bac1-4324604f1a87"
+        },
+        {
+          "value": "4-androstene-3,6,17 trione",
+          "expanded": "4-androstene-3,6,17 trione (6-oxo)",
+          "uuid": "276825d7-946e-5783-b3fb-51e97a7d1d9c"
+        },
+        {
+          "value": "aminoglutethimide",
+          "uuid": "2ba11616-76e4-5871-93ea-39b085d4187f"
+        },
+        {
+          "value": "anastrozole",
+          "uuid": "beeb5c3d-a738-5e10-abf2-a4c1049b0e96"
+        },
+        {
+          "value": "androsta-1,4,6-triene-3,17-dione",
+          "expanded": "androsta-1,4,6-triene-3,17-dione (androstatrienedione)",
+          "uuid": "551250ee-82cc-525f-a118-68ae8ee59a4c"
+        },
+        {
+          "value": "androsta-3,5-diene-7,17-dione",
+          "expanded": "androsta-3,5-diene-7,17-dione (arimistane)",
+          "uuid": "6aec85a4-dcf0-5d3a-a744-f377319802fd"
+        },
+        {
+          "value": "exemestane",
+          "uuid": "7c86b565-7914-5786-8ec1-3bfa0dca5abc"
+        },
+        {
+          "value": "formestane",
+          "uuid": "58326db0-393a-598b-972a-b88c5a0188e0"
+        },
+        {
+          "value": "letrozole",
+          "uuid": "f5a49ac0-0df5-5873-9cd8-9b38be6a4774"
+        },
+        {
+          "value": "testolactone",
+          "uuid": "a346e829-2f76-530a-bc21-b95392fa4ed5"
+        },
+        {
+          "value": "bazedoxifene",
+          "uuid": "914a436f-df97-5cfd-86f8-df264d65123a"
+        },
+        {
+          "value": "clomifene",
+          "uuid": "417d46b6-a982-5d04-bfae-6b2b4e401633"
+        },
+        {
+          "value": "cyclofenil",
+          "uuid": "f00098ef-50b3-5ee7-bfef-d83c334441a2"
+        },
+        {
+          "value": "fulvestrant",
+          "uuid": "ad72dd35-8585-528b-b0d2-97d7b84361ad"
+        },
+        {
+          "value": "ospemifene",
+          "uuid": "648261b0-19f2-537b-84ae-e925a0a3eb3a"
+        },
+        {
+          "value": "raloxifene",
+          "uuid": "788d9479-adce-55ad-a1c5-23d47ac60011"
+        },
+        {
+          "value": "tamoxifen",
+          "uuid": "15d12719-9efc-57f4-843e-c7fd11ed4b0b"
+        },
+        {
+          "value": "toremifene",
+          "uuid": "03b71e89-d526-5bfc-bf62-61ec3952e372"
+        },
+        {
+          "value": "activin a-neutralizing antibodies",
+          "uuid": "43f3bc49-7336-56e9-b9d9-c71ee1f9dbec"
+        },
+        {
+          "value": "activin receptor iib competitors",
+          "expanded": "activin receptor iib competitors such as: decoy activin receptors (e.g. ace-031)",
+          "uuid": "3a42142d-2d83-5845-8485-bb9682c3260f"
+        },
+        {
+          "value": "decoy activin receptors",
+          "expanded": "decoy activin receptors (e.g. ace-031)",
+          "uuid": "7287d776-3328-5e41-8c46-6527f0b4c376"
+        },
+        {
+          "value": "anti-activin receptor iib antibodies",
+          "expanded": "anti-activin receptor iib antibodies (e.g. bimagrumab)",
+          "uuid": "a4173f04-9e07-529d-acb1-23408aa6704d"
+        },
+        {
+          "value": "myostatin inhibitors",
+          "expanded": "myostatin inhibitors such as: agents reducing or ablating myostatin expression myostatin-binding proteins (e.g. follistatin, myostatin propeptide) myostatin- or precursor - neutralizing  antibodies (e.g. apitegromab, domagrozumab, landogrozumab, stamulumab)",
+          "uuid": "7a0dddbd-0d61-5364-9867-dd26a4b68047"
+        },
+        {
+          "value": "agents reducing or ablating myostatin expression",
+          "uuid": "d73236eb-0826-5fdd-8139-6f1501b69b63"
+        },
+        {
+          "value": "myostatin-binding proteins",
+          "expanded": "myostatin-binding proteins (e.g. follistatin, myostatin propeptide)",
+          "uuid": "11c1c231-fa1c-57a0-8efd-8d14c2d38daf"
+        },
+        {
+          "value": "myostatini - or precursor - neutralizing  antibodies",
+          "expanded": "myostatin - or precursor - neutralizing  antibodies (e.g. apitegromab, domagrozumab, landogrozumab, stamulumab)",
+          "uuid": "9df61aff-06e2-50ca-b7ce-8e1d1a097b60"
+        }
+      ]
+    },
+    {
+      "predicate": "diuretics and masking agents",
+      "entry": [
+        {
+          "value": "desmopressin",
+          "uuid": "9bed954d-9e2f-543a-8670-d6c7110b53da"
+        },
+        {
+          "value": "probenecid",
+          "uuid": "e5599840-ed87-5971-9547-e24773a9de5a"
+        },
+        {
+          "value": "plasma expanders",
+          "expanded": "plasma expanders, e.g. intravenous administration of albumin, dextran, hydroxyethyl starch and mannitol.",
+          "uuid": "43caf655-13d9-5b9d-a9f2-43557f6459f6"
+        },
+        {
+          "value": "acetazolamide",
+          "uuid": "0036811f-3a7f-59dc-840f-1ecb6a83ac39"
+        },
+        {
+          "value": "amiloride",
+          "uuid": "eeae3103-774c-5994-9a6c-dcc265b40a3c"
+        },
+        {
+          "value": "bumetanide",
+          "uuid": "2c192dca-d685-5baf-81d7-6985cdd62f9a"
+        },
+        {
+          "value": "canrenone",
+          "uuid": "c7197731-3e9d-5fd5-9b1a-5fc79cc0d23f"
+        },
+        {
+          "value": "chlortalidone",
+          "uuid": "4322860e-761a-5790-a40d-a61caed84dab"
+        },
+        {
+          "value": "etacrynic acid",
+          "uuid": "89dd3637-7d77-5266-937e-e5e3f36a3a23"
+        },
+        {
+          "value": "furosemide",
+          "uuid": "25f134f9-9468-543e-bf7a-7a314c14cd44"
+        },
+        {
+          "value": "indapamide",
+          "uuid": "dc51adf1-8255-5b08-88f5-53f42e592b82"
+        },
+        {
+          "value": "metolazone",
+          "uuid": "7f05345f-1ce1-5cf4-ae46-023341b2b2db"
+        },
+        {
+          "value": "spironolactone",
+          "uuid": "cf7a15d6-6a2c-5437-ba03-5fdd8ee54fe2"
+        },
+        {
+          "value": "thiazides",
+          "expanded": "thiazides, e.g. bendroflumethiazide, chlorothiazide and hydrochlorothiazide",
+          "uuid": "a79b6482-5316-5ede-aace-a67c93db13f7"
+        },
+        {
+          "value": "torasemide",
+          "uuid": "6057acb4-ab25-5c66-b4bc-59ecedab5f42"
+        },
+        {
+          "value": "triamterene",
+          "uuid": "054ba0c6-062b-5f22-b813-456b8b7e7a5b"
+        },
+        {
+          "value": "vaptans",
+          "uuid": "ec5fce6b-50c3-5c48-b4ee-030be54276fc"
+        },
+        {
+          "value": "vaptans, e.g. tolvaptan.",
+          "uuid": "89b322e0-16a3-5b50-b546-44cb8e4a27c9"
+        },
+        {
+          "value": "drospirenone",
+          "uuid": "ceafef32-1f9b-574f-84ef-36a27d4b8ca0"
+        },
+        {
+          "value": "pamabrom",
+          "uuid": "b37a659e-69c2-5cf4-9135-69eb288b69ad"
+        },
+        {
+          "value": "carbonic anhydrase inhibitors",
+          "expanded": "topical ophthalmic administration of carbonic anhydrase inhibitors (e.g. dorzolamide, brinzolamide)",
+          "uuid": "ae98da0e-95bf-55a5-aeec-1e9e47a95f04"
+        },
+        {
+          "value": "felypressin",
+          "expanded": "local administration of felypressin in dental anaesthesia",
+          "uuid": "97cbe1e6-d46e-535c-aef9-0dd0c3899b76"
+        }
+      ]
+    },
+    {
+      "predicate": "stimulants",
+      "entry": [
+        {
+          "value": "adrafinil",
+          "uuid": "fb4d0b91-e8ca-592d-9d9f-6963bde1f06e"
+        },
+        {
+          "value": "amfepramone",
+          "uuid": "baf49237-69b9-593b-b730-1cfc788e0876"
+        },
+        {
+          "value": "amfetamine",
+          "uuid": "67743b42-da1f-5399-a575-9b51469473ac"
+        },
+        {
+          "value": "amfetaminil",
+          "uuid": "b256bf6e-30a8-51c5-b59f-846566f0cf86"
+        },
+        {
+          "value": "amiphenazole",
+          "uuid": "ca794bb4-e770-5c99-a4dd-fc30e37e1245"
+        },
+        {
+          "value": "benfluorex",
+          "uuid": "e8acc4c8-9a7b-53a6-8709-05c582250234"
+        },
+        {
+          "value": "benzylpiperazine",
+          "uuid": "5ebf4e53-80f5-51e8-a48a-4aa3bf2ea45e"
+        },
+        {
+          "value": "bromantan",
+          "uuid": "44696e64-e64d-5291-8b46-68c239624c80"
+        },
+        {
+          "value": "clobenzorex",
+          "uuid": "fe23c7a1-3b0c-50c4-ba27-34a5def71dcc"
+        },
+        {
+          "value": "cocaine",
+          "uuid": "5ce8e03e-5aca-594c-b08d-e21169c1039b"
+        },
+        {
+          "value": "cropropamide",
+          "uuid": "5996ec99-2f47-5215-93de-3feb70d5049d"
+        },
+        {
+          "value": "crotetamide",
+          "uuid": "2a6cd2f8-c3e6-5698-ae82-2606da9c8454"
+        },
+        {
+          "value": "fencamine",
+          "uuid": "2a035ef1-fdea-5dfc-9f0b-d829b7d86d29"
+        },
+        {
+          "value": "fenetylline",
+          "uuid": "13625347-4f0d-532d-87f0-564c5b6fd1c6"
+        },
+        {
+          "value": "fenfluramine",
+          "uuid": "dee91904-fcc4-555f-8b6d-3ac1570655c1"
+        },
+        {
+          "value": "fenproporex",
+          "uuid": "82514b5d-d5b8-598b-a66a-3d935aaadbed"
+        },
+        {
+          "value": "fonturacetam",
+          "expanded": "fonturacetam [4-phenylpiracetam (carphedon)]",
+          "uuid": "2ace86f2-2dca-50fc-a4c0-6d1c2b28d3c8"
+        },
+        {
+          "value": "furfenorex",
+          "uuid": "589d2b2e-b28c-5641-9620-1054bc6493e6"
+        },
+        {
+          "value": "lisdexamfetamine",
+          "uuid": "63f6ebc4-0df4-5667-92a7-0fcd1e2f43c8"
+        },
+        {
+          "value": "mefenorex",
+          "uuid": "451b5f73-8898-5e9a-9799-c9d456a313d3"
+        },
+        {
+          "value": "mephentermine",
+          "uuid": "2a5e3b1c-9194-54b8-b5c6-addc6f36ff81"
+        },
+        {
+          "value": "mesocarb",
+          "uuid": "492d1490-df39-531f-943f-544461cf0b34"
+        },
+        {
+          "value": "metamfetamine",
+          "expanded": "metamfetamine(d-)",
+          "uuid": "3c7fc6b3-681a-5fe8-8094-8bff145832dd"
+        },
+        {
+          "value": "p-methylamfetamine",
+          "uuid": "6bf2d65c-fb59-5379-ad14-d38f7a58b033"
+        },
+        {
+          "value": "modafinil",
+          "uuid": "7ad51610-bffa-5c2f-8c11-857d04152add"
+        },
+        {
+          "value": "norfenfluramine",
+          "uuid": "788c2a4e-2638-59d2-bf28-edef928a9248"
+        },
+        {
+          "value": "phendimetrazine",
+          "uuid": "52628f31-beb9-5c3a-aa72-d7bba74bae48"
+        },
+        {
+          "value": "phentermine",
+          "uuid": "ce8395c2-c5e6-50cb-8fa1-f4d83bd30064"
+        },
+        {
+          "value": "prenylamine",
+          "uuid": "ed0f00c5-9e4b-5de7-9d99-66ecb8b460df"
+        },
+        {
+          "value": "prolintane",
+          "uuid": "983f862c-ca37-512d-a7c6-793fae30914b"
+        },
+        {
+          "value": "3-methylhexan-2-amine",
+          "expanded": "3-methylhexan-2-amine (1,2-dimethylpentylamine)",
+          "uuid": "e73c7128-ad22-5a07-92d8-23904b9c6130"
+        },
+        {
+          "value": "4-fluoromethylphenidate",
+          "uuid": "10f1ad63-ff5c-5358-bb7f-2a9d12cdb7b6"
+        },
+        {
+          "value": "4-methylhexan-2-amine",
+          "expanded": "4-methylhexan-2-amine (methylhexaneamine, 1,3-dimethylamylamine, 1,3 dmaa)",
+          "uuid": "26743480-ff50-5ab8-849c-fd489f1e67f0"
+        },
+        {
+          "value": "4-methylpentan-2-amine",
+          "expanded": "4-methylpentan-2-amine (1,3-dimethylbutylamine)",
+          "uuid": "aab15948-05ee-5773-bc2f-f98f18052ef7"
+        },
+        {
+          "value": "5-methylhexan-2-amine",
+          "expanded": "5-methylhexan-2-amine (1,4-dimethylpentylamine, 1,4-dimethylamylamine, 1,4-dmaa)",
+          "uuid": "4c4d173c-705c-553b-b2ef-36e36472f4e9"
+        },
+        {
+          "value": "benzfetamine",
+          "uuid": "28e45a3e-9f1b-57f2-992c-35fce9a985e4"
+        },
+        {
+          "value": "cathine**",
+          "uuid": "2deca2dd-f6e7-5675-8f42-9d8b42c8d95c"
+        },
+        {
+          "value": "cathinone and its analogues",
+          "expanded": "cathinone and its analogues, e.g. mephedrone, methedrone, and α - pyrrolidinovalerophenone",
+          "uuid": "db2b9b0b-0be9-5a10-a599-6496119cefb5"
+        },
+        {
+          "value": "dimetamfetamine",
+          "expanded": "dimetamfetamine (dimethylamphetamine)",
+          "uuid": "8319b966-6f3d-52f2-9922-bb30508b411d"
+        },
+        {
+          "value": "ephedrine***",
+          "uuid": "3673898d-0c95-501e-a86c-a33a3b09e4ab"
+        },
+        {
+          "value": "epinephrine****",
+          "expanded": "epinephrine**** (adrenaline)",
+          "uuid": "ad00aca8-aa66-57cb-8325-77b9fa5b10ec"
+        },
+        {
+          "value": "etamivan",
+          "uuid": "c0407aba-5879-51f5-b061-39af14415ff6"
+        },
+        {
+          "value": "ethylphenidate",
+          "uuid": "dd300d68-b50b-5a63-8099-313c80b92f9d"
+        },
+        {
+          "value": "etilamfetamine",
+          "uuid": "79b6a54a-b37f-5ba2-9b49-14614e15b1d9"
+        },
+        {
+          "value": "etilefrine",
+          "uuid": "f843f45d-37e5-5734-b186-db7752bf1d00"
+        },
+        {
+          "value": "famprofazone",
+          "uuid": "a7a9fa67-7acc-5efb-b67a-34b9133c610e"
+        },
+        {
+          "value": "fenbutrazate",
+          "uuid": "9915e6e2-8aee-57aa-bdb4-2ea850e01d30"
+        },
+        {
+          "value": "fencamfamin",
+          "uuid": "6e8561cc-3ff4-5407-a19a-aa8b7d82898a"
+        },
+        {
+          "value": "heptaminol",
+          "uuid": "c905e8bc-89b6-5f82-9c19-17f508464c2b"
+        },
+        {
+          "value": "hydrafinil",
+          "expanded": "hydrafinil (fluorenol)",
+          "uuid": "0224d2ec-405b-5b3f-8a29-457914c4e303"
+        },
+        {
+          "value": "hydroxyamfetamine",
+          "expanded": "hydroxyamfetamine (parahydroxyamphetamine)",
+          "uuid": "8da363e5-a6b2-56d7-9bab-e0a10dae2e5c"
+        },
+        {
+          "value": "isometheptene",
+          "uuid": "9f8af121-dbfe-5b78-90af-58d813b32313"
+        },
+        {
+          "value": "levmetamfetamine",
+          "uuid": "a5627e3c-7e3a-5539-8c40-373e64df0bd5"
+        },
+        {
+          "value": "meclofenoxate",
+          "uuid": "7c4c2eab-595a-571f-8bfe-b3c4b907def0"
+        },
+        {
+          "value": "methylenedioxymetham- phetamine",
+          "uuid": "9126826e-ef1e-543c-9e2c-796a29f2d42f"
+        },
+        {
+          "value": "methylephedrine***",
+          "uuid": "4954b572-8bf3-5c40-9d07-c1472ec7dc23"
+        },
+        {
+          "value": "methylnaphthidate",
+          "expanded": "methylnaphthidate [((±)-methyl-2-(naphthalen-2-yl)-2-(piperidin-2-yl)acetate]",
+          "uuid": "8d9475cd-1e74-55c0-96b3-f09fe13acc08"
+        },
+        {
+          "value": "methylphenidate",
+          "uuid": "f185c827-07c4-56d1-a629-c71f107b405e"
+        },
+        {
+          "value": "nikethamide",
+          "uuid": "bec2eff5-7176-5fb1-9217-1066461935be"
+        },
+        {
+          "value": "norfenefrine",
+          "uuid": "a3a01992-4b80-5484-bd0d-c2758cbdde7b"
+        },
+        {
+          "value": "octodrine",
+          "expanded": "octodrine (1,5-dimethylhex- ylamine)",
+          "uuid": "1a548cb1-8307-5771-825f-353b7ef801bf"
+        },
+        {
+          "value": "octopamine",
+          "uuid": "e275b905-5ab5-5a0d-902b-65cc35ea90fd"
+        },
+        {
+          "value": "oxilofrine",
+          "expanded": "oxilofrine (methylsynephrine)",
+          "uuid": "11439001-2951-5c24-8fef-d36fcfb2f61d"
+        },
+        {
+          "value": "pemoline",
+          "uuid": "04908097-3dba-50ea-b82b-ca95441de8c5"
+        },
+        {
+          "value": "pentetrazol",
+          "uuid": "c51bfc0e-e68d-5f4b-9abb-deb13ec3b542"
+        },
+        {
+          "value": "phenethylamine and its derivatives",
+          "uuid": "2a26070e-a83f-5766-b6ca-fdca93f4b1ad"
+        },
+        {
+          "value": "phenmetrazine",
+          "uuid": "35cba2df-054e-5139-8929-8d5345f9b209"
+        },
+        {
+          "value": "phenpromethamine",
+          "uuid": "40a0488a-af05-571e-98e6-302252cce906"
+        },
+        {
+          "value": "propylhexedrine",
+          "uuid": "86532a63-51e3-5c49-8909-9ac2db746d24"
+        },
+        {
+          "value": "pseudoephedrine*****",
+          "uuid": "3a6c1753-780c-50d4-9296-06f1cb35e57c"
+        },
+        {
+          "value": "selegiline",
+          "uuid": "ccd9a89b-2f2f-5466-9f8e-de88d892221e"
+        },
+        {
+          "value": "sibutramine",
+          "uuid": "5a9f22d9-cf69-528c-b748-1c30df96181e"
+        },
+        {
+          "value": "solriamfetol",
+          "uuid": "258f6865-29d9-53e7-8fef-5c83e71d03c4"
+        },
+        {
+          "value": "strychnine",
+          "uuid": "6b654244-546d-5bb9-9bee-cb39c1fd61e5"
+        },
+        {
+          "value": "tenamfetamine",
+          "expanded": "tenamfetamine (methylenedioxyamphet- amine)",
+          "uuid": "6803d163-f488-5139-a786-6ebd0420e158"
+        },
+        {
+          "value": "tuaminoheptane",
+          "uuid": "4553dbea-a716-54b9-9ba3-a01cc63d61af"
+        },
+        {
+          "value": "clonidine",
+          "uuid": "d88b103d-d8d5-554a-a321-dc9fa45fcebd"
+        },
+        {
+          "value": "imidazole derivatives",
+          "expanded": "imidazole derivatives for dermatological, nasal, ophthalmic or otic use (e.g. brimonidine, clonazoline, fenoxazoline, indanazoline, naphazoline, oxymetazoline, tetryzoline, xylometazoline) and those stimulants included in the 2023 monitoring program*",
+          "uuid": "2c01cf9a-b463-50b7-b299-d4ac80b9fa9e"
+        }
+      ]
+    },
+    {
+      "predicate": "narcotics",
+      "entry": [
+        {
+          "value": "buprenorphine",
+          "uuid": "e2d54821-1072-5aae-bf9d-5654cb6b22f3"
+        },
+        {
+          "value": "dextromoramide",
+          "uuid": "252a3206-85c1-5c03-b627-084138a6d9c5"
+        },
+        {
+          "value": "diamorphine",
+          "expanded": "diamorphine (heroin)",
+          "uuid": "46667fcb-480f-52b5-a72f-35347a9bf9e8"
+        },
+        {
+          "value": "fentanyl",
+          "expanded": "fentanyl and its derivatives",
+          "uuid": "11f75c8f-f45c-507b-baed-c74da9154947"
+        },
+        {
+          "value": "hydromorphone",
+          "uuid": "3b941c57-06b7-512a-8f05-bd4a004333ce"
+        },
+        {
+          "value": "methadone",
+          "uuid": "17d2811b-98be-5d49-9913-5b67cd013570"
+        },
+        {
+          "value": "morphine",
+          "uuid": "4d36b079-e0b6-5fc5-ac78-ade10e154309"
+        },
+        {
+          "value": "nicomorphine",
+          "uuid": "a2230c10-ce7f-5915-9540-466f1181c710"
+        },
+        {
+          "value": "oxycodone",
+          "uuid": "75dab96d-3640-572b-9bd9-66e5484ae0b2"
+        },
+        {
+          "value": "oxymorphone",
+          "uuid": "d9936104-9e77-5ed0-b479-16fbd2fc30a1"
+        },
+        {
+          "value": "pentazocine",
+          "uuid": "a30a9740-f7fd-5cc0-8caf-c3dd1ebb7497"
+        },
+        {
+          "value": "pethidine",
+          "uuid": "3543a42f-a662-5a55-9328-94a94b104776"
+        }
+      ]
+    },
+    {
+      "predicate": "cannabinoids",
+      "entry": [
+        {
+          "value": "in cannabis",
+          "expanded": "in cannabis (hashish, marijuana) and cannabis products",
+          "uuid": "f20fbe3f-cad4-5152-adaa-1c730044c33e"
+        },
+        {
+          "value": "synthetic cannabinoids that mimic the effects of thc",
+          "uuid": "f5f244a7-197d-5bcd-a629-a352d8f49f23"
+        },
+        {
+          "value": "natural and synthetic tetrahydrocannabinols",
+          "expanded": "natural and synthetic tetrahydrocannabinols (thcs)",
+          "uuid": "2808e783-00df-523a-8c93-e1e07f0fab21"
+        },
+        {
+          "value": "cannabidiol",
+          "uuid": "d6355c5f-8244-5b0d-8fab-5f0607347a12"
+        }
+      ]
+    },
+    {
+      "predicate": "glucocorticoids",
+      "entry": [
+        {
+          "value": "beclometasone",
+          "uuid": "4c6233b2-3844-5bad-a002-511d4190ad61"
+        },
+        {
+          "value": "betamethasone",
+          "uuid": "12716492-6659-563c-bb7d-9fd9c62dac9a"
+        },
+        {
+          "value": "budesonide",
+          "uuid": "b7f9b8a1-d813-58f2-81c7-9aa3272d529f"
+        },
+        {
+          "value": "ciclesonide",
+          "uuid": "b8e4cdeb-52a5-5cff-916b-2e2106712b4d"
+        },
+        {
+          "value": "cortisone",
+          "uuid": "204a5a73-9346-5b0c-891f-21e565e9ade8"
+        },
+        {
+          "value": "deflazacort",
+          "uuid": "ad4a70eb-6002-5b84-a334-49eee2d20450"
+        },
+        {
+          "value": "dexamethasone",
+          "uuid": "5fa33076-d08f-5bcc-bbc8-051df123ab78"
+        },
+        {
+          "value": "flucortolone",
+          "uuid": "5e3fb5f4-8be3-54be-9262-70f71f6fea81"
+        },
+        {
+          "value": "flunisolide",
+          "uuid": "c2d60459-8d4a-5e56-9d04-479852602525"
+        },
+        {
+          "value": "fluticasone",
+          "uuid": "8b1cfe1a-bb9e-5dd7-aa4d-cf8d07faa04b"
+        },
+        {
+          "value": "hydrocortisone",
+          "uuid": "00ee310f-b265-5c60-97b5-d8ee04b2f32b"
+        },
+        {
+          "value": "methylprednisolone",
+          "uuid": "21a280c1-81fa-5281-b281-e6a6442d9c78"
+        },
+        {
+          "value": "mometasone",
+          "uuid": "584c30c9-ceb5-525a-bfe0-7788ab4162ca"
+        },
+        {
+          "value": "prednisolone",
+          "uuid": "c3c4c8a0-fbcf-50c6-886d-8978665d31e5"
+        },
+        {
+          "value": "prednisone",
+          "uuid": "3f69bf1b-ebcd-5e14-a270-296d7bfd07c3"
+        },
+        {
+          "value": "triamcinolone acetonide",
+          "uuid": "cc2b79e8-316e-5c43-9965-943764f41bc0"
+        }
+      ]
+    },
+    {
+      "predicate": "beta-blockers",
+      "entry": [
+        {
+          "value": "acebutolol",
+          "uuid": "e24be2e5-6ca0-5f99-b60b-36551bba4e18"
+        },
+        {
+          "value": "alprenolol",
+          "uuid": "db582548-ac8a-596f-a2bb-b6faa0ac7a51"
+        },
+        {
+          "value": "atenolol",
+          "uuid": "c89f5ab9-8760-50a7-8f6d-5c40c69e6fde"
+        },
+        {
+          "value": "betaxolol",
+          "uuid": "c190ce8b-e6b9-5c1c-b325-320cda510dbf"
+        },
+        {
+          "value": "bisoprolol",
+          "uuid": "61241aee-994b-513b-9e5e-4f946ea851a9"
+        },
+        {
+          "value": "bunolol",
+          "uuid": "358a4ce4-40dc-5868-88af-7803eed0d112"
+        },
+        {
+          "value": "carteolol",
+          "uuid": "cd1e1bbf-7732-50fd-8620-f6072b789390"
+        },
+        {
+          "value": "carvedilol",
+          "uuid": "8fc70a61-5587-52c0-b3ef-dd918c11c38f"
+        },
+        {
+          "value": "celiprolol",
+          "uuid": "84c9fdd9-9757-5d23-9582-efaf06bde469"
+        },
+        {
+          "value": "esmolol",
+          "uuid": "b2c6599e-1a68-5aa7-ba1b-bc1ff7df0420"
+        },
+        {
+          "value": "labetalol",
+          "uuid": "cea146e1-2a82-5083-8a03-c355d9920b64"
+        },
+        {
+          "value": "metipranolol",
+          "uuid": "e9125020-6a74-50e5-86e2-18800e35886f"
+        },
+        {
+          "value": "metoprolol",
+          "uuid": "2553a4cb-a7c5-5dd5-9b97-b0a445cd41f4"
+        },
+        {
+          "value": "nadolol",
+          "uuid": "f6399eaa-799d-561c-b4ac-59f0159e8ce2"
+        },
+        {
+          "value": "nebivolol",
+          "uuid": "6df3ec9b-8b6d-5230-82c1-4e98209d1835"
+        },
+        {
+          "value": "oxprenolol",
+          "uuid": "8a8af6fc-87c4-519b-bc74-89f1abc28ae4"
+        },
+        {
+          "value": "pindolol",
+          "uuid": "a7bd198f-b209-5cdc-bbc8-b16c56225df0"
+        },
+        {
+          "value": "propranolol",
+          "uuid": "b1964d25-d7b4-59ca-8f0a-6452aee9cc23"
+        },
+        {
+          "value": "sotalol",
+          "uuid": "52ede093-4fbe-5a35-9062-97af92dbc0ab"
+        },
+        {
+          "value": "timolol",
+          "uuid": "184ca6f5-d081-5d2c-8b00-81465328383e"
+        }
+      ]
+    }
+  ],
+  "uuid": "08919298-eb16-529b-828b-964556ed8b7c"
+}

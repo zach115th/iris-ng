@@ -1,0 +1,618 @@
+{# Timeline deduplication modal — master and working timeline.
+   Opened by: irisDedupOpen('master'|'working', caseId)
+   from case_timeline.html.
+
+   Load-order note: all jQuery ($) calls are inside function bodies, not at IIFE
+   top level, so DOMContentLoaded wrapping is not needed — by the time any
+   onclick fires, jQuery is already loaded.
+#}
+
+<style>
+#iris-dedup-modal .modal-content {
+  background: #0f0f18;
+  border: 1px solid rgba(139,92,246,0.25);
+  border-radius: 8px;
+}
+#iris-dedup-modal .modal-header {
+  border-bottom: 1px solid rgba(139,92,246,0.18);
+  padding: 14px 20px;
+}
+#iris-dedup-modal .modal-body {
+  padding: 20px;
+  max-height: 72vh;
+  overflow-y: auto;
+}
+.iris-dd-section-title {
+  color: #e2d9f3;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.iris-dd-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.iris-dd-badge-violet {
+  background: rgba(139,92,246,0.18);
+  border: 1px solid rgba(139,92,246,0.35);
+  color: #d4c4ff;
+}
+.iris-dd-badge-amber {
+  background: rgba(251,191,36,0.15);
+  border: 1px solid rgba(251,191,36,0.3);
+  color: #fcd34d;
+}
+.iris-dd-badge-green {
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.3);
+  color: #4ade80;
+}
+/* Exact group rows */
+.iris-dd-exact-group {
+  background: rgba(15,15,30,0.6);
+  border: 1px solid rgba(139,92,246,0.15);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.iris-dd-exact-keep {
+  color: #a5b4fc;
+  font-weight: 600;
+}
+.iris-dd-exact-del {
+  color: #94a3b8;
+  margin-top: 4px;
+}
+/* Near-dup pair cards */
+.iris-dd-pair {
+  background: rgba(15,15,30,0.6);
+  border: 1px solid rgba(139,92,246,0.15);
+  border-radius: 6px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.iris-dd-pair.iris-dd-resolved {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.iris-dd-pair-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: rgba(139,92,246,0.06);
+  border-bottom: 1px solid rgba(139,92,246,0.12);
+  font-size: 11px;
+  color: #94a3b8;
+}
+.iris-dd-pair-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: rgba(139,92,246,0.12);
+}
+.iris-dd-pair-col {
+  background: #0f0f18;
+  padding: 12px 14px;
+}
+.iris-dd-pair-col .iris-dd-ev-title {
+  color: #e2d9f3;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.iris-dd-pair-col .iris-dd-ev-date {
+  color: #6366f1;
+  font-size: 11px;
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.iris-dd-pair-col .iris-dd-ev-body {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.iris-dd-pair-col .iris-dd-ev-meta {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #64748b;
+}
+.iris-dd-pair-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-top: 1px solid rgba(139,92,246,0.12);
+  flex-wrap: wrap;
+}
+.iris-dd-btn {
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
+  transition: background 0.15s;
+}
+.iris-dd-btn-keep {
+  border-color: rgba(99,102,241,0.5);
+  color: #a5b4fc;
+}
+.iris-dd-btn-keep:hover { background: rgba(99,102,241,0.15); }
+.iris-dd-btn-merge {
+  border-color: rgba(251,191,36,0.4);
+  color: #fcd34d;
+}
+.iris-dd-btn-merge:hover { background: rgba(251,191,36,0.1); }
+.iris-dd-btn-primary {
+  border-color: rgba(139,92,246,0.5);
+  color: #d4c4ff;
+  background: rgba(139,92,246,0.18);
+}
+.iris-dd-btn-primary:hover { background: rgba(139,92,246,0.28); }
+.iris-dd-btn-cancel {
+  border-color: rgba(100,116,139,0.4);
+  color: #94a3b8;
+}
+.iris-dd-btn-cancel:hover { background: rgba(100,116,139,0.1); }
+.iris-dd-resolved-badge {
+  font-size: 11px;
+  color: #4ade80;
+}
+/* Merge editor */
+.iris-dd-merge-editor {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(251,191,36,0.2);
+  background: rgba(251,191,36,0.04);
+  display: none;
+}
+.iris-dd-merge-editor label {
+  font-size: 11px;
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 4px;
+}
+.iris-dd-merge-editor input,
+.iris-dd-merge-editor textarea {
+  width: 100%;
+  background: #1a1a2e;
+  border: 1px solid rgba(139,92,246,0.25);
+  border-radius: 4px;
+  color: #e2d9f3;
+  font-size: 12px;
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  resize: vertical;
+  font-family: inherit;
+}
+.iris-dd-merge-editor input:focus,
+.iris-dd-merge-editor textarea:focus {
+  outline: none;
+  border-color: rgba(139,92,246,0.5);
+}
+.iris-dd-base-btns {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+.iris-dd-sim-high  { color: #4ade80; }
+.iris-dd-sim-med   { color: #fcd34d; }
+.iris-dd-sim-low   { color: #94a3b8; }
+</style>
+
+<div class="modal fade" id="iris-dedup-modal" tabindex="-1" role="dialog" aria-labelledby="iris-dedup-title">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="iris-dedup-title" style="color: #e2d9f3; font-size: 14px; font-weight: 600;">
+          <i class="fas fa-clone mr-2" style="color: #8b5cf6;"></i>Find Duplicates &mdash;
+          <span id="iris-dedup-scope-label">Timeline</span>
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" style="color: #94a3b8; opacity:1;">&times;</button>
+      </div>
+      <div class="modal-body" id="iris-dedup-body">
+
+        <!-- Scanning -->
+        <div id="iris-dedup-scanning" style="text-align:center; padding:40px; color:#94a3b8; font-size:13px;">
+          <i class="fas fa-circle-notch fa-spin mr-2"></i>Scanning for duplicates…
+        </div>
+
+        <!-- Error -->
+        <div id="iris-dedup-error" style="display:none; color:#f87171; font-size:13px; padding:20px; text-align:center;"></div>
+
+        <!-- Results -->
+        <div id="iris-dedup-results" style="display:none;">
+
+          <!-- Exact section -->
+          <div style="margin-bottom:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+              <div>
+                <span class="iris-dd-section-title">Exact duplicates</span>
+                <span class="iris-dd-badge iris-dd-badge-violet" id="iris-dd-exact-badge">0 groups</span>
+              </div>
+              <button id="iris-dd-auto-btn" class="iris-dd-btn iris-dd-btn-primary" onclick="irisDedupAutoExact()" style="display:none;">
+                <i class="fas fa-magic mr-1"></i>Auto-resolve all
+              </button>
+            </div>
+            <div id="iris-dd-exact-list"></div>
+            <div id="iris-dd-exact-empty" style="display:none; color:#4ade80; font-size:12px;">
+              <i class="fas fa-check-circle mr-1"></i>No exact duplicates found.
+            </div>
+          </div>
+
+          <hr style="border-color:rgba(139,92,246,0.15); margin:16px 0;">
+
+          <!-- Near section -->
+          <div>
+            <div style="display:flex; align-items:center; margin-bottom:10px;">
+              <span class="iris-dd-section-title">Near duplicates</span>
+              <span class="iris-dd-badge iris-dd-badge-amber" id="iris-dd-near-badge">0 pairs</span>
+              <span style="font-size:11px; color:#64748b; margin-left:10px;">Title similarity ≥ 75 % within 5 minutes — review required</span>
+            </div>
+            <div id="iris-dd-near-list"></div>
+            <div id="iris-dd-near-empty" style="display:none; color:#4ade80; font-size:12px;">
+              <i class="fas fa-check-circle mr-1"></i>No near duplicates found.
+            </div>
+          </div>
+
+        </div>{# /results #}
+      </div>{# /modal-body #}
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const DD = { scope: 'master', caseId: null, nearPairs: [] };
+
+  // -------------------------------------------------------------------------
+  // Utilities
+  // -------------------------------------------------------------------------
+  function ddEsc(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function ddTrunc(s, n) {
+    s = s || '';
+    return s.length > n ? s.slice(0, n) + '…' : s;
+  }
+
+  function ddFmtDate(iso) {
+    if (!iso) return '—';
+    try {
+      return new Date(iso).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+    } catch (e) { return iso; }
+  }
+
+  function ddFmtDiff(secs) {
+    if (!secs && secs !== 0) return '';
+    if (secs === 0) return 'same time';
+    if (secs < 60) return secs + 's apart';
+    return Math.round(secs / 60) + 'm apart';
+  }
+
+  function ddSimClass(sim) {
+    if (sim >= 0.90) return 'iris-dd-sim-high';
+    if (sim >= 0.80) return 'iris-dd-sim-med';
+    return 'iris-dd-sim-low';
+  }
+
+  function ddCsrf() {
+    var el = document.getElementById('csrf_token');
+    return el ? el.value : '';
+  }
+
+  function ddShow(id) { document.getElementById(id).style.display = ''; }
+  function ddHide(id) { document.getElementById(id).style.display = 'none'; }
+  function ddShowBlock(id) { document.getElementById(id).style.display = 'block'; }
+
+  // -------------------------------------------------------------------------
+  // Public entry point (called from onclick in case_timeline.html)
+  // -------------------------------------------------------------------------
+  window.irisDedupOpen = function (scope, caseId) {
+    DD.scope = scope;
+    DD.caseId = caseId;
+    DD.nearPairs = [];
+    document.getElementById('iris-dedup-scope-label').textContent =
+      scope === 'master' ? 'Master Timeline' : 'Working Timeline';
+    ddShowBlock('iris-dedup-scanning');
+    ddHide('iris-dedup-results');
+    ddHide('iris-dedup-error');
+    document.getElementById('iris-dd-auto-btn').style.display = 'none';
+    $('#iris-dedup-modal').modal('show');
+    irisDedupScan();
+  };
+
+  // -------------------------------------------------------------------------
+  // Scan
+  // -------------------------------------------------------------------------
+  window.irisDedupScan = async function () {
+    ddShowBlock('iris-dedup-scanning');
+    ddHide('iris-dedup-results');
+    ddHide('iris-dedup-error');
+    try {
+      const csrf = ddCsrf();
+      const r = await fetch(`/api/v2/cases/${DD.caseId}/timeline/dedup/scan`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+        body: JSON.stringify({ scope: DD.scope, csrf_token: csrf })
+      });
+      const data = await r.json();
+      if (!r.ok) { ddShowError(data.message || 'Scan failed'); return; }
+      ddHide('iris-dedup-scanning');
+      ddShowBlock('iris-dedup-results');
+      irisDedupRenderExact(data.exact || []);
+      irisDedupRenderNear(data.near || []);
+    } catch (e) {
+      ddShowError(e.toString());
+    }
+  };
+
+  function ddShowError(msg) {
+    ddHide('iris-dedup-scanning');
+    ddHide('iris-dedup-results');
+    const el = document.getElementById('iris-dedup-error');
+    el.textContent = 'Error: ' + msg;
+    el.style.display = 'block';
+  }
+
+  // -------------------------------------------------------------------------
+  // Render exact duplicates
+  // -------------------------------------------------------------------------
+  function irisDedupRenderExact(groups) {
+    const badge = document.getElementById('iris-dd-exact-badge');
+    const list = document.getElementById('iris-dd-exact-list');
+    const empty = document.getElementById('iris-dd-exact-empty');
+    const autoBtn = document.getElementById('iris-dd-auto-btn');
+
+    badge.textContent = groups.length + (groups.length === 1 ? ' group' : ' groups');
+    list.innerHTML = '';
+
+    if (groups.length === 0) {
+      ddShowBlock('iris-dd-exact-empty');
+      return;
+    }
+    ddHide('iris-dd-exact-empty');
+    autoBtn.style.display = '';
+
+    groups.forEach(function (g) {
+      const delCount = g.duplicates.length;
+      const html = `
+        <div class="iris-dd-exact-group">
+          <div class="iris-dd-exact-keep">
+            <i class="fas fa-check-circle mr-1" style="color:#4ade80;"></i>
+            Keep: ${ddEsc(ddTrunc(g.keep.title, 80))}
+            <span style="color:#64748b; font-weight:400; font-size:11px; margin-left:6px;">${ddFmtDate(g.keep.date || g.keep.added || g.keep.created_at)}</span>
+          </div>
+          <div class="iris-dd-exact-del">
+            <i class="fas fa-trash-alt mr-1" style="color:#f87171;"></i>
+            Delete ${delCount} duplicate${delCount > 1 ? 's' : ''}:
+            ${g.duplicates.map(d =>
+              `<span style="color:#f87171; margin-left:6px;">${ddEsc(ddTrunc(d.title, 60))}</span>`
+            ).join('')}
+          </div>
+        </div>`;
+      list.insertAdjacentHTML('beforeend', html);
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Auto-resolve exact
+  // -------------------------------------------------------------------------
+  window.irisDedupAutoExact = async function () {
+    const btn = document.getElementById('iris-dd-auto-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i>Resolving…';
+    try {
+      const csrf = ddCsrf();
+      const r = await fetch(`/api/v2/cases/${DD.caseId}/timeline/dedup/auto-exact`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+        body: JSON.stringify({ scope: DD.scope, csrf_token: csrf })
+      });
+      const data = await r.json();
+      if (!r.ok) { alert('Error: ' + (data.message || 'Failed')); btn.disabled = false; return; }
+      // Re-scan to refresh both sections
+      irisDedupScan();
+      // Notify the parent timeline to refresh
+      if (DD.scope === 'master' && typeof window.get_case_timeline === 'function') { window.get_case_timeline(); }
+      if (DD.scope === 'working' && window.irisWorkingTimeline) { irisWorkingTimeline.refresh(); }
+    } catch (e) {
+      alert('Error: ' + e.toString());
+      btn.disabled = false;
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Render near duplicates
+  // -------------------------------------------------------------------------
+  function irisDedupRenderNear(pairs) {
+    const badge = document.getElementById('iris-dd-near-badge');
+    const list = document.getElementById('iris-dd-near-list');
+    const empty = document.getElementById('iris-dd-near-empty');
+
+    DD.nearPairs = pairs;
+    badge.textContent = pairs.length + (pairs.length === 1 ? ' pair' : ' pairs');
+    list.innerHTML = '';
+
+    if (pairs.length === 0) {
+      ddShowBlock('iris-dd-near-empty');
+      return;
+    }
+    ddHide('iris-dd-near-empty');
+
+    pairs.forEach(function (p, idx) {
+      const pairKey = String(p.event_a.id) + ':' + String(p.event_b.id);
+      const simPct = Math.round(p.similarity * 100);
+      const simCls = ddSimClass(p.similarity);
+      const contentField = DD.scope === 'master' ? 'content' : 'description';
+      const aBody = ddTrunc(p.event_a[contentField], 160);
+      const bBody = ddTrunc(p.event_b[contentField], 160);
+      const aDate = ddFmtDate(p.event_a.date || p.event_a.created_at);
+      const bDate = ddFmtDate(p.event_b.date || p.event_b.created_at);
+      const aSrc = p.event_a.source || p.event_a.source_host || '';
+      const bSrc = p.event_b.source || p.event_b.source_host || '';
+
+      const html = `
+        <div class="iris-dd-pair" id="iris-dd-pair-${ddEsc(pairKey)}">
+          <div class="iris-dd-pair-header">
+            <span>Pair ${idx + 1}</span>
+            <span class="${simCls}" style="font-weight:600;">${simPct}% similar</span>
+            <span>${ddFmtDiff(p.date_diff_seconds)}</span>
+          </div>
+          <div class="iris-dd-pair-cols">
+            <div class="iris-dd-pair-col">
+              <div class="iris-dd-ev-title">${ddEsc(p.event_a.title)}</div>
+              <div class="iris-dd-ev-date">${aDate}</div>
+              ${aBody ? `<div class="iris-dd-ev-body">${ddEsc(aBody)}</div>` : ''}
+              ${aSrc ? `<div class="iris-dd-ev-meta"><i class="fas fa-server mr-1"></i>${ddEsc(aSrc)}</div>` : ''}
+            </div>
+            <div class="iris-dd-pair-col">
+              <div class="iris-dd-ev-title">${ddEsc(p.event_b.title)}</div>
+              <div class="iris-dd-ev-date">${bDate}</div>
+              ${bBody ? `<div class="iris-dd-ev-body">${ddEsc(bBody)}</div>` : ''}
+              ${bSrc ? `<div class="iris-dd-ev-meta"><i class="fas fa-server mr-1"></i>${ddEsc(bSrc)}</div>` : ''}
+            </div>
+          </div>
+          <div class="iris-dd-pair-actions" id="iris-dd-pair-actions-${ddEsc(pairKey)}">
+            <button class="iris-dd-btn iris-dd-btn-keep" onclick="irisDedupKeep(${p.event_a.id}, [${p.event_b.id}], '${ddEsc(pairKey)}')">
+              <i class="fas fa-arrow-left mr-1"></i>Keep left
+            </button>
+            <button class="iris-dd-btn iris-dd-btn-merge" onclick="irisDedupShowMerge('${ddEsc(pairKey)}', ${idx})">
+              <i class="fas fa-code-merge mr-1"></i>Merge
+            </button>
+            <button class="iris-dd-btn iris-dd-btn-keep" onclick="irisDedupKeep(${p.event_b.id}, [${p.event_a.id}], '${ddEsc(pairKey)}')">
+              Keep right<i class="fas fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+          <div class="iris-dd-merge-editor" id="iris-dd-merge-${ddEsc(pairKey)}">
+            <div class="iris-dd-base-btns">
+              Base on:
+              <button class="iris-dd-btn iris-dd-btn-cancel" style="font-size:10px;" onclick="irisDedupFillMerge('${ddEsc(pairKey)}', ${idx}, 'a')">Left</button>
+              <button class="iris-dd-btn iris-dd-btn-cancel" style="font-size:10px;" onclick="irisDedupFillMerge('${ddEsc(pairKey)}', ${idx}, 'b')">Right</button>
+            </div>
+            <label>Merged title</label>
+            <input type="text" id="iris-dd-mg-title-${ddEsc(pairKey)}" value="${ddEsc(p.event_a.title)}">
+            <label>Merged ${DD.scope === 'master' ? 'content' : 'description'}</label>
+            <textarea rows="4" id="iris-dd-mg-body-${ddEsc(pairKey)}">${ddEsc(p.event_a[contentField])}</textarea>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span style="font-size:11px; color:#94a3b8; flex:1;">Keep left event, apply edits above, delete right event.</span>
+              <button class="iris-dd-btn iris-dd-btn-cancel" onclick="irisDedupHideMerge('${ddEsc(pairKey)}')">Cancel</button>
+              <button class="iris-dd-btn iris-dd-btn-primary" onclick="irisDedupSaveMerge('${ddEsc(pairKey)}', ${p.event_a.id}, ${p.event_b.id})">
+                <i class="fas fa-save mr-1"></i>Save merge
+              </button>
+            </div>
+          </div>
+        </div>`;
+      list.insertAdjacentHTML('beforeend', html);
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Near-dup actions
+  // -------------------------------------------------------------------------
+  window.irisDedupKeep = async function (keepId, deleteIds, pairKey) {
+    await irisDedupResolve('keep', keepId, deleteIds, {}, pairKey);
+  };
+
+  window.irisDedupShowMerge = function (pairKey, idx) {
+    const editor = document.getElementById('iris-dd-merge-' + pairKey);
+    if (editor) editor.style.display = 'block';
+  };
+
+  window.irisDedupHideMerge = function (pairKey) {
+    const editor = document.getElementById('iris-dd-merge-' + pairKey);
+    if (editor) editor.style.display = 'none';
+  };
+
+  window.irisDedupFillMerge = function (pairKey, idx, side) {
+    const p = DD.nearPairs[idx];
+    if (!p) return;
+    const ev = side === 'a' ? p.event_a : p.event_b;
+    const contentField = DD.scope === 'master' ? 'content' : 'description';
+    const titleEl = document.getElementById('iris-dd-mg-title-' + pairKey);
+    const bodyEl  = document.getElementById('iris-dd-mg-body-' + pairKey);
+    if (titleEl) titleEl.value = ev.title || '';
+    if (bodyEl)  bodyEl.value  = ev[contentField] || '';
+    // Swap "keep left, delete right" note text
+    const actions = document.getElementById('iris-dd-pair-actions-' + pairKey);
+    const note = document.getElementById('iris-dd-merge-' + pairKey).querySelector('span');
+    if (note) {
+      note.textContent = side === 'a'
+        ? 'Keep left event, apply edits above, delete right event.'
+        : 'Keep right event, apply edits above, delete left event.';
+    }
+    if (actions) {
+      // Stash side choice so saveMerge knows which is keep vs delete
+      document.getElementById('iris-dd-merge-' + pairKey).dataset.side = side;
+    }
+  };
+
+  window.irisDedupSaveMerge = async function (pairKey, idA, idB) {
+    const editor = document.getElementById('iris-dd-merge-' + pairKey);
+    const side = editor ? (editor.dataset.side || 'a') : 'a';
+    const keepId   = side === 'a' ? idA : idB;
+    const deleteId = side === 'a' ? idB : idA;
+    const contentKey = DD.scope === 'master' ? 'event_content' : 'event_description';
+    const titleEl = document.getElementById('iris-dd-mg-title-' + pairKey);
+    const bodyEl  = document.getElementById('iris-dd-mg-body-'  + pairKey);
+    const merged = {
+      event_title: titleEl ? titleEl.value : '',
+      [contentKey]: bodyEl ? bodyEl.value : '',
+    };
+    await irisDedupResolve('merge', keepId, [deleteId], merged, pairKey);
+  };
+
+  async function irisDedupResolve(action, keepId, deleteIds, merged, pairKey) {
+    const pairEl = document.getElementById('iris-dd-pair-' + pairKey);
+    if (pairEl) {
+      pairEl.style.opacity = '0.5';
+      pairEl.style.pointerEvents = 'none';
+    }
+    try {
+      const csrf = ddCsrf();
+      const r = await fetch(`/api/v2/cases/${DD.caseId}/timeline/dedup/resolve`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+        body: JSON.stringify({ scope: DD.scope, action, keep_id: keepId, delete_ids: deleteIds, merged, csrf_token: csrf })
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        alert('Error: ' + (data.message || 'Failed'));
+        if (pairEl) { pairEl.style.opacity = ''; pairEl.style.pointerEvents = ''; }
+        return;
+      }
+      // Mark resolved
+      if (pairEl) {
+        pairEl.innerHTML = `<div style="padding:10px 14px; color:#4ade80; font-size:12px;">
+          <i class="fas fa-check-circle mr-1"></i>Resolved (${action}).
+        </div>`;
+        pairEl.classList.add('iris-dd-resolved');
+      }
+      // Notify parent timeline
+      if (DD.scope === 'master') {
+        if (typeof window.get_case_timeline === 'function') { window.get_case_timeline(); }
+      } else {
+        if (window.irisWorkingTimeline) { irisWorkingTimeline.refresh(); }
+      }
+    } catch (e) {
+      alert('Error: ' + e.toString());
+      if (pairEl) { pairEl.style.opacity = ''; pairEl.style.pointerEvents = ''; }
+    }
+  }
+})();
+</script>

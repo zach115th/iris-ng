@@ -1,0 +1,90 @@
+name: Create GitHub Release
+
+# Publishing a release is tag-driven, matching the three image workflows: pushing
+# a v*.*.* tag builds and pushes the images AND creates the release entry, so the
+# packages and the release always describe the same commit.
+on:
+  push:
+    # Both forms: IRIS-NG-v* is the current scheme, v* keeps the older
+    # v2.5.0-beta.1+iris-ng.N releases reachable by re-dispatch.
+    tags: [ 'IRIS-NG-v*.*.*', 'v*.*.*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      # Package the chart here rather than with chart-releaser. That action
+      # detects changed charts by diffing against the previous commit, and this
+      # repository is republished as a fresh single-commit history every time,
+      # so it never found a "changed" chart and silently released nothing on
+      # every run since it was added.
+      - name: Package Helm chart
+        id: chart
+        run: |
+          helm lint deploy/kubernetes/charts
+          mkdir -p dist
+          helm package deploy/kubernetes/charts --destination dist
+          ls -l dist
+          # Emit the actual filename rather than hardcoding a chart version in
+          # the release body — the chart version moves independently of the
+          # application version, so a literal would go stale on the next bump.
+          echo "file=$(cd dist && ls *.tgz | head -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          # Build metadata after "+" is not valid in a Docker tag, so the
+          # registry sees it with "+" replaced by "-".
+          body: |
+            IRIS-NG Community Edition — `${{ github.ref_name }}`
+
+            Full notes: [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
+            · [Wiki](https://github.com/${{ github.repository }}/wiki)
+            · [Getting Started](https://github.com/${{ github.repository }}/wiki/Getting-Started)
+
+            ### Container images
+
+            Published to GHCR by the image workflows on this same tag. The image
+            tag replaces `+` with `-`, since `+` is not valid in a Docker tag:
+
+            ```bash
+            docker pull ghcr.io/${{ github.repository_owner }}/iriswebapp_app:${{ github.ref_name }}
+            docker pull ghcr.io/${{ github.repository_owner }}/iriswebapp_db:${{ github.ref_name }}
+            docker pull ghcr.io/${{ github.repository_owner }}/iriswebapp_nginx:${{ github.ref_name }}
+            ```
+
+            Running from source instead is the tested path — see
+            [Getting Started](https://github.com/${{ github.repository }}/wiki/Getting-Started).
+
+            ### Helm chart
+
+            The packaged chart is attached to this release:
+
+            ```bash
+            helm install iris-ng \
+              https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ steps.chart.outputs.file }} \
+              -n iris --create-namespace -f my-values.yaml
+            ```
+
+            Change the ingress hostname and every shipped secret first — see the
+            [Kubernetes wiki page](https://github.com/${{ github.repository }}/wiki/Kubernetes).
+
+            No registration, activation, or license key is required.
+          files: dist/*.tgz
+          generate_release_notes: true
+          draft: false
+          prerelease: false
