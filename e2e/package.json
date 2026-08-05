@@ -11,7 +11,7 @@
     "test": "npm run start && npm run e2e && npm run stop"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^22.5.4",
     "wait-on": "^7.2.0"
   },
