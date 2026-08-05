@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "ace-builds": "^1.44.0",
-    "bootstrap": "^4.0.0",
+    "bootstrap": "^5.3.8",
     "bootstrap-slider": "^11.0.2",
     "chart.js": "^2.7.2",
     "dropzone": "^5.7.0",
