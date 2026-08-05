@@ -1,0 +1,50 @@
+{
+  "namespace": "ddos",
+  "expanded": " Distributed Denial of Service",
+  "description": "Distributed Denial of Service - or short: DDoS - taxonomy supports the description of Denial of Service attacks and especially the types they belong too.",
+  "version": 2,
+  "refs": [
+    "https://en.wikipedia.org/wiki/Denial-of-service_attack"
+  ],
+  "values": [
+    {
+      "predicate": "type",
+      "entry": [
+        {
+          "value": "amplification-attack",
+          "expanded": "Amplification attack",
+          "uuid": "1dda6ba7-7fb3-501e-bafb-f47c9cd846ff"
+        },
+        {
+          "value": "reflected-spoofed-attack",
+          "expanded": "Reflected and Spoofed attack",
+          "uuid": "60dd2333-c25b-573b-965e-619dadeea74e"
+        },
+        {
+          "value": "slow-read-attack",
+          "expanded": "Slow Read attack",
+          "uuid": "3e5bb471-d0b6-5130-a6b8-c8e81ece8354"
+        },
+        {
+          "value": "flooding-attack",
+          "expanded": "Flooding attack",
+          "uuid": "99be47e5-eaa5-514a-a793-bf3309e2caf9"
+        },
+        {
+          "value": "post-attack",
+          "expanded": "Large POST HTTP attack",
+          "uuid": "221cdd00-4b31-5897-bbe7-e15ba53dab47"
+        }
+      ]
+    }
+  ],
+  "predicates": [
+    {
+      "value": "type",
+      "expanded": "Type",
+      "description": "Types and techniques described the way that the attack is performed to launch the Denial of Service attacks. A combination of type values can be used to explain combined techniques and methods.",
+      "uuid": "e6a91ad4-3389-5d6e-91a6-56b9a32e0b48"
+    }
+  ],
+  "uuid": "19a97dc6-18a1-5a1a-8436-0944e9bd1d8c"
+}

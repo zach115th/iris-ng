@@ -1,0 +1,36 @@
+# Compose override for isolated Dependabot upgrade testing.
+# Keeps all container names, volumes, and networks separate from the
+# running iris-next dev stack so the two can coexist on one host.
+#
+# Usage:
+#   docker compose -p irisdep -f docker-compose.dev.yml -f docker-compose.test.yml <cmd>
+
+services:
+  rabbitmq:
+    container_name: irisdep_rabbitmq
+
+  db:
+    container_name: irisdep_db
+
+  app:
+    container_name: irisdep_app
+    image: iriswebapp_app:deptest   # distinct tag — does NOT overwrite iris-next's :develop
+
+  worker:
+    container_name: irisdep_worker
+    image: iriswebapp_app:deptest
+
+  ai_worker:
+    container_name: irisdep_ai_worker
+    image: iriswebapp_app:deptest
+
+  nginx:
+    container_name: irisdep_nginx
+    image: iriswebapp_nginx:deptest
+    # INTERFACE_HTTPS_PORT=8443 in .env drives both host + container ports
+
+networks:
+  iris_backend:
+    name: iris_deptest_backend
+  iris_frontend:
+    name: iris_deptest_frontend

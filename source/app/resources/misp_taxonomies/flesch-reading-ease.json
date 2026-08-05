@@ -1,0 +1,70 @@
+{
+  "namespace": "flesch-reading-ease",
+  "description": "Flesch Reading Ease is a revised system for determining the comprehension difficulty of written material. The scoring of the flesh score can have a maximum of 121.22 and there is no limit on how low a score can be (negative score are valid).",
+  "version": 2,
+  "exclusive": true,
+  "predicates": [
+    {
+      "value": "score",
+      "expanded": "Score",
+      "uuid": "30ee9407-9e1b-5410-93b8-442a0f5ebf28"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "score",
+      "entry": [
+        {
+          "value": "90-100",
+          "expanded": "Very Easy",
+          "description": "Very easy to read. Easily understood by an average 11-year-old student.",
+          "numerical_value": 100,
+          "uuid": "6c3dba0d-1afe-54eb-a1da-ec2ffc64adef"
+        },
+        {
+          "value": "80-89",
+          "expanded": "Easy",
+          "description": "Easy to read. Conversational English for consumers.",
+          "numerical_value": 89,
+          "uuid": "eec6efc0-1f09-51fa-9cd9-d2305b5846d8"
+        },
+        {
+          "value": "70-79",
+          "expanded": "Fairly Easy",
+          "description": "Fairly easy to read.",
+          "numerical_value": 79,
+          "uuid": "5ac3c527-e6e3-514a-a6f4-6a62d57056f1"
+        },
+        {
+          "value": "60-69",
+          "expanded": "Standard",
+          "description": "Plain English. Easily understood by 13- to 15-year-old students.",
+          "numerical_value": 69,
+          "uuid": "6147ffbf-ac0d-5ceb-8d08-111cd53291e6"
+        },
+        {
+          "value": "50-59",
+          "expanded": "Fairly Difficult",
+          "description": "Fairly difficult to read.",
+          "numerical_value": 59,
+          "uuid": "501ea76b-7631-5657-a247-3ec8746f4f82"
+        },
+        {
+          "value": "30-49",
+          "expanded": "Difficult",
+          "description": "Difficult to read.",
+          "numerical_value": 49,
+          "uuid": "a8ff5121-75f0-59dc-848d-7fa90ecf9148"
+        },
+        {
+          "value": "0-29",
+          "expanded": "Very Confusing",
+          "description": "Very difficult to read. Best understood by university graduates.",
+          "numerical_value": 29,
+          "uuid": "db0d393e-084d-58dc-9d74-6b24d83db533"
+        }
+      ]
+    }
+  ],
+  "uuid": "c048ee3f-9e60-547b-88c1-6ca49b9b36b3"
+}

@@ -1,0 +1,114 @@
+{
+  "namespace": "fpf",
+  "description": "The Future of Privacy Forum (FPF) [visual guide to practical de-identification](https://fpf.org/2016/04/25/a-visual-guide-to-practical-data-de-identification/) taxonomy is used to evaluate the degree of identifiability of personal data and the types of pseudonymous data, de-identified data and anonymous data. The work of FPF is licensed under a creative commons attribution 4.0 international license.",
+  "version": 0,
+  "predicates": [
+    {
+      "value": "degrees-of-identifiability",
+      "expanded": "Degrees of identifiability",
+      "description": "Information containing direct and indirect identifiers.",
+      "uuid": "5f196f7a-3a31-5a2b-9c0b-33dbd60ee3e1"
+    },
+    {
+      "value": "pseudonymous-data",
+      "expanded": "Pseudonymous Data",
+      "description": "Information from which direct identifiers have been eliminated or transformed, but indirect entifiers remain intact.",
+      "uuid": "370d8dac-f194-577d-b916-2ab43498a08a"
+    },
+    {
+      "value": "de-identified-data",
+      "expanded": "De-identified data",
+      "description": "Direct and known indirect identifiers have been removed or manipulated to break the linkage to real world identities.",
+      "uuid": "d501e419-fbd1-54a1-9445-c4cbd4d29fe3"
+    },
+    {
+      "value": "anonymous-data",
+      "expanded": "Anonymous data",
+      "description": "Direct and indirect identifiers have en removed or manipulated together with mathematical and technical guarantees to prevent re-identification.",
+      "uuid": "f42fb9f5-2680-5f0b-9993-3b49a73f4e1f"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "degrees-of-identifiability",
+      "entry": [
+        {
+          "value": "explicitly-personal",
+          "expanded": "Explicitly personal",
+          "description": "Name, address, phone number, SSN, government-issued ID (e.g., Jane Smith, 123 Main Street, 555-555-5555)",
+          "uuid": "312850d5-122a-512d-9f87-7f112b2510ac"
+        },
+        {
+          "value": "potentially-identifiable",
+          "expanded": "Potentially identifiable",
+          "description": "Unique device ID, license plate, medical record number, cookie, IP address (e.g., MAC address 68:A8:6D:35:65:03)",
+          "uuid": "0540b3ce-1f99-52d8-b0a7-7fc19e8fdf68"
+        },
+        {
+          "value": "not-readily-identifiable",
+          "expanded": "Not readily identifiable",
+          "description": "Same as Potentially Identifiable except data are also protected by safeguards and controls (e.g., hashed MAC addresses & legal representations)",
+          "uuid": "b867b17c-90a1-5c13-9d4f-3613a42e23bb"
+        }
+      ]
+    },
+    {
+      "predicate": "pseudonymous-data",
+      "entry": [
+        {
+          "value": "key-coded",
+          "expanded": "Key coded",
+          "description": "Clinical or research datasets where only curator retains key (e.g., Jane Smith, diabetes, HgB 15.1 g/dl = Csrk123)",
+          "uuid": "8e7baf28-86a8-5e1e-8c0e-51c9720279f8"
+        },
+        {
+          "value": "pseudonymous",
+          "expanded": "Pseudonymous",
+          "description": "Unique, artificial pseudonyms replace direct identifiers (e.g., HIPAA Limited Datasets, John Doe = 5L7T LX619Z) (unique sequence not used anywhere else)",
+          "uuid": "8457b8dc-9247-564e-ba94-0be6e2a48073"
+        },
+        {
+          "value": "protected-pseudonymous",
+          "expanded": "Protected pseudonymous",
+          "description": "Same as Pseudonymous, except data are also protected by safeguards and controls",
+          "uuid": "96d022ed-5db7-5395-9a03-bac38a942524"
+        }
+      ]
+    },
+    {
+      "predicate": "de-identified-data",
+      "entry": [
+        {
+          "value": "de-identified",
+          "expanded": "De-identified",
+          "description": "Data are suppressed, generalized, perturbed, swapped, etc. (e.g., GPA: 3.2 = 3.0-3.5, gender: female = gender: male)",
+          "uuid": "897ccf2a-fd11-52a5-b7e4-b514d4dce7f4"
+        },
+        {
+          "value": "protected-de-identified",
+          "expanded": "Protected de-identified",
+          "description": "Same as De-Identified, except data are also protected by safeguards and controls",
+          "uuid": "6920c2aa-36b9-59bd-ae94-1c8fa73c4fa6"
+        }
+      ]
+    },
+    {
+      "predicate": "anonymous-data",
+      "entry": [
+        {
+          "value": "anonymous",
+          "expanded": "Anonymous",
+          "description": "For example, noise is calibrated to a data set to hide whether an individual is present or not (differential privacy)",
+          "uuid": "3bf611cc-63f3-517d-aa21-9959044100b0"
+        },
+        {
+          "value": "aggregated-anonymous",
+          "expanded": "Aggregated anonymous",
+          "description": "Very highly aggregated data (e.g., statistical data, census data, or population data that 52.6% of Washington, DC residents are women)",
+          "uuid": "42f4793b-2c20-55fd-8a8c-600a9169fde0"
+        }
+      ]
+    }
+  ],
+  "uuid": "85ed8876-c018-5a69-bc03-1b1863a79a57"
+}
