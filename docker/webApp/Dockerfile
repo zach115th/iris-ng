@@ -19,7 +19,7 @@
 ####################
 # COMPILE JS IMAGE #
 ####################
-FROM node:24-alpine AS compile-js-image
+FROM node:25-alpine AS compile-js-image
 
 COPY ui/ /ui
 
