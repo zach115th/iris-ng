@@ -1,18 +1,26 @@
 version: 2
 
 updates:
+  # ------------------------------------------------------------- GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule: { interval: "weekly" }
+    schedule:
+      interval: "weekly"
     open-pull-requests-limit: 3
-    rebase-strategy: "disabled"     # publishes force-push a fresh history
-    assignees: ["zach115th"]
-    labels: ["dependencies", "github-actions", "apply-in-iris-next"]
-    commit-message: { prefix: "chore", include: "scope" }
+    # Publishing force-pushes a fresh single-commit history, so a PR's base
+    # stops being an ancestor of main. Rebase attempts cannot succeed.
+    rebase-strategy: "disabled"
+    assignees:
+      - "zach115th"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
     ignore:
-      # Deliberately held at node20 majors: download-artifact v8 stops
-      # unzipping (breaks the upload-tar -> docker load pattern) and
-      # ruff-action v3+ resolves its version from pyproject.toml.
+      # Held at node20 majors deliberately: download-artifact v8 stops
+      # unzipping (breaks the upload-tar -> docker load pattern in ci.yml),
+      # and ruff-action v3+ resolves its version from pyproject.toml.
       - dependency-name: "actions/upload-artifact"
         update-types: ["version-update:semver-major"]
       - dependency-name: "actions/download-artifact"
@@ -21,46 +29,94 @@ updates:
         update-types: ["version-update:semver-major"]
     groups:
       github-actions:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
+  # ------------------------------------------------------------- Python
   - package-ecosystem: "pip"
-    directories: ["/source", "/tests"]
-    schedule: { interval: "weekly" }
+    directories:
+      - "/source"
+      - "/tests"
+    schedule:
+      interval: "weekly"
     open-pull-requests-limit: 5
     rebase-strategy: "disabled"
-    assignees: ["zach115th"]
-    labels: ["dependencies", "python", "apply-in-iris-next"]
-    commit-message: { prefix: "chore", include: "scope" }
+    assignees:
+      - "zach115th"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
     ignore:
-      # DOCX reporter stack is frozen: the vendored docx_generator-0.8.0
-      # wheel hard-pins these, and bumping them breaks report generation.
+      # The DOCX reporter stack is frozen: the vendored
+      # docx_generator-0.8.0 wheel hard-pins these, and bumping any of them
+      # breaks report generation.
       - dependency-name: "docxcompose"
       - dependency-name: "python-docx"
       - dependency-name: "docxtpl"
     groups:
       python-minor-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
+  # ------------------------------------------------------------- npm (UI + e2e)
   - package-ecosystem: "npm"
-    directories: ["/ui", "/e2e"]
-    schedule: { interval: "weekly" }
+    directories:
+      - "/ui"
+      - "/e2e"
+    schedule:
+      interval: "weekly"
     open-pull-requests-limit: 5
     rebase-strategy: "disabled"
-    assignees: ["zach115th"]
-    labels: ["dependencies", "javascript", "apply-in-iris-next"]
-    commit-message: { prefix: "chore", include: "scope" }
+    assignees:
+      - "zach115th"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
     groups:
       npm-minor-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
+  # ------------------------------------------------------------- Base images
   - package-ecosystem: "docker"
-    directories: ["/docker/db", "/docker/nginx", "/docker/webApp", "/.devcontainer"]
-    schedule: { interval: "weekly" }
+    directories:
+      - "/docker/db"
+      - "/docker/nginx"
+      - "/docker/webApp"
+      - "/.devcontainer"
+    schedule:
+      interval: "weekly"
     open-pull-requests-limit: 3
     rebase-strategy: "disabled"
-    assignees: ["zach115th"]
-    labels: ["dependencies", "docker", "apply-in-iris-next"]
-    commit-message: { prefix: "chore", include: "scope" }
+    assignees:
+      - "zach115th"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      # A Postgres major is a data migration, not a dependency bump: a pg18
+      # server will not start on a pg17 data directory, so every existing
+      # install crash-loops. Do it deliberately, with a migrate script, the
+      # way pg12 -> pg17 was handled. (Closes PR #44.)
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+      # Interpreter upgrade wearing a tag bump. This image carries the
+      # pkg_resources shim and the frozen docx stack, and pkg_resources
+      # failures only surface at app boot - a green build proves nothing.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
