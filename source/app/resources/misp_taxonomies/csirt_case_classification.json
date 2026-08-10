@@ -1,0 +1,125 @@
+{
+  "namespace": "csirt_case_classification",
+  "description": "It is critical that the CSIRT provide consistent and timely response to the customer, and that sensitive information is handled appropriately.  This document provides the guidelines needed for CSIRT Incident Managers (IM) to classify the case category, criticality level, and sensitivity level for each CSIRT case.  This information will be entered into the Incident Tracking System (ITS) when a case is created.  Consistent case classification is required for the CSIRT to provide accurate reporting to management on a regular basis.  In addition, the classifications will provide CSIRT IM’s with proper case handling procedures and will form the basis of SLA’s between the CSIRT and other Company departments.",
+  "version": 1,
+  "predicates": [
+    {
+      "value": "incident-category",
+      "expanded": "Incident Category",
+      "uuid": "92de91b7-92b0-558d-b3a3-67ccd45ed219"
+    },
+    {
+      "value": "criticality-classification",
+      "expanded": "Criticality Classification",
+      "uuid": "15bec6aa-7663-5365-aa5d-0dce31544625"
+    },
+    {
+      "value": "sensitivity-classification",
+      "expanded": "Sensitivity Classification",
+      "uuid": "a0aa42ac-8c85-5532-ae06-d626d9d58cd9"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "incident-category",
+      "entry": [
+        {
+          "value": "DOS",
+          "expanded": "Denial of service / Distributed Denial of service",
+          "uuid": "905d51b7-e042-56c2-a848-c293b44fa54e"
+        },
+        {
+          "value": "forensics",
+          "expanded": "Forensics work",
+          "uuid": "fa0987dd-b33c-5c6f-ad4e-a9161fad454e"
+        },
+        {
+          "value": "compromised-information",
+          "expanded": "Attempted or successful destruction, corruption, or disclosure of sensitive corporate information or Intellectual Property",
+          "uuid": "b2026f4e-88f8-5cf0-a14c-8e41d4793b8d"
+        },
+        {
+          "value": "compromised-asset",
+          "expanded": "Compromised host (root account, Trojan, rootkit), network device, application, user account.",
+          "uuid": "2c1cbe0c-585c-535d-804f-08cb4c97290a"
+        },
+        {
+          "value": "unlawful-activity",
+          "expanded": "Theft / Fraud / Human Safety / Child Porn",
+          "uuid": "eb1cace9-69be-5ddb-9739-ecc0690ba288"
+        },
+        {
+          "value": "internal-hacking",
+          "expanded": "Reconnaissance or Suspicious activity originating from inside the Company corporate network, excluding malware",
+          "uuid": "d783f062-6160-5a86-ab69-b96b51e48eec"
+        },
+        {
+          "value": "external-hacking",
+          "expanded": "Reconnaissance or Suspicious Activity originating from outside the Company corporate network (partner network, Internet), excluding malware.",
+          "uuid": "55ef1386-cded-59e6-87f2-ac105d25defb"
+        },
+        {
+          "value": "malware",
+          "expanded": "A virus or worm typically affecting multiple corporate devices.  This does not include compromised hosts that are being actively controlled by an attacker via a backdoor or Trojan.",
+          "uuid": "66127981-77fa-5859-a2c8-e7a0fe6c5966"
+        },
+        {
+          "value": "email",
+          "expanded": "Spoofed email, SPAM, and other email security-related events.",
+          "uuid": "ae904e67-25ac-5643-af6e-2da339f4bae3"
+        },
+        {
+          "value": "consulting",
+          "expanded": "Security consulting unrelated to any confirmed incident",
+          "uuid": "ce75f39a-1ab3-5fa0-93a7-9dfda770fe8f"
+        },
+        {
+          "value": "policy-violation",
+          "expanded": "Violation of various policies",
+          "uuid": "d41d9418-bf81-5847-aae3-bee31ba3e2cf"
+        }
+      ]
+    },
+    {
+      "predicate": "criticality-classification",
+      "entry": [
+        {
+          "value": "1",
+          "expanded": "Incident affecting critical systems or information with potential to be revenue or customer impacting.",
+          "uuid": "9e1c8704-1164-56d4-afe8-ecc8a72d7e06"
+        },
+        {
+          "value": "2",
+          "expanded": "Incident affecting non-critical systems or information, not revenue or customer impacting. Employee investigations that are time sensitive should typically be classified at this level.",
+          "uuid": "cf1b85a1-38e6-584d-80ee-eb5ad579c732"
+        },
+        {
+          "value": "3",
+          "expanded": "Possible incident, non-critical systems.  Incident or employee investigations that are not time sensitive.  Long-term investigations involving extensive research and/or detailed forensic work.",
+          "uuid": "38f8d08c-4074-5f55-ad4f-58d278e6c26f"
+        }
+      ]
+    },
+    {
+      "predicate": "sensitivity-classification",
+      "entry": [
+        {
+          "value": "1",
+          "expanded": "Extremely Sensitive",
+          "uuid": "2bc2355e-c864-5872-9ed1-0eb289d74268"
+        },
+        {
+          "value": "2",
+          "expanded": "Sensitive",
+          "uuid": "ffe4d210-86e2-522a-be88-1bed6803202c"
+        },
+        {
+          "value": "3",
+          "expanded": "Not Sensitive",
+          "uuid": "eee5267f-6f83-5e85-99cc-7750d3f690a4"
+        }
+      ]
+    }
+  ],
+  "uuid": "7425d4fe-0be2-5786-b9c2-a6b8f1496117"
+}
