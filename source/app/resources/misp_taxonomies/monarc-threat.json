@@ -1,0 +1,254 @@
+{
+  "namespace": "monarc-threat",
+  "expanded": "MONARC Threats",
+  "version": 1,
+  "description": "MONARC Threats Taxonomy",
+  "refs": [
+    "https://monarc.lu"
+  ],
+  "predicates": [
+    {
+      "value": "compromise-of-functions",
+      "expanded": "Compromise of functions",
+      "uuid": "2fe8d9fb-b269-5a78-a407-d17f36647c5e"
+    },
+    {
+      "value": "unauthorised-actions",
+      "expanded": "Unauthorised actions",
+      "uuid": "24ce9f53-52bc-5a4e-90f2-a620065fcc09"
+    },
+    {
+      "value": "compromise-of-information",
+      "expanded": "Compromise of information",
+      "uuid": "22ac37a6-3184-55aa-a0e9-6b27c27a2914"
+    },
+    {
+      "value": "loss-of-essential-services",
+      "expanded": "Loss of essential services",
+      "uuid": "3164cb42-99ed-522b-9039-8abb09106b8e"
+    },
+    {
+      "value": "technical-failures",
+      "expanded": "Technical failures",
+      "uuid": "5417bb31-028e-5a32-b4b5-4439a486cdfa"
+    },
+    {
+      "value": "physical-damage",
+      "expanded": "Physical damage",
+      "uuid": "3b0a1fbc-0455-56e8-baf8-ffb81aff1a17"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "compromise-of-functions",
+      "entry": [
+        {
+          "value": "error-in-use",
+          "expanded": "Error in use",
+          "description": "A person commits an operating error, input error or utilisation error on hardware or software.",
+          "uuid": "0363f47c-1e77-5d56-a032-6b97aa392f3c"
+        },
+        {
+          "value": "forging-of-rights",
+          "expanded": "Forging of rights",
+          "description": "A person assumes the identity of a different person in order to use his/her access rights to the information system, misinform the recipient, commit a fraud, etc.",
+          "uuid": "e0e8d902-c12f-5d78-903c-eb8dd3a28196"
+        },
+        {
+          "value": "eavesdropping",
+          "expanded": "Eavesdropping",
+          "description": "Someone connected to communication equipment or media or located inside the transmission coverage boundaries of a communication.",
+          "uuid": "3b1f20f8-1305-5aeb-aef9-46f32c34f171"
+        },
+        {
+          "value": "denial-of-actions",
+          "expanded": "Denial of actions",
+          "description": "A person or entity denies being involved in an exchange with a third party or carrying out an operation.",
+          "uuid": "ce6cba4a-e822-507f-9d3c-8daf6967abba"
+        },
+        {
+          "value": "abuse-of-rights",
+          "expanded": "Abuse of rights",
+          "description": "Someone with special rights (network administration, computer specialists, etc.) modifies the operating characteristics of the resources.",
+          "uuid": "c8d4d0ab-9cc6-5163-83b6-e8e05ae7c490"
+        },
+        {
+          "value": "breach-of-personnel-availability",
+          "expanded": "Breach of personnel availability",
+          "description": "Absence of qualified or authorised personnel to execute the usual operations.",
+          "uuid": "8fd36777-6f39-5a4d-938d-d0dbdc183755"
+        }
+      ]
+    },
+    {
+      "predicate": "unauthorised-actions",
+      "entry": [
+        {
+          "value": "fraudulent-copying-or-use-of-counterfeit-software",
+          "expanded": "Fraudulent copying or use of counterfeit software",
+          "description": "Someone inside the organisation makes fraudulent copies (also called pirated copies) of package software or in-house software.",
+          "uuid": "f397b1ab-3afe-51c9-bf9d-49905b69702c"
+        },
+        {
+          "value": "corruption-of-data",
+          "expanded": "Corruption of data",
+          "description": "Someone gains access to the communication equipment of the information system and corrupts transmission of information (by intercepting, inserting, destroying, etc.) or repeatedly attempts access until successful.",
+          "uuid": "ca65f5a3-9b96-501f-a385-4c5952dbc248"
+        },
+        {
+          "value": "illegal-processing-of-data",
+          "expanded": "Illegal processing of data",
+          "description": "A person carries out information processing that is forbidden by the law or a regulation.",
+          "uuid": "f49acf7b-3eef-568c-92a3-f8d586f9fffd"
+        }
+      ]
+    },
+    {
+      "predicate": "compromise-of-information",
+      "entry": [
+        {
+          "value": "remote-spying",
+          "expanded": "Remote spying",
+          "description": "Personnel actions observable from a distance. Visual observation with or without optical equipment, for example observation of a user entering a code or password on a keyboard.",
+          "uuid": "6ee0db62-0bcc-51bd-8d79-ffcdaf42801a"
+        },
+        {
+          "value": "tampering-with-hardware",
+          "expanded": "Tampering with hardware",
+          "description": "Someone with access to a communication medium or equipment installs an interception or destruction device in it.",
+          "uuid": "89d99fc2-6f27-5593-b02d-2bef5ac084b5"
+        },
+        {
+          "value": "interception-of-compromising-interference-signals",
+          "expanded": "Interception of compromising interference signals",
+          "description": "Interfering signals from an electromagnetic source emitted by the equipment (by conduction on the electrical power supply cables or earth wires or by radiation in free space). Capture of these signals depends on the distance to the targeted equipment or the possibility of connecting to cables or any other conductor passing close to the equipment (coupling phenomenon).",
+          "uuid": "b96b4131-c5ac-5f46-9c55-a7360ba0c15e"
+        },
+        {
+          "value": "theft-or-destruction-of-media-documents-or-equipment",
+          "expanded": "Theft or destruction of media, documents or equipment",
+          "description": "Media, documents or equipment can be accessed by foreigners either internally or externally. It can be damaged or stolen.",
+          "uuid": "fcc1e44c-7391-5e81-a664-a92b6fbbf2a8"
+        },
+        {
+          "value": "retrieval-of-recycled-or-discarded media",
+          "expanded": "Retrieval of recycled or discarded media",
+          "description": "Retrieval of electronic media (hard discs, floppy discs, back-up cartridges, USB keys, ZIP discs, removable hard discs, etc.) or paper copies (lists, incomplete print-outs, messages, etc.) intended for recycling and containing retrievable information.",
+          "uuid": "0cf1a6ad-1f07-55d1-a9d6-17bac8119075"
+        },
+        {
+          "value": "malware-infection",
+          "expanded": "Malware infection",
+          "description": "Unwanted software that is doing operations seeking to harm the company.",
+          "uuid": "1e5b9054-ef9d-54ac-9c8b-fe3ea2ef2624"
+        },
+        {
+          "value": "data-from-untrustworthy-sources",
+          "expanded": "Data from untrustworthy sources",
+          "description": "Receiving false data or unsuitable equipment from outside sources and using them in the organisation.",
+          "uuid": "eee1c593-3508-5fe4-b8a7-b50618d432d9"
+        },
+        {
+          "value": "disclosure",
+          "expanded": "Disclosure",
+          "description": "Person who voluntarily or negligently disclosure information.",
+          "uuid": "6e38ae97-0424-5547-9d0b-6098918951f8"
+        }
+      ]
+    },
+    {
+      "predicate": "loss-of-essential-services",
+      "entry": [
+        {
+          "value": "failure-of-telecommunication-equipment",
+          "expanded": "Failure of telecommunication equipment",
+          "description": "Disturbance, shutdown or incorrect sizing of telecommunications services (telephone, Internet access, Internet network).",
+          "uuid": "3c2b42ac-1ca7-52d3-9467-a7ed46db9c38"
+        },
+        {
+          "value": "loss-of-power-supply",
+          "expanded": "Loss of power supply",
+          "description": "Failure, shutdown or incorrect sizing of the power supply to the assets arising either from the supplier's service or from the internal distribution system.",
+          "uuid": "f2fd2f1a-0d46-541f-a7f9-a8a4a5c191c8"
+        },
+        {
+          "value": "failure-of-air-conditioning",
+          "expanded": "Failure of air-conditioning",
+          "description": "Failure, shutdown or inadequacy of the air-conditioning service may cause assets requiring cooling or ventilation to shut down, malfunction or fail completely.",
+          "uuid": "6c24e92a-aecd-5b73-8017-a0f7bc43eede"
+        }
+      ]
+    },
+    {
+      "predicate": "technical-failures",
+      "entry": [
+        {
+          "value": "software-malfunction",
+          "expanded": "Software malfunction",
+          "description": "Design error, installation error or operating error committed during modification causing incorrect execution.",
+          "uuid": "748ffc2b-c1fa-54ea-9844-ee3ce29b2e59"
+        },
+        {
+          "value": "equipment-malfunction-or-failure",
+          "expanded": "Equipment malfunction or failure",
+          "description": "Logical or physical event causing hardware malfunctions or failures.",
+          "uuid": "215bbdb5-4455-517e-842e-5f7ec4a6c38c"
+        },
+        {
+          "value": "saturation-of-the-information-system",
+          "expanded": "Saturation of the information system",
+          "description": "A person or resource of a hardware, software or network type simulating an intense demand on resources by setting up continuous bombardment.",
+          "uuid": "3f6fc8a9-873d-5d9f-b611-f622b2f1898c"
+        },
+        {
+          "value": "breach-of-information-system-maintainability",
+          "expanded": "Breach of information system maintainability",
+          "description": "Lack of expertise in the system making retrofitting and upgrading impossible",
+          "uuid": "9625634c-ccf7-549a-9d09-031a9637219b"
+        }
+      ]
+    },
+    {
+      "predicate": "physical-damage",
+      "entry": [
+        {
+          "value": "destruction-of-equipment-or-supports",
+          "expanded": "Destruction of equipment or supports",
+          "description": "Event causing destruction of equipment or media.",
+          "uuid": "5184bb80-9d09-5bf0-a625-eec7c0353e73"
+        },
+        {
+          "value": "fire",
+          "expanded": "Fire",
+          "description": "Any situation that could facilitate the conflagration of premises or equipment.",
+          "uuid": "ce31eaf8-0ca2-593e-8e13-0a1e714e1eb1"
+        },
+        {
+          "value": "water-damage",
+          "expanded": "Water damage",
+          "description": "Situation facilitating the water hazard on equipment (floods, water leak, cellars, etc.)",
+          "uuid": "7a11f1b5-5f4e-509d-b86d-a36895e19901"
+        },
+        {
+          "value": "major-accident",
+          "expanded": "Major accident",
+          "description": "Any event that can physically destroy the premises",
+          "uuid": "e22df508-2bb8-59d2-aa11-3f28b9010f0d"
+        },
+        {
+          "value": "pollution",
+          "expanded": "Pollution",
+          "description": "Presence of dust, vapours, corrosive or toxic gases in the ambient air.",
+          "uuid": "4861b40a-b1f1-5582-9315-1a36cff4fbd1"
+        },
+        {
+          "value": "environmental-disaster",
+          "expanded": "Environmental disaster (fire, flood, dust, dirt, etc.)",
+          "description": "Any event that can physically ruin the premises",
+          "uuid": "fe81039e-34e8-5a45-96fb-ebeb73f988f7"
+        }
+      ]
+    }
+  ],
+  "uuid": "d816996b-3a69-5178-a094-64c9bb79eedc"
+}

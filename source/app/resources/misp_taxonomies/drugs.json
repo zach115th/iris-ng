@@ -1,0 +1,1700 @@
+{
+  "namespace": "drugs",
+  "description": "A taxonomy based on the superclass and class of drugs. Based on https://www.drugbank.ca/releases/latest",
+  "version": 2,
+  "predicates": [
+    {
+      "value": "alkaloids-and-derivatives",
+      "expanded": "Alkaloids and derivatives",
+      "uuid": "ba57d12b-2ee9-5543-acc5-3ec5c5025c09"
+    },
+    {
+      "value": "benzenoids",
+      "expanded": "Benzenoids",
+      "uuid": "baca1d29-f987-5dca-ac4e-183a680e1ad9"
+    },
+    {
+      "value": "homogeneous-metal-compounds",
+      "expanded": "Homogeneous metal compounds",
+      "uuid": "a450cc15-5715-5955-8365-836b20f694ec"
+    },
+    {
+      "value": "homogeneous-non-metal-compounds",
+      "expanded": "Homogeneous non-metal compounds",
+      "uuid": "f24f5157-d8db-5a20-8d96-42a2f42fe99c"
+    },
+    {
+      "value": "hydrocarbons",
+      "expanded": "Hydrocarbons",
+      "uuid": "cbb5bac8-94cc-5efa-9806-809855068d25"
+    },
+    {
+      "value": "hydrocarbon-derivatives",
+      "expanded": "Hydrocarbon derivatives",
+      "uuid": "faf7ad51-e39f-554f-9e75-cee1b8518958"
+    },
+    {
+      "value": "lignans,-neolignans-and-related-compounds",
+      "expanded": "Lignans, neolignans and related compounds",
+      "uuid": "a0707f81-db49-58ed-8424-0321afccad64"
+    },
+    {
+      "value": "lipids-and-lipid-like-molecules",
+      "expanded": "Lipids and lipid-like molecules",
+      "uuid": "5a0836e1-2d4f-5996-b4ae-e4137a6df850"
+    },
+    {
+      "value": "mixed-metal/non-metal-compounds",
+      "expanded": "Mixed metal/non-metal compounds",
+      "uuid": "c5597fb9-0904-514f-9bd4-db26a06d8b41"
+    },
+    {
+      "value": "nucleosides,-nucleotides,-and-analogues",
+      "expanded": "Nucleosides, nucleotides, and analogues",
+      "uuid": "5787d1bd-fb56-5259-89f4-c327f6d6967f"
+    },
+    {
+      "value": "organic-1,3-dipolar-compounds",
+      "expanded": "Organic 1,3-dipolar compounds",
+      "uuid": "6345e571-82f1-5a1c-a46f-d5d5bb2f9637"
+    },
+    {
+      "value": "organic-acids-and-derivatives",
+      "expanded": "Organic acids and derivatives",
+      "uuid": "946f772d-2766-5ab2-ace5-0cd9ff63d23a"
+    },
+    {
+      "value": "organic-acids",
+      "expanded": "Organic Acids",
+      "uuid": "13545bf7-fe1e-55e8-bb7f-d6ff025407d1"
+    },
+    {
+      "value": "organic-nitrogen-compounds",
+      "expanded": "Organic nitrogen compounds",
+      "uuid": "f6f5224b-8d04-5ce8-937c-1ea11d0d92a4"
+    },
+    {
+      "value": "organic-oxygen-compounds",
+      "expanded": "Organic oxygen compounds",
+      "uuid": "bea11297-3c37-5cc1-b132-99875360e10d"
+    },
+    {
+      "value": "organic-polymers",
+      "expanded": "Organic Polymers",
+      "uuid": "2e528288-8e0d-59e3-8b19-8dabc344ba54"
+    },
+    {
+      "value": "organic-salts",
+      "expanded": "Organic salts",
+      "uuid": "c59bc65f-7a62-5a2e-bc17-012b872f3ffc"
+    },
+    {
+      "value": "organohalogen-compounds",
+      "expanded": "Organohalogen compounds",
+      "uuid": "f50a0fc6-f9c1-5ca0-b72e-f9f6e25a5b86"
+    },
+    {
+      "value": "organoheterocyclic-compounds",
+      "expanded": "Organoheterocyclic compounds",
+      "uuid": "00f0a8ac-76c8-52fb-b091-5bf2dacf62fa"
+    },
+    {
+      "value": "organometallic-compounds",
+      "expanded": "Organometallic compounds",
+      "uuid": "4dc5cc11-9051-5033-a6b0-6f64d9123793"
+    },
+    {
+      "value": "organophosphorus-compounds",
+      "expanded": "Organophosphorus compounds",
+      "uuid": "ae0a485c-6c3b-51e6-a476-a663f746b240"
+    },
+    {
+      "value": "organosulfur-compounds",
+      "expanded": "Organosulfur compounds",
+      "uuid": "840479b9-dc9b-54a5-ab50-53f568de6b7f"
+    },
+    {
+      "value": "phenylpropanoids-and-polyketides",
+      "expanded": "Phenylpropanoids and polyketides",
+      "uuid": "8e286dfc-cb7d-598b-a742-bee373dc071a"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "alkaloids-and-derivatives",
+      "entry": [
+        {
+          "value": "ajmaline-sarpagine-alkaloids",
+          "expanded": "Ajmaline-sarpagine alkaloids",
+          "uuid": "069c658f-2b87-56f1-9cb9-32825542a5e2"
+        },
+        {
+          "value": " allocolchicine-alkaloids",
+          "expanded": " Allocolchicine alkaloids",
+          "uuid": "d6f3ef3b-a8b0-5044-b6f1-3a04e5410fd4"
+        },
+        {
+          "value": " Amaryllidaceae alkaloids",
+          "expanded": " Amaryllidaceae alkaloids",
+          "uuid": "072f446a-602b-520e-810e-eb95795049f5"
+        },
+        {
+          "value": "aporphines",
+          "expanded": "Aporphines",
+          "uuid": "cec6f431-64e9-571c-b210-ccce379c48c3"
+        },
+        {
+          "value": "camptothecins",
+          "expanded": "Camptothecins",
+          "uuid": "5b549a55-2dd9-51e2-80ff-4f0bdf510d97"
+        },
+        {
+          "value": "cephalotaxus-alkaloids",
+          "expanded": "Cephalotaxus alkaloids",
+          "uuid": "bb99f419-dc44-5b88-8a2f-050302548ae4"
+        },
+        {
+          "value": "cinchona-alkaloids",
+          "expanded": "Cinchona alkaloids",
+          "uuid": "0870444c-29c5-5f56-b976-0b07397399a1"
+        },
+        {
+          "value": "eburnan-type-alkaloids",
+          "expanded": "Eburnan-type alkaloids",
+          "uuid": "58d2cca5-04a9-557f-917b-7493b18d6f7f"
+        },
+        {
+          "value": "epibatidine-analogues",
+          "expanded": "Epibatidine analogues",
+          "uuid": "bb4f78fa-1dde-5222-869a-3395e4403099"
+        },
+        {
+          "value": "ergoline-and-derivatives",
+          "expanded": "Ergoline and derivatives",
+          "uuid": "ebe3c700-ec4e-5ada-9de9-261d5f6aa33e"
+        },
+        {
+          "value": "harmala-alkaloids",
+          "expanded": "Harmala alkaloids",
+          "uuid": "ef553472-f777-5da2-9e5f-b867c5c443ca"
+        },
+        {
+          "value": "ibogan-type-alkaloids",
+          "expanded": "Ibogan-type alkaloids",
+          "uuid": "d14e2a90-b0ae-5903-9292-f1a9137a0311"
+        },
+        {
+          "value": "lupin-alkaloids",
+          "expanded": "Lupin alkaloids",
+          "uuid": "a25fb36c-7f06-5df6-86fd-3bb7f6acbf07"
+        },
+        {
+          "value": "morphinans",
+          "expanded": "Morphinans",
+          "uuid": "536d327c-8cb8-587e-89d4-f89b4f993dc5"
+        },
+        {
+          "value": "phthalide-isoquinolines",
+          "expanded": "Phthalide isoquinolines",
+          "uuid": "f5a1f7ad-7e35-5198-ae5c-71212ab3a993"
+        },
+        {
+          "value": "protoberberine-alkaloids-and-derivatives",
+          "expanded": "Protoberberine alkaloids and derivatives",
+          "uuid": "12b20390-4acb-542d-bdfa-e2aee68140b3"
+        },
+        {
+          "value": "tropane-alkaloids",
+          "expanded": "Tropane alkaloids",
+          "uuid": "74df35fa-b14f-5fe1-9a9b-f7a912601fd2"
+        },
+        {
+          "value": "vinca-alkaloids",
+          "expanded": "Vinca alkaloids",
+          "uuid": "9c844be3-8577-5b5e-bad3-b80c50cf6636"
+        },
+        {
+          "value": "yohimbine-alkaloids",
+          "expanded": "Yohimbine alkaloids",
+          "uuid": "cd7f230c-515a-522c-ae3e-c690ed78b26a"
+        }
+      ]
+    },
+    {
+      "predicate": "benzenoids",
+      "entry": [
+        {
+          "value": "anthracenes",
+          "expanded": "Anthracenes",
+          "uuid": "118bdfd6-f724-502c-963e-deb7a0caaeeb"
+        },
+        {
+          "value": "benzene-and-substituted-derivatives",
+          "expanded": "Benzene and substituted derivatives",
+          "uuid": "8a48221b-7fc5-59d1-871d-7d7bb1b034ef"
+        },
+        {
+          "value": "dibenzocycloheptenes",
+          "expanded": "Dibenzocycloheptenes",
+          "uuid": "704e52ef-7eb7-5f0d-a202-5256885464a0"
+        },
+        {
+          "value": "fluorenes",
+          "expanded": "Fluorenes",
+          "uuid": "96cf2140-3eec-59b8-8b41-e278f3320d16"
+        },
+        {
+          "value": "indanes",
+          "expanded": "Indanes",
+          "uuid": "1fafce95-bc96-5b0a-a665-12928de596ab"
+        },
+        {
+          "value": "indenes-and-isoindenes",
+          "expanded": "Indenes and isoindenes",
+          "uuid": "f3020b01-7333-5788-91a2-de36557a7e9a"
+        },
+        {
+          "value": "naphthacenes",
+          "expanded": "Naphthacenes",
+          "uuid": "70302504-ae92-5555-92d0-991d07e5fed9"
+        },
+        {
+          "value": "phenanthrenes-and-derivatives",
+          "expanded": "Phenanthrenes and derivatives",
+          "uuid": "e3211b83-67a9-57fc-9ed4-2dcb220837a9"
+        },
+        {
+          "value": "phenol-esters",
+          "expanded": "Phenol esters",
+          "uuid": "b23f90a7-29ba-5926-97df-d0f430b71228"
+        },
+        {
+          "value": "phenol-ethers",
+          "expanded": "Phenol ethers",
+          "uuid": "bee68c5f-4be9-549b-8eaa-89f2f8e79823"
+        },
+        {
+          "value": "phenols",
+          "expanded": "Phenols",
+          "uuid": "7318e69e-d2c5-5623-b296-30832e33fdea"
+        },
+        {
+          "value": "pyrenes",
+          "expanded": "Pyrenes",
+          "uuid": "c3ba9c95-2e2d-5b57-939b-280862b7d79f"
+        },
+        {
+          "value": "tetralins",
+          "expanded": "Tetralins",
+          "uuid": "d4b659e1-1101-5878-88e1-00986c27de6e"
+        },
+        {
+          "value": "triphenyl-compounds",
+          "expanded": "Triphenyl compounds",
+          "uuid": "dc077777-3ce3-58ab-98e8-1bf735086a8d"
+        }
+      ]
+    },
+    {
+      "predicate": "homogeneous-metal-compounds",
+      "entry": [
+        {
+          "value": "homogeneous-actinide-compounds",
+          "expanded": "Homogeneous actinide compounds",
+          "uuid": "592f486c-fac3-5a57-9ec5-06d30405a6b3"
+        },
+        {
+          "value": "homogeneous-alkali-metal-compounds",
+          "expanded": "Homogeneous alkali metal compounds",
+          "uuid": "26f96f0c-722b-55ba-80eb-ec92bb244322"
+        },
+        {
+          "value": "homogeneous-alkaline-earth-metal-compounds",
+          "expanded": "Homogeneous alkaline earth metal compounds",
+          "uuid": "6411cde9-6879-52fe-aa25-7031d8e5a5be"
+        },
+        {
+          "value": "homogeneous-lanthanide-compounds",
+          "expanded": "Homogeneous lanthanide compounds",
+          "uuid": "7def8c7e-60f8-5b05-87ba-c26a4f0e9066"
+        },
+        {
+          "value": "homogeneous-metalloid-compounds",
+          "expanded": "Homogeneous metalloid compounds",
+          "uuid": "e2e5f7a3-a604-5689-9e91-d779d8da9f7d"
+        },
+        {
+          "value": "homogeneous-post-transition-metal-compounds",
+          "expanded": "Homogeneous post-transition metal compounds",
+          "uuid": "2c0c0aa5-a04c-57e0-acd7-226a86c0d1ef"
+        },
+        {
+          "value": "homogeneous-transition-metal-compounds",
+          "expanded": "Homogeneous transition metal compounds",
+          "uuid": "75e24993-b0fd-5f18-a221-a401f437f81c"
+        }
+      ]
+    },
+    {
+      "predicate": "homogeneous-non-metal-compounds",
+      "entry": [
+        {
+          "value": "halogen-organides",
+          "expanded": "Halogen organides",
+          "uuid": "da612740-ecb7-583d-9120-d45895f8e3ff"
+        },
+        {
+          "value": "homogeneous-halogens",
+          "expanded": "Homogeneous halogens",
+          "uuid": "7fd36fe2-eac8-54f4-9295-871068ba5298"
+        },
+        {
+          "value": "homogeneous-noble-gases",
+          "expanded": "Homogeneous noble gases",
+          "uuid": "10fc9bb2-3367-5e2e-bc20-02e2f9c538f4"
+        },
+        {
+          "value": "homogeneous-other-non-metal-compounds",
+          "expanded": "Homogeneous other non-metal compounds",
+          "uuid": "38b93a0f-a200-5226-a750-35ee682f40b6"
+        },
+        {
+          "value": "non-metal-oxoanionic-compounds",
+          "expanded": "Non-metal oxoanionic compounds",
+          "uuid": "23102cfd-817f-5601-add0-83328701216c"
+        },
+        {
+          "value": "other-non-metal-halides",
+          "expanded": "Other non-metal halides",
+          "uuid": "7b9f3512-881b-5185-952e-eac42219f767"
+        },
+        {
+          "value": "other-non-metal-organides",
+          "expanded": "Other non-metal organides",
+          "uuid": "d8fbad7c-8ff9-57a7-91d5-5168ea28d446"
+        }
+      ]
+    },
+    {
+      "predicate": "hydrocarbons",
+      "entry": [
+        {
+          "value": "polycyclic-hydrocarbons",
+          "expanded": "Polycyclic hydrocarbons",
+          "uuid": "54068542-30ea-51bf-bd39-d011f018344b"
+        }
+      ]
+    },
+    {
+      "predicate": "hydrocarbon-derivatives",
+      "entry": [
+        {
+          "value": "tropones",
+          "expanded": "Tropones",
+          "uuid": "61c11b16-8855-56df-b58a-4f999b1c7cae"
+        }
+      ]
+    },
+    {
+      "predicate": "lignans,-neolignans-and-related-compounds",
+      "entry": [
+        {
+          "value": "aryltetralin-lignans",
+          "expanded": "Aryltetralin lignans",
+          "uuid": "6f0b8fd5-ccf5-5f4e-8b6a-8e2b534dca8b"
+        },
+        {
+          "value": "dibenzylbutane-lignans",
+          "expanded": "Dibenzylbutane lignans",
+          "uuid": "e8742d09-14a0-59fb-974e-4add28508df2"
+        },
+        {
+          "value": "flavonolignans",
+          "expanded": "Flavonolignans",
+          "uuid": "dbebe709-c317-58c6-99c3-8ce1b7eabd78"
+        },
+        {
+          "value": "furanoid-lignans",
+          "expanded": "Furanoid lignans",
+          "uuid": "f029287a-a7b6-5d84-bac3-67bfcf2c7c26"
+        },
+        {
+          "value": "lignan-lactones",
+          "expanded": "Lignan lactones",
+          "uuid": "c91f6187-5a3d-570c-b5e1-52e425d2a7f9"
+        }
+      ]
+    },
+    {
+      "predicate": "lipids-and-lipid-like-molecules",
+      "entry": [
+        {
+          "value": "fatty-acyls",
+          "expanded": "Fatty Acyls",
+          "uuid": "9c5a17ce-1c45-564a-991e-6d71c41e3bc1"
+        },
+        {
+          "value": "glycero-3-dithiophosphocholines",
+          "expanded": "Glycero-3-dithiophosphocholines",
+          "uuid": "a079960a-e29f-5837-8fc8-ccefc4a93bb1"
+        },
+        {
+          "value": "glycerolipids",
+          "expanded": "Glycerolipids",
+          "uuid": "ad63fef4-783a-58b5-a470-03449de2a138"
+        },
+        {
+          "value": "glycerophospholipids",
+          "expanded": "Glycerophospholipids",
+          "uuid": "f178c8d7-6902-50b9-8624-690107bd41a6"
+        },
+        {
+          "value": "prenol-lipids",
+          "expanded": "Prenol lipids",
+          "uuid": "bfb303f5-f1d2-5c6a-b0ba-6c368421f35e"
+        },
+        {
+          "value": "saccharolipids",
+          "expanded": "Saccharolipids",
+          "uuid": "24907110-b771-511d-97ba-e8d0dbe70040"
+        },
+        {
+          "value": "s-alkyl-coas",
+          "expanded": "S-alkyl-CoAs",
+          "uuid": "e05625c6-3e37-5d9d-a77d-63fd57c8c0e7"
+        },
+        {
+          "value": "sphingolipids",
+          "expanded": "Sphingolipids",
+          "uuid": "70ac9a44-8ffd-546c-b5f3-6cbb935384b7"
+        },
+        {
+          "value": "steroids-and-steroid-derivatives",
+          "expanded": "Steroids and steroid derivatives",
+          "uuid": "f73bf757-7b8c-5c24-ad49-e2563b965ed2"
+        }
+      ]
+    },
+    {
+      "predicate": "mixed-metal/non-metal-compounds",
+      "entry": [
+        {
+          "value": "alkali-metal-organides",
+          "expanded": "Alkali metal organides",
+          "uuid": "bf053345-763a-509f-bc90-171c45a804fd"
+        },
+        {
+          "value": "alkali-metal-oxoanionic-compounds",
+          "expanded": "Alkali metal oxoanionic compounds",
+          "uuid": "52f4811f-9b8f-5b3f-aee8-8c16c1343a2f"
+        },
+        {
+          "value": "alkali-metal-salts",
+          "expanded": "Alkali metal salts",
+          "uuid": "2eaac7d4-425b-5747-9296-ae0c02c22332"
+        },
+        {
+          "value": "alkaline-earth-metal-organides",
+          "expanded": "Alkaline earth metal organides",
+          "uuid": "0376ea9e-da6a-541b-a89a-88a55a38da7f"
+        },
+        {
+          "value": "alkaline-earth-metal-oxoanionic-compounds",
+          "expanded": "Alkaline earth metal oxoanionic compounds",
+          "uuid": "32619b00-da24-5294-a99a-62927582fc61"
+        },
+        {
+          "value": "alkaline-earth-metal-salts",
+          "expanded": "Alkaline earth metal salts",
+          "uuid": "1853597a-471a-5eb8-ae8e-a0d797f5f60f"
+        },
+        {
+          "value": "metalloid-organides",
+          "expanded": "Metalloid organides",
+          "uuid": "e0fd9d52-2864-57d6-ab4a-fc060df390c9"
+        },
+        {
+          "value": "metalloid-oxoanionic-compounds",
+          "expanded": "Metalloid oxoanionic compounds",
+          "uuid": "dc104267-284e-5a00-b34a-67a92ffe3f59"
+        },
+        {
+          "value": "miscellaneous-mixed-metal/non-metals",
+          "expanded": "Miscellaneous mixed metal/non-metals",
+          "uuid": "ffe3c3f9-7503-58b2-b8d0-190d388b4901"
+        },
+        {
+          "value": "other-mixed-metal/non-metal-oxoanionic-compounds",
+          "expanded": "Other mixed metal/non-metal oxoanionic compounds",
+          "uuid": "b1793d4d-519e-504f-9d71-7a49bfffcf93"
+        },
+        {
+          "value": "post-transition-metal-organides",
+          "expanded": "Post-transition metal organides",
+          "uuid": "3851a036-e9d5-532e-9fb2-710659eba3a7"
+        },
+        {
+          "value": "post-transition-metal-oxoanionic-compounds",
+          "expanded": "Post-transition metal oxoanionic compounds",
+          "uuid": "7700485b-8a29-5c8f-beaa-c476fad00880"
+        },
+        {
+          "value": "post-transition-metal-salts",
+          "expanded": "Post-transition metal salts",
+          "uuid": "d11cfe9a-4fa9-5031-9b90-6a0c46cca349"
+        },
+        {
+          "value": "transition-metal-organides",
+          "expanded": "Transition metal organides",
+          "uuid": "423ebde6-e93d-5a25-953d-05fb34cdfbf4"
+        },
+        {
+          "value": "transition-metal-oxoanionic-compounds",
+          "expanded": "Transition metal oxoanionic compounds",
+          "uuid": "3666a12b-c82c-51c9-849b-a32ed8783fe7"
+        },
+        {
+          "value": "transition-metal-salts",
+          "expanded": "Transition metal salts",
+          "uuid": "14be391d-2df1-5992-9176-a5bc48279801"
+        }
+      ]
+    },
+    {
+      "predicate": "nucleosides,-nucleotides,-and-analogues",
+      "entry": [
+        {
+          "value": "2',3'-dideoxy-3'-thionucleoside-monophosphates",
+          "expanded": "2',3'-dideoxy-3'-thionucleoside monophosphates",
+          "uuid": "bbf3a3d8-3c03-556f-a636-c7570818bf4a"
+        },
+        {
+          "value": "2',5'-dideoxyribonucleosides",
+          "expanded": "2',5'-dideoxyribonucleosides",
+          "uuid": "4dbedb22-e24e-505a-9e25-dce1d48b22ee"
+        },
+        {
+          "value": "(3'-&gt;5')-dinucleotides-and-analogues",
+          "expanded": "(3'-&gt;5')-dinucleotides and analogues",
+          "uuid": "61ba5f7f-e6ca-5a58-b267-4e58da5b1780"
+        },
+        {
+          "value": "5'-deoxyribonucleosides",
+          "expanded": "5'-deoxyribonucleosides",
+          "uuid": "8ea57317-8aee-59d7-adee-d0f6b80618e0"
+        },
+        {
+          "value": "(5'-&gt;5')-dinucleotides",
+          "expanded": "(5'-&gt;5')-dinucleotides",
+          "uuid": "1b7ea91a-f2f1-57d4-b93d-b74bfa7ae09e"
+        },
+        {
+          "value": "benzimidazole-ribonucleosides-and-ribonucleotides",
+          "expanded": "Benzimidazole ribonucleosides and ribonucleotides",
+          "uuid": "1f79dd3d-b818-5895-8455-262b540e57c3"
+        },
+        {
+          "value": "flavin-nucleotides",
+          "expanded": "Flavin nucleotides",
+          "uuid": "def987dd-dc03-58d1-b0ac-ff04d3eede54"
+        },
+        {
+          "value": "glycinamide-ribonucleotides",
+          "expanded": "Glycinamide ribonucleotides",
+          "uuid": "f9ab8dfb-c1d2-5f45-bf37-85630fd0529a"
+        },
+        {
+          "value": "imidazole[4,5-c]pyridine-ribonucleosides-and-ribonucleotides",
+          "expanded": "Imidazole[4,5-c]pyridine ribonucleosides and ribonucleotides",
+          "uuid": "ac3578d1-eaa1-5d25-9949-659024374fd1"
+        },
+        {
+          "value": "imidazole-ribonucleosides-and-ribonucleotides",
+          "expanded": "Imidazole ribonucleosides and ribonucleotides",
+          "uuid": "861cfde8-8573-53e5-805e-5feeefcb7a13"
+        },
+        {
+          "value": "molybdopterin-dinucleotides",
+          "expanded": "Molybdopterin dinucleotides",
+          "uuid": "02f78bfa-2731-5149-a6d5-8ee9f9d7d14c"
+        },
+        {
+          "value": "nucleoside-and-nucleotide-analogues",
+          "expanded": "Nucleoside and nucleotide analogues",
+          "uuid": "2ae0b578-bd73-5c0d-9b86-5cccc5386a45"
+        },
+        {
+          "value": "purine-nucleosides",
+          "expanded": "Purine nucleosides",
+          "uuid": "0767db6f-62c3-513e-8e77-b1e8d29f7fcc"
+        },
+        {
+          "value": "pyrazolo[3,4-d]pyrimidine-glycosides",
+          "expanded": "Pyrazolo[3,4-d]pyrimidine glycosides",
+          "uuid": "d5a0861b-8e08-52c7-8a50-cf120e9ab1b6"
+        },
+        {
+          "value": "pyridine-nucleotides",
+          "expanded": "Pyridine nucleotides",
+          "uuid": "7183cda7-d6ae-5e65-961b-29303016aa90"
+        },
+        {
+          "value": "pyrimidine-nucleosides",
+          "expanded": "Pyrimidine nucleosides",
+          "uuid": "8d224264-e139-5dbb-910c-084997f188a2"
+        },
+        {
+          "value": "pyrimidine-nucleotides",
+          "expanded": "Pyrimidine nucleotides",
+          "uuid": "b1a0b49c-144c-56d9-b4f2-4e31e6de6dee"
+        },
+        {
+          "value": "pyrrolopyrimidine-nucleosides-and-nucleotides",
+          "expanded": "Pyrrolopyrimidine nucleosides and nucleotides",
+          "uuid": "01282491-1cb5-5ac8-b8f3-702517e30d13"
+        },
+        {
+          "value": "ribonucleoside-3'-phosphates",
+          "expanded": "Ribonucleoside 3'-phosphates",
+          "uuid": "bcc283d4-9b48-5bd9-8e6c-b65c19e35e71"
+        },
+        {
+          "value": "triazole-ribonucleosides-and-ribonucleotides",
+          "expanded": "Triazole ribonucleosides and ribonucleotides",
+          "uuid": "247f62c1-7a72-51c4-940d-e4919fa046e7"
+        }
+      ]
+    },
+    {
+      "predicate": "organic-1,3-dipolar-compounds",
+      "entry": [
+        {
+          "value": "allyl-type-1,3-dipolar-organic-compounds",
+          "expanded": "Allyl-type 1,3-dipolar organic compounds",
+          "uuid": "7309fb1e-966c-5134-bf3d-4f341016cc29"
+        }
+      ]
+    },
+    {
+      "predicate": "organic-acids-and-derivatives",
+      "entry": [
+        {
+          "value": "boronic-acid-derivatives",
+          "expanded": "Boronic acid derivatives",
+          "uuid": "315857ee-c64a-57a5-a21b-02a50ccfc27c"
+        },
+        {
+          "value": "carboximidic-acids-and-derivatives",
+          "expanded": "Carboximidic acids and derivatives",
+          "uuid": "95af8dfb-e25d-53a2-bf9d-aa3f964f8378"
+        },
+        {
+          "value": "carboxylic-acids-and-derivatives",
+          "expanded": "Carboxylic acids and derivatives",
+          "uuid": "b50fd73a-7302-51aa-8166-12ae3f673c86"
+        },
+        {
+          "value": "hydroxy-acids-and-derivatives",
+          "expanded": "Hydroxy acids and derivatives",
+          "uuid": "6da758b1-55bc-5a09-8e68-92779ad79dbb"
+        },
+        {
+          "value": "keto-acids-and-derivatives",
+          "expanded": "Keto acids and derivatives",
+          "uuid": "8142aa51-1fb5-526f-9375-d36eb09771a5"
+        },
+        {
+          "value": "organic-carbonic-acids-and-derivatives",
+          "expanded": "Organic carbonic acids and derivatives",
+          "uuid": "5a70ce14-e3f5-5ce9-b181-6c3862564a8a"
+        },
+        {
+          "value": "organic-phosphonic-acids-and-derivatives",
+          "expanded": "Organic phosphonic acids and derivatives",
+          "uuid": "5436076f-688c-54db-b662-08810589e982"
+        },
+        {
+          "value": "organic-phosphoric-acids-and-derivatives",
+          "expanded": "Organic phosphoric acids and derivatives",
+          "uuid": "ee6369ab-c9e3-5abe-81ce-26c675339d53"
+        },
+        {
+          "value": "organic-sulfonic-acids-and-derivatives",
+          "expanded": "Organic sulfonic acids and derivatives",
+          "uuid": "fc83dcf5-e24b-50c9-972c-39db899d258c"
+        },
+        {
+          "value": "organic-sulfuric-acids-and-derivatives",
+          "expanded": "Organic sulfuric acids and derivatives",
+          "uuid": "d2b81d62-f83c-5754-95f4-36a3b4393f96"
+        },
+        {
+          "value": "organic-thiophosphoric-acids-and-derivatives",
+          "expanded": "Organic thiophosphoric acids and derivatives",
+          "uuid": "fd55cac4-2441-59d1-8177-8f0ed0ab3bfb"
+        },
+        {
+          "value": "orthocarboxylic-acid-derivatives",
+          "expanded": "Orthocarboxylic acid derivatives",
+          "uuid": "ed0e680b-8c58-5e7d-916d-80c4a73e796e"
+        },
+        {
+          "value": "peptidomimetics",
+          "expanded": "Peptidomimetics",
+          "uuid": "9c72c29f-ff3f-598b-a9f0-5a3625646191"
+        },
+        {
+          "value": "thiosulfinic-acid-esters",
+          "expanded": "Thiosulfinic acid esters",
+          "uuid": "57df69cb-89e2-529a-9251-a7378af5b957"
+        }
+      ]
+    },
+    {
+      "predicate": "organic-acids",
+      "entry": [
+        {
+          "value": "carboxylic-acids-and-derivatives",
+          "expanded": "Carboxylic Acids and Derivatives",
+          "uuid": "4372e91b-fef9-59ee-b064-fd90a12cfc16"
+        }
+      ]
+    },
+    {
+      "predicate": "organic-nitrogen-compounds",
+      "entry": [
+        {
+          "value": "organonitrogen-compounds",
+          "expanded": "Organonitrogen compounds",
+          "uuid": "bcbef429-d2c0-502f-995a-5ca50b78797a"
+        }
+      ]
+    },
+    {
+      "predicate": "organic-oxygen-compounds",
+      "entry": [
+        {
+          "value": "organic-oxides",
+          "expanded": "Organic oxides",
+          "uuid": "644064eb-9f54-53ca-994a-e3b076ab39ed"
+        },
+        {
+          "value": "organic-oxoanionic-compounds",
+          "expanded": "Organic oxoanionic compounds",
+          "uuid": "7971d56e-a847-52c3-b4ac-383ed915a0c7"
+        },
+        {
+          "value": "organooxygen-compounds",
+          "expanded": "Organooxygen compounds",
+          "uuid": "c45ca29e-5661-5aa4-9de8-9b3d55304c46"
+        }
+      ]
+    },
+    {
+      "predicate": "organic-polymers",
+      "entry": [
+        {
+          "value": "phosphorothioate-polynucleotides",
+          "expanded": "Phosphorothioate polynucleotides",
+          "uuid": "1b5b9498-f6e0-58dc-9494-e1848d196cfd"
+        },
+        {
+          "value": "polypeptides",
+          "expanded": "Polypeptides",
+          "uuid": "faf5b202-3fda-5688-b3ee-63a8ee37bfe2"
+        },
+        {
+          "value": "polysaccharides",
+          "expanded": "Polysaccharides",
+          "uuid": "c4ce3186-59bb-5d42-badf-314f391b5457"
+        }
+      ]
+    },
+    {
+      "predicate": "organic-salts",
+      "entry": [
+        {
+          "value": "organic-metal-salts",
+          "expanded": "Organic metal salts",
+          "uuid": "08fb965f-c165-5236-b34f-e61ed67d9ef8"
+        }
+      ]
+    },
+    {
+      "predicate": "organohalogen-compounds",
+      "entry": [
+        {
+          "value": "acyl-halides",
+          "expanded": "Acyl halides",
+          "uuid": "7cd76dd7-eb37-559e-9dc2-1bec2dfcca98"
+        },
+        {
+          "value": "alkyl-halides",
+          "expanded": "Alkyl halides",
+          "uuid": "73bb56a1-3597-5a58-bf9a-218825b6aa60"
+        },
+        {
+          "value": "aryl-halides",
+          "expanded": "Aryl halides",
+          "uuid": "bbb0c82b-1fdb-5d33-b3ce-d9794a16aeb7"
+        },
+        {
+          "value": "halohydrins",
+          "expanded": "Halohydrins",
+          "uuid": "c8663adc-59af-5aef-9bef-b48f1f561ed4"
+        },
+        {
+          "value": "organochlorides",
+          "expanded": "Organochlorides",
+          "uuid": "c9a2e5ad-4f8b-5d37-bd6e-64b3a864fd0d"
+        },
+        {
+          "value": "organofluorides",
+          "expanded": "Organofluorides",
+          "uuid": "5832f52b-36d1-5546-b79d-93604adb3a0e"
+        },
+        {
+          "value": "sulfonyl-halides",
+          "expanded": "Sulfonyl halides",
+          "uuid": "75979764-b973-5004-8014-c14d74b08b73"
+        },
+        {
+          "value": "vinyl-halides",
+          "expanded": "Vinyl halides",
+          "uuid": "24afb338-d66e-5903-a76b-e215273b898e"
+        }
+      ]
+    },
+    {
+      "predicate": "organoheterocyclic-compounds",
+      "entry": [
+        {
+          "value": "azaspirodecane-derivatives",
+          "expanded": "Azaspirodecane derivatives",
+          "uuid": "2bbb1577-4bc2-5978-b69a-4a1f75ca4a70"
+        },
+        {
+          "value": "azepanes",
+          "expanded": "Azepanes",
+          "uuid": "24099bf1-04c0-5046-82ed-5f38be67fc5e"
+        },
+        {
+          "value": "azobenzenes",
+          "expanded": "Azobenzenes",
+          "uuid": "ac375691-3fdf-5e24-959d-6d15d04c11f0"
+        },
+        {
+          "value": "azoles",
+          "expanded": "Azoles",
+          "uuid": "49c5502d-6f2d-5198-9625-08bea151b70d"
+        },
+        {
+          "value": "azolidines",
+          "expanded": "Azolidines",
+          "uuid": "bc52d173-bd9a-578a-9208-7169a7e0302e"
+        },
+        {
+          "value": "azolines",
+          "expanded": "Azolines",
+          "uuid": "2575db1a-3915-51e9-bad4-3ff7f26b7356"
+        },
+        {
+          "value": "benzazepines",
+          "expanded": "Benzazepines",
+          "uuid": "1a117392-50cf-5fa1-b3a4-2158c0e70b2e"
+        },
+        {
+          "value": "benzimidazoles",
+          "expanded": "Benzimidazoles",
+          "uuid": "95359c59-6979-5ee1-937a-22b956dd1b12"
+        },
+        {
+          "value": "benzisoxazoles",
+          "expanded": "Benzisoxazoles",
+          "uuid": "fbe7b540-b4ed-5e23-bdee-b14199c7b07d"
+        },
+        {
+          "value": "benzocycloheptapyridines",
+          "expanded": "Benzocycloheptapyridines",
+          "uuid": "42208033-94c1-57ce-b7b2-e9f84c59a4e7"
+        },
+        {
+          "value": "benzodiazepines",
+          "expanded": "Benzodiazepines",
+          "uuid": "4eae2084-1e37-5be9-be3a-a7f4f715a829"
+        },
+        {
+          "value": "benzodioxanes",
+          "expanded": "Benzodioxanes",
+          "uuid": "b1780506-b0af-5c6c-9a5d-40a92706a371"
+        },
+        {
+          "value": "benzodioxoles",
+          "expanded": "Benzodioxoles",
+          "uuid": "56cfaf1a-954d-5606-a51c-872f35704b42"
+        },
+        {
+          "value": "benzofurans",
+          "expanded": "Benzofurans",
+          "uuid": "b645a39a-d1cd-5652-a781-3d239f40b7ba"
+        },
+        {
+          "value": "benzopyrans",
+          "expanded": "Benzopyrans",
+          "uuid": "b645284a-e7b2-58fd-8d8c-f4a6058ec5c4"
+        },
+        {
+          "value": "benzopyrazoles",
+          "expanded": "Benzopyrazoles",
+          "uuid": "e36020dc-e7ad-5693-b9d0-da795f0ea7de"
+        },
+        {
+          "value": "benzothiadiazoles",
+          "expanded": "Benzothiadiazoles",
+          "uuid": "4f297868-b2c4-53af-9b95-a5ba738a29e9"
+        },
+        {
+          "value": "benzothiazepines",
+          "expanded": "Benzothiazepines",
+          "uuid": "d07c13b0-a385-53aa-8156-6d7b20039b74"
+        },
+        {
+          "value": "benzothiazines",
+          "expanded": "Benzothiazines",
+          "uuid": "f3f3f686-0a20-5d13-8e33-45fb361c859e"
+        },
+        {
+          "value": "benzothiazoles",
+          "expanded": "Benzothiazoles",
+          "uuid": "5cd2b887-6d35-5052-b4ed-ac4bbb3e977d"
+        },
+        {
+          "value": "benzothiepins",
+          "expanded": "Benzothiepins",
+          "uuid": "f61ae3cf-ca28-573e-ae50-db660364e0a0"
+        },
+        {
+          "value": "benzothiophenes",
+          "expanded": "Benzothiophenes",
+          "uuid": "1d386f3d-4c67-5ca9-bec3-81bd53d8bb8c"
+        },
+        {
+          "value": "benzothiopyrans",
+          "expanded": "Benzothiopyrans",
+          "uuid": "0878c0cd-9e10-5af7-8209-7e3a7d804128"
+        },
+        {
+          "value": "benzotriazoles",
+          "expanded": "Benzotriazoles",
+          "uuid": "0a44a27c-fd55-5fa7-93dd-c17e1d627c61"
+        },
+        {
+          "value": "benzoxadiazoles",
+          "expanded": "Benzoxadiazoles",
+          "uuid": "f74b8011-366f-5c65-bd8e-b831a488a772"
+        },
+        {
+          "value": "benzoxazepines",
+          "expanded": "Benzoxazepines",
+          "uuid": "283cbd2a-2de2-5625-b022-7faa2979f465"
+        },
+        {
+          "value": "benzoxazines",
+          "expanded": "Benzoxazines",
+          "uuid": "39f4f186-c91f-5b2f-b230-15d249ef6083"
+        },
+        {
+          "value": "benzoxazoles",
+          "expanded": "Benzoxazoles",
+          "uuid": "806f633d-d31f-5f98-9038-7c8de93642a1"
+        },
+        {
+          "value": "benzoxepines",
+          "expanded": "Benzoxepines",
+          "uuid": "abcf7d15-c7b8-58d2-b45e-81092ea9fc3f"
+        },
+        {
+          "value": "bi--and-oligothiophenes",
+          "expanded": "Bi- and oligothiophenes",
+          "uuid": "348c670e-824b-5f87-ad4b-e8efff8f7883"
+        },
+        {
+          "value": "biotin-and-derivatives",
+          "expanded": "Biotin and derivatives",
+          "uuid": "40b48de5-425a-5074-a40c-fe6f53d10b3e"
+        },
+        {
+          "value": "coumarans",
+          "expanded": "Coumarans",
+          "uuid": "3565c64e-e08d-59a4-a5af-d910f7805f84"
+        },
+        {
+          "value": "cycloheptapyrans",
+          "expanded": "Cycloheptapyrans",
+          "uuid": "c5365e0f-166c-559d-813e-1940a0a23e53"
+        },
+        {
+          "value": "cycloheptathiophenes",
+          "expanded": "Cycloheptathiophenes",
+          "uuid": "587ec66d-7676-5591-b354-75a845bbf5a7"
+        },
+        {
+          "value": "diazanaphthalenes",
+          "expanded": "Diazanaphthalenes",
+          "uuid": "8b5cb112-908a-532d-8167-3d7e0092f1fa"
+        },
+        {
+          "value": "diazepanes",
+          "expanded": "Diazepanes",
+          "uuid": "9d378b21-a55f-5aaf-a878-f9d2b26411ec"
+        },
+        {
+          "value": "diazinanes",
+          "expanded": "Diazinanes",
+          "uuid": "622f0059-b8d1-5af5-b19d-735068c1285c"
+        },
+        {
+          "value": "diazines",
+          "expanded": "Diazines",
+          "uuid": "91283fc7-7e77-5c2e-99b0-113e046a91ed"
+        },
+        {
+          "value": "dihydrofurans",
+          "expanded": "Dihydrofurans",
+          "uuid": "2eab1e5d-03af-5589-8c0f-575664fa2d8f"
+        },
+        {
+          "value": "dihydroisoquinolines",
+          "expanded": "Dihydroisoquinolines",
+          "uuid": "19450cfc-fb39-5145-8665-5261bdc49458"
+        },
+        {
+          "value": "dihydrothiophenes",
+          "expanded": "Dihydrothiophenes",
+          "uuid": "c02624e3-c2e1-5d7b-8666-d8337bb9fda0"
+        },
+        {
+          "value": "dioxaborolanes",
+          "expanded": "Dioxaborolanes",
+          "uuid": "03062e4a-9714-5d83-b97d-744e95c506eb"
+        },
+        {
+          "value": "dioxanes",
+          "expanded": "Dioxanes",
+          "uuid": "cf1029b0-2aa1-5de6-875e-833303373593"
+        },
+        {
+          "value": "dioxolopyrans",
+          "expanded": "Dioxolopyrans",
+          "uuid": "b3bcb150-6777-5b59-aea7-2512f646355d"
+        },
+        {
+          "value": "dithianes",
+          "expanded": "Dithianes",
+          "uuid": "6e66b086-a646-5c10-a4e8-5ab97b4e49cd"
+        },
+        {
+          "value": "dithiolanes",
+          "expanded": "Dithiolanes",
+          "uuid": "7f8c6a0b-2df1-536c-b7f0-dbc29465706f"
+        },
+        {
+          "value": "epoxides",
+          "expanded": "Epoxides",
+          "uuid": "c976e99b-cdd8-5c12-80c7-8cdc2071c157"
+        },
+        {
+          "value": "furans",
+          "expanded": "Furans",
+          "uuid": "2ff45028-3923-5e86-8d3b-edd59d03bfcb"
+        },
+        {
+          "value": "furofurans",
+          "expanded": "Furofurans",
+          "uuid": "e534c234-b9a8-50f2-954e-15d2d4994190"
+        },
+        {
+          "value": "furopyrans",
+          "expanded": "Furopyrans",
+          "uuid": "d004ac79-b05c-5b08-9cad-97f856b2faf4"
+        },
+        {
+          "value": "furopyridines",
+          "expanded": "Furopyridines",
+          "uuid": "e3514f99-114e-5338-86de-d2101ed22826"
+        },
+        {
+          "value": "furopyrroles",
+          "expanded": "Furopyrroles",
+          "uuid": "49712260-3a7c-570f-98cf-b682720ae7dd"
+        },
+        {
+          "value": "heteroaromatic-compounds",
+          "expanded": "Heteroaromatic compounds",
+          "uuid": "7a318a26-c641-5ea1-93e4-c72310def037"
+        },
+        {
+          "value": "imidazo[1,5-a]pyrazines",
+          "expanded": "Imidazo[1,5-a]pyrazines",
+          "uuid": "8e27d713-d6d3-5fb4-a7a3-96e342eb521b"
+        },
+        {
+          "value": "imidazodiazepines",
+          "expanded": "Imidazodiazepines",
+          "uuid": "21ddad51-1702-5f5f-b551-703b1685b96f"
+        },
+        {
+          "value": "imidazopyrazines",
+          "expanded": "Imidazopyrazines",
+          "uuid": "8e54d85a-e268-5b66-8144-6546855588da"
+        },
+        {
+          "value": "imidazopyridines",
+          "expanded": "Imidazopyridines",
+          "uuid": "c003ef5b-b070-5c39-8772-341635edcef7"
+        },
+        {
+          "value": "imidazopyrimidines",
+          "expanded": "Imidazopyrimidines",
+          "uuid": "9d7558ab-5c13-5450-bbdd-66fa56adf0da"
+        },
+        {
+          "value": "imidazotetrazines",
+          "expanded": "Imidazotetrazines",
+          "uuid": "f468d0ef-a2ef-528a-94fd-443f01a4a48a"
+        },
+        {
+          "value": "imidazothiazoles",
+          "expanded": "Imidazothiazoles",
+          "uuid": "1904e200-a4f1-5e9e-9dc5-40bb9f7ed77e"
+        },
+        {
+          "value": "indoles-and-derivatives",
+          "expanded": "Indoles and derivatives",
+          "uuid": "34a60983-8d83-56a5-9e5a-73b346c5bdaf"
+        },
+        {
+          "value": "indolizidines",
+          "expanded": "Indolizidines",
+          "uuid": "c563b054-ba90-54d9-833e-033e9162ea80"
+        },
+        {
+          "value": "isocoumarans",
+          "expanded": "Isocoumarans",
+          "uuid": "8fd8a5f3-c1be-510a-9ccd-6ba4224b2132"
+        },
+        {
+          "value": "isoindoles-and-derivatives",
+          "expanded": "Isoindoles and derivatives",
+          "uuid": "bd29bd22-49a2-5445-89fa-8080f264316c"
+        },
+        {
+          "value": "isoquinolines-and-derivatives",
+          "expanded": "Isoquinolines and derivatives",
+          "uuid": "4c1fe652-a0cd-5564-a900-c520cfca7852"
+        },
+        {
+          "value": "isoxazolopyridines",
+          "expanded": "Isoxazolopyridines",
+          "uuid": "39a2833f-dfa6-5ff8-a31f-02f876ba3413"
+        },
+        {
+          "value": "lactams",
+          "expanded": "Lactams",
+          "uuid": "e3540ff8-6b73-5e6a-b234-64aa8d36228d"
+        },
+        {
+          "value": "lactones",
+          "expanded": "Lactones",
+          "uuid": "0d76c1f1-cb91-5552-8a99-bc8f9b079c08"
+        },
+        {
+          "value": "metalloheterocyclic-compounds",
+          "expanded": "Metalloheterocyclic compounds",
+          "uuid": "6929957d-59ac-5044-8bf4-b07b6556eb56"
+        },
+        {
+          "value": "naphthofurans",
+          "expanded": "Naphthofurans",
+          "uuid": "16fe5b27-8106-5c9e-9fe6-cb9fd374c8b9"
+        },
+        {
+          "value": "naphthopyrans",
+          "expanded": "Naphthopyrans",
+          "uuid": "6a0d4ca3-44a7-50f5-ac99-240507553f42"
+        },
+        {
+          "value": "oxanes",
+          "expanded": "Oxanes",
+          "uuid": "d4c8f53a-6890-5e0e-8ac6-6c06b087cac1"
+        },
+        {
+          "value": "oxazaphosphinanes",
+          "expanded": "Oxazaphosphinanes",
+          "uuid": "7c5e8645-0522-5387-b8c5-9839d058b0a0"
+        },
+        {
+          "value": "oxazinanes",
+          "expanded": "Oxazinanes",
+          "uuid": "b3af3d34-1218-55aa-858c-7d2f905ece55"
+        },
+        {
+          "value": "oxepanes",
+          "expanded": "Oxepanes",
+          "uuid": "5e5e5d82-cb93-58a8-bf09-997e7aa7dfbf"
+        },
+        {
+          "value": "phenanthrolines",
+          "expanded": "Phenanthrolines",
+          "uuid": "9667c2c5-5d79-5b1f-89a4-840d9333f9d1"
+        },
+        {
+          "value": "piperazinoazepines",
+          "expanded": "Piperazinoazepines",
+          "uuid": "3bf608ef-f7fd-59b8-9ba8-73d3a294ebb3"
+        },
+        {
+          "value": "piperidines",
+          "expanded": "Piperidines",
+          "uuid": "a03ac944-aca0-50d2-9507-cc7a509991b5"
+        },
+        {
+          "value": "pteridines-and-derivatives",
+          "expanded": "Pteridines and derivatives",
+          "uuid": "bd4c6858-d4f8-50a5-90e3-1b4bd53c4192"
+        },
+        {
+          "value": "pyranodioxins",
+          "expanded": "Pyranodioxins",
+          "uuid": "05d6347f-efb7-59e7-907a-1ddce9221d71"
+        },
+        {
+          "value": "pyranopyridines",
+          "expanded": "Pyranopyridines",
+          "uuid": "43a534a9-f4c7-5739-ae39-b0fd072e6458"
+        },
+        {
+          "value": "pyranopyrimidines",
+          "expanded": "Pyranopyrimidines",
+          "uuid": "cc739681-8b1e-58bf-8f7a-4b29002c2dfa"
+        },
+        {
+          "value": "pyrans",
+          "expanded": "Pyrans",
+          "uuid": "f6735889-495f-528a-80dc-b70c54f5b9ab"
+        },
+        {
+          "value": "pyrazolopyridines",
+          "expanded": "Pyrazolopyridines",
+          "uuid": "c175f669-9471-55a9-913d-8d3c7cadc55f"
+        },
+        {
+          "value": "pyrazolopyrimidines",
+          "expanded": "Pyrazolopyrimidines",
+          "uuid": "cdc0aea5-b04b-567c-8c00-be33adec8924"
+        },
+        {
+          "value": "pyrazolotriazines",
+          "expanded": "Pyrazolotriazines",
+          "uuid": "3e0f7fae-e69a-5a5b-84b9-030f8aa07590"
+        },
+        {
+          "value": "pyridines-and-derivatives",
+          "expanded": "Pyridines and derivatives",
+          "uuid": "a8a97f74-ff8f-5531-b8f4-4b81c8249ecf"
+        },
+        {
+          "value": "pyridopyrimidines",
+          "expanded": "Pyridopyrimidines",
+          "uuid": "831f08ae-6fce-5ba2-8bb5-251264ff604d"
+        },
+        {
+          "value": "pyrroles",
+          "expanded": "Pyrroles",
+          "uuid": "e51c5b72-cf6e-5fa4-be97-179378d7acfc"
+        },
+        {
+          "value": "pyrrolidines",
+          "expanded": "Pyrrolidines",
+          "uuid": "ced2967c-b67a-5c38-bf4d-3a2d27d7a8cd"
+        },
+        {
+          "value": "pyrrolines",
+          "expanded": "Pyrrolines",
+          "uuid": "df29c0f9-8266-5f57-a383-b73ef2d5512f"
+        },
+        {
+          "value": "pyrrolizines",
+          "expanded": "Pyrrolizines",
+          "uuid": "a86d1615-2b32-56e2-81c0-401f54080e45"
+        },
+        {
+          "value": "pyrroloazepines",
+          "expanded": "Pyrroloazepines",
+          "uuid": "0f2ccf5f-901b-59ef-ba43-a7da3cb5ef4e"
+        },
+        {
+          "value": "pyrrolopyrazines",
+          "expanded": "Pyrrolopyrazines",
+          "uuid": "2fe12e1b-c0d6-504a-b05e-8cdc35b7af7f"
+        },
+        {
+          "value": "pyrrolopyrazoles",
+          "expanded": "Pyrrolopyrazoles",
+          "uuid": "7944605d-049f-5189-8cff-789f315dd5ed"
+        },
+        {
+          "value": "pyrrolopyridines",
+          "expanded": "Pyrrolopyridines",
+          "uuid": "6e57c3b7-d665-5c82-9e1a-dc646e679ea3"
+        },
+        {
+          "value": "pyrrolopyrimidines",
+          "expanded": "Pyrrolopyrimidines",
+          "uuid": "fd592cce-d81c-5c35-b77c-1bfc2f0dfd94"
+        },
+        {
+          "value": "pyrrolotriazines",
+          "expanded": "Pyrrolotriazines",
+          "uuid": "54c0b3fd-90a5-58be-8592-a7ba65eb9a9c"
+        },
+        {
+          "value": "quinolines-and-derivatives",
+          "expanded": "Quinolines and derivatives",
+          "uuid": "a5c867cb-e99e-58ff-b030-df54636640f1"
+        },
+        {
+          "value": "quinuclidines",
+          "expanded": "Quinuclidines",
+          "uuid": "545397c6-ef38-5254-9f87-4f8eb1c448d5"
+        },
+        {
+          "value": "selenazoles",
+          "expanded": "Selenazoles",
+          "uuid": "8de87a0a-7bb5-5181-a010-0a1cb5c4ee15"
+        },
+        {
+          "value": "tetrahydrofurans",
+          "expanded": "Tetrahydrofurans",
+          "uuid": "de6b8187-599f-5117-a218-1b445930d2b6"
+        },
+        {
+          "value": "tetrahydroisoquinolines",
+          "expanded": "Tetrahydroisoquinolines",
+          "uuid": "94c6d875-e541-5977-89c0-9ea09054b248"
+        },
+        {
+          "value": "tetrapyrroles-and-derivatives",
+          "expanded": "Tetrapyrroles and derivatives",
+          "uuid": "2961c0d0-1671-5769-b8a7-a4b15fc833ba"
+        },
+        {
+          "value": "thiadiazinanes",
+          "expanded": "Thiadiazinanes",
+          "uuid": "a385d179-5d7a-509d-b2cf-36d5510067ee"
+        },
+        {
+          "value": "thiadiazines",
+          "expanded": "Thiadiazines",
+          "uuid": "cfa54875-333f-5496-9cc5-adde7908aae1"
+        },
+        {
+          "value": "thianes",
+          "expanded": "Thianes",
+          "uuid": "d9ddea60-e39c-5c95-8922-8ba1ab45405b"
+        },
+        {
+          "value": "thiazepines",
+          "expanded": "Thiazepines",
+          "uuid": "a86a7f48-5bcc-5dbc-b237-a2e5aec21b55"
+        },
+        {
+          "value": "thiazinanes",
+          "expanded": "Thiazinanes",
+          "uuid": "720d9069-016c-513f-a991-8b45c7fdcf80"
+        },
+        {
+          "value": "thiazines",
+          "expanded": "Thiazines",
+          "uuid": "51d1026b-bc0d-557c-af8f-822c7b2d6277"
+        },
+        {
+          "value": "thienodiazepines",
+          "expanded": "Thienodiazepines",
+          "uuid": "e224a96b-5643-590a-b3fd-7b8325a256f3"
+        },
+        {
+          "value": "thienoimidazolidines",
+          "expanded": "Thienoimidazolidines",
+          "uuid": "1c30e609-aa0f-5e2d-be48-cfc69060fafd"
+        },
+        {
+          "value": "thienopyridines",
+          "expanded": "Thienopyridines",
+          "uuid": "a5d9d981-8c09-57c0-9cab-0bf26af9973d"
+        },
+        {
+          "value": "thienopyrimidines",
+          "expanded": "Thienopyrimidines",
+          "uuid": "50ca1359-4a29-5ec0-8dc1-f72dbe6e091b"
+        },
+        {
+          "value": "thienopyrroles",
+          "expanded": "Thienopyrroles",
+          "uuid": "63ed28e7-fc68-5015-9df1-3e0e5d52d283"
+        },
+        {
+          "value": "thienothiazines",
+          "expanded": "Thienothiazines",
+          "uuid": "39df1762-82e9-52a4-8475-39236ea12c99"
+        },
+        {
+          "value": "thiochromanes",
+          "expanded": "Thiochromanes",
+          "uuid": "4f50449f-c0be-598b-9721-14fd62e20c80"
+        },
+        {
+          "value": "thiochromenes",
+          "expanded": "Thiochromenes",
+          "uuid": "a461d28e-6b5c-5a92-a237-04acf626b0c3"
+        },
+        {
+          "value": "thiolanes",
+          "expanded": "Thiolanes",
+          "uuid": "1ba8f6b7-24a9-521f-9bed-cfb1d8d3ee81"
+        },
+        {
+          "value": "thiophenes",
+          "expanded": "Thiophenes",
+          "uuid": "25fdab0a-31da-5db1-b1be-f9fa010ee7d8"
+        },
+        {
+          "value": "triazinanes",
+          "expanded": "Triazinanes",
+          "uuid": "7a9d8160-5a3b-5909-a518-7f8d456d5f5a"
+        },
+        {
+          "value": "triazines",
+          "expanded": "Triazines",
+          "uuid": "70381fe0-3475-51c5-bed0-db855c7b005f"
+        },
+        {
+          "value": "triazolopyrazines",
+          "expanded": "Triazolopyrazines",
+          "uuid": "1257c876-7486-505a-8612-546ac53e18fb"
+        },
+        {
+          "value": "triazolopyridines",
+          "expanded": "Triazolopyridines",
+          "uuid": "6335744a-afef-592e-b222-e3c7c1b4479f"
+        },
+        {
+          "value": "triazolopyrimidines",
+          "expanded": "Triazolopyrimidines",
+          "uuid": "88a53c3d-95dc-503f-a20f-fd70f9399be2"
+        },
+        {
+          "value": "trioxanes",
+          "expanded": "Trioxanes",
+          "uuid": "fe0b1e78-8c0c-513c-a93a-9e3fe1a817c9"
+        }
+      ]
+    },
+    {
+      "predicate": "organometallic-compounds",
+      "entry": [
+        {
+          "value": "organometalloid-compounds",
+          "expanded": "Organometalloid compounds",
+          "uuid": "14db9984-ab62-58ea-b931-30acffc25033"
+        },
+        {
+          "value": "organo-post-transition-metal-compounds",
+          "expanded": "Organo-post-transition metal compounds",
+          "uuid": "61470617-65e1-5a81-866e-59440c8efe52"
+        }
+      ]
+    },
+    {
+      "predicate": "organophosphorus-compounds",
+      "entry": [
+        {
+          "value": "organic-phosphines-and-derivatives",
+          "expanded": "Organic phosphines and derivatives",
+          "uuid": "7b0d12d3-0393-56b4-bd84-3247937675bb"
+        },
+        {
+          "value": "organophosphinic-acids-and-derivatives",
+          "expanded": "Organophosphinic acids and derivatives",
+          "uuid": "61e2e1eb-3bdb-53cd-80fe-4393557d0e0e"
+        },
+        {
+          "value": "organothiophosphorus-compounds",
+          "expanded": "Organothiophosphorus compounds",
+          "uuid": "aca4956c-9e7d-5105-b0ae-dcb8f91e7d26"
+        }
+      ]
+    },
+    {
+      "predicate": "organosulfur-compounds",
+      "entry": [
+        {
+          "value": "isothioureas",
+          "expanded": "Isothioureas",
+          "uuid": "25dc927a-e86d-51fa-b8a1-08bcff91e12e"
+        },
+        {
+          "value": "organic-disulfides",
+          "expanded": "Organic disulfides",
+          "uuid": "6574e6e2-c504-592c-b69a-c61627212787"
+        },
+        {
+          "value": "sulfonyls",
+          "expanded": "Sulfonyls",
+          "uuid": "93b918d2-1c1a-546f-b3f5-02bf65b74dba"
+        },
+        {
+          "value": "sulfoxides",
+          "expanded": "Sulfoxides",
+          "uuid": "4548e369-4bc3-55c9-aa4b-c8ea3338113e"
+        },
+        {
+          "value": "thiocarbonyl-compounds",
+          "expanded": "Thiocarbonyl compounds",
+          "uuid": "f8eacbbe-7881-5245-af59-ff1cb6b79a67"
+        },
+        {
+          "value": "thioethers",
+          "expanded": "Thioethers",
+          "uuid": "3c69cc3a-ee95-5011-93b7-96e4076f4659"
+        },
+        {
+          "value": "thiols",
+          "expanded": "Thiols",
+          "uuid": "ad665e0e-de32-5e19-a94f-5899e09e232c"
+        },
+        {
+          "value": "thioureas",
+          "expanded": "Thioureas",
+          "uuid": "7faca4dc-a2d1-5335-9e94-6d2ac0be72a2"
+        }
+      ]
+    },
+    {
+      "predicate": "phenylpropanoids-and-polyketides",
+      "entry": [
+        {
+          "value": "2-arylbenzofuran-flavonoids",
+          "expanded": "2-arylbenzofuran flavonoids",
+          "uuid": "c9c0ddf7-34c7-5956-b6e5-578f58e66b00"
+        },
+        {
+          "value": "anthracyclines",
+          "expanded": "Anthracyclines",
+          "uuid": "eaab2dc0-a698-51ef-96e8-2e9afa01e8bb"
+        },
+        {
+          "value": "aurone-flavonoids",
+          "expanded": "Aurone flavonoids",
+          "uuid": "9993f1bb-968b-5f00-b970-94c9efadb24d"
+        },
+        {
+          "value": "cinnamic-acids-and-derivatives",
+          "expanded": "Cinnamic acids and derivatives",
+          "uuid": "fd285f80-fbb3-5691-a80a-e94d5c6e67c8"
+        },
+        {
+          "value": "cinnamyl-alcohols",
+          "expanded": "Cinnamyl alcohols",
+          "uuid": "76bdf9e4-9a33-516b-98e4-a9c339b4897f"
+        },
+        {
+          "value": "coumarins-and-derivatives",
+          "expanded": "Coumarins and derivatives",
+          "uuid": "7f1af247-a26e-5d39-bc60-476307f740b9"
+        },
+        {
+          "value": "depsides-and-depsidones",
+          "expanded": "Depsides and depsidones",
+          "uuid": "0dda7b15-3f20-5388-bf0f-d366701a7e45"
+        },
+        {
+          "value": "diarylheptanoids",
+          "expanded": "Diarylheptanoids",
+          "uuid": "bfcee4f2-cf99-529e-87a3-d15ec45db161"
+        },
+        {
+          "value": "flavonoids",
+          "expanded": "Flavonoids",
+          "uuid": "b9da3cac-6d2e-53c9-bb73-99107e09f214"
+        },
+        {
+          "value": "isochromanequinones",
+          "expanded": "Isochromanequinones",
+          "uuid": "c4abed48-384c-5772-9f1c-ce84cabf2aef"
+        },
+        {
+          "value": "isocoumarins-and-derivatives",
+          "expanded": "Isocoumarins and derivatives",
+          "uuid": "c580911c-9946-5c7d-9560-209545e44590"
+        },
+        {
+          "value": "isoflavonoids",
+          "expanded": "Isoflavonoids",
+          "uuid": "9f943de7-2bbb-5f90-be8e-0113d1351bdf"
+        },
+        {
+          "value": "linear-1,3-diarylpropanoids",
+          "expanded": "Linear 1,3-diarylpropanoids",
+          "uuid": "7ea601cc-7ad3-52c6-a1b7-f0a592356d2b"
+        },
+        {
+          "value": "macrolactams",
+          "expanded": "Macrolactams",
+          "uuid": "852121b0-71cf-5ca9-80b1-83a47e796f34"
+        },
+        {
+          "value": "macrolide-lactams",
+          "expanded": "Macrolide lactams",
+          "uuid": "27e563ae-e195-5570-8b8a-934ef9dcc6ca"
+        },
+        {
+          "value": "macrolides-and-analogues",
+          "expanded": "Macrolides and analogues",
+          "uuid": "3c4c8da7-78fb-5d4d-a6cf-5695810a07d7"
+        },
+        {
+          "value": "neoflavonoids",
+          "expanded": "Neoflavonoids",
+          "uuid": "5e76c58f-2ca6-58da-bb84-54a60e5cbbc1"
+        },
+        {
+          "value": "phenylpropanoic-acids",
+          "expanded": "Phenylpropanoic acids",
+          "uuid": "92ba4cb9-cdff-58ec-b301-1267c0e140a4"
+        },
+        {
+          "value": "saxitoxins,-gonyautoxins,-and-derivatives",
+          "expanded": "Saxitoxins, gonyautoxins, and derivatives",
+          "uuid": "07bb3fa8-8132-5f92-98b1-3001a456231a"
+        },
+        {
+          "value": "stilbenes",
+          "expanded": "Stilbenes",
+          "uuid": "9149b651-eb19-50c6-83da-5346b6dd29b4"
+        },
+        {
+          "value": "tannins",
+          "expanded": "Tannins",
+          "uuid": "fde4fe5a-9ff1-5367-9fc4-3ab0c7e507c0"
+        },
+        {
+          "value": "tetracyclines",
+          "expanded": "Tetracyclines",
+          "uuid": "de564e1b-ee1a-5481-901b-5e9df8239301"
+        }
+      ]
+    }
+  ],
+  "uuid": "e71cb3a8-b860-5deb-b2e2-b53c8d282af5"
+}
