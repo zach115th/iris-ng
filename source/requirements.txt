@@ -24,7 +24,7 @@ Werkzeug==3.1.8
 WTForms==3.2.2
 Flask-SocketIO==5.6.1
 alembic==1.18.5
-setuptools>=83.0.0
+setuptools>=84.0.0
 python-dateutil==2.9.0.post0
 python-gnupg==0.5.6
 pyminizip~=0.2.6
