@@ -1,0 +1,346 @@
+<div class="modal-header">
+    <div class="col md-12">
+        <div class="row">
+            <div class="col align-self-center">
+                <h4 class="modal-title mr-4">{% if ioc.ioc_id %}Edit IOC #{{ ioc.ioc_id }}{% else %} Add IOC {% endif %}
+                    {% if ioc.ioc_id and ioc.modification_history %}
+                        <i class="fa-solid fa-clock-rotate-left ml-3 mt-2" style="cursor: pointer; font-size: 0.8em; opacity: 0.7;"
+                                title="Show IOC history" onclick="iris_toggle_ioc_history();return false;"></i>
+                    {% endif %}
+                </h4>
+                <small><i class="text-muted">{% if ioc.ioc_uuid %}#{{ ioc.ioc_uuid }}{% endif %}</i></small>
+            </div>
+            {% include 'modals/modal_attributes_nav.html' %}
+            <div class="col">
+                <div class="row float-right">
+                    {% if ioc.ioc_id %}
+                     <div class="dropdown">
+                          <button class="btn bg-transparent pull-right" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                              <span aria-hidden="true"><i class="fas fa-ellipsis-v"></i></span>
+                          </button>
+                          <div class="dropdown-menu pull-right" id="ioc_modal_quick_actions" aria-labelledby="dropdownMenuButton">
+                              <a class="dropdown-item" href="#" onclick='iris_toggle_ioc_history();return false;'><i class="fa-solid fa-clock-rotate-left mr-2"></i>History</a>
+                              <a class="dropdown-item" href="#" onclick='copy_object_link({{ioc.ioc_id}});return false;'><i class="fa fa-share mr-2"></i>Share</a>
+                              <a class="dropdown-item" href="#" onclick='copy_object_link_md("ioc", {{ioc.ioc_id}});return false;'><i class="fa-brands fa-markdown mr-2"></i>Markdown Link</a>
+                          </div>
+                         <div class="dropdown-menu pull-right" aria-labelledby="dropdownMenuButton">
+                          </div>
+                     </div>
+                     <button type="button" class="btn bg-transparent btn-xs" onclick="comment_element({{ ioc.ioc_id }}, 'ioc')" title="Comments">
+                        <span class="btn-label">
+                            <i class="fa-solid fa-comments"></i><span class="notification" id="object_comments_number">{{ comments_map|length if comments_map|length > 0 else '' }}</span>
+                        </span>
+                     </button>
+                    {% endif %}
+                     <button class="float-right btn bg-transparent" title="Minimize" onclick="modal_minimized('modal_add_ioc', '{% if ioc.ioc_id %}Edit IOC #{{ ioc.ioc_id }} {% else %} Add IOC {% endif %}');"> <i class='fa fa-minus'></i> </button>
+                    <button type="button" class="float-right btn bg-transparent" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true"><i class="fa fa-times"></i></span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-body">
+    {# iris-ng: IOC history. Server-rendered from ioc.modification_history (dict
+       keyed by float epoch), the same shape and pattern as the master-timeline
+       event history panel. Hidden by default; toggled from the ⋮ dropdown
+       "History" item or the clock icon next to the title. #}
+    {% if ioc.ioc_id %}
+    <div id="iris-ioc-history-panel" class="card mb-3" style="display:none; border: 1px solid rgba(139, 92, 246, 0.35); background: rgba(139, 92, 246, 0.06);">
+        <div class="card-header d-flex align-items-center" style="padding: 8px 14px;">
+            <i class="fa-solid fa-clock-rotate-left mr-2" style="color:#b794f6;"></i>
+            <span style="font-weight:600;">IOC history</span>
+            <button type="button" class="btn btn-xs bg-transparent ml-auto" onclick="iris_toggle_ioc_history();return false;" title="Hide">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="card-body" style="padding: 10px 14px; max-height: 280px; overflow-y: auto;">
+            {% if ioc.modification_history %}
+            <ul class="list-unstyled mb-0" style="font-size: 12.5px;">
+                {% for mod in ioc.modification_history|sort(reverse=true) %}
+                {% set entry = ioc.modification_history[mod] %}
+                {% set act = entry.action %}
+                {% if 'created' in act %}{% set icon = 'fa-plus' %}{% set col = '#34d399' %}
+                {% elif 'comment' in act %}{% set icon = 'fa-comment' %}{% set col = '#94a3b8' %}
+                {% else %}{% set icon = 'fa-pen' %}{% set col = '#cbd5e1' %}{% endif %}
+                <li class="mb-2 d-flex">
+                    <i class="fa-solid {{ icon }} mr-2 mt-1" style="color:{{ col }}; width: 14px; text-align:center;"></i>
+                    <div>
+                        <span style="font-weight:600; text-transform:capitalize;">{{ act }}</span>
+                        <span class="text-muted">by</span> <code>{{ entry.user }}</code>
+                        <div class="text-muted" style="font-size: 11px;">{{ mod|format_datetime('%Y-%m-%d %H:%M:%S') }}</div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            {# Only IOCs edited since 2026-08-01 have history — the update path did
+               not record anything before that, and nothing is backfilled. #}
+            <div class="text-muted" style="font-size: 12.5px;">No recorded history for this IOC yet.</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    <div role="tabpanel">
+          <div class="tab-content">
+                <div class="tab-pane active" id="details">
+                <div class="container col-md-12">
+                    <form method="post" action="" id="form_new_ioc">
+                        <div class="col-md-12 col-lg-12 col-sm-12">
+                            {{ form.hidden_tag() }}
+                            <div class="form-group row">
+                                <div class="col-6">
+                                    <label for="ioc_type_id" class="mr-4">Type *
+                                    </label>
+                                    {{ form.ioc_type_id(class="selectpicker pl--6 col-10") }}
+                                </div>
+                                <div class="col-6">
+                                    <label for="ioc_tlp_id" class="mr-4">TLP *
+                                    </label>
+                                    {{ form.ioc_tlp_id(class="selectpicker pl--6 col-10") }}
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="ioc_value" class="placeholder">{{ form.ioc_value.label.text }} *</label>
+                                {{ form.ioc_value(class='form-control col-md-12 col-sm-12 sizable-textarea',  autocomplete="off") }}
+                            </div>
+                            {% if not ioc.ioc_id %}
+                            <div class="form-group col-2">
+                                <div class="form-check">
+                                     <label class="form-check-label mt-3">
+                                         <input class="form-check-input" type="checkbox" id="ioc_one_per_line" checked>
+                                             <span class="form-check-sign"> One IOC per line 
+                                                 <i class="ml-1 mt-1 fa-regular fa-circle-question" title="If checked, each new line will create a new IOC" style="cursor:pointer;"></i>
+                                             </span>
+                                     </label>
+                                </div>
+                             </div>
+                             {% endif %}
+                            <div class="form-group mt-3">
+                                <label class="placeholder">Description</label>
+                                    <div class="md_description_field">
+                                        <div class="form-group mt--2">
+                                            <button type="button" class="float-right icon-note btn btn-circle btn-sm mt-2" onclick="edit_in_ioc_desc();">
+                                            </button>
+                                            <button type="button" style="display: none;" class="btn btn-dark btn-sm float-right mr-2 mt-2"
+                                                    onclick="preview_ioc_description();" id="ioc_preview_button"><i class="fa-solid fa-eye"></i></button>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col mb--2 ml--2" id="ioc_edition_btn" style="display:none;">
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-left:0px;">
+                                        <div class="col-12" id="container_ioc_desc_content">
+                                            <div id="ioc_description" contenteditable="true" spellcheck="true" class="mr-2" data-theme="{% if current_user.in_dark_mode %}dark{% else %}light{% endif %}">{% if ioc and ioc.ioc_description %}{{ ioc.ioc_description  }}{% endif %}</div>
+                                            <textarea id="ioc_desc_content" rows="10" cols="82" style="display: none"></textarea>
+                                        </div>
+                                        <div class="col-12" id="container_ioc_description" style="display:none">
+                                            <div id="target_ioc_desc"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="ioc_tags" class="d-flex align-items-center" style="gap: 8px; flex-wrap: wrap;">
+                                    <span>IOC tags</span>
+                                    {# iris-next: AI tag suggester pill — inline next to the IOC tags label. Existing IOCs only. #}
+                                    {% set tagsuggest_object_type = "ioc" %}
+                                    {% set tagsuggest_object_id = ioc.ioc_id %}
+                                    {% set tagsuggest_target_input_id = "ioc_tags" %}
+                                    {% set tagsuggest_pill_only = True %}
+                                    {% include 'case_tag_suggester.html' %}
+                                </label>
+                                <input type="text" id="ioc_tags"
+                                    class="form-control col-md-12" {% if ioc.ioc_tags %} value="{{ ioc.ioc_tags }}" {% endif %}/>
+                                {# iris-next: tag suggester results panel (paired with the pill in the label above). #}
+                                {% set tagsuggest_pill_only = False %}
+                                {% set tagsuggest_results_only = True %}
+                                {% include 'case_tag_suggester.html' %}
+                            </div>
+
+                            {% if linked_notes is defined and linked_notes %}
+                            {# iris-next: provenance back-link populated by the AI IOC extractor's
+                               `+ add` flow. Read-only here; clicking a chip jumps to the source note
+                               via the legacy /case/notes path which case.notes.js reads on load. #}
+                            <div class="form-group">
+                                <label class="d-flex align-items-center" style="gap: 8px;">
+                                    <span>Linked Notes</span>
+                                    <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">— where this IOC was sourced from</span>
+                                </label>
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                {% for ln in linked_notes %}
+                                    <a href="/case/notes?cid={{ ioc.case_id }}&shared={{ ln.note_id }}"
+                                       title="Open source note #{{ ln.note_id }} ({{ ln.source }})"
+                                       style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); color: #d4c4ff; padding: 4px 10px; border-radius: 999px; font-size: 12px;">
+                                        <i class="fa-regular fa-note-sticky" style="font-size: 11px;"></i>
+                                        <span>{{ ln.note_title or ('Note #' ~ ln.note_id) }}</span>
+                                        {% if ln.source and ln.source != 'ai_extractor' %}
+                                            <span style="font-size: 10px; opacity: 0.7;">({{ ln.source }})</span>
+                                        {% endif %}
+                                    </a>
+                                {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                        {# iris-next: Cross-case correlation panel — available on edit-existing IOC only.
+                           Shows a structured list of other cases where this (value, type) pair appears,
+                           with a separate ✨ AI brief button that fires an AI synthesis manually. #}
+                        {% if ioc.ioc_id %}
+                        <div class="form-group mt-3" id="iris-ioc-crosscase-section"
+                             data-ioc-id="{{ ioc.ioc_id }}"
+                             data-ioc-type-id="{{ ioc.ioc_type_id }}"
+                             data-ioc-value="{{ ioc.ioc_value }}">
+                            <label class="d-flex align-items-center" style="gap: 8px; flex-wrap: wrap;">
+                                <span>Cross-case appearances</span>
+                                <a href="javascript:void(0);" id="iris-ioc-crosscase-load-btn"
+                                   onclick="iris_ioc_crosscase_load();"
+                                   style="font-size: 12px; color: #7c3aed; text-decoration: none;">
+                                    <i class="fas fa-search mr-1"></i> Check other cases
+                                </a>
+                            </label>
+                            <div id="iris-ioc-crosscase-result" style="display:none;"></div>
+                        </div>
+                        {% endif %}
+
+                        <div class='invalid-feedback' id='ioc-invalid-msg'></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% include 'modals/modal_attributes_tabs.html' %}
+          </div>
+            {% if ioc.ioc_id %}
+                <button type="button" class="btn btn-outline-danger mt-5"
+                onclick="delete_ioc('{{ ioc.ioc_id }}');">Delete</button>
+                <button type="button" class="btn btn-outline-success ml-4 mt-5 float-right" id="submit_new_ioc"
+                onclick="update_ioc('{{ ioc.ioc_id }}');">Update</button>
+
+            {% else %}
+
+                <button type="button" class="btn btn-outline-success ml-4 mt-5 float-right"
+                id="submit_new_ioc">Save</button>
+
+            {% endif %}
+    </div>
+<script>
+    $('form#form_new_ioc').validate();
+    set_suggest_tags('ioc_tags')
+
+// iris-ng: toggle the IOC history panel (server-rendered). Mirrors
+// iris_toggle_event_history() in modal_add_case_event.html.
+function iris_toggle_ioc_history() {
+    var panel = document.getElementById('iris-ioc-history-panel');
+    if (!panel) { return; }
+    var showing = panel.style.display !== 'none';
+    panel.style.display = showing ? 'none' : 'block';
+    if (!showing) { panel.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }
+}
+
+    $('#ioc_type_id').selectpicker({
+        liveSearch: true,
+        title: "None",
+        style: "btn-outline-white",
+        size: 10
+    });
+
+    $('#ioc_tlp_id').selectpicker({
+        liveSearch: true,
+        title: "None",
+        style: "btn-outline-white",
+    });
+
+    {% if ioc.ioc_id %}
+        $('#ioc_type_id').selectpicker('val', '{{ioc.ioc_type_id}}');
+        $('#ioc_tlp_id').selectpicker('val', '{{ioc.ioc_tlp_id}}');
+    {% else %}
+        $('#ioc_tlp_id').selectpicker('val', '2');
+    {% endif %}
+
+    // iris-next: cross-case correlation loader for IOC modal.
+    // Values come from data-* attributes on the section div to avoid HTML-attribute quoting issues.
+    function iris_ioc_crosscase_load() {
+        var section = document.getElementById('iris-ioc-crosscase-section');
+        var iocId = section ? section.dataset.iocId : null;
+        var iocTypeId = section ? parseInt(section.dataset.iocTypeId, 10) : null;
+        var iocValue = section ? section.dataset.iocValue : null;
+
+        var btn = $('#iris-ioc-crosscase-load-btn');
+        var result = $('#iris-ioc-crosscase-result');
+
+        btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Checking…').prop('disabled', true);
+        result.hide();
+
+        $.ajax({
+            url: '/api/v2/correlation/ioc-context',
+            method: 'GET',
+            data: { ioc_value: iocValue, ioc_type_id: iocTypeId },
+            dataType: 'json',
+        }).done(function (resp) {
+            btn.hide();
+            var appearances = resp.appearances || [];
+            // Remove the current case from the list so it only shows OTHER cases
+            var cid = get_caseid();
+            var others = appearances.filter(function (a) { return a.case_id != cid; });
+
+            if (others.length === 0) {
+                result.html('<span class="text-muted small">This IOC does not appear in any other accessible case.</span>').show();
+                return;
+            }
+
+            var rows = others.map(function (a) {
+                // IOC-level tags (may differ per case)
+                var iocTags = a.ioc_tags ? a.ioc_tags.split('|').map(function (t) {
+                    return '<span class="badge badge-light mr-1">' + $('<div>').text(t).html() + '</span>';
+                }).join('') : '';
+                // Case-level tags (sector, TLP, campaign, etc.)
+                var caseTags = (a.case_tags && a.case_tags.length) ? a.case_tags.map(function (t) {
+                    return '<span class="badge" style="background:rgba(124,58,237,0.15);color:#c4b5fd;margin-right:3px;">' + $('<div>').text(t).html() + '</span>';
+                }).join('') : '';
+                // IOC description (per-case analyst annotation)
+                var desc = a.ioc_description ? '<div class="text-muted mt-1">' + $('<div>').text(a.ioc_description).html() + '</div>' : '';
+                // Classification + severity
+                var meta = [];
+                if (a.classification) meta.push(a.classification);
+                if (a.severity) meta.push(a.severity);
+                if (a.close_date) meta.push('Closed ' + a.close_date.slice(0, 10));
+                var metaLine = meta.length ? '<div class="text-muted" style="margin-top:2px;">' + $('<div>').text(meta.join(' · ')).html() + '</div>' : '';
+                // Linked note titles (formal provenance or substring mention)
+                var noteLines = '';
+                if (a.linked_notes && a.linked_notes.length) {
+                    noteLines = '<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:5px;">'
+                        + a.linked_notes.map(function (n) {
+                            var sourceLabel = n.source === 'linked' ? 'sourced from' : 'mentioned in';
+                            return '<span title="' + $('<div>').text(sourceLabel).html() + '" '
+                                + 'style="display:inline-flex;align-items:center;gap:5px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.35);color:#d4c4ff;padding:3px 8px;border-radius:999px;font-size:11px;">'
+                                + '<i class="fa-regular fa-note-sticky" style="font-size:10px;"></i>'
+                                + $('<div>').text(n.note_title || 'Untitled note').html()
+                                + '<span style="opacity:0.55;font-size:10px;">(' + $('<div>').text(sourceLabel).html() + ')</span>'
+                                + '</span>';
+                        }).join('')
+                        + '</div>';
+                }
+                return '<div class="d-flex align-items-start mb-3" style="gap:10px;">'
+                    + '<a href="/case/ioc?cid=' + a.case_id + '" target="_blank" class="badge badge-primary" style="white-space:nowrap;margin-top:2px;">#' + a.case_id + '</a>'
+                    + '<div style="flex:1;min-width:0;">'
+                    + '<strong>' + $('<div>').text(a.case_name).html() + '</strong>'
+                    + ' <span class="text-muted">(' + $('<div>').text(a.client).html() + ')</span>'
+                    + metaLine
+                    + (iocTags || caseTags ? '<div style="margin-top:4px;">' + iocTags + caseTags + '</div>' : '')
+                    + desc + noteLines
+                    + '</div></div>';
+            }).join('');
+
+            result.html(
+                '<div class="small" style="background:rgba(124,58,237,0.07); border-left:2px solid rgba(124,58,237,0.4); padding:10px 12px; border-radius:4px;">'
+                + '<strong class="d-block mb-2">Also appears in ' + others.length + ' other case(s):</strong>'
+                + rows
+                + '</div>'
+            ).show();
+        }).fail(function () {
+            btn.html('<i class="fas fa-search mr-1"></i> Check other cases').prop('disabled', false);
+            result.html('<span class="text-danger small">Failed to load cross-case data.</span>').show();
+        });
+    }
+
+</script>

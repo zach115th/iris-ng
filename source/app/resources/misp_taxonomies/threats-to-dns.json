@@ -1,0 +1,151 @@
+{
+  "namespace": "threats-to-dns",
+  "expanded": "Threats to DNS",
+  "description": "An overview of some of the known attacks related to DNS as described by Torabi, S., Boukhtouta, A., Assi, C., & Debbabi, M. (2018) in Detecting Internet Abuse by Analyzing Passive DNS Traffic: A Survey of Implemented Systems. IEEE Communications Surveys & Tutorials, 1–1. doi:10.1109/comst.2018.2849614",
+  "version": 1,
+  "predicates": [
+    {
+      "value": "dns-protocol-attacks",
+      "description": "DNS protocol attacks",
+      "expanded": "DNS protocol attacks",
+      "uuid": "57061551-3e95-5cfc-90a6-45bdb3726f9b"
+    },
+    {
+      "value": "dns-server-attacks",
+      "description": "DNS server attacks",
+      "expanded": "DNS server attacks",
+      "uuid": "0991c9e1-baa3-5217-b4de-592bfafc70d0"
+    },
+    {
+      "value": "dns-abuse-or-misuse",
+      "description": "DNS abuse/misuse",
+      "uuid": "7c8b7d7b-afe8-5567-95b8-75e84c68b263"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "dns-protocol-attacks",
+      "entry": [
+        {
+          "value": "man-in-the-middle-attack",
+          "expanded": "Man-in-the-middle attack",
+          "description": "Man-in-the-middle attack",
+          "uuid": "b5932c1e-9e91-5819-96fb-d5736a6eaf35"
+        },
+        {
+          "value": "dns-spoofing",
+          "expanded": "DNS spoofing",
+          "description": "DNS spoofing",
+          "uuid": "d9f32e5c-7efd-503e-a830-1c0fed43c937"
+        },
+        {
+          "value": "dns-rebinding",
+          "expanded": "DNS rebinding",
+          "description": "DNS rebinding",
+          "uuid": "aeb1b667-da75-5cff-8954-5401bc4257c6"
+        }
+      ]
+    },
+    {
+      "predicate": "dns-server-attacks",
+      "entry": [
+        {
+          "value": "server-dos-and-ddos",
+          "expanded": "Server DoS & DDoS",
+          "description": "Server DoS & DDoS",
+          "uuid": "6d832cc2-efba-5e76-83d2-aba766f2bc87"
+        },
+        {
+          "value": "server-hijacking",
+          "expanded": "Server hijacking",
+          "description": "Server hijacking",
+          "uuid": "91182721-5bcb-5620-9b5c-706a8b645d47"
+        },
+        {
+          "value": "cache-poisoning",
+          "expanded": "Cache poisoning",
+          "description": "Cache poisoning",
+          "uuid": "ff0bcaa6-8fc7-5d41-9493-1a7309527b55"
+        }
+      ]
+    },
+    {
+      "predicate": "dns-abuse-or-misuse",
+      "entry": [
+        {
+          "value": "domain-name-registration-abuse-cybersquatting",
+          "expanded": "Domain name registration abuse such as cybersquatting",
+          "description": "Domain name registration abuse such as cybersquatting",
+          "uuid": "11d816ee-fa9f-5ab7-96e6-9f6fc8f50edc"
+        },
+        {
+          "value": "domain-name-registration-abuse-typosquatting",
+          "expanded": "Domain name registration abuse such as typosquatting",
+          "description": "Domain name registration abuse such as typosquatting",
+          "uuid": "7eca1a71-2fa4-58ed-9315-5a0b33cd786c"
+        },
+        {
+          "value": "domain-name-registration-abuse-domain-reputation-and-re-registration",
+          "expanded": "Domain name registration abuse as domain reputation and re-registration",
+          "description": "Domain name registration abuse as domain reputation and re-gistration",
+          "uuid": "979aac95-fca6-569e-b889-199470c6d37a"
+        },
+        {
+          "value": "dns-reflection-dns-amplification",
+          "expanded": "DNS reflection - DNS amplification",
+          "description": "DNS reflection - DNS amplification",
+          "uuid": "041fcfba-8a80-52a5-bc68-15c41ecef832"
+        },
+        {
+          "value": "malicious-or-compromised-domains-ips-malicious-botnets-c2",
+          "expanded": "Malicious or compromised domains/IPs - Malicious botnets (C&C servers)",
+          "description": "Malicious or compromised domains/IPs - Malicious botnets (C&C servers)",
+          "uuid": "80171cb5-98a2-5fad-af25-e92839288fd3"
+        },
+        {
+          "value": "malicious-or-compromised-domains-ips-fast-flux-domains",
+          "expanded": "Malicious or compromised domains/IPs - Malicious fast-flux domain & networks",
+          "description": "Malicious or compromised domains/IPs - Malicious fast-flux domain & networks",
+          "uuid": "704d3175-2632-5e54-b612-a17b89ac5009"
+        },
+        {
+          "value": "malicious-or-compromised-domains-ips-malicious-dgas",
+          "expanded": "Malicious or compromised domains/IPs - Malicious DGAs",
+          "description": "Malicious or compromised domains/IPs - Malicious DGAs",
+          "uuid": "e9c08b39-4084-5c13-9512-bfa32b89ce82"
+        },
+        {
+          "value": "covert-channels-malicious-dns-tunneling",
+          "expanded": "Covert channels - Malicious DNS tunneling",
+          "description": "Covert channels - Malicious DNS tunneling",
+          "uuid": "bc42c706-c162-5f3a-b3e0-62a13db82bf2"
+        },
+        {
+          "value": "covert-channels-malicious-payload-distribution",
+          "expanded": "Covert channels - Malicious DNS tunneling",
+          "description": "Covert channels - Malicious DNS tunneling",
+          "uuid": "2d3b2189-585a-5cb7-8e19-4ffcdc734eb0"
+        },
+        {
+          "value": "benign-services-applications-malicious-dns-resolvers",
+          "expanded": "Benign services and applications - Malicious DNS resolvers",
+          "description": "Benign services and applications - Malicious DNS resolvers",
+          "uuid": "c3597469-ae4a-5a9b-83c7-ab061e70fa92"
+        },
+        {
+          "value": "benign-services-applications-malicious-scanners",
+          "expanded": "Benign services and applications - Malicious scanners",
+          "description": "Benign services and applications - Malicious scanners",
+          "uuid": "f1882c17-5e12-5078-9a64-6d617f1552ac"
+        },
+        {
+          "value": "benign-services-applications-url-shorteners",
+          "expanded": "Benign services and applications - URL shorteners",
+          "description": "Benign services and applications - URL shorteners",
+          "uuid": "4cc51f92-f11f-500d-867c-9df73e2f3b63"
+        }
+      ]
+    }
+  ],
+  "uuid": "b6c92874-0971-53d2-adc9-d26cbc06566c"
+}

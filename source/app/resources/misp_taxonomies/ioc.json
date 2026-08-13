@@ -1,0 +1,30 @@
+{
+  "namespace": "ioc",
+  "description": "An IOC classification to facilitate automation of malicious and non malicious artifacts",
+  "version": 2,
+  "predicates": [
+    {
+      "value": "artifact-state",
+      "expanded": "Artifact State",
+      "uuid": "b4f3e861-c791-5de3-9680-8a0f4b1d48dd"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "artifact-state",
+      "entry": [
+        {
+          "value": "malicious",
+          "expanded": "Malicious",
+          "uuid": "b587b026-ec78-546f-a014-a20082e86823"
+        },
+        {
+          "value": "not-malicious",
+          "expanded": "Not Malicious",
+          "uuid": "d72e56e2-21b1-5ebd-9af8-e8602fa1b3c5"
+        }
+      ]
+    }
+  ],
+  "uuid": "b7b1ce2a-e303-5a67-9e98-c483bc6c688e"
+}

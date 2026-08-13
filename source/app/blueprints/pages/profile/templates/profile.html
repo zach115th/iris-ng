@@ -1,0 +1,273 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Dashboard {% endblock title %}
+
+{% block stylesheets %}
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+{% if current_user.is_authenticated %}
+
+{# iris-ng: the profile page has no WTForms form, but the self-service rate /
+   skills saves POST through post_request_api which reads #csrf_token.
+   form.hidden_tag() renders that input (csrf_token() is not a Jinja global here). #}
+<form style="display:none;">{{ form.hidden_tag() }}</form>
+
+<div class="page-inner">
+    <div class="row ">
+        <div class="col-md-12">
+            <div class="card card-profile">
+                <div class="card-header">
+                    <div class="profile-picture">
+                        <div class="avatar avatar-xl">
+                            <img src="/static/assets/img/profile.jpg" alt="..." class="avatar-img rounded-circle">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="user-profile text-center">
+                        <div class="name">{{ current_user.name }}</div>
+                        <div class="desc">Forensicator</div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="form-group col">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="icon-token"></i>
+                                        Name
+                                    </span>
+                                </div>
+                                <input class="form-control" value="{{ current_user.name }}" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group col">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="icon-token"></i>
+                                        Username
+                                    </span>
+                                </div>
+                                <input class="form-control disable" value="{{ current_user.user }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="icon-token"></i>
+                                        Email
+                                    </span>
+                                </div>
+                                <input class="form-control disable" value="{{ current_user.email }}" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group col">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="icon-token"></i>
+                                        #ID
+                                    </span>
+                                </div>
+                                <input class="form-control disable" value="{{ current_user.id }}" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group col">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="icon-token"></i>
+                                        #UUID
+                                    </span>
+                                </div>
+                                <input class="form-control disable" value="{{ current_user.uuid }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    {% if config['AUTHENTICATION_TYPE'] == 'local' or config['AUTHENTICATION_TYPE'] == 'ldap' %}
+                    <div class="row mb-4">
+                        <div class="form-group col">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="icon-token"></i>
+                                        API Key
+                                    </span>
+                                </div>
+                                <input class="form-control disable" value="{{ current_user.api_key }}" readonly>
+                                <div class="input-group-append">
+                                    <button class="btn btn-sm btn-dark" type="button" onclick="renew_api()">Renew</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label class="form-label d-block">IRIS Theme</label>
+                                <div class="selectgroup selectgroup-primary selectgroup-pills">
+                                    <label class="selectgroup-item" title="Light mode">
+                                        <input type="radio" name="iris-theme" value="false" class="selectgroup-input" {% if not current_user.in_dark_mode %}checked{% endif %}>
+                                        <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-sun"></i></span>
+                                    </label>
+                                    <label class="selectgroup-item" title="Dark mode">
+                                        <input type="radio" name="iris-theme" value="true" class="selectgroup-input" {% if current_user.in_dark_mode %}checked{% endif %}>
+                                        <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-moon"></i></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label class="form-label d-block">Prompt a confirmation box before deleting objects</label>
+                                <div class="selectgroup selectgroup-primary selectgroup-pills">
+                                    <label class="selectgroup-item" title="Do not prompt a confirmation popup and delete objects directly">
+                                        <input type="radio" name="user-has-deletion-prompt" value="false" class="selectgroup-input" {% if not current_user.has_deletion_confirmation %}checked{% endif %}>
+                                        <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-comment-slash"></i></span>
+                                    </label>
+                                    <label class="selectgroup-item" title="Prompt a confirmation popup before deleting objects">
+                                        <input type="radio" name="user-has-deletion-prompt" value="true" class="selectgroup-input" {% if current_user.has_deletion_confirmation %}checked{% endif %}>
+                                        <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-comment"></i></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {# iris-ng: self-service hourly rate (drives case-cost estimation) #}
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label d-block">Hourly rate ($/hr)</label>
+                                <div class="input-group" style="max-width: 320px;">
+                                    <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                    <input type="number" min="0" step="0.01" class="form-control" id="profile_hourly_rate"
+                                           placeholder="e.g. 150.00"
+                                           value="{% if user_hourly_rate is not none %}{{ '%.2f'|format(user_hourly_rate) }}{% endif %}">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">/hr</span>
+                                        <button class="btn btn-outline-success" type="button" onclick="save_my_hourly_rate();">Save</button>
+                                    </div>
+                                </div>
+                                <small class="text-muted">Used to estimate case cost from the time you log. Leave blank to clear.</small>
+                                <span id="profile_hourly_rate_status" class="ml-2"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# iris-ng: self-service cyber-security skills #}
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <div class="d-flex align-items-center">
+                                    <label class="form-label mb-0">Cyber-security skills</label>
+                                    <button class="btn btn-outline-success btn-sm ml-auto" type="button" onclick="save_my_skills();">Save skills</button>
+                                </div>
+                                <small class="text-muted d-block mb-2">Enable the skills you hold. Used to build teams and match the right people to cases.</small>
+                                <span id="profile_skills_status" class="d-block mb-2"></span>
+                                {% if skills_catalog %}
+                                    {% set ns = namespace(current='') %}
+                                    <div id="profile_skills_list">
+                                    {% for skill in skills_catalog %}
+                                        {% if skill.skill_category != ns.current %}
+                                            {% if not loop.first %}</div>{% endif %}
+                                            {% set ns.current = skill.skill_category %}
+                                            <p class="card-category mt-3 mb-2" style="font-weight:600; letter-spacing:0.4px;">{{ skill.skill_category }}</p>
+                                            <div class="row">
+                                        {% endif %}
+                                        <div class="col-md-4">
+                                            <div class="form-check mb-2">
+                                                <label class="form-check-label" title="{{ skill.skill_description }}">
+                                                    <input class="form-check-input iris-my-skill" type="checkbox"
+                                                           value="{{ skill.skill_id }}"
+                                                           {% if skill.skill_id in user_skill_ids %}checked{% endif %}>
+                                                    <span class="form-check-sign">{{ skill.skill_name }}</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% if loop.last %}</div>{% endif %}
+                                    {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">No skills are defined yet.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 float-left mt-4">
+                            <button class="btn btn-dark" type="button" onclick="refresh_user_permissions();" id="user_refresh_perms_btn">Refresh access</button>
+                        </div>
+
+                        <div class="col-6 mt-4">
+                            {% if mfa_enabled %}
+                                <a class="btn btn-primary float-right mr-2" type="button" href="/auth/mfa-setup">Reset MFA</a>
+                            {% endif %}
+                            <button class="btn float-right btn-primary mr-2" type="button" onclick="update_password();">Change password</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal" tabindex="-1" role="dialog" id="modal_pwd_user" data-backdrop="true">
+    <div class="modal-lg modal-dialog" role="document">
+        <div class="modal-content" id="modal_pwd_user_content">
+
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+{% endif %}
+
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="/static/assets/js/iris/user.js"></script>
+    <script>
+        // iris-ng: self-service hourly rate + skills. post_request_api only
+        // auto-injects csrf_token for body-less calls, so include it in the body.
+        function save_my_hourly_rate() {
+            var raw = $('#profile_hourly_rate').val();
+            var status = $('#profile_hourly_rate_status');
+            clear_api_error();
+            post_request_api('/user/hourly-rate/update',
+                             JSON.stringify({ hourly_rate: (raw === '' ? null : raw),
+                                              csrf_token: $('#csrf_token').val() }), true)
+            .done((data) => {
+                if (notify_auto_api(data)) {
+                    var val = data.data && data.data.user_hourly_rate;
+                    status.html('<i class="fa-solid fa-check text-success"></i> '
+                        + (val == null ? 'Rate cleared' : 'Saved $' + Number(val).toFixed(2) + '/hr'));
+                }
+            });
+        }
+
+        function save_my_skills() {
+            var ids = $('.iris-my-skill:checked').map(function () {
+                return parseInt($(this).val(), 10);
+            }).get();
+            var status = $('#profile_skills_status');
+            clear_api_error();
+            post_request_api('/user/skills/update',
+                             JSON.stringify({ skill_ids: ids,
+                                              csrf_token: $('#csrf_token').val() }), true)
+            .done((data) => {
+                if (notify_auto_api(data)) {
+                    var n = (data.data && data.data.user_skill_ids || []).length;
+                    status.html('<i class="fa-solid fa-check text-success"></i> Saved — '
+                        + n + ' skill' + (n === 1 ? '' : 's') + ' enabled');
+                }
+            });
+        }
+    </script>
+{% endblock javascripts %}

@@ -1,0 +1,165 @@
+{
+  "namespace": "cyber-threat-framework",
+  "expanded": "Cyber Threat Framework",
+  "description": "Cyber Threat Framework was developed by the US Government to enable consistent characterization and categorization of cyber threat events, and to identify trends or changes in the activities of cyber adversaries. https://www.dni.gov/index.php/cyber-threat-framework",
+  "version": 2,
+  "predicates": [
+    {
+      "value": "Preparation",
+      "expanded": "Activities undertaken by a threat actor, their leadership and/or sponsor to prepare for conducting malicious cyber activities, e.g., establish governance and articulating intent, objectives, and strategy; identify potential victims and attack vectors; securing resources and develop capabilities; assess intended victim's cyber environment; and define measures for evaluating the success or failure of threat activities.",
+      "uuid": "b952486c-f540-5b6a-8c56-5f16c5c2a375"
+    },
+    {
+      "value": "Engagement",
+      "expanded": "Threat actor activities taken prior to gaining but with the intent to gain unauthorized access to the intended victim's physical or virtual computer or information system(s), network(s), and/or data stores.",
+      "uuid": "67fab39b-7136-5e38-9a50-a5b0c7ea15c7"
+    },
+    {
+      "value": "Presence",
+      "expanded": "Actions taken by the threat actor once unauthorized access to victim(s)' physical or virtual computer or information system has been achieved that establishes and maintains conditions or allows the threat actor to perform intended actions or operate at will against the host physical or virtual computer or information system, network and/or data stores.",
+      "uuid": "84da47cf-4525-5fa6-a6de-393f7e4feabf"
+    },
+    {
+      "value": "Effect/Consequence",
+      "expanded": "Outcomes of threat actor actions on a victim's physical or virtual computer or information system(s), network(s), and/or data stores.",
+      "uuid": "fe331bc9-b2ff-53c6-9836-04980ee50d80"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "Preparation",
+      "entry": [
+        {
+          "expanded": "Plan activity",
+          "value": "plan-activity",
+          "numerical_value": 10,
+          "uuid": "cf9cf85f-ecec-5cd8-ba58-7f401627b24a"
+        },
+        {
+          "expanded": "Conduct research & analysis",
+          "value": "conduct-research-and-analysis",
+          "numerical_value": 11,
+          "uuid": "6cea9fa3-4120-541c-8146-e9dbb17628aa"
+        },
+        {
+          "expanded": "Develop resources & capabilities",
+          "value": "develop-resource-and-capabilities",
+          "numerical_value": 12,
+          "uuid": "efe3a818-7e1f-5b4a-b39b-a4e366ed83f1"
+        },
+        {
+          "expanded": "Acquire victim & specific knowledge",
+          "value": "acquire-victim-and-specific-knowledge",
+          "numerical_value": 13,
+          "uuid": "6b873092-45c6-50a8-8ac9-82fa5589fe25"
+        },
+        {
+          "expanded": "Complete preparations",
+          "value": "complete-preparations",
+          "numerical_value": 14,
+          "uuid": "05724144-efcd-5def-806f-5906b9502d31"
+        }
+      ]
+    },
+    {
+      "predicate": "Engagement",
+      "entry": [
+        {
+          "expanded": "Deploy capability",
+          "value": "deploy-capability",
+          "numerical_value": 20,
+          "uuid": "7908a87e-3734-5812-aa45-592bb82f6bba"
+        },
+        {
+          "expanded": "Interact with intended victim",
+          "value": "interact-with-intended-victim",
+          "numerical_value": 21,
+          "uuid": "ecd5c5a0-aa47-5ddc-9982-39c90212f655"
+        },
+        {
+          "expanded": "Exploit vulnerabilities",
+          "value": "exploit-vulnerabilities",
+          "numerical_value": 22,
+          "uuid": "cd36fad3-5b16-59f3-b8e1-b8d200841053"
+        },
+        {
+          "expanded": "Deliver malicious capabilities",
+          "value": "deliver-malicious-capabilities",
+          "numerical_value": 23,
+          "uuid": "7b673d20-7374-50f8-a27e-0db8e48ed078"
+        }
+      ]
+    },
+    {
+      "predicate": "Presence",
+      "entry": [
+        {
+          "expanded": "Establish controlled access",
+          "value": "establish-controlled-access",
+          "numerical_value": 30,
+          "uuid": "43f37f78-139a-50d0-8a93-020e7790b27f"
+        },
+        {
+          "expanded": "Hide",
+          "value": "hide",
+          "numerical_value": 31,
+          "uuid": "107ae25b-e7a6-5415-b05f-82c3363659e7"
+        },
+        {
+          "expanded": "Expand presence",
+          "value": "expand-presence",
+          "numerical_value": 32,
+          "uuid": "0f6a3a1f-396f-5393-8aab-c147ecf07b52"
+        },
+        {
+          "expanded": "Refine focus of activity",
+          "value": "refine-focus-of-activity",
+          "numerical_value": 33,
+          "uuid": "79d6d308-1f4d-5b52-a4b6-e2eadde149d6"
+        },
+        {
+          "expanded": "Establish persistence",
+          "value": "establish-persistence",
+          "numerical_value": 34,
+          "uuid": "c1baaa94-cd34-542e-b590-4a20a76cc61e"
+        }
+      ]
+    },
+    {
+      "predicate": "Effect/Consequence",
+      "entry": [
+        {
+          "expanded": "Enable other operations",
+          "value": "enable-other-operations",
+          "numerical_value": 40,
+          "uuid": "be343ddf-5d9f-5b29-8c3a-83aa7dbb090a"
+        },
+        {
+          "expanded": "Deny access",
+          "value": "deny-access",
+          "numerical_value": 41,
+          "uuid": "3cc1a779-c883-566c-a441-446f2407b270"
+        },
+        {
+          "expanded": "Extract data",
+          "value": "extract-data",
+          "numerical_value": 42,
+          "uuid": "ac65b294-9dfc-5500-9c6e-344b4129d618"
+        },
+        {
+          "expanded": "Alter data and/or computer, network or system behavior",
+          "value": "alter-data-and-or-computer-network-or-system-behavior",
+          "numerical_value": 43,
+          "uuid": "c9bf6fb2-9a38-590a-aeba-ca2894904d97"
+        },
+        {
+          "expanded": "Destroy HW/SW/data",
+          "value": "destroy-hardware-software-or-data",
+          "numerical_value": 44,
+          "uuid": "0513a7e5-addc-531f-9415-3e7a2bc01beb"
+        }
+      ]
+    }
+  ],
+  "uuid": "982b223f-3ea8-55db-a6da-bebf1540a23a"
+}

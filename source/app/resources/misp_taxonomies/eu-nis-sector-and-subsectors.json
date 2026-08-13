@@ -1,0 +1,160 @@
+{
+  "namespace": "eu-nis-sector-and-subsectors",
+  "description": "Sectors, subsectors, and digital services as identified by the NIS Directive",
+  "version": 1,
+  "predicates": [
+    {
+      "value": "eu-nis-oes",
+      "expanded": "Operators of Essential Services",
+      "uuid": "376881bf-13ab-5997-a891-7cbc5c46f4c7"
+    },
+    {
+      "value": "eu-nis-oes-energy",
+      "expanded": "Operators of Essential Services - Energy Sector",
+      "uuid": "56cb0897-a278-5144-b23a-9799870b5fad"
+    },
+    {
+      "value": "eu-nis-oes-transport",
+      "expanded": "Operators of Essential Services - Transport Sector",
+      "uuid": "51025424-fdea-50d1-b8c2-b80996d0139a"
+    },
+    {
+      "value": "eu-nis-oes-banking",
+      "expanded": "Operators of Essential Services - Banking Sector",
+      "uuid": "cebf0db0-6ac0-54eb-b3f8-59b3a15f2293"
+    },
+    {
+      "value": "eu-nis-oes-financial",
+      "expanded": "Operators of Essential Services - Financial Market Infrastructure Sector",
+      "uuid": "a8ac5af9-c2ff-52cb-9c55-34eb1c9835b6"
+    },
+    {
+      "value": "eu-nis-oes-health",
+      "expanded": "Operators of Essential Services - Health Sector",
+      "uuid": "081809ab-8fe7-5fdc-9995-20791e9d602f"
+    },
+    {
+      "value": "eu-nis-oes-water",
+      "expanded": "Operators of Essential Services - Drinking Water Supply and Distribution Sector",
+      "uuid": "96986319-25ac-5133-9478-235a81773dc6"
+    },
+    {
+      "value": "eu-nis-oes-diginfra",
+      "expanded": "Operators of Essential Services - Digital Intrastructure Sector",
+      "uuid": "9b4f8c76-c66d-5e86-ab9d-e1c14fea8db4"
+    },
+    {
+      "value": "eu-nis-dsp",
+      "expanded": "Digital Service Providers",
+      "uuid": "092c1e80-edeb-54f3-9843-0a9ce392e798"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "eu-nis-oes",
+      "entry": [
+        {
+          "value": "energy",
+          "expanded": "Energy",
+          "uuid": "60b20ece-876d-501f-8125-e9f8fa3a544a"
+        },
+        {
+          "value": "transport",
+          "expanded": "Transport",
+          "uuid": "3fa4ddb9-ae22-5ff1-9ee7-76399e7841ac"
+        },
+        {
+          "value": "banking",
+          "expanded": "Banking",
+          "uuid": "14e3f992-a335-54e1-863b-df6beff95a97"
+        },
+        {
+          "value": "financial",
+          "expanded": "Financial Market Infrastructures",
+          "uuid": "b1ac8fa4-f8ff-5116-b1e3-34b9123c17c7"
+        },
+        {
+          "value": "health",
+          "expanded": "Health",
+          "uuid": "fc0043f8-47ca-59b7-a117-1dd8fac99d9a"
+        },
+        {
+          "value": "water",
+          "expanded": "Drinking Water Supply and Distribution",
+          "uuid": "3fbfec88-1b40-5c61-b24a-483c4e896d4f"
+        },
+        {
+          "value": "digitalinfrastructure",
+          "expanded": "Digital Infrastructure",
+          "uuid": "8b96dcbb-3723-5e88-8255-61a8d2385eac"
+        }
+      ]
+    },
+    {
+      "predicate": "eu-nis-oes-energy",
+      "entry": [
+        {
+          "value": "electricity-energy",
+          "expanded": "Electricity Subsector",
+          "uuid": "2fbbdf51-175b-5aba-8f7a-50897a94fa63"
+        },
+        {
+          "value": "oil-energy",
+          "expanded": "Oil Subsector",
+          "uuid": "9cc482df-6e40-55b1-8296-d91aa06cb699"
+        },
+        {
+          "value": "gas-energy",
+          "expanded": "Gas Subsector",
+          "uuid": "7cd1cf41-680a-5f66-b06e-0369d581fe02"
+        }
+      ]
+    },
+    {
+      "predicate": "eu-nis-oes-transport",
+      "entry": [
+        {
+          "value": "air-transport",
+          "expanded": "Air Transport Subsector",
+          "uuid": "e50bf8dd-dae8-5cff-b9d4-914b5d2dd57e"
+        },
+        {
+          "value": "rail-transport",
+          "expanded": "Rail Transport Subsector",
+          "uuid": "c8e4adcb-0d14-56ed-9b0a-9b7458348fcf"
+        },
+        {
+          "value": "water-transport",
+          "expanded": "Water Transport Subsector",
+          "uuid": "381a4c82-e1fe-5f7a-9297-918db54d5c1e"
+        },
+        {
+          "value": "road-transport",
+          "expanded": "Road Transport Subsector",
+          "uuid": "ad2c72cd-6787-574e-a5c2-cd3325eff9f4"
+        }
+      ]
+    },
+    {
+      "predicate": "eu-nis-dsp",
+      "entry": [
+        {
+          "value": "market-dsp",
+          "expanded": "Online Marketplace Digital Service",
+          "uuid": "1ddc3c35-7149-5893-ad8e-d52bfde05711"
+        },
+        {
+          "value": "search-dsp",
+          "expanded": "Online Search Engine Digital Service",
+          "uuid": "6e96d2c0-d14c-550c-9fc7-352cf932e905"
+        },
+        {
+          "value": "cloud-dsp",
+          "expanded": "Cloud Computing Digital Service",
+          "uuid": "f3a05b9b-49a8-5782-b099-720088112f07"
+        }
+      ]
+    }
+  ],
+  "uuid": "87b5cc02-0b0c-5a87-8e27-5c2d901839e4"
+}
