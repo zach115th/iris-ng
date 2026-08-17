@@ -15,6 +15,44 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 Active work on `main`.
 
+### Fixed
+
+- **The case chat assistant could not see evidence.** The Evidence tab shipped
+  with its own specialised prompt — telling the model to reason about hashes,
+  asset linkage and collection gaps — over a payload that contained no evidence
+  at all. Asked "which evidence records are missing a hash?", it correctly
+  answered that it had no inventory to look at. Evidence was the only one of the
+  six chat variants missing its data.
+
+  `physical_location` is resolved from the linked drive rather than the column of
+  the same name on the evidence row: that column is deprecated and is NULL for
+  anything registered since the Inventory tab shipped, so reading it directly
+  would report "no location" for evidence that plainly has one.
+
+### Added
+
+- **Evidence preservation in the executive case summary.** A fifth domain
+  specialist joins notes, timeline, IOCs and assets, and the briefing gains an
+  **Evidence Preservation** section: how much was preserved, in what categories,
+  and how defensible it is. This answers a leadership question — whether the
+  organisation can stand behind its evidence for legal hold, insurance or a
+  regulator — rather than an investigative one.
+
+  Two constraints make it trustworthy. **The counts are computed server-side**
+  and passed to the synthesizer directly, not relayed by a model; where the
+  specialist's prose and those counts disagree, the counts win. And **no artifact
+  is ever named** — filenames, hashes, barcodes and storage locations stay out of
+  an executive briefing, so the specialist emits categories and counts instead of
+  values the synthesizer would only have to strip.
+
+  Evidence is deliberately excluded from the sparse-case test that decides
+  whether a case is briefable at all: collecting artifacts is not the same as
+  having analysed them.
+
+  Synthesis prompt `CaseSummarizationSystemPrompt-v4` → `-v5`. Existing cached
+  summaries invalidate on their own, since the input hash covers the prompt and
+  the sub-summaries.
+
 ---
 
 ## [IRIS-NG-v1.2.2] — 2026-08-13

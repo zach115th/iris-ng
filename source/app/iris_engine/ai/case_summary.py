@@ -53,7 +53,7 @@ from app.models.models import UserActivity
 
 
 CASE_SUMMARY_KIND = "case_summary"
-CASE_SUMMARY_PROMPT_ID = "CaseSummarizationSystemPrompt-v4"  # v4: inactivity line must use activity.*, never timeline_summary dates (no self-contradiction)
+CASE_SUMMARY_PROMPT_ID = "CaseSummarizationSystemPrompt-v5"  # v5: fifth specialist (evidence) + Evidence Preservation section; v4: inactivity line must use activity.*, never timeline_summary dates (no self-contradiction)
 
 
 # Synthesizer model routing. The synthesizer call is the dominant latency in
@@ -93,6 +93,7 @@ DOMAIN_CONFIG: dict[str, dict[str, Any]] = {
     "timeline": {"prompt_file": "case_summary_timeline.md", "kind": "case_summary:timeline", "prompt_id": "CaseSummaryTimeline-v1", "structured": True},
     "iocs":     {"prompt_file": "case_summary_iocs.md",     "kind": "case_summary:iocs",     "prompt_id": "CaseSummaryIocs-v1",     "structured": False},
     "assets":   {"prompt_file": "case_summary_assets.md",   "kind": "case_summary:assets",   "prompt_id": "CaseSummaryAssets-v1",   "structured": True},
+    "evidence": {"prompt_file": "case_summary_evidence.md", "kind": "case_summary:evidence", "prompt_id": "CaseSummaryEvidence-v1", "structured": True},
 }
 
 
@@ -202,6 +203,81 @@ def _build_tasks_payload(case_id: int) -> list[dict[str, Any]]:
         }
         for t in rows
     ]
+
+
+def _build_evidence_payload(case_id: int) -> tuple[dict[str, Any], bool]:
+    """Evidence register for the case (the Evidence tab).
+
+    Feeds the case-scoped chat assistant, whose `evidence` variant previously
+    shipped a specialised prompt with no evidence data behind it — the model
+    could only answer that it had no inventory to look at.
+
+    `physical_location` is resolved from the linked drive, not from the
+    column of the same name on this row: that column is deprecated and is
+    NULL for anything registered after the Inventory tab shipped, so reading
+    it directly reports "no location" for evidence that plainly has one. The
+    row's own value is kept as a fallback for legacy rows with no drive.
+    """
+    # Ordered so repeated calls send the same list in the same order, and
+    # capped like the notes/timeline builders — an evidence register is
+    # normally small, but nothing stops a bulk import from making it large.
+    rows = (
+        CaseReceivedFile.query
+        .filter(CaseReceivedFile.case_id == case_id)
+        .order_by(CaseReceivedFile.date_added.asc(), CaseReceivedFile.id.asc())
+        .limit(200)
+        .all()
+    )
+    evidence = []
+    for e in rows:
+        drive = getattr(e, "drive", None)
+        evidence.append({
+            "filename": e.filename,
+            "type": getattr(e.type, "name", None) if getattr(e, "type", None) else None,
+            # Key names match the DB columns because case_chat_evidence.md
+            # names them literally ("which evidence records have a `file_hash`
+            # and `file_size`") — the prompt and the payload must agree or the
+            # model reasons about a field it was never sent.
+            #
+            # Explicit null rather than omission: "which records are missing a
+            # hash" is a question the analyst actually asks, and a key that is
+            # simply absent reads as "unknown" instead of "not recorded".
+            "file_hash": e.file_hash or None,
+            "file_size": e.file_size,
+            "description": _truncate(e.file_description, 800),
+            "date_added": e.date_added.isoformat() if e.date_added else None,
+            "acquisition_date": e.acquisition_date.isoformat() if e.acquisition_date else None,
+            "coverage_start": e.start_date.isoformat() if e.start_date else None,
+            "coverage_end": e.end_date.isoformat() if e.end_date else None,
+            "created_by": e.created_by or None,
+            "barcode": e.barcode or None,
+            "physical_location": (
+                (drive.physical_location if drive else None) or e.physical_location or None
+            ),
+            "drive_label": (drive.label or drive.barcode) if drive else None,
+            "linked_assets": [
+                link.asset.asset_name
+                for link in (getattr(e, "assets", None) or [])
+                if getattr(link, "asset", None) is not None
+            ] or None,
+        })
+
+    # Counted here, not by the model. Same principle as the server-computed
+    # `hours_since_last_activity` in _build_activity_payload: a language model
+    # asked to tally rows will occasionally get it wrong, and "3 of 11 items
+    # are unhashed" is exactly the kind of figure that ends up in a briefing
+    # read by legal. Derived purely from the rows above, so it adds nothing
+    # wall-clock-derived to the specialist's input hash.
+    integrity = {
+        "items_total": len(evidence),
+        "items_with_hash": sum(1 for e in evidence if e["file_hash"]),
+        "items_missing_hash": sum(1 for e in evidence if not e["file_hash"]),
+        "items_without_asset_link": sum(1 for e in evidence if not e["linked_assets"]),
+        "items_without_coverage_window": sum(
+            1 for e in evidence if not (e["coverage_start"] or e["coverage_end"])
+        ),
+    }
+    return {"evidence": evidence, "integrity": integrity}, len(evidence) == 0
 
 
 def _build_activity_payload(case_id: int) -> dict[str, Any]:
@@ -556,6 +632,7 @@ def build_case_payload(case: Cases) -> dict[str, Any]:
     iocs_p, _ = _build_iocs_payload(case_id)
     assets_p, _ = _build_assets_payload(case_id)
     tasks = _build_tasks_payload(case_id)
+    evidence_p, _ = _build_evidence_payload(case_id)
     return {
         "case": {
             "id": case.case_id,
@@ -570,12 +647,14 @@ def build_case_payload(case: Cases) -> dict[str, Any]:
             "timeline_events": len(timeline_p["timeline"]),
             "tasks": len(tasks),
             "notes": len(notes_p["notes"]),
+            "evidence": len(evidence_p["evidence"]),
         },
         "assets": assets_p["assets"],
         "iocs": iocs_p["iocs"],
         "timeline": timeline_p["timeline"],
         "tasks": tasks,
         "notes": notes_p["notes"],
+        "evidence": evidence_p["evidence"],
     }
 
 
@@ -604,12 +683,13 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
             "AI backend is not configured (set AI_BACKEND_URL and AI_BACKEND_MODEL)"
         )
 
-    # Build the 4 domain payloads once. Each is hashed independently so the
+    # Build the 5 domain payloads once. Each is hashed independently so the
     # specialist cache hits when only one domain changed.
     notes_payload, notes_empty = _build_notes_payload(case_id)
     timeline_payload, timeline_empty = _build_timeline_payload(case_id)
     iocs_payload, iocs_empty = _build_iocs_payload(case_id)
     assets_payload, assets_empty = _build_assets_payload(case_id)
+    evidence_payload, evidence_empty = _build_evidence_payload(case_id)
     tasks = _build_tasks_payload(case_id)
 
     counts = {
@@ -618,6 +698,10 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
         "timeline_events": len(timeline_payload["timeline"]),
         "tasks": len(tasks),
         "notes": len(notes_payload["notes"]),
+        # Present so the briefing can say how much was preserved. Deliberately
+        # NOT part of the synthesizer's sparse-case test — a pile of evidence
+        # with no notes, timeline or IOCs is still too early to brief on.
+        "evidence": len(evidence_payload["evidence"]),
     }
 
     app.logger.info(
@@ -628,12 +712,13 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
     # Stage 1: domain specialists. Run in a small thread pool so cache hits
     # finish instantly and any cache-miss waits overlap with each other —
     # if LM Studio is single-stream the requests just queue, but threading
-    # at least frees the synthesizer to start as soon as all four return.
+    # at least frees the synthesizer to start as soon as all of them return.
     domain_inputs = [
         ("notes",    notes_payload,    notes_empty),
         ("timeline", timeline_payload, timeline_empty),
         ("iocs",     iocs_payload,     iocs_empty),
         ("assets",   assets_payload,   assets_empty),
+        ("evidence", evidence_payload, evidence_empty),
     ]
     artifacts: dict[str, CaseAiArtifact | None] = {}
     failures: dict[str, str] = {}
@@ -654,7 +739,7 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
             except CaseSummaryError as exc:
                 return domain, None, str(exc)
 
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=len(domain_inputs)) as pool:
         for domain, art_id, err in pool.map(_runner, domain_inputs):
             if art_id is not None:
                 artifacts[domain] = db.session.get(CaseAiArtifact, art_id)
@@ -665,12 +750,15 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
 
     if failures:
         # Don't abort — the synthesizer can still produce a useful summary
-        # if 3 of 4 domains succeeded. Only abort if everything blew up.
+        # when most domains succeeded. Only abort if every domain that had
+        # data to summarize failed (empty domains are skipped, not failed,
+        # so they must not count toward the total being compared against).
         app.logger.warning(
             f"Case #{case_id}: {len(failures)} domain specialist(s) failed: "
             + "; ".join(f"{k}: {v}" for k, v in failures.items())
         )
-        if len(failures) == sum(1 for _, _, e in [(d, p, e) for (d, p, e) in domain_inputs if not e]):
+        attempted = sum(1 for _, _, empty in domain_inputs if not empty)
+        if len(failures) == attempted:
             raise CaseSummaryError(
                 "All domain specialists failed: "
                 + "; ".join(f"{k}: {v}" for k, v in failures.items())
@@ -684,6 +772,7 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
     timeline_summary = _parse_specialist_content("timeline", artifacts.get("timeline"))
     iocs_summary     = _parse_specialist_content("iocs",     artifacts.get("iocs"))
     assets_summary   = _parse_specialist_content("assets",   artifacts.get("assets"))
+    evidence_summary = _parse_specialist_content("evidence", artifacts.get("evidence"))
 
     synthesis_payload = {
         "case": {
@@ -704,6 +793,11 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
         "timeline_summary": timeline_summary,
         "iocs_summary": iocs_summary,
         "assets_summary": assets_summary,
+        "evidence_summary": evidence_summary,
+        # The authoritative preservation counts, passed straight through rather
+        # than relayed by the specialist. The specialist is told to use them
+        # verbatim, but the synthesizer should not have to trust that.
+        "evidence_integrity": evidence_payload["integrity"],
     }
 
     synthesis_prompt = _load_prompt("case_summary.md")

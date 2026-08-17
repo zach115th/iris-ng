@@ -32,6 +32,11 @@ iris-ng is community-maintained. Issues and pull requests are welcome.
 - **Documentation** — the [iris-ng wiki](https://github.com/zach115th/iris-ng/wiki)
   (Getting Started, Architecture, AI Features, MISP Integration, Scripts Reference, and
   more).
+- **Something is broken** —
+  [Troubleshooting](https://github.com/zach115th/iris-ng/wiki/Troubleshooting) is indexed by
+  symptom, including the several messages that name the wrong thing.
+- **Hardening** — [Security](https://github.com/zach115th/iris-ng/wiki/Security) covers the
+  settings worth changing before exposing an instance, and the review history.
 - **Bugs & feature requests** — [GitHub Issues](https://github.com/zach115th/iris-ng/issues).
   Please check the [roadmap](https://github.com/users/zach115th/projects/4/views/1) first.
 - **Pull requests** — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) and
@@ -141,16 +146,22 @@ iris-ng is community-maintained. Issues and pull requests are welcome.
   drive to its current case and evidence items; wipe-and-rotate lifecycle support;
   capacity planning and a configurable retention policy.
 - **Correlation tab** — IOC cross-case correlation engine:
-  - Cluster cards (union-find by shared `(ioc_value, ioc_type_id)`) with decay score
-    (exponential half-life per IOC type × tag-weight multipliers) and IOC confidence
-    (log2 curve, ~40% at threshold, ~95% at 36 shared IOCs).
+  - Cluster cards (union-find by shared `(ioc_value, ioc_type_id)`) with a **decay score**
+    (exponential half-life per IOC type, scaled by tag, aged from the most recent sighting)
+    and an **IOC confidence** score that weighs each shared indicator by rarity and
+    credibility rather than counting them, then discounts by graph cohesion — a chain of
+    cases is a weaker claim than a fully-connected triangle of the same size.
   - One-click `Apply campaign tag` (tags all cases + all shared IOCs in the cluster).
-  - AI-generated cluster narrative cached per cluster.
+  - AI-generated cluster narrative cached per cluster, correctable by hand.
   - **STIX 2.1 bundle export** per cluster — campaign + indicators + relationships,
-    deterministic UUIDv5 IDs, TLP:GREEN marking, safe to share externally.
+    deterministic UUIDv5 IDs, TLP:GREEN marking.
+  - **TLP is enforced on the way out, not on the way in.** Correlation displays indicators
+    at every TLP, because every query is already scoped to cases you have been granted.
+    The STIX export and the MISP push publish TLP:GREEN and TLP:CLEAR only, most-restrictive
+    wins across the indicator's appearances, and both report what they withheld.
   - D3 v7 force-directed graph — drag to pan, scroll to zoom (0.2×–4×); cluster filter
     redraws the graph to show only the selected cluster's nodes and edges.
-  - Shared IOC click-through drawer (per-case enrichment, linked notes, IOC tags).
+  - Shared IOC click-through drawer (per-case enrichment, linked notes, IOC tags, TLP).
   - Per-IOC cross-case panel on the edit-IOC modal ("Check other cases").
 
 ### Operations + case management
@@ -174,6 +185,26 @@ iris-ng is community-maintained. Issues and pull requests are welcome.
 - **Physical evidence custody fields** — `created_by` and `barcode` on every evidence
   record, with a barcode ↔ drive link maintained automatically. `physical_location` lives
   on the drive (`EvidenceDrive`), not the evidence row.
+- **Per-case notification bell** — header feed of what changed in the case you are
+  currently working, with a per-case read watermark. Built on the existing activity log,
+  so it works retroactively over history that predates the feature. Your own interactive
+  edits are filtered out; changes arriving through the API or a module hook still notify,
+  which is what makes it useful on a single-analyst instance.
+
+### Security
+
+The tree has had a security review — 10 findings from an internal pass and 3 more from an
+external scan, all fixed and released in `IRIS-NG-v1.2.0`. Several were inherited from
+upstream and affect vanilla DFIR-IRIS too: a wildcard CORS header on every response,
+security headers absent from error responses because nginx skips `add_header` without
+`always`, and a login-form CSRF guard whose short-circuit meant the token was never
+validated. Also fixed here: a stored XSS in the correlation drawer, and a publicly known
+default `IRIS_SECRET_KEY` that made session cookies forgeable — now replaced at boot by a
+generated key persisted in the database, with an explicitly configured key always winning.
+
+The hardening checklist, the settings worth changing before exposing an instance, and the
+review history are on the [Security](https://github.com/zach115th/iris-ng/wiki/Security)
+wiki page.
 
 ### Settings + admin
 
@@ -244,6 +275,14 @@ docker compose -f docker-compose.dev.yml up -d --build
 UI on `https://localhost` (HTTPS, port 443). The browser will warn about the self-signed
 cert on first visit — accept the warning (`Advanced` → `Proceed`).
 
+**For anything beyond a local evaluation, bring your own certificate.** Point `CERT_DIR`
+in `.env` at a host directory holding your certificate and key (Let's Encrypt, an internal
+CA, whatever you already run) and set `CERT_FILENAME` / `KEY_FILENAME` relative to it. Only
+the host side of the mount moves, so switching needs no image rebuild, and nginx validates
+both files before starting rather than failing obscurely later. Full walkthrough, including
+the two Let's Encrypt traps that are otherwise near-undiagnosable:
+[TLS Certificates](https://github.com/zach115th/iris-ng/wiki/TLS-Certificates).
+
 The first-boot admin username is `administrator`. Get the generated password from logs:
 
 ```bash
@@ -277,10 +316,11 @@ project. IRIS-NG has no dependency on any particular provider.
 **A single 4 GB Droplet running the compose stack above** is the fastest way to
 evaluate IRIS-NG, and is the configuration this project tests.
 
-**On Kubernetes**, a Helm chart lives in [`deploy/kubernetes/charts`](./deploy/kubernetes/charts).
-Chart `0.2.0` brought it forward to the current stack — it defaults to the published
+**On Kubernetes**, a Helm chart lives in [`deploy/kubernetes/charts`](./deploy/kubernetes/charts)
+and is attached to every release as `iris-web-<version>.tgz`. It defaults to the published
 GHCR images, deploys the `ai_worker`, and requests a normal volume from the cluster
-default StorageClass instead of a node-local `hostPath` one:
+default StorageClass instead of a node-local `hostPath` one. Image tags derive from the
+chart's `appVersion`, so a packaged chart always names its own release's images:
 
 ```bash
 helm install iris-ng ./deploy/kubernetes/charts -n iris --create-namespace -f my-values.yaml
