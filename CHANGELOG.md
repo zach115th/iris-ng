@@ -15,6 +15,29 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 Active work on `main`.
 
+### Fixed
+
+- **Every task in the DIM Tasks list showed the red failure icon**, including
+  tasks that had plainly succeeded. The list endpoint overwrote celery's own
+  task status with `"success" if success else str(row.result)`, where `success`
+  was hardcoded to `None` — so the truthy branch could never fire and each row
+  rendered its raw result blob as its state. The frontend compares that against
+  the literal string `'success'`, which it never equals. The list now uses
+  celery's `status` column, and distinguishes pending or revoked tasks from
+  failed ones instead of lumping them together.
+
+  The icon reflects the **task**, not the module inside it: a task can complete
+  while the module it ran reports a failure. Open the task to see that verdict —
+  it is the modal's separate *Success* row.
+
+  Corrects a claim made during the security review, which held that celery
+  results are not pickles because `result_serializer` is `json`. That setting
+  does not apply to the **database** result backend, which stores the column as
+  a pickle. The `pickle.loads` call removed from this endpoint was therefore a
+  live deserialisation sink rather than the inert one it was assessed as — the
+  removal stands and matters more than recorded. It is not being reintroduced to
+  read the module verdict; the modal already does that safely.
+
 ---
 
 ## [IRIS-NG-v1.2.3] — 2026-08-20

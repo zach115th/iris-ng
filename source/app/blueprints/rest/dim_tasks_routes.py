@@ -206,19 +206,31 @@ def list_dim_tasks(count):
                 case_name = f"Case #{kwargs.get('caseid')}"
                 task_name = f"{kwargs.get('module_name')}::{kwargs.get('hook_name')}"
 
-        # Celery is configured with result_serializer='json' (see CeleryConfig),
-        # so task results are never pickles. This previously called
-        # pickle.loads(row.result), which therefore always raised and fell
-        # through to success=None -- an unreachable deserialisation sink kept
-        # alive only by a config value. Do not reintroduce it: unpickling task
-        # results would turn write access to the result backend into RCE in the
-        # web process.
+        # `tkp['state']` was already set to `row.status` -- celery's own task
+        # state string ('SUCCESS' / 'FAILURE' / 'PENDING' / ...). Leave it
+        # alone. It used to be overwritten here by
+        # `"success" if success else str(row.result)` with `success` hardcoded
+        # to None, so the truthy branch could never fire and every row rendered
+        # its raw result blob as its state. The frontend compares that against
+        # the literal string 'success', so EVERY task in this list displayed the
+        # red failure icon regardless of outcome -- including tasks that had
+        # plainly succeeded. Normalised to lowercase for that comparison.
         #
-        # NOTE: because that call always failed, `success` was always None and
-        # this has always rendered the raw result string. Behaviour unchanged.
-        success = None
-
-        tkp['state'] = "success" if success else str(row.result)
+        # Do NOT try to recover the module's own verdict here. It lives inside
+        # an IIStatus in `row.result`, and celery's DATABASE backend stores that
+        # column as a PICKLE -- `result_serializer='json'` does not apply to it,
+        # despite an earlier comment in this file claiming results are never
+        # pickles. Verified against the live result backend: rows begin with the
+        # pickle protocol marker and contain `IrisInterfaceStatus`. So
+        # `pickle.loads(row.result)` here would be a live deserialisation sink,
+        # turning write access to the result backend into RCE in the web
+        # process, not the inert one it was assumed to be.
+        #
+        # The per-task modal reads that verdict safely through celery's own
+        # AsyncResult; this list stays deliberately at task level. A task can be
+        # SUCCESS here while the module inside it reported a failure -- that
+        # distinction is what the modal's separate "Success" row is for.
+        tkp['state'] = (row.status or 'unknown').lower()
         tkp['user'] = user if user else "Shadow Iris"
         tkp['module'] = task_name
         tkp['case'] = case_name if case_name else ""

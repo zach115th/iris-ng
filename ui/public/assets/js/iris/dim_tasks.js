@@ -39,10 +39,18 @@ $(document).ready(function(){
           {  "data": "state",
             "render": function (data, type, row, meta) {
                 if (type === 'display') {
+                    /* Celery's task state, not the module's verdict - a task can
+                       be SUCCESS here while the module inside it reported a
+                       failure. Open the task to see that. Anything that is
+                       neither success nor failure (pending, retry, revoked) gets
+                       its own icon rather than being lumped in with failure,
+                       which is what the old two-way branch did. */
                     if (data == 'success'){
-                        data = "<i class='fas fa-check text-success' title='success'></i>";
+                        data = "<i class='fas fa-check text-success' title='Task completed - open it to see what the module reported'></i>";
+                    } else if (data == 'failure') {
+                        data = "<i class='fas fa-times text-danger' title='Task failed'></i>";
                     } else {
-                        data = "<i class='fas fa-times text-danger' title='failure'></i>";
+                        data = "<i class='fas fa-clock text-muted' title='Task state: " + sanitizeHTML(data) + "'></i>";
                     }
                 }
                 return data;
