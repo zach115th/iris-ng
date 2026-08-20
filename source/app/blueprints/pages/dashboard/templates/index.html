@@ -1088,6 +1088,14 @@
     .iris-corr-ioc-desc {
       font-size: 12.5px; color: rgba(250,250,250,0.80); margin-bottom: 4px;
     }
+    /* Deliberately muted and un-chipped: this is an absence, not a finding.
+       It must read as "nothing here" at a glance while still being present,
+       so a blank space is never mistaken for a broken lookup. */
+    .iris-corr-ioc-nonotes {
+      font-size: 12px; font-style: italic;
+      color: rgba(250,250,250,0.42);
+      margin-bottom: 4px;
+    }
     .iris-corr-ioc-note {
       background: rgba(139,92,246,0.08);
       border: 1px solid rgba(139,92,246,0.20);
@@ -1309,7 +1317,16 @@
             html += '<div class="iris-corr-ioc-desc">' + esc(a.ioc_description) + '</div>';
           }
 
-          if (a.linked_notes && a.linked_notes.length) {
+          /* Always render this section, even when empty. An omitted section is
+             ambiguous - the analyst cannot tell "no note mentions this indicator"
+             from "the note lookup is broken", and both look like a blank space.
+             It is also a real signal in its own right: an indicator nobody has
+             written about is one nobody has explained. */
+          if (!a.linked_notes || !a.linked_notes.length) {
+            html += '<div class="iris-corr-ioc-section-label">Linked notes</div>';
+            html += '<div class="iris-corr-ioc-nonotes">No note in this case references '
+              + 'this indicator, and none is linked as its source.</div>';
+          } else {
             html += '<div class="iris-corr-ioc-section-label">Linked notes (' + a.linked_notes.length + ')</div>';
             a.linked_notes.forEach(function (n) {
               var sourceLabel = n.source === 'linked' ? 'sourced from' : 'mentioned in';

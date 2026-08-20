@@ -517,9 +517,18 @@ class MispAttributeLink(db.Model):
 
     id = Column(BigInteger, primary_key=True)
     event_link_id = Column(ForeignKey('misp_event_link.id'), nullable=False)
+    # One IRIS IOC has at most one MISP attribute — this direction IS unique.
     ioc_id = Column(ForeignKey('ioc.ioc_id'), nullable=False, unique=True)
-    misp_attribute_id = Column(BigInteger, nullable=False, unique=True)
-    misp_attribute_uuid = Column(Text, nullable=True, unique=True)
+    # The reverse direction is NOT unique, and used to be (dropped in
+    # d1a7c93f5e64). MISP deduplicates attributes within an event by
+    # (type, value, category), so it hands the SAME attribute id to two
+    # different IRIS IOCs whenever they share a value+type in one case — or
+    # when an IOC is deleted and recreated, since that mints a new ioc_id and
+    # a new ioc_uuid while MISP still holds the original attribute. Marking
+    # these unique encoded an invariant MISP does not honour, and the insert
+    # died on a UniqueViolation instead of syncing.
+    misp_attribute_id = Column(BigInteger, nullable=False, index=True)
+    misp_attribute_uuid = Column(Text, nullable=True, index=True)
     date_created = Column(DateTime, server_default=func.now(), nullable=False)
     last_synced_at = Column(DateTime, nullable=True)
 

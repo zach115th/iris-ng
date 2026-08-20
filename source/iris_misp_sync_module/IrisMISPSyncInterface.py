@@ -399,7 +399,19 @@ class IrisMISPSyncHandler:
             )
         return category
 
-    def _lookup_existing_attribute(self, client: MispSyncClient, ioc: Ioc, event_link: MispEventLink) -> dict[str, Any] | None:
+    def _lookup_existing_attribute(
+        self,
+        client: MispSyncClient,
+        ioc: Ioc,
+        event_link: MispEventLink,
+        misp_type: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Find the MISP attribute already representing this IOC, if any.
+
+        Two passes, because the provenance marker and MISP's own identity are
+        different things.
+        """
+        # Pass 1 — our own marker. Exact, and it survives an edit to the value.
         search_response = client.search_attributes({
             "returnFormat": "json",
             "eventid": event_link.misp_event_id,
@@ -409,6 +421,29 @@ class IrisMISPSyncHandler:
         attributes = search_response.get("response", {}).get("Attribute", [])
         if attributes:
             return attributes[0]
+
+        # Pass 2 — what MISP actually keys on. An IOC deleted and recreated in
+        # IRIS carries a new ioc_uuid, so pass 1 can never match it, while MISP
+        # still holds the attribute created for the original. Without this, the
+        # sync falls through to add_attribute, MISP dedupes and returns that
+        # same pre-existing attribute, and we try to insert a second link row
+        # for it. Finding it here means taking the update path instead.
+        if misp_type:
+            dedup_response = client.search_attributes({
+                "returnFormat": "json",
+                "eventid": event_link.misp_event_id,
+                "type": misp_type,
+                "value": ioc.ioc_value,
+                "includeContext": False
+            })
+            attributes = dedup_response.get("response", {}).get("Attribute", [])
+            if attributes:
+                self.log.info(
+                    f"IOC #{ioc.ioc_id}: matched MISP attribute {attributes[0].get('id')} "
+                    f"by type+value rather than provenance marker — the IOC was most "
+                    f"likely recreated, or shares its value with another IOC in this case"
+                )
+                return attributes[0]
         return None
 
     def sync_ioc(self, ioc: Ioc):
@@ -428,7 +463,7 @@ class IrisMISPSyncHandler:
 
         attr_link = MispAttributeLink.query.filter(MispAttributeLink.ioc_id == ioc.ioc_id).first()
         if attr_link is None:
-            existing_attribute = self._lookup_existing_attribute(client, ioc, event_link)
+            existing_attribute = self._lookup_existing_attribute(client, ioc, event_link, misp_type)
             if existing_attribute:
                 attr_link = MispAttributeLink()
                 attr_link.event_link_id = event_link.id
@@ -462,6 +497,32 @@ class IrisMISPSyncHandler:
         event_link.last_synced_at = datetime.datetime.utcnow()
         db.session.commit()
         self._sync_attribute_tags(client, ioc, attr_link.misp_attribute_id)
+
+
+def _rollback_failed_session(log) -> None:
+    """Return the shared session to a usable state after a module-side failure.
+
+    Load-bearing, and not optional. A database error inside a hook leaves the
+    SQLAlchemy session in a failed-flush state, and IRIS core commits that same
+    session immediately after `hooks_handler` returns
+    (`module_handler.py`, "Recommit the changes made by the module"). Without a
+    rollback here, core's commit raises `PendingRollbackError`, so one IOC that
+    could not sync escalates into the entire hook task failing — and the
+    traceback names `task_hook_wrapper` rather than this module, which sends
+    the reader looking in the wrong place.
+
+    This is a THIRD failure shape distinct from the two already documented:
+    it is not the `NotImplementedError` of app/worker code skew, and not the
+    `PGRES_TUPLES_OK` of celery fork-safety.
+
+    Deliberately swallows its own errors: this runs on the failure path, and a
+    rollback that itself raises must not replace the original exception, which
+    has already been logged by the caller.
+    """
+    try:
+        db.session.rollback()
+    except Exception:  # noqa: BLE001 - see docstring
+        log.exception("Failed to roll back the session after a sync error")
 
 
 class IrisMISPSyncInterface(IrisModuleInterface):
@@ -529,6 +590,7 @@ class IrisMISPSyncInterface(IrisModuleInterface):
                 except Exception as exc:
                     self.log.exception(exc)
                     failures.append(str(exc))
+                    _rollback_failed_session(self.log)
 
         elif hook_name in ["on_postload_ioc_create", "on_postload_ioc_update"]:
             for ioc in data:
@@ -537,6 +599,7 @@ class IrisMISPSyncInterface(IrisModuleInterface):
                 except Exception as exc:
                     self.log.exception(exc)
                     failures.append(str(exc))
+                    _rollback_failed_session(self.log)
         else:
             msg = f"Received unsupported hook {hook_name}"
             self.log.critical(msg)

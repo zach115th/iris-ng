@@ -15,7 +15,47 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 Active work on `main`.
 
+---
+
+## [IRIS-NG-v1.2.3] — 2026-08-20
+
+Four fixes that had accumulated on `main` since `IRIS-NG-v1.2.2`, two of
+them reported from a production instance.
+
 ### Fixed
+
+- **MISP sync failed on any IOC whose MISP attribute was already claimed**
+  (Alembic `d1a7c93f5e64`). `misp_attribute_link` marked both
+  `misp_attribute_id` and `misp_attribute_uuid` UNIQUE, which asserts that a
+  MISP attribute belongs to exactly one IRIS IOC. MISP does not work that way:
+  it deduplicates attributes within an event by (type, value, category), so it
+  returns the *same* attribute for two IOCs sharing a value and type in one
+  case, and for an IOC deleted and recreated in IRIS — that mints a new
+  `ioc_id` **and** a new `ioc_uuid` while MISP still holds the original
+  attribute. The insert then died on a `UniqueViolation`.
+
+  `ioc_id` remains UNIQUE — one IRIS IOC still has at most one MISP attribute.
+  Only the reverse direction is relaxed, so the table now models
+  many-IOCs-to-one-attribute, which is what MISP expresses. Both columns keep a
+  plain index.
+
+  The attribute lookup also gained a second pass. It searched only for the
+  provenance marker `dfir_ioc_uuid=<ioc_uuid>`, which a recreated IOC can never
+  match; it now falls back to MISP's own identity (type + value within the
+  event), so such an IOC takes the *update* path instead of trying to create a
+  duplicate link.
+
+- **One failing IOC took down the entire hook task.** The module caught sync
+  errors and logged them but never rolled back, leaving the shared SQLAlchemy
+  session in a failed-flush state. IRIS core commits that same session
+  immediately after the hook returns, so it raised `PendingRollbackError` and
+  the whole task was reported as failed — with a traceback naming
+  `task_hook_wrapper` rather than the module, sending readers to the wrong
+  place. Failures are now rolled back per item, so one unsyncable IOC no longer
+  affects the others.
+
+  This is a third distinct hook-failure shape, alongside the `NotImplementedError`
+  of app/worker code skew and the `PGRES_TUPLES_OK` of celery fork-safety.
 
 - **The case chat assistant could not see evidence.** The Evidence tab shipped
   with its own specialised prompt — telling the model to reason about hashes,
@@ -28,6 +68,17 @@ Active work on `main`.
   the same name on the evidence row: that column is deprecated and is NULL for
   anything registered since the Inventory tab shipped, so reading it directly
   would report "no location" for evidence that plainly has one.
+
+- **The correlation drawer showed nothing where linked notes go when an
+  indicator had none.** No heading, no message — just a gap, which is
+  indistinguishable from a broken lookup, and was reported as one. The section
+  now always renders, with an explicit line when no note in that case references
+  the indicator and none is linked as its source. That absence is a signal in
+  its own right: an indicator nobody has written about is one nobody has
+  explained.
+
+  Note matching itself was working correctly, including defanged forms — a note
+  containing `203.0.113[.]47` does match the indicator `203.0.113.47`.
 
 ### Added
 
