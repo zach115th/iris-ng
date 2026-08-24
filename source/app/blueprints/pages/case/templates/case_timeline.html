@@ -832,9 +832,15 @@
 <div class="main-panel">
 
     <div class="content">
-			<!-- Navbar Header — z-index raised above the fixed AI panel (910) so
-			     the panel header never bleeds into the button row. -->
-			<nav class="navbar navbar-header navbar-expand-lg bg-primary-gradient nav-sticky" id="timeline-nav" style="z-index: 1030;">
+			<!-- Navbar Header — sits above the fixed AI panel (910) and the
+			     working-timeline panel (920) so neither bleeds into the button
+			     row. MUST stay BELOW .main-header (z-index 1001): that topbar is
+			     position:fixed, so it creates a stacking context and every
+			     dropdown inside it paints at 1001. Anything here above 1001
+			     covers the topbar's open dropdowns — a 1030 here hid the top
+			     ~40px of the notification panel, i.e. its whole header strip
+			     including the "Mark as read" button, on this page only. -->
+			<nav class="navbar navbar-header navbar-expand-lg bg-primary-gradient nav-sticky" id="timeline-nav" style="z-index: 1000;">
 				{{ form.hidden_tag() }}
 				<ul class="container-fluid mt-3 mb--2">
                     <ul class="navbar-nav col-8">

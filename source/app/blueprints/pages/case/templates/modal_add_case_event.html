@@ -9,6 +9,19 @@
                     {% endif %}
                 </h4>
                 <small><i class="text-muted">{% if event.event_uuid %}#{{ event.event_uuid }}{% endif %}</i></small>
+                {# "Added by" convenience line - the same fact the history
+                   panel shows as "Created ... by X", surfaced without needing
+                   to open it. user_name is only passed on the view/edit route
+                   (CasesEvent.user is the CREATOR: the edit path never
+                   reassigns user_id/event_added), so this is guarded on
+                   event_id and renders nothing on the Add-event modal. #}
+                {% if event.event_id and user_name %}
+                    <div class="mt-1">
+                        <small class="text-muted">
+                            <i class="fas fa-user mr-1"></i>Added by <b>{{ user_name }}</b>{% if event.event_added %} on {{ event.event_added.strftime('%Y-%m-%d %H:%M') }} UTC{% endif %}
+                        </small>
+                    </div>
+                {% endif %}
             </div>
             {% include 'modals/modal_attributes_nav.html' %}
             <div class="col ">

@@ -15,7 +15,90 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 Active work on `main`.
 
+---
+
+## [IRIS-NG-v1.3.0] — 2026-08-24
+
+Introduces a per-event triage verdict on the master timeline, makes *Add to
+summary* actually govern what the AI surfaces and the generated report take
+into account, and carries everything staged under `IRIS-NG-v1.2.3`, which was
+never tagged.
+
+### Added
+
+- **Event triage verdict** (Alembic `b8f4e2a71c93`). A single *Verdict*
+  dropdown on the event modal replaces the *Add to summary* and *Display in
+  graph* checkboxes and the seven-swatch colour picker: **To be determined**
+  (default, purple), **True positive** (green), and **False positive** (red,
+  excluded from both the AI surfaces and the case graph).
+
+  The verdict needed its own column rather than being derived from the two
+  flags, because *to be determined* and *true positive* carry the same boolean
+  state and so are indistinguishable from them. `apply_verdict()` is the only
+  place the verdict → (colour, summary, graph) mapping lives, and every write
+  path goes through it.
+
+  Existing events are migrated on first boot: an event with **both** flags off
+  becomes a *false positive*, since that was the only way to express the same
+  intent before; everything else, including rows predating the flags, becomes
+  *to be determined*. Mixed states are normalised, which is a real change to
+  stored data. `event_verdict` is optional for API clients — an absent or
+  unrecognised value falls back to the default rather than failing the request,
+  so workflows written before the field existed keep working.
+
+  The timeline toolbar's *Toggle Summary*, *Toggle Graph* and colour swatches
+  are now three verdict actions.
+
+- **Who added an event, shown without opening the history panel.** The event
+  modal carries an *Added by \<name\> on \<date\> UTC* line beneath the event
+  UUID, and each timeline card shows the creator at the end of its footer row.
+  This is the creator, not the last editor: the edit path never reassigns
+  `user_id`/`event_added`, so it stays accurate however often an event is
+  changed.
+
+### Changed
+
+- **"Add to summary" now decides what the AI and the report consider.** It was
+  previously a marker that nothing acted on. It gates the executive case
+  summary, the running timeline-analysis panel, the case chat, the surrounding
+  context of the per-event analysis drawer, and the generated `.docx` report.
+
+  Deliberately **not** gated: the per-event drawer's *target* event, since you
+  opened the drawer on that card; and `/case/export` plus the encrypted
+  `.iris-case` export, which must stay complete records.
+
+  Made opt-out rather than opt-in. Promotion from the working timeline, CSV
+  import and manual creation all previously stored the flag as false, so an
+  opt-in reading would have silently emptied the analysis for any case built
+  from a Hayabusa or KAPE import — and an empty payload reads as a quiet case
+  rather than a missing one. All three now default it on.
+
+  Both prompts receive a server-computed count of how many events were held
+  back, and are explicit that a curated timeline must not be reported as an
+  inactive one.
+
+- **Dependency updates.** SQLAlchemy 2.0.51 → 2.0.52, azure-keyvault-secrets
+  4.11.0 → 4.11.1, svelte 5.56.8 → 5.56.10, eslint-plugin-svelte 3.22.0 →
+  3.23.0, globals 17.9.0 → 17.11.0, and `@types/node` 26.1.2 → 26.2.0.
+
 ### Fixed
+
+- **The notification panel's header was invisible on the Timeline page**,
+  taking the *Mark as read* button with it. The topbar is `position: fixed`
+  with `z-index: 1001`, which makes it a stacking context — so every dropdown
+  inside it paints at 1001 regardless of its own `z-index`. The Timeline
+  page's filter bar carried `z-index: 1030` and therefore painted over the top
+  of any open topbar dropdown. The bar only ever needed to clear the AI and
+  working-timeline panels (910 and 920), so it now sits at 1000, below the
+  topbar. Affected every topbar dropdown on that page, not only the bell.
+
+- **A colour chosen for an event never appeared on its timeline card.** Two
+  independent causes, so fixing either alone would not have shown anything.
+  The renderer emitted the colour as a normal inline `style` attribute, while
+  `dark-theme.css` sets the card border with `!important` — and importance
+  is resolved before specificity, so the stylesheet won regardless of the
+  inline declaration. The border was also drawn as `groove`, which renders as
+  a darkened shade of the colour and is invisible against the card background.
 
 - **Every task in the DIM Tasks list showed the red failure icon**, including
   tasks that had plainly succeeded. The list endpoint overwrote celery's own
@@ -40,7 +123,11 @@ Active work on `main`.
 
 ---
 
-## [IRIS-NG-v1.2.3] — 2026-08-20
+## [IRIS-NG-v1.2.3] — 2026-08-20 (never released)
+
+> This version was staged on `main` but no tag, release or container images were ever
+> produced for it, so nothing shipped under this number. The changes below are included
+> in `IRIS-NG-v1.3.0`.
 
 Four fixes that had accumulated on `main` since `IRIS-NG-v1.2.2`, two of
 them reported from a production instance.

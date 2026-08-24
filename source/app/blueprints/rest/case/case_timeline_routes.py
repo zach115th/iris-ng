@@ -470,6 +470,13 @@ def case_filter_timeline(caseid):
         CasesEvent.event_is_flagged,
         CasesEvent.parent_event_id,
         User.user,
+        # Creator display name for the "added by" line on the card. The join
+        # is to CasesEvent.user, which is the CREATOR: the edit path never
+        # reassigns user_id/event_added (only create, duplicate and CSV
+        # import do), so this stays stable across edits. `User.user` above is
+        # the login; `User.name` is the human name - see the load-bearing
+        # rule that there is no User.user_login attribute.
+        User.name.label("creator_name"),
         CasesEvent.event_added,
         EventCategory.name.label("category_name")
     ).filter(condition).order_by(

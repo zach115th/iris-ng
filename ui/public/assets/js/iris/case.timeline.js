@@ -630,6 +630,27 @@ function buildEvent(event_data, compact, comments_map, tree, tesk, tmb, idx, rea
         ori_date += `<i class="fas fa-share-alt mr-1" title="Showed in graph"></i>`
     }
 
+    /* "added by" convenience line. The creator is already on the wire from
+       /case/timeline/advanced-filter (creator_name = User.name, user = login)
+       - the same fact the event-history panel shows as "Created ... by X",
+       surfaced here so it can be read without opening the modal.
+
+       ml-auto, not float-right, because the parent .col is d-flex. It must
+       live in COLUMN 1: the timeline page's own stylesheet hides
+       .bottom-hour > .row > .col:nth-child(2) with !important, so anything
+       placed in column 2 renders invisible rather than misplaced. */
+    let added_by = '';
+    let added_by_plain = '';
+    let creator = evt.creator_name || evt.user;
+    if (creator) {
+        let added_on = evt.event_added ? ` on ${sanitizeHTML(String(evt.event_added).replace('T', ' ').slice(0, 16))} UTC` : '';
+        let inner = `<small class="bottom-hour-i" title="Added by ${sanitizeHTML(creator)}${added_on}"><i class="fas fa-user mr-1"></i>${sanitizeHTML(creator)}</small>`;
+        added_by = `<span class="text-muted text-sm align-self-end ml-auto mb--2">${inner}</span>`;
+        /* Compact view's bottom-hour has no .row/.col, so ml-auto has nothing
+           to push against - it gets a plain floated span instead. */
+        added_by_plain = `<span class="text-muted text-sm">${inner}</span>`;
+    }
+
 
     let day = dta[0];
     // Transform the date to the user's system format. day is in the format YYYY-MM-DD. We want our date in the user's host format, without the minutes and seconds.
@@ -749,6 +770,7 @@ function buildEvent(event_data, compact, comments_map, tree, tesk, tmb, idx, rea
                             ${formatted_content}
                             </div>
                             <div class="bottom-hour mt-2">
+                                <span class="float-left">${added_by_plain}</span>
                                 <span class="float-right">${tags}${asset} </span>
                             </div>
                         </div>
@@ -805,8 +827,9 @@ function buildEvent(event_data, compact, comments_map, tree, tesk, tmb, idx, rea
                             <div class="row">
                                 <div class="col d-flex">
                                     <span class="text-muted text-sm align-self-end float-left mb--2"><small class="bottom-hour-i"><i class="flaticon-stopwatch mr-2"></i>${formatTime(evt.event_date, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'})}${ori_date}</small></span>
+                                    ${added_by}
                                 </div>
-                                
+
                                 <div class="col">
                                     <span class="float-right">${tags}${asset} </span>
                                 </div>
