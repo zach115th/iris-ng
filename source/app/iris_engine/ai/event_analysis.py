@@ -66,9 +66,15 @@ def build_event_payload(case: Cases, event: CasesEvent) -> dict[str, Any]:
         "in_summary": bool(event.event_in_summary),
     }
 
+    # The surrounding context honours "Add to summary" -- an event the analyst
+    # excluded should not colour the reading of a different event. The TARGET
+    # event deliberately does NOT: the analyst opened this drawer on this card,
+    # so refusing to analyse it because it is excluded from aggregate summaries
+    # would be answering a question nobody asked.
     other_events = (
         CasesEvent.query
         .filter(CasesEvent.case_id == case_id, CasesEvent.event_id != event.event_id)
+        .filter(CasesEvent.event_in_summary.isnot(False))
         .order_by(CasesEvent.event_date.asc())
         .limit(80)
         .all()

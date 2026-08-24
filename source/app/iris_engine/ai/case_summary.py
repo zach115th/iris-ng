@@ -90,7 +90,7 @@ PROMPTS_DIR = Path(__file__).parent.parent.parent / "resources" / "ai_prompts"
 # field (vs a Markdown bullet list the synthesizer interpolates as text).
 DOMAIN_CONFIG: dict[str, dict[str, Any]] = {
     "notes":    {"prompt_file": "case_summary_notes.md",    "kind": "case_summary:notes",    "prompt_id": "CaseSummaryNotes-v1",    "structured": False},
-    "timeline": {"prompt_file": "case_summary_timeline.md", "kind": "case_summary:timeline", "prompt_id": "CaseSummaryTimeline-v1", "structured": True},
+    "timeline": {"prompt_file": "case_summary_timeline.md", "kind": "case_summary:timeline", "prompt_id": "CaseSummaryTimeline-v2", "structured": True},
     "iocs":     {"prompt_file": "case_summary_iocs.md",     "kind": "case_summary:iocs",     "prompt_id": "CaseSummaryIocs-v1",     "structured": False},
     "assets":   {"prompt_file": "case_summary_assets.md",   "kind": "case_summary:assets",   "prompt_id": "CaseSummaryAssets-v1",   "structured": True},
     "evidence": {"prompt_file": "case_summary_evidence.md", "kind": "case_summary:evidence", "prompt_id": "CaseSummaryEvidence-v1", "structured": True},
@@ -138,12 +138,26 @@ def _build_notes_payload(case_id: int) -> tuple[dict[str, Any], bool]:
 
 
 def _build_timeline_payload(case_id: int) -> tuple[dict[str, Any], bool]:
+    # The "Add to summary" checkbox decides what reaches this specialist.
+    # `isnot(False)` rather than `== True` on purpose: the column is nullable
+    # and older events predate the flag, so NULL has to mean included --
+    # `!= False` would drop them, since in SQL NULL != False is NULL.
     rows = (
         CasesEvent.query
         .filter(CasesEvent.case_id == case_id)
+        .filter(CasesEvent.event_in_summary.isnot(False))
         .order_by(CasesEvent.event_date.asc())
         .limit(150)
         .all()
+    )
+    # Count what the analyst excluded so the synthesiser can tell a curated
+    # timeline from a genuinely quiet case. Without this an excluded-heavy
+    # case reads as "little activity", which is the wrong conclusion.
+    excluded = (
+        CasesEvent.query
+        .filter(CasesEvent.case_id == case_id)
+        .filter(CasesEvent.event_in_summary.is_(False))
+        .count()
     )
     timeline = [
         {
@@ -156,7 +170,7 @@ def _build_timeline_payload(case_id: int) -> tuple[dict[str, Any], bool]:
         }
         for e in rows
     ]
-    return {"timeline": timeline}, len(timeline) == 0
+    return {"timeline": timeline, "events_excluded_by_analyst": excluded}, len(timeline) == 0
 
 
 def _build_iocs_payload(case_id: int) -> tuple[dict[str, Any], bool]:
@@ -645,6 +659,11 @@ def build_case_payload(case: Cases) -> dict[str, Any]:
             "assets": len(assets_p["assets"]),
             "iocs": len(iocs_p["iocs"]),
             "timeline_events": len(timeline_p["timeline"]),
+            # This payload's timeline already honours the per-event "Add to
+            # summary" flag, since it comes from _build_timeline_payload.
+            # Surface the exclusion count too, so chat can say "some events
+            # were held back" rather than implying it has seen everything.
+            "timeline_events_excluded_by_analyst": timeline_p["events_excluded_by_analyst"],
             "tasks": len(tasks),
             "notes": len(notes_p["notes"]),
             "evidence": len(evidence_p["evidence"]),

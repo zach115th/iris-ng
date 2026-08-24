@@ -596,7 +596,11 @@ def promote_working_event(case_identifier, working_id):
     promoted.event_tz = '+00:00'
     promoted.event_added = datetime.utcnow()
     promoted.event_in_graph = True
-    promoted.event_in_summary = False
+    # True, not False: "Add to summary" now gates what the timeline analysis and
+    # case summary consider, and an event the analyst deliberately promoted off
+    # the working timeline is exactly what those should reason over. Leaving it
+    # False would silently empty both surfaces on any Hayabusa/KAPE-driven case.
+    promoted.event_in_summary = True
     promoted.user_id = current_user.id
     promoted.event_tags = working.event_tags
     promoted.event_color = ''

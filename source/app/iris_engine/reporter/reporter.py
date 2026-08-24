@@ -63,6 +63,26 @@ class IrisReportMaker(object):
         self._caseid = caseid
         self.safe_mode = safe_mode
 
+    @staticmethod
+    def _apply_summary_filter(case_info):
+        """Drop timeline events the analyst excluded via "Add to summary".
+
+        Applied here, in the reporter, rather than in export_case_tm_json --
+        that function also backs the /case/export JSON API, and an export must
+        stay complete. Only the generated report is curated.
+
+        Opt-out: every write path defaults the flag on, so an event is dropped
+        only by a deliberate untick. Rows carrying None predate the flag and are
+        kept, matching the `isnot(False)` semantics used by the AI surfaces.
+        """
+        timeline = case_info.get('timeline')
+        if not timeline:
+            return case_info
+        kept = [ev for ev in timeline if ev.get('event_in_summary') is not False]
+        case_info['timeline'] = kept
+        case_info['timeline_events_excluded_by_analyst'] = len(timeline) - len(kept)
+        return case_info
+
     def get_case_info(self, doc_type):
         """Returns case information
 
@@ -109,7 +129,7 @@ class IrisReportMaker(object):
         Retrieve information of the case
         :return:
         """
-        case_info = cases_export_to_json(self._caseid)
+        case_info = IrisReportMaker._apply_summary_filter(cases_export_to_json(self._caseid))
 
         # Get customer, user and case title
         case_info['doc_id'] = IrisReportMaker.get_docid()
@@ -160,8 +180,14 @@ class IrisReportMaker(object):
         Retrieve the case timeline
         :return:
         """
+        # Honours the per-event "Add to summary" flag, matching every other
+        # timeline consumer. `isnot(False)` rather than `== True`: the column is
+        # nullable and legacy events predate the flag, so NULL must count as
+        # included -- `!= False` would drop them, since in SQL NULL != False is
+        # NULL rather than true.
         timeline = CasesEvent.query.filter(
-            CasesEvent.case_id == caseid
+            CasesEvent.case_id == caseid,
+            CasesEvent.event_in_summary.isnot(False)
         ).order_by(
             CasesEvent.event_date
         ).all()
@@ -179,7 +205,14 @@ class IrisReportMaker(object):
                 AssetsType.asset_name.label('type')
             ).filter(
                 CaseEventsAssets.event_id == row.event_id
-            ).join(CaseEventsAssets.asset, CaseAssets.asset_type).all()
+            ).join(
+                # Chained, not `.join(a, b)` -- SQLAlchemy reads a second
+                # positional argument as the ON clause, so passing two
+                # relationship paths raises InvalidRequestError.
+                CaseEventsAssets.asset
+            ).join(
+                CaseAssets.asset_type
+            ).all()
 
             alki = []
             for asset in as_list:
@@ -362,7 +395,7 @@ class IrisMakeDocReport(IrisReportMaker):
         Retrieve information of the case
         :return:
         """
-        case_info = cases_export_to_report_json(self._caseid)
+        case_info = IrisReportMaker._apply_summary_filter(cases_export_to_report_json(self._caseid))
 
         # Get customer, user and case title
         case_info['doc_id'] = IrisMakeDocReport.get_docid()
@@ -413,8 +446,14 @@ class IrisMakeDocReport(IrisReportMaker):
         Retrieve the case timeline
         :return:
         """
+        # Honours the per-event "Add to summary" flag, matching every other
+        # timeline consumer. `isnot(False)` rather than `== True`: the column is
+        # nullable and legacy events predate the flag, so NULL must count as
+        # included -- `!= False` would drop them, since in SQL NULL != False is
+        # NULL rather than true.
         timeline = CasesEvent.query.filter(
-            CasesEvent.case_id == caseid
+            CasesEvent.case_id == caseid,
+            CasesEvent.event_in_summary.isnot(False)
         ).order_by(
             CasesEvent.event_date
         ).all()
@@ -432,7 +471,14 @@ class IrisMakeDocReport(IrisReportMaker):
                 AssetsType.asset_name.label('type')
             ).filter(
                 CaseEventsAssets.event_id == row.event_id
-            ).join(CaseEventsAssets.asset, CaseAssets.asset_type).all()
+            ).join(
+                # Chained, not `.join(a, b)` -- SQLAlchemy reads a second
+                # positional argument as the ON clause, so passing two
+                # relationship paths raises InvalidRequestError.
+                CaseEventsAssets.asset
+            ).join(
+                CaseAssets.asset_type
+            ).all()
 
             alki = []
             for asset in as_list:

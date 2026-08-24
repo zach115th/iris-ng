@@ -578,8 +578,15 @@ function buildEvent(event_data, compact, comments_map, tree, tesk, tmb, idx, rea
     }
 
     let style_s = "";
-    if (evt.event_color != null) {
-            style_s = `style='border-left: 2px groove ${sanitizeHTML(evt.event_color)};'`;
+    /* Needs !important: dark-theme.css sets `border: ... !important` on
+       .timeline-panel, and an !important author rule outranks a normal inline
+       declaration, so without it the chosen colour never reaches the card.
+       Solid rather than the original `2px groove` -- groove draws its edge in a
+       darkened shade of the colour, which is invisible against the #15151a
+       card. Truthy test rather than `!= null` because events default to an
+       empty string, which used to emit `border-left: 2px groove ;`. */
+    if (evt.event_color) {
+            style_s = `style='border-left: 4px solid ${sanitizeHTML(evt.event_color)} !important;'`;
     }
 
     if (!tree) {

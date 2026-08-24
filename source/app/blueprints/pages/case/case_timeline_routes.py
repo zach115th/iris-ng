@@ -141,6 +141,9 @@ def case_add_event_modal(caseid, url_redir):
     categories = get_events_categories()
     form.event_category_id.choices = [(c.id, c.name) for c in categories]
     form.event_in_graph.data = True
+    # Ticked by default so a new event is considered by the timeline analysis
+    # and case summary unless the analyst deliberately excludes it.
+    form.event_in_summary.data = True
 
     return render_template("modal_add_case_event.html", form=form, event=event,
                            tags=_EVENT_TAGS, assets=assets, iocs=iocs, assets_prefill=None, category=def_cat,

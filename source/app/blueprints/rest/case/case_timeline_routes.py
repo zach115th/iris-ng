@@ -933,7 +933,13 @@ def case_events_upload_csv(caseid):
 
     event_sync_iocs_assets = csv_options.get('event_sync_iocs_assets') if csv_options.get(
         'event_sync_iocs_assets') else False
-    event_in_summary = csv_options.get('event_in_summary') if csv_options.get('event_in_summary') else False
+    # Defaults True: "Add to summary" gates the timeline analysis and case
+    # summary, so an import must not silently exclude everything it brings in.
+    # Written as an explicit default rather than the `x if x else y` idiom used
+    # on the line below, because that idiom cannot express an explicit False --
+    # a client sending event_in_summary=false takes the else branch and gets
+    # the default back. (event_in_graph has the same flaw; left alone here.)
+    event_in_summary = bool(csv_options.get('event_in_summary', True))
     event_in_graph = csv_options.get('event_in_graph') if csv_options.get('event_in_graph') else True
     event_source = csv_options.get('event_source') if csv_options.get('event_source') else ''
 

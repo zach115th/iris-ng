@@ -26,7 +26,7 @@ from app.models.models import CaseAiArtifact
 
 
 TIMELINE_ANALYSIS_KIND = "timeline_analysis"
-TIMELINE_ANALYSIS_PROMPT_ID = "TimelineNarrativeSystemPrompt-v4"
+TIMELINE_ANALYSIS_PROMPT_ID = "TimelineNarrativeSystemPrompt-v5"  # v5: "Add to summary" now gates which events reach the payload; curation count added
 
 PROMPT_PATH = Path(__file__).parent.parent.parent / "resources" / "ai_prompts" / "timeline_analysis.md"
 
@@ -57,12 +57,24 @@ def build_timeline_payload(case: Cases) -> dict[str, Any]:
     """
     case_id = case.case_id
 
+    # The "Add to summary" checkbox decides what reaches this analysis.
+    # `isnot(False)` rather than `== True` on purpose: the column is nullable
+    # and older events predate the flag, so NULL has to mean included --
+    # `!= False` would drop them, since in SQL NULL != False is NULL.
     timeline_q = (
         CasesEvent.query
         .filter(CasesEvent.case_id == case_id)
+        .filter(CasesEvent.event_in_summary.isnot(False))
         .order_by(CasesEvent.event_date.asc())
         .limit(150)
         .all()
+    )
+    # Counted so the model can distinguish a curated timeline from a quiet one.
+    events_excluded = (
+        CasesEvent.query
+        .filter(CasesEvent.case_id == case_id)
+        .filter(CasesEvent.event_in_summary.is_(False))
+        .count()
     )
     timeline = [
         {
@@ -72,7 +84,6 @@ def build_timeline_payload(case: Cases) -> dict[str, Any]:
             "content": _truncate(e.event_content, 2000),
             "source": _truncate(e.event_source, 300),
             "is_flagged": bool(e.event_is_flagged),
-            "in_summary": bool(e.event_in_summary),
         }
         for e in timeline_q
     ]
@@ -87,6 +98,7 @@ def build_timeline_payload(case: Cases) -> dict[str, Any]:
         },
         "counts": {
             "timeline_events": len(timeline),
+            "events_excluded_by_analyst": events_excluded,
         },
         "timeline": timeline,
     }
