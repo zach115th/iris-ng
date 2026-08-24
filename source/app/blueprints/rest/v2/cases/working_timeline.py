@@ -55,6 +55,8 @@ from app.iris_engine.working_timeline.iris_master_csv_parser import parse_master
 from app.models.authorization import CaseAccessLevel
 from app.models.cases import CaseWorkingEvent
 from app.models.cases import CasesEvent
+from app.iris_engine.case_event_verdict import apply_verdict
+from app.iris_engine.case_event_verdict import DEFAULT_VERDICT
 from app.models.models import CaseAiArtifact
 from app.util import add_obj_history_entry
 
@@ -595,15 +597,16 @@ def promote_working_event(case_identifier, working_id):
     promoted.event_date_wtz = working.event_date
     promoted.event_tz = '+00:00'
     promoted.event_added = datetime.utcnow()
-    promoted.event_in_graph = True
-    # True, not False: "Add to summary" now gates what the timeline analysis and
-    # case summary consider, and an event the analyst deliberately promoted off
-    # the working timeline is exactly what those should reason over. Leaving it
-    # False would silently empty both surfaces on any Hayabusa/KAPE-driven case.
-    promoted.event_in_summary = True
+    # A promoted event is untriaged by definition -- the analyst moved it onto
+    # the master timeline to work on it, not because they have ruled on it. The
+    # default verdict sets in_graph, in_summary and the colour together, so it
+    # replaces the individual assignments that used to live here.
+    apply_verdict(promoted, DEFAULT_VERDICT)
     promoted.user_id = current_user.id
     promoted.event_tags = working.event_tags
-    promoted.event_color = ''
+    # NB: no event_color assignment here -- apply_verdict above owns it. Setting
+    # it to '' would blank the verdict colour and leave the card uncoloured
+    # while its verdict said otherwise.
     # iris-ng: promoted events join the master timeline flagged-for-review,
     # matching the model default — keeps the "review me" signal uniform across
     # every way a master-timeline event is created.

@@ -196,6 +196,13 @@ class CasesEvent(db.Model):
     # Analysts un-flag once an event has been reviewed. Carry-forward paths
     # (case import, event duplicate) preserve the source's flag state instead.
     event_is_flagged = Column(Boolean, default=True)
+    # iris-ng: analyst triage verdict. Drives event_in_summary, event_in_graph
+    # and event_color -- see app/iris_engine/case_event_verdict.py, which owns
+    # the mapping. Needs its own column because 'to_be_determined' and
+    # 'true_positive' share the same boolean state, so the flags cannot
+    # distinguish them.
+    event_verdict = Column(Text, default='to_be_determined',
+                           server_default=text("'to_be_determined'"))
     custom_attributes = Column(JSONB)
 
     case = relationship('Cases')
@@ -206,8 +213,14 @@ class CasesEvent(db.Model):
                             viewonly=True)
     children = relationship("CasesEvent", backref=backref('parent', remote_side=[event_id]))
 
+    # CHECK lives on the model, not only in the migration: db.create_all() runs
+    # before alembic, so alembic's _has_table guard skips op.create_table on a
+    # fresh database and a constraint defined only there would never land.
     __table_args__ = (
         CheckConstraint('event_id != parent_event_id', name='check_different_ids'),
+        CheckConstraint(
+            "event_verdict IN ('to_be_determined', 'true_positive', 'false_positive')",
+            name='check_event_verdict_valid'),
     )
 
 

@@ -32,6 +32,8 @@ from app.datamgmt.case.case_events_db import get_event_iocs_ids
 from app.datamgmt.case.case_events_db import get_events_categories
 from app.datamgmt.manage.manage_attribute_db import get_default_custom_attributes
 from app.forms import CaseEventForm
+from app.iris_engine.case_event_verdict import choices as verdict_choices
+from app.iris_engine.case_event_verdict import DEFAULT_VERDICT
 from app.models.authorization import CaseAccessLevel
 from app.models.authorization import User
 from app.models.cases import Cases
@@ -96,8 +98,6 @@ def event_view_modal(cur_id, caseid, url_redir):
     form.event_content.data = event.event_content
     form.event_raw.data = event.event_raw
     form.event_source.render_kw = {'value': event.event_source}
-    form.event_in_graph.data = event.event_in_graph
-    form.event_in_summary.data = event.event_in_summary
 
     categories = get_events_categories()
     form.event_category_id.choices = [(c.id, c.name) for c in categories]
@@ -111,7 +111,9 @@ def event_view_modal(cur_id, caseid, url_redir):
 
     usr_name, = User.query.filter(User.id == event.user_id).with_entities(User.name).first()
 
-    return render_template("modal_add_case_event.html", form=form, event=event, user_name=usr_name, tags=_EVENT_TAGS,
+    return render_template("modal_add_case_event.html", form=form, event=event,
+                           verdict_choices=verdict_choices(), default_verdict=DEFAULT_VERDICT,
+                           user_name=usr_name, tags=_EVENT_TAGS,
                            assets=assets, iocs=iocs, comments_map=comments_map,
                            assets_prefill=assets_prefill, iocs_prefill=iocs_prefill,
                            category=event.category, attributes=event.custom_attributes)
@@ -140,11 +142,10 @@ def case_add_event_modal(caseid, url_redir):
     def_cat = get_default_cat()
     categories = get_events_categories()
     form.event_category_id.choices = [(c.id, c.name) for c in categories]
-    form.event_in_graph.data = True
-    # Ticked by default so a new event is considered by the timeline analysis
-    # and case summary unless the analyst deliberately excludes it.
-    form.event_in_summary.data = True
+    # Defaults now come from the verdict (to_be_determined -> summary on,
+    # graph on); the individual checkboxes no longer exist in the modal.
 
     return render_template("modal_add_case_event.html", form=form, event=event,
+                           verdict_choices=verdict_choices(), default_verdict=DEFAULT_VERDICT,
                            tags=_EVENT_TAGS, assets=assets, iocs=iocs, assets_prefill=None, category=def_cat,
                            attributes=event.custom_attributes)

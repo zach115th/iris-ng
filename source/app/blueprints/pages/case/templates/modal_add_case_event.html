@@ -241,72 +241,16 @@
                                             </label>
                                        </div>
                                     </div>
-                                    <div class="form-group col-xl-2 col-md-12">
-                                        <div class="form-check">
-                                            <label class="form-check-label mt-3">
-                                                {{ form.event_in_summary(class="form-check-input", type="checkbox") }}
-                                                <span class="form-check-sign"> Add to summary
-                                                    <i class="ml-1 mt-1 fa-regular fa-circle-question" title="If checked, the event is considered by the AI timeline analysis and the executive case summary. Uncheck to keep a noisy or low-value event out of both." style="cursor:pointer;"></i>
-                                                </span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="form-group col-xl-2 col-md-12">
-                                        <div class="form-check">
-                                            <label class="form-check-label mt-3">
-                                                {{ form.event_in_graph(class="form-check-input", type="checkbox") }}
-                                                <span class="form-check-sign"> Display in graph
-                                                    <i class="ml-1 mt-1 fa-regular fa-circle-question" title="If checked, the event will be integrated in the Graph section of the case" style="cursor:pointer;"></i>
-                                                </span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="form-group col-xl-3 col-md-12">
-                                        <label class="form-label">Event color</label>
-                                        <div class="row gutters-xs">
-                                            <div class="col-auto">
-                                                <label class="selectgroup-item">
-                                                    <input name="event_color" type="radio" value="#fff" {% if event.event_color == "#fff" %} checked="checked" {% endif %} class="colorinput-input">
-                                                    <span class="colorinput-color bg-white"></span>
-                                                </label>
-                                            </div>
-                                            <div class="col-auto">
-                                                <label class="selectgroup-item">
-                                                    <input name="event_color" type="radio" value="#1572E899" {% if event.event_color == "#1572E899" %} checked="checked" {% endif %} class="colorinput-input">
-                                                    <span class="colorinput-color bg-primary"></span>
-                                                </label>
-                                            </div>
-                                            <div class="col-auto">
-                                                <label class="selectgroup-item">
-                                                    <input name="event_color" type="radio" value="#6861CE99" {% if event.event_color == "#6861CE99" %} checked="checked" {% endif %} class="colorinput-input">
-                                                    <span class="colorinput-color bg-secondary"></span>
-                                                </label>
-                                            </div>
-                                            <div class="col-auto">
-                                                <label class="selectgroup-item">
-                                                    <input name="event_color" type="radio" value="#48ABF799" {% if event.event_color == "#48ABF799" %} checked="checked" {% endif %}class="colorinput-input">
-                                                    <span class="colorinput-color bg-info"></span>
-                                                </label>
-                                            </div>
-                                            <div class="col-auto">
-                                                <label class="selectgroup-item">
-                                                    <input name="event_color" type="radio" value="#31CE3699" {% if event.event_color == "#31CE3699" %} checked="checked" {% endif %} class="colorinput-input">
-                                                    <span class="colorinput-color bg-success"></span>
-                                                </label>
-                                            </div>
-                                            <div class="col-auto">
-                                                <label class="selectgroup-item">
-                                                    <input name="event_color" type="radio" value="#F2596199" {% if event.event_color == "#F2596199" %} checked="checked" {% endif %} class="colorinput-input">
-                                                    <span class="colorinput-color bg-danger"></span>
-                                                </label>
-                                            </div>
-                                            <div class="col-auto">
-                                                <label class="selectgroup-item">
-                                                    <input name="event_color" type="radio" value="#FFAD4699" {% if event.event_color == "#FFAD4699" %} checked="checked" {% endif %} class="colorinput-input">
-                                                    <span class="colorinput-color bg-warning"></span>
-                                                </label>
-                                            </div>
-                                        </div>
+                                    <div class="form-group col-xl-4 col-md-12">
+                                        <label class="form-label" for="event_verdict">Verdict
+                                            <i class="ml-1 fa-regular fa-circle-question" title="Analyst triage state. To be determined and True positive are considered by the AI timeline analysis, the case summary and the report, and appear on the graph. False positive is excluded from all of them." style="cursor:pointer;"></i>
+                                        </label>
+                                        <select class="form-control" id="event_verdict" name="event_verdict">
+                                            {% for value, label in verdict_choices %}
+                                            <option value="{{ value }}" {% if (event.event_verdict or default_verdict) == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <small class="form-text text-muted" id="event_verdict_hint"></small>
                                     </div>
                                 </div>
                             </div>

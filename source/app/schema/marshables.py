@@ -30,6 +30,8 @@ from flask_login import current_user
 from marshmallow import ValidationError
 from marshmallow import EXCLUDE
 from marshmallow import fields
+from marshmallow import validate
+from app.iris_engine.case_event_verdict import VALID_VERDICTS
 from marshmallow import post_load
 from marshmallow import pre_load
 from marshmallow.validate import Length
@@ -1170,6 +1172,11 @@ class EventSchema(ma.SQLAlchemyAutoSchema):
     modification_history: str = auto_field('modification_history', required=False, readonly=True)
     event_comments_map: List[int] = fields.List(fields.Integer, required=False, allow_none=True)
     event_sync_iocs_assets: bool = fields.Boolean(required=False)
+    # Validated here so a bad value is a 400 rather than a CHECK-constraint
+    # 500 from the database. Not required: API clients and n8n workflows
+    # predate the field, and the write paths apply the default.
+    event_verdict: str = fields.String(required=False, allow_none=True,
+                                       validate=validate.OneOf(VALID_VERDICTS))
     children = fields.Nested('EventSchema', many=True, required=False)
 
     class Meta:

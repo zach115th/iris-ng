@@ -66,6 +66,8 @@ from app.models.models import EventCategory
 from app.models.models import Ioc
 from app.schema.marshables import CommentSchema
 from app.schema.marshables import EventSchema
+from app.iris_engine.case_event_verdict import apply_verdict
+from app.iris_engine.case_event_verdict import verdict_from_flags
 from app.blueprints.access_controls import ac_requires_case_identifier
 from app.blueprints.access_controls import ac_api_requires
 from app.util import add_obj_history_entry
@@ -715,6 +717,11 @@ def case_edit_event(cur_id, caseid):
         request_data['event_id'] = cur_id
         event = event_schema.load(request_data, instance=event)
 
+        # Verdict owns event_in_summary / event_in_graph / event_color, so they
+        # are derived here rather than trusted from the request -- a client that
+        # sends a verdict and contradicting flags gets the verdict's values.
+        apply_verdict(event, request_data.get('event_verdict'))
+
         event.event_date, event.event_date_wtz = event_schema.validate_date(
             request_data.get(u'event_date'),
             request_data.get(u'event_tz')
@@ -770,6 +777,10 @@ def case_add_event(caseid):
         request_data = call_modules_hook('on_preload_event_create', data=request.get_json(), caseid=caseid)
 
         event = event_schema.load(request_data)
+
+        # Same invariant as the edit path. A create with no verdict takes the
+        # default (to_be_determined): summary on, graph on.
+        apply_verdict(event, request_data.get('event_verdict'))
 
         event.event_date, event.event_date_wtz = event_schema.validate_date(request_data.get(u'event_date'),
                                                                             request_data.get(u'event_tz'))
@@ -1047,6 +1058,10 @@ def case_events_upload_csv(caseid):
 
             request_data = call_modules_hook('on_preload_event_create', data=row, caseid=caseid)
             event = event_schema.load(request_data)
+            # The CSV modal has no verdict picker, so derive one from the
+            # summary/graph options it does carry: an explicit both-off is a
+            # false positive, anything else is to-be-determined.
+            apply_verdict(event, verdict_from_flags(event_in_summary, event_in_graph))
             event.event_date, event.event_date_wtz = event_schema.validate_date(request_data.get(u'event_date'),
                                                                                 request_data.get(u'event_tz'))
             event.case_id = caseid

@@ -187,9 +187,12 @@ class CaseEventForm(FlaskForm):
     event_assets = SelectField(u'Event Asset')
     event_category_id = SelectField(u'Event Category')
     event_tz = StringField(u'Event Timezone', validators=[DataRequired()])
-    event_in_summary = BooleanField(u'Add to summary')
     event_tags = StringField(u'Event Tags')
-    event_in_graph = BooleanField(u'Display in graph')
+    # No event_verdict field here on purpose: the modal renders the <select>
+    # directly from verdict_choices, the same way the colour radios it replaces
+    # were plain inputs rather than form fields. The two booleans it drives live
+    # on the model and are derived server-side -- see
+    # iris_engine/case_event_verdict.py.
 
 
 class CaseTaskForm(FlaskForm):

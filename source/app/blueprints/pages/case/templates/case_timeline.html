@@ -916,18 +916,12 @@
                 <button class="btn btn-round bg-transparent btn_over_page_a btn_over_page_delete btn-conditional" title="Delete selected events" onclick="events_bulk_delete();"><i class="fas fa-trash text-danger"></i></button>
 
             <div class="btn_over_page_b">
-                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color bg-white" title="color1" onclick="events_set_attribute('event_color', '#fff')"></button>
-                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color bg-primary" title="color2" onclick="events_set_attribute('event_color', '#1572E899')"></button>
-                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color bg-secondary" title="color3" onclick="events_set_attribute('event_color', '#6861CE99')"></button>
-                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color bg-info" title="color4" onclick="events_set_attribute('event_color', '#48ABF799')"></button>
-                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color bg-success" title="color5" onclick="events_set_attribute('event_color', '#31CE3699')"></button>
-                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color bg-danger" title="color5" onclick="events_set_attribute('event_color', '#F2596199')"></button>
-                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color bg-warning" title="color5" onclick="events_set_attribute('event_color', '#FFAD4699')"></button>
-                <button class="btn btn-round bg-transparent  btn-conditional" title="Change color" onclick="toggle_colors()"><i class="fas fa-tint"></i></button>
+                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color" style="background:#8B5CF6;" title="Mark selected: To be determined" onclick="events_set_attribute('event_verdict', 'to_be_determined')"></button>
+                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color bg-success" title="Mark selected: True positive" onclick="events_set_attribute('event_verdict', 'true_positive')"></button>
+                <button class="btn btn-round btn-light btn-conditional-2 colorinput-color bg-danger" title="Mark selected: False positive" onclick="events_set_attribute('event_verdict', 'false_positive')"></button>
+                <button class="btn btn-round bg-transparent  btn-conditional" title="Set verdict" onclick="toggle_colors()"><i class="fas fa-gavel"></i></button>
             </div>
             <div class="btn_over_page_i" style="display: flex; flex-direction: column;">
-                <button class="btn btn-round bg-transparent  btn-conditional" title="Toggle Summary" onclick="events_set_attribute('event_in_summary')"><i class="fas fa-newspaper"></i></button>
-                <button class="btn btn-round bg-transparent  btn-conditional" title="Toggle Graph" onclick="events_set_attribute('event_in_graph')"><i class="fas fa-share-alt"></i></button>
                 <button class="btn btn-round bg-transparent " title="Select events" onclick="toggle_selector();" id="selector-btn"><i class="fas fa-check-double"></i></button>
                 <button class="btn btn-round bg-transparent " title="Add new event" onclick="add_event();"><i class="fas fa-plus-circle"></i></button>
                 <button class="btn btn-round bg-transparent " title="Toggle child events" onclick="toggle_child_events();"><i class="fas fa-folder-tree"></i></button>

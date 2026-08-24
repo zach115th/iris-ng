@@ -75,8 +75,10 @@ function add_event(parent_event_id = null) {
             clear_api_error();
             var data_sent = $('#form_new_event').serializeObject();
             data_sent['event_date'] = `${$('#event_date').val()}T${$('#event_time').val()}`;
-            data_sent['event_in_summary'] = $('#event_in_summary').is(':checked');
-            data_sent['event_in_graph'] = $('#event_in_graph').is(':checked');
+            // event_verdict comes through serializeObject() from the <select>;
+            // the server derives event_in_summary / event_in_graph / event_color
+            // from it. Do NOT read the old checkboxes here -- they no longer
+            // exist, and .is(':checked') on a missing element returns false.
             data_sent['event_sync_iocs_assets'] = $('#event_sync_iocs_assets').is(':checked');
             data_sent['event_tags'] = $('#event_tags').val();
             data_sent['event_assets'] = $('#event_assets').val();
@@ -146,8 +148,7 @@ function update_event_ext(event_id, do_close) {
     clear_api_error();
     var data_sent = $('#form_new_event').serializeObject();
     data_sent['event_date'] = `${$('#event_date').val()}T${$('#event_time').val()}`;
-    data_sent['event_in_summary'] = $('#event_in_summary').is(':checked');
-    data_sent['event_in_graph'] = $('#event_in_graph').is(':checked');
+    // See the note in the add handler: verdict drives the flags server-side.
     data_sent['event_sync_iocs_assets'] = $('#event_sync_iocs_assets').is(':checked');
     data_sent['event_tags'] = $('#event_tags').val();
     data_sent['event_assets'] = $('#event_assets').val();
@@ -414,14 +415,13 @@ function events_set_attribute(attribute, color) {
     }
 
     switch(attribute) {
-        case "event_in_graph":
-            break;
-        case "event_in_summary":
-            break;
-        case "event_color":
+        case "event_verdict":
+            // `color` carries the verdict value for this call site. The server
+            // derives in_summary / in_graph / colour from it, so the bulk action
+            // cannot leave a verdict disagreeing with its own flags.
             attribute_value = color;
-            var color_buttons = $(".btn-conditional-2");
-            color_buttons.slideToggle(250);
+            var verdict_buttons = $(".btn-conditional-2");
+            verdict_buttons.slideToggle(250);
             break;
         default:
             console.log("invalid argument given");
@@ -443,11 +443,7 @@ function events_set_attribute(attribute, color) {
                 return;
             }
             //change attribute to selected value
-            if(attribute === 'event_in_graph' || attribute === 'event_in_summary'){
-                attribute_value = original_event[attribute];
-                original_event[attribute] = !attribute_value;
-            } else if(attribute === 'event_color') {
-                // attribute value already set to color L240
+            if(attribute === 'event_verdict') {
                 original_event[attribute] = attribute_value;
             }
 
