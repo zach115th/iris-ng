@@ -111,7 +111,14 @@
                 <input type="text" class="form-control" id="iris-timelog-note" maxlength="500" placeholder="e.g. triaged EVTX, drafted timeline">
               </div>
               <div class="form-group col-md-3 d-flex align-items-end">
-                <button class="btn btn-primary btn-block" id="iris-timelog-add" onclick="iris_timelog_submit();return false;">
+                {# No inline onclick here, deliberately. This button swaps between
+                   "Log" (POST a new entry) and "Save" (PUT an existing one), and the
+                   swap is done with jQuery .off('click')/.on('click'). jQuery cannot
+                   remove an inline onclick attribute, so an onclick here survives the
+                   swap and fires ALONGSIDE the rebound handler — which created a
+                   duplicate entry on every edit (issue #41). The handler is bound in
+                   case.time.js via iris_timelog_reset_add_button(). #}
+                <button class="btn btn-primary btn-block" id="iris-timelog-add">
                   <i class="fa-solid fa-plus mr-1"></i>Log
                 </button>
               </div>

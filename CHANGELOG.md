@@ -17,6 +17,38 @@ Active work on `main`.
 
 ---
 
+## [IRIS-NG-v1.3.1] — 2026-08-24
+
+A single-defect patch release over `IRIS-NG-v1.3.0`.
+
+### Fixed
+
+- **Editing a time-tracking entry created a duplicate instead of updating it**
+  ([#41](https://github.com/zach115th/iris-ng/issues/41)). Correcting the note on a
+  logged entry left the original updated *and* added a second identical row, so the
+  case total grew every time an entry was edited.
+
+  The Log button carries the double duty of creating a new entry and saving an edited
+  one, and the swap between the two was done with jQuery's `.off('click')`. The button
+  also had an inline `onclick` in the template, and **jQuery cannot remove an inline
+  handler** — it is a DOM attribute, not a jQuery binding. So *Save* fired both: the
+  surviving inline handler POSTed a new entry while the rebound handler PUT the edit.
+
+  The consequence went further than editing. Once the button had been swapped and
+  reset — which also happens simply by closing the modal — it carried the inline
+  handler *and* a bound one, both of which create. From that point every ordinary
+  **Log** click added two entries until the page was reloaded.
+
+  The inline handler is gone and the button is bound once in JavaScript. Both files
+  carry a note explaining why that button must never regain an `onclick`.
+
+  **No data is corrected automatically.** Duplicates already recorded remain, because
+  a duplicate is indistinguishable from two genuine entries logged with the same
+  duration, date and note. Review the Time tab on affected cases and delete the extra
+  rows; the case total on the modal is the quickest way to spot one.
+
+---
+
 ## [IRIS-NG-v1.3.0] — 2026-08-24
 
 Introduces a per-event triage verdict on the master timeline, makes *Add to

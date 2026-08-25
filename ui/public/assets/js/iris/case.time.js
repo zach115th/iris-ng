@@ -235,6 +235,12 @@ function iris_timelog_check_nudge() {
 
 /* Toggle the custom-minutes input and reset to add-mode on duration change. */
 $(document).ready(function () {
+    /* Bind the default "Log" handler once. The button deliberately carries NO inline
+       onclick: it swaps between Log (POST) and Save (PUT) via .off('click')/.on('click'),
+       and jQuery cannot remove an inline onclick, so one would survive the swap and fire
+       alongside the rebound handler — creating a duplicate entry on every edit (#41). */
+    iris_timelog_reset_add_button();
+
     $('#iris-timelog-minutes').on('change', function () {
         $('#iris-timelog-custom-wrap').toggle($(this).val() === 'custom');
     });
