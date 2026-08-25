@@ -10,7 +10,8 @@
 
 A collaborative incident-response platform, extending DFIR-IRIS `v2.5.0-beta.1` with
 native MISP integration, an in-tree AI assistant layer, and a modernised analyst UI —
-while keeping the existing API surface compatible.
+while keeping the existing API surface compatible.  
+Version 1.4.x feature updates on hold and will only be receiving security and bug fixes while version 2.0.0 is in development.   
 
 ## What Community Edition means
 
