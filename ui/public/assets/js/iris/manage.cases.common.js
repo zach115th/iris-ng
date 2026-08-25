@@ -23,8 +23,34 @@ function case_detail(id) {
     });
 }
 
+/* iris-ng (#84): a case must have a reviewer assigned before it can be closed.
+ *
+ * ENFORCED IN THE UI ONLY, by explicit decision. `POST /manage/cases/close/<id>` and
+ * `PUT /api/v2/cases/<id>` with a Closed state are NOT guarded, so a script, an n8n
+ * workflow or curl can still close a case with no reviewer. If that needs to hold for
+ * automation too, the check belongs in `business/cases.py::cases_update` and
+ * `manage_cases_routes.py::api_case_close` - the only two callers of `close_case()`.
+ */
+function iris_case_reviewer_required() {
+    swal({
+        title: "Reviewer required",
+        text: "This case cannot be closed until a reviewer is assigned.\n\n"
+            + "Set one in the Reviewer field on the Info tab, save the case, then close it.",
+        icon: "warning"
+    });
+    return false;
+}
+
 /* Close case function */
 function close_case(id) {
+    /* Reads the PERSISTED reviewer rendered into the button, not the dropdown - this
+     * path closes the case without submitting the form, so an unsaved selection must
+     * not unlock it. Absent attribute (button rendered elsewhere) does not block. */
+    var $close_btn = $('#close_case_info');
+    if ($close_btn.length && $close_btn.attr('data-has-reviewer') === 'false') {
+        return iris_case_reviewer_required();
+    }
+
     swal({
         title: "Are you sure?",
         text: "Case ID " + id + " will be closed and will not appear in contexts anymore",
@@ -123,6 +149,24 @@ function cancel_case_edit() {
 function save_case_edit(case_id) {
 
     var data_sent = $('form#form_update_case').serializeObject();
+
+    /* iris-ng (#84): the State dropdown is the second way to close a case - saving with
+     * State = Closed calls close_case() server-side, so guarding only the Close button
+     * would leave this as a one-click bypass. Fires only on a TRANSITION into Closed,
+     * matching the server's `previous_case_state != case.state_id` test, so editing an
+     * already-closed case with no reviewer is still allowed. Reads the form's reviewer
+     * rather than the persisted one, so assigning a reviewer and closing in the same
+     * save works - the server applies the reviewer before it evaluates the state change. */
+    var $case_state = $('#case_state');
+    if ($case_state.length) {
+        var selected_state = $case_state.find('option:selected');
+        var closing_now = selected_state.attr('data-state-name') === 'Closed'
+            && String($case_state.val()) !== String($case_state.attr('data-initial-state-id'));
+        if (closing_now && !data_sent['reviewer_id']) {
+            return iris_case_reviewer_required();
+        }
+    }
+
     var map_protagonists = Object();
 
     for (e in data_sent) {

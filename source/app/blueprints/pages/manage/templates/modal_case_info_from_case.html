@@ -214,10 +214,17 @@
                                             <div class="input-group-prepend fix-label-item">
                                                 <span class="input-group-text">State</span>
                                             </div>
+                                            {# iris-ng (#84): data-state-name lets the client recognise the
+                                               Closed state without hardcoding an id (state ids vary per
+                                               deployment). data-initial-state-id mirrors the server's
+                                               `previous_case_state != case.state_id` test, so the guard
+                                               fires only on a TRANSITION into Closed - editing an already
+                                               closed case must stay possible. #}
                                             <select class="selectpicker form-control"
-                                                  id="case_state" name="state_id">
+                                                  id="case_state" name="state_id"
+                                                  data-initial-state-id="{{ data.state_id }}">
                                                 {% for clc in case_states %}
-                                                    <option value="{{ clc.state_id }}" {% if data.state_id == clc.state_id %}selected{% endif %} class="badge-text">{{ clc.state_name }}</option>
+                                                    <option value="{{ clc.state_id }}" {% if data.state_id == clc.state_id %}selected{% endif %} class="badge-text" data-state-name="{{ clc.state_name }}">{{ clc.state_name }}</option>
                                                 {% endfor %}
                                           </select>
                                         </div>
@@ -515,8 +522,16 @@
             id="delete_case_info">Delete case</button>
 
     {% if not data.close_date %}
+        {# iris-ng (#84): a case cannot be closed until a reviewer is assigned.
+           data-has-reviewer reflects the PERSISTED reviewer, not the dropdown - picking
+           one without saving must not unlock the button, because this path closes the
+           case server-side without sending the form. Left clickable on purpose: a
+           disabled button explains nothing, so close_case() refuses with a message
+           naming the field to fill in. #}
         <button type="button" class="btn btn-outline-warning mr-auto" onclick="close_case('{{ data.case_id }}');"
-                id="close_case_info">Close case</button>
+                id="close_case_info"
+                data-has-reviewer="{{ 'true' if data.reviewer_id else 'false' }}"
+                {% if not data.reviewer_id %}title="Assign a reviewer before closing this case"{% endif %}>Close case</button>
     {% else %}
         <button type="button" class="btn btn-success" onclick="reopen_case('{{ data.case_id }}');"
                 id="reopen_case_info">Reopen case</button>
