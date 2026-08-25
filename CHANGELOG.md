@@ -17,7 +17,83 @@ Active work on `main`.
 
 ---
 
-## [IRIS-NG-v1.3.1] — 2026-08-24
+## [IRIS-NG-v1.4.0] — 2026-08-25
+
+Adds a lifecycle record to two more object types, fixes a field that had been
+quietly discarding who created an IOC, and requires a reviewer before a case can
+be closed. Carries everything staged under `IRIS-NG-v1.3.1`, which was never
+tagged.
+
+### Added
+
+- **Asset history** ([#82](https://github.com/zach115th/iris-ng/issues/82)).
+  Assets already carried a `modification_history` column and nothing had ever
+  written to it, so the database could not tell you whether an asset had been
+  edited. Creation, edits, comments, promotion from the working timeline and
+  case import are now all recorded, and the asset modal gained the same
+  collapsible **History** panel that timeline events and IOCs already had.
+
+  The creation entry is written in the one function every creation path already
+  funnels through, so it covers the single- and multi-asset modals, the API and
+  alert escalation and merge alike.
+
+  **Nothing is backfilled** — assets created before this show an empty panel,
+  which is stated explicitly rather than left as a blank that could equally mean
+  the panel is broken.
+
+- **"Added by" on assets, IOCs and timeline events.** The creator is shown
+  beneath the object's UUID, so the most common question about an object can be
+  answered without opening its history. Hovering the name shows the login.
+
+- **A reviewer is required before a case can be closed**
+  ([#84](https://github.com/zach115th/iris-ng/issues/84)). Both routes that
+  close a case are blocked — the *Close case* button and setting *State →
+  Closed* then saving — because guarding only the button would have left the
+  dropdown as a one-click bypass. Assigning a reviewer and closing in the same
+  save works, and editing an already-closed case that has no reviewer is still
+  allowed, so cases closed before this are not frozen.
+
+  **Enforced in the interface only, deliberately.** `POST
+  /manage/cases/close/<id>` and `PUT /api/v2/cases/<id>` with a Closed state
+  still close a case with no reviewer, so existing automation keeps working.
+  Treat the rule as a guard against analyst error rather than an invariant of
+  the data: a case closed by a script or an n8n workflow may have no reviewer,
+  so **do not read "closed" as "reviewed"**.
+
+### Fixed
+
+- **An IOC's creator was overwritten every time the IOC was edited.**
+  `Ioc.user_id` was reassigned to whoever saved the IOC last, so on any IOC a
+  second analyst had touched, the record of who added it was permanently gone.
+  That contradicted the column's own use — the IOC list has always sorted it as
+  *opened by*, and assets and timeline events both treat the equivalent column
+  as the creator. Editing no longer touches it.
+
+  **This is visible to API clients.** A client reading that field as *last
+  modified by* will see it stop changing on edit; use the `created` and
+  `ioc updated` entries in `modification_history` for that instead. Rows written
+  before this release still hold whoever last edited them, so the value is not
+  retroactively correct.
+
+  Because the fix only helps going forward, the new *Added by* line does not
+  read that column at all. It resolves an actual creation record — the `created`
+  history entry, else the activity-log row written when the IOC was added, which
+  is also the only creation *time* an IOC has, since `Ioc` has no date-added
+  column. Where neither exists it reports **unknown** and names the last saver
+  separately, rather than presenting them as the creator.
+
+- **Editing a time-tracking entry created a duplicate instead of updating it**
+  ([#41](https://github.com/zach115th/iris-ng/issues/41)) — first staged under
+  the never-tagged `IRIS-NG-v1.3.1`; full detail below. **Duplicates already
+  recorded are not corrected automatically.**
+
+---
+
+## [IRIS-NG-v1.3.1] — 2026-08-24 (never released)
+
+> This version was staged on `main` but no tag, release or container images were ever
+> produced for it, so nothing shipped under this number. The changes below are included
+> in `IRIS-NG-v1.4.0`.
 
 A single-defect patch release over `IRIS-NG-v1.3.0`.
 
