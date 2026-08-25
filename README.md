@@ -8,8 +8,9 @@
 [![Edition: Community](https://img.shields.io/badge/Edition-Community-8b5cf6.svg)](#what-community-edition-means)
 [![Latest release](https://img.shields.io/github/v/release/zach115th/iris-ng?include_prereleases&label=release)](https://github.com/zach115th/iris-ng/releases)
 
-A collaborative incident-response platform. Forked from DFIR-IRIS because upstream paused
-feature development in late 2024 and stranded `v2.5.0-beta.1` in beta.
+A collaborative incident-response platform, extending DFIR-IRIS `v2.5.0-beta.1` with
+native MISP integration, an in-tree AI assistant layer, and a modernised analyst UI —
+while keeping the existing API surface compatible.
 
 ## What Community Edition means
 
@@ -368,5 +369,5 @@ LGPL-3.0. See [`LICENSE.txt`](./LICENSE.txt). Modifications must remain LGPL.
 ## Acknowledgements
 
 DFIR-IRIS by Airbus CyberSecurity (SAS) and the open-source community. Original repo at
-<https://github.com/dfir-iris/iris-web>. Sponsored historically by Deutsche Telekom
+<https://github.com/dfir-iris/iris-web>. Sponsored by Deutsche Telekom
 Security GmbH.
