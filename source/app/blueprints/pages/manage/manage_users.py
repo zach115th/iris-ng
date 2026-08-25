@@ -34,6 +34,7 @@ from app.iris_engine.access_control.utils import ac_get_all_access_level
 from app.iris_engine.access_control.utils import ac_current_user_has_permission
 from app.models.authorization import Permissions
 from app.blueprints.access_controls import ac_requires
+from app.business.auth import is_mfa_exempt
 from app.blueprints.responses import response_error
 
 manage_users_blueprint = Blueprint('manage_users', __name__, template_folder='templates')
@@ -76,7 +77,9 @@ def view_user_modal(cur_id, caseid, url_redir):
     skills_catalog = get_skills_catalog()
 
     return render_template("modal_add_user.html", form=form, user=user, server_settings=server_settings,
-                           permissions=permissions, skills_catalog=skills_catalog)
+                           permissions=permissions, skills_catalog=skills_catalog,
+                           mfa_exempt=is_mfa_exempt(user.get('user_id'),
+                                                    user.get('user_is_service_account')))
 
 
 @manage_users_blueprint.route('/manage/users/<int:cur_id>/groups/modal', methods=['GET'])

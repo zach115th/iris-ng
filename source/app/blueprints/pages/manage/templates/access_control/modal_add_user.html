@@ -151,8 +151,22 @@
                                     onclick="refresh_user_ac('{{ user.user_id }}');" id="users_refresh_ac_btn">Refresh access</button>
 
                                     {% if server_settings.enforce_mfa %}
+                                        {# iris-ng: disabled rather than hidden for exempt
+                                           accounts (the built-in administrator and service
+                                           accounts) -- they are never prompted for a second
+                                           factor, so there is nothing to reset. The reason
+                                           rides in the tooltip; an absent button would just
+                                           read as broken. #}
+                                        {% if mfa_exempt %}
+                                    <span class="d-inline-block float-right"
+                                          title="{% if user.user_is_service_account %}Service accounts authenticate by API key and cannot log in interactively, so MFA never applies.{% else %}The built-in administrator is exempt from MFA and is never prompted for a second factor.{% endif %}">
+                                        <button type="button" class="btn btn-dark mt-5 mr-2" disabled
+                                        id="users_reset_mfa_btn">Reset MFA</button>
+                                    </span>
+                                        {% else %}
                                     <button type="button" class="btn btn-dark mt-5 mr-2 float-right"
                                     onclick="reset_user_mfa('{{ user.user_id }}');" id="users_reset_mfa_btn">Reset MFA</button>
+                                        {% endif %}
                                     {% endif %}
 
                                 {% else %}

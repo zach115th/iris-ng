@@ -30,6 +30,7 @@ from app.datamgmt.manage.manage_srv_settings_db import get_srv_settings
 from app.datamgmt.manage.manage_users_db import get_skills_catalog
 from app.datamgmt.manage.manage_users_db import get_user_skill_ids
 from app.blueprints.access_controls import ac_requires
+from app.business.auth import is_mfa_exempt
 
 profile_blueprint = Blueprint('profile',
                               __name__,
@@ -55,6 +56,7 @@ def user_settings(caseid, url_redir):
     form = FlaskForm()
 
     return render_template('profile.html', mfa_enabled=app.config['SERVER_SETTINGS']['enforce_mfa'],
+                           mfa_exempt=is_mfa_exempt(current_user.id, current_user.is_service_account),
                            form=form, skills_catalog=skills_catalog, user_skill_ids=user_skill_ids,
                            user_hourly_rate=user_hourly_rate)
 

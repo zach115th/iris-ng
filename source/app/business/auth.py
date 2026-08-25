@@ -102,6 +102,39 @@ def _filter_next_url(next_url, context_case):
     return url_for('index.index', cid=context_case)
 
 
+# iris-ng: the built-in administrator created by post_init is always the first row
+# in the user table, so it is the account an operator can still reach when MFA
+# enrolment has gone wrong for everyone else.
+BUILTIN_ADMIN_USER_ID = 1
+
+
+def is_mfa_exempt(user_id, is_service_account=False):
+    """Whether MFA enforcement does not apply to this account.
+
+    This is the ONLY place the exemption rule lives -- login enforcement, the
+    profile page and the admin user modal all call it, so the greyed-out control
+    and the actual behaviour cannot drift apart.
+
+    Two exempt cases:
+
+    - Service accounts. Already exempt in practice rather than by policy:
+      `_authenticate_password` refuses them before the password is even checked,
+      so they never reach `wrap_login_user`. They authenticate by API key, which
+      has no MFA step. Naming them here keeps the UI honest.
+
+    - The built-in administrator (user #1), by explicit maintainer decision -- a
+      permanent break-glass account that is never prompted for a second factor.
+      SECURITY TRADE-OFF: whoever holds that password bypasses MFA entirely on
+      the most privileged account in the system. Every other administrator you
+      create later IS subject to enforcement; the exemption is deliberately keyed
+      to the single bootstrap account, not to the server_administrator permission.
+    """
+    if is_service_account:
+        return True
+
+    return user_id == BUILTIN_ADMIN_USER_ID
+
+
 def wrap_login_user(user, is_oidc=False):
 
     session['username'] = user.user
@@ -109,7 +142,8 @@ def wrap_login_user(user, is_oidc=False):
     if 'SERVER_SETTINGS' not in app.config:
         app.config['SERVER_SETTINGS'] = get_server_settings_as_dict()
 
-    if app.config['SERVER_SETTINGS']['enforce_mfa'] is True and is_oidc is False:
+    if app.config['SERVER_SETTINGS']['enforce_mfa'] is True and is_oidc is False \
+            and not is_mfa_exempt(user.id, user.is_service_account):
         if "mfa_verified" not in session or session["mfa_verified"] is False:
             return redirect(url_for('mfa_verify'))
 

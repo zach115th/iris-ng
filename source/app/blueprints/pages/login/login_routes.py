@@ -38,7 +38,7 @@ from app import db
 from app import oidc_client
 from app.blueprints.access_controls import is_authentication_oidc, is_authentication_ldap
 from app.blueprints.responses import response_error
-from app.business.auth import validate_ldap_login, _retrieve_user_by_username, wrap_login_user
+from app.business.auth import validate_ldap_login, _retrieve_user_by_username, wrap_login_user, is_mfa_exempt
 from app.datamgmt.manage.manage_users_db import create_user
 from app.datamgmt.manage.manage_users_db import get_user
 from app.forms import LoginForm, MFASetupForm
@@ -241,6 +241,14 @@ def mfa_setup():
     if not user:
         session.pop('username', None)
         return redirect(url_for('login.login'))
+
+    # iris-ng: an exempt account is never prompted for a second factor, so letting it
+    # enrol would store a secret nothing ever checks -- a confusing half-state that
+    # looks like protection and is not. The UI greys the control out; this closes the
+    # direct-navigation path so the two cannot disagree.
+    if is_mfa_exempt(user.id, user.is_service_account):
+        flash('This account is exempt from multi-factor authentication.', 'warning')
+        return redirect(url_for('profile.user_settings', cid=user.ctx_case))
 
     form = MFASetupForm()
 

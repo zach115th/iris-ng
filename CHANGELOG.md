@@ -17,6 +17,59 @@ Active work on `main`.
 
 ---
 
+## [IRIS-NG-v1.4.1] — 2026-08-25
+
+Makes multi-factor authentication usable in practice: the enrolment control was
+findable only by scrolling past the whole skills catalogue, it was labelled
+*Reset* for people who had never enrolled, and the accounts that cannot use MFA
+at all were still being offered it.
+
+No schema migration. Confined to `source/app/`, so an upgrade needs a restart
+rather than a rebuild.
+
+### Added
+
+- **The built-in administrator (user #1) and service accounts are exempt from
+  MFA enforcement.** Service accounts were already exempt in behaviour rather
+  than by policy — `_authenticate_password` refuses them before the password is
+  even checked, so they never reach the MFA step and authenticate by API key,
+  which has none. Naming them makes the interface honest about what was already
+  true.
+
+  The administrator exemption is a deliberate break-glass decision, and it is a
+  security trade-off worth stating plainly: **whoever holds that password
+  bypasses MFA entirely on the most privileged account in the system.** Give it
+  a strong unique value, and consider keeping a second administrator account —
+  which *is* subject to enforcement — for day-to-day work.
+
+  The exemption is keyed to user #1 specifically, **not** to the
+  `server_administrator` permission, so every administrator created later must
+  enrol like anyone else.
+
+  One helper, `is_mfa_exempt()`, is the only place the rule lives. Login
+  enforcement, the profile page and the admin user modal all call it, so the
+  greyed-out control and the actual behaviour cannot drift apart.
+  `/auth/mfa-setup` refuses exempt accounts as well — otherwise one could enrol
+  a secret that nothing ever checks, which looks like protection and is not.
+
+### Fixed
+
+- **The MFA and password controls were effectively hidden.** The self-service
+  skills catalogue had been inserted between the account fields and the account
+  action buttons, pushing *Change password* and the MFA control below roughly
+  34 checkboxes and a screen out of view — they read as missing rather than as
+  further down. The actions now sit with the account fields.
+
+- **The enrolment button said "Reset MFA" to people who had never enrolled.**
+  It now reads *Set up MFA* until enrolment is complete. The profile page shows
+  a button rather than the QR code itself; the QR is on the page it links to.
+
+- **Exempt accounts are shown a disabled control with the reason in its
+  tooltip, rather than no control at all.** An absent control is ambiguous — it
+  reads as broken. A disabled one is information.
+
+---
+
 ## [IRIS-NG-v1.4.0] — 2026-08-25
 
 Adds a lifecycle record to two more object types, fixes a field that had been
