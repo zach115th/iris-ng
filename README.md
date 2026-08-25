@@ -2,7 +2,7 @@
 
 > A community fork of [DFIR-IRIS](https://github.com/dfir-iris/iris-web) v2.5.0-beta.1,
 > with native MISP integration, MISP nomenclature alignment, and an in-tree AI assistant
-> layer. See [`FORK.md`](./FORK.md) for attribution + the rationale.
+> layer. See [`FORK.md`](./FORK.md) for attribution + the rationale.  
 > Version 1.4.x feature updates on hold and will only be receiving security and bug fixes while version 2.0.0 is in development.
 
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](./LICENSE.txt)
