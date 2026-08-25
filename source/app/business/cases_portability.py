@@ -35,6 +35,7 @@ from app.models.models import (
     CompromiseStatus, EventCategory, EvidenceTypes, Ioc, IocAssetLink,
     IocType, NoteDirectory, Notes, TaskStatus, Tlp
 )
+from app.util import add_obj_history_entry
 
 
 SCHEMA_VERSION = 1
@@ -565,6 +566,10 @@ def import_case_from_portability_dict(payload: dict) -> dict:
         )
         db.session.add(new_asset)
         db.session.flush()
+        # iris-ng: this path bypasses create_asset(), so record the creation
+        # here. The exported payload carries no history, so an imported asset
+        # starts with this single entry rather than the source case's log.
+        add_obj_history_entry(new_asset, 'created (case import)')
         asset_name_to_id[name] = new_asset.asset_id
         counts['assets'] += 1
 

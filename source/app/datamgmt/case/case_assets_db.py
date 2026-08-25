@@ -42,6 +42,7 @@ from app.models.models import IocAssetLink
 from app.models.models import IocType
 from app.models.authorization import User
 from app.models.pagination_parameters import PaginationParameters
+from app.util import add_obj_history_entry
 
 
 log = app.logger
@@ -60,6 +61,13 @@ def create_asset(asset, caseid, user_id):
     update_assets_state(caseid=caseid, userid=user_id)
 
     db.session.commit()
+
+    # iris-ng: record creation in modification_history. Written here rather than
+    # in the business layer because create_asset is the single funnel for every
+    # creation path — the single- and multi-asset modals, the v2 API, and the
+    # three alert escalation/merge paths in alerts_db — so one call covers them
+    # all. Post-commit with commit=True mirrors iocs_create.
+    add_obj_history_entry(asset, 'created', commit=True)
 
     return asset
 

@@ -25,6 +25,7 @@ from app.models.cases import CaseWorkingEvent
 from app.models.models import AssetsType
 from app.models.models import CaseAssets
 from app.models.models import CompromiseStatus
+from app.util import add_obj_history_entry
 
 # Default asset types — names match seeded rows in the assets_type table.
 ASSET_TYPE_HOST_DEFAULT = 'Windows - Computer'
@@ -103,6 +104,10 @@ def _ensure_asset(
     asset.date_update = datetime.utcnow()
     db.session.add(asset)
     db.session.flush()  # populate asset_id for the FK link below
+    # iris-ng: this path bypasses create_asset(), so record the creation here.
+    # Flushed first so the object is persistent when flag_modified runs. Always
+    # inside the promote request, so current_user is the promoting analyst.
+    add_obj_history_entry(asset, 'created (promoted from working timeline)')
     return asset, True
 
 

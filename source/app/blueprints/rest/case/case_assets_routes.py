@@ -59,6 +59,7 @@ from app.blueprints.access_controls import ac_api_requires
 from app.blueprints.responses import response_error
 from app.blueprints.responses import response_success
 from app.blueprints.access_controls import ac_api_return_access_denied
+from app.util import add_obj_history_entry
 
 case_assets_rest_blueprint = Blueprint('case_assets_rest', __name__)
 
@@ -351,6 +352,8 @@ def case_comment_asset_add(cur_id, caseid):
         db.session.commit()
 
         add_comment_to_asset(asset.asset_id, comment.comment_id)
+
+        add_obj_history_entry(asset, 'commented')
 
         db.session.commit()
 

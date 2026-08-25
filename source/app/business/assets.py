@@ -44,6 +44,7 @@ from app.datamgmt.case.case_assets_db import delete_asset
 from app.iris_engine.module_handler.module_handler import call_modules_hook
 from app.iris_engine.utils.tracker import track_activity
 from app.schema.marshables import CaseAssetsSchema
+from app.util import add_obj_history_entry
 
 
 def _load(request_data, **kwargs):
@@ -159,6 +160,11 @@ def assets_update(asset: CaseAssets, request_json):
 
     if case_assets_db_exists(asset_schema):
         raise BusinessProcessingError('Data error', data='Asset with same value and type already exists')
+
+    # iris-ng: record the edit in modification_history — same reasoning as the
+    # IOC update path. Written before the commit so it lands in the same
+    # transaction.
+    add_obj_history_entry(asset_schema, 'asset updated')
 
     update_assets_state(caseid=caseid)
     db.session.commit()
