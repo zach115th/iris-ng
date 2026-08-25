@@ -96,7 +96,13 @@ def iocs_update(ioc: Ioc, request_json: dict) -> (Ioc, str):
         request_data['ioc_id'] = ioc.ioc_id
         request_data['case_id'] = ioc.case_id
         ioc_sc = ioc_schema.load(request_data, instance=ioc, partial=True)
-        ioc_sc.user_id = current_user.id
+        # iris-ng: do NOT reassign user_id here. Upstream overwrote it with the
+        # editor on every save, which contradicts its own meaning — the IOC list
+        # sorts this column as 'opened_by', and CaseAssets/CasesEvent both treat
+        # the equivalent column as the creator. The effect was that an IOC edited
+        # by a second analyst permanently lost any record of who added it.
+        # Leaving it alone makes Ioc.user_id the creator, consistent with the
+        # other case objects; who edited last is already in modification_history.
 
         if not check_ioc_type_id(type_id=ioc_sc.ioc_type_id):
             raise BusinessProcessingError('Not a valid IOC type')

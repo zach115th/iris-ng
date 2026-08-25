@@ -17,7 +17,10 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 from flask_login import current_user
+import datetime
+
 from sqlalchemy import and_
+from sqlalchemy import func
 
 from app import db
 from app import app
@@ -31,6 +34,7 @@ from app.models.models import Ioc
 from app.models.models import IocComments
 from app.models.models import IocType
 from app.models.models import Tlp
+from app.models.models import UserActivity
 from app.models.authorization import User
 from app.models.authorization import UserCaseEffectiveAccess
 from app.models.authorization import CaseAccessLevel
@@ -50,6 +54,62 @@ def get_ioc(ioc_id, caseid=None):
         q = q.filter(Ioc.case_id == caseid)
 
     return q.first()
+
+
+def get_ioc_creator(ioc):
+    """Resolve who ADDED an IOC, or None when nothing recorded it.
+
+    `Ioc.user_id` cannot answer this on historical rows: until 2026-08-25
+    `iocs_update()` reassigned it to whoever saved the IOC last, so on any IOC
+    edited before that fix it names the last editor, not the creator. Callers
+    must NOT fall back to `Ioc.user` and label it "added by" — that names the
+    wrong person. Two real creation records are tried in order:
+
+      1. The 'created' entry in `modification_history`. Authoritative, but only
+         written since 2026-08-01, so older IOCs do not carry one.
+      2. The `UserActivity` row `iocs_create()` writes as `Added ioc "<value>"`.
+         `track_activity()` calls `.capitalize()` on the message, which
+         lowercases the remainder of the string, so this must be compared
+         case-insensitively. It legitimately fails when the IOC VALUE has been
+         edited since creation — the log holds the value as it was when added —
+         and that is reported as unresolved rather than guessed at.
+
+    Returns ``{'name', 'login', 'at', 'source'}`` or ``None``. `at` is the real
+    creation time in UTC (IOCs have no date_added column of their own).
+    """
+    history = ioc.modification_history if isinstance(ioc.modification_history, dict) else {}
+    for key in sorted(history, key=lambda k: float(k)):
+        entry = history[key] or {}
+        if 'created' in (entry.get('action') or ''):
+            user = User.query.filter(User.id == entry.get('user_id')).first()
+            return {
+                'name': (user.name if user else None) or entry.get('user'),
+                'login': entry.get('user'),
+                'at': datetime.datetime.utcfromtimestamp(float(key)),
+                'source': 'history'
+            }
+
+    if ioc.case_id is None or not ioc.ioc_value:
+        return None
+
+    expected = 'added ioc "{}"'.format(ioc.ioc_value)
+    row = (
+        UserActivity.query
+        .filter(UserActivity.case_id == ioc.case_id,
+                func.lower(UserActivity.activity_desc) == expected.lower())
+        .order_by(UserActivity.activity_date.asc())
+        .first()
+    )
+    if row is None:
+        return None
+
+    user = User.query.filter(User.id == row.user_id).first()
+    return {
+        'name': (user.name if user else None) or (user.user if user else None),
+        'login': user.user if user else None,
+        'at': row.activity_date,
+        'source': 'activity'
+    }
 
 
 def update_ioc(ioc_type, ioc_tags, ioc_value, ioc_description, ioc_tlp, userid, ioc_id):

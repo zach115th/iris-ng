@@ -26,6 +26,7 @@ from app.business.errors import ObjectNotFoundError
 from app.datamgmt.case.case_assets_db import get_assets_types
 from app.datamgmt.case.case_db import get_case
 from app.datamgmt.case.case_iocs_db import get_case_iocs_comments_count
+from app.datamgmt.case.case_iocs_db import get_ioc_creator
 from app.datamgmt.case.case_iocs_db import get_ioc_types_list
 from app.datamgmt.case.case_iocs_db import get_tlps
 from app.datamgmt.manage.manage_attribute_db import get_default_custom_attributes
@@ -106,7 +107,8 @@ def case_view_ioc_modal(cur_id, caseid, url_redir):
         )
 
         return render_template('modal_add_case_ioc.html', form=form, ioc=ioc, attributes=ioc.custom_attributes,
-                               comments_map=comments_map, linked_notes=linked_notes)
+                               comments_map=comments_map, linked_notes=linked_notes,
+                               ioc_creator=get_ioc_creator(ioc))
 
     except ObjectNotFoundError:
         return response_error('Invalid IOC ID for this case')

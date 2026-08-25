@@ -9,6 +9,26 @@
                     {% endif %}
                 </h4>
                 <small><i class="text-muted">{% if ioc.ioc_uuid %}#{{ ioc.ioc_uuid }}{% endif %}</i></small>
+                {# iris-ng: "Added by" convenience line. Deliberately NOT sourced
+                   from ioc.user — until 2026-08-25 iocs_update() reassigned
+                   user_id to the editor on every save, so on an IOC edited
+                   before that fix it names the last editor, not the creator.
+                   get_ioc_creator() resolves a real creation record instead (the
+                   'created' history entry, else the "Added ioc" activity row) and
+                   returns None when neither exists, which is stated explicitly
+                   rather than filled in with a plausible wrong name. #}
+                {% if ioc.ioc_id %}
+                    <div class="mt-1">
+                        <small class="text-muted">
+                            <i class="fas fa-user mr-1"></i>
+                            {% if ioc_creator %}
+                                Added by <b title="{{ ioc_creator.login or ioc_creator.name }}">{{ ioc_creator.name }}</b>{% if ioc_creator.at %} on {{ ioc_creator.at.strftime('%Y-%m-%d %H:%M') }} UTC{% endif %}
+                            {% else %}
+                                Added by <i title="This IOC pre-dates creation history, and its value has changed since it was added, so the activity log no longer matches it.">unknown</i>{% if ioc.user %} &middot; last saved by <b>{{ ioc.user.name or ioc.user.user }}</b>{% endif %}
+                            {% endif %}
+                        </small>
+                    </div>
+                {% endif %}
             </div>
             {% include 'modals/modal_attributes_nav.html' %}
             <div class="col">
