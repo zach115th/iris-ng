@@ -520,8 +520,11 @@ $(document).ready(function(){
                     flag = 'muted';
                 }
                   data = '<span class="badge ml-2 badge-'+ flag +'">' + statusName + '</span>';
+                  return data;
               }
-              return data;
+              // filter/sort: analysis_status is an object — same defect
+              // class as issue #93 (renders as "[object Object]").
+              return (data && data['name']) ? data['name'] : 'Unspecified';
             }
           }
         ],

@@ -367,10 +367,13 @@ $(document).ready(function(){
           },
           { "data": "ioc_type",
            "render": function (data, type, row, meta) {
+              // ioc_type is an object; returning it raw gives DataTables
+              // "[object Object]" for filter/sort, which is issue #93.
+              let type_name = (data && data.type_name) ? data.type_name : '';
               if (type === 'display') {
-                data = sanitizeHTML(data.type_name);
+                return sanitizeHTML(type_name);
               }
-              return data;
+              return type_name;
               }
           },
           { "data": "ioc_description",
@@ -405,8 +408,12 @@ $(document).ready(function(){
                   return links;
               } else if (type === 'export' && data != null) {
                   return data.map(ds => sanitizeHTML(ds['case_name'])).join(',');
-                }
-              return data;
+              } else if (data != null) {
+                  // filter/sort: an array of objects stringifies to
+                  // "[object Object]" — same defect class as issue #93.
+                  return data.map(ds => '#' + ds['case_id'] + ' ' + ds['case_name']).join(' ');
+              }
+              return '';
             }
           },
           {
@@ -420,8 +427,10 @@ $(document).ready(function(){
                   } else {
                       data = '<span class="badge badge-light ml-2">Unspecified</span>';
                   }
+                  return data;
               }
-              return data;
+              // filter/sort: tlp is an object — same defect class as issue #93.
+              return (data && data.tlp_name) ? data.tlp_name : '';
             }
           }
         ],
