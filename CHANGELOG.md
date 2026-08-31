@@ -17,15 +17,21 @@ Active work on `main`.
 
 ---
 
-## [IRIS-NG-v1.4.1] — 2026-08-25
+## [IRIS-NG-v1.4.1] — 2026-08-31
 
 Makes multi-factor authentication usable in practice: the enrolment control was
 findable only by scrolling past the whole skills catalogue, it was labelled
 *Reset* for people who had never enrolled, and the accounts that cannot use MFA
-at all were still being offered it.
+at all were still being offered it. Declared 2026-08-25 and released 2026-08-31;
+the release also carries the dependency updates and the IOC-table filter fix
+that landed in between.
 
-No schema migration. Confined to `source/app/`, so an upgrade needs a restart
-rather than a rebuild.
+No schema migration. **An upgrade needs an image rebuild** (`up -d --build
+--force-recreate`) — the release moves `requirements.txt` (gunicorn) and
+browser-served `ui/public/` files, both baked into the image.
+
+The 1.4.x line receives bug and security fixes only while v2.0.0 is in
+development; new features land in the v2 line.
 
 ### Added
 
@@ -67,6 +73,28 @@ rather than a rebuild.
 - **Exempt accounts are shown a disabled control with the reason in its
   tooltip, rather than no control at all.** An absent control is ambiguous — it
   reads as broken. A disabled one is information.
+
+- **The IOC table's Type column could not be filtered or sorted** (issue #93).
+  The column handed DataTables the raw `ioc_type` object for the filter/sort
+  passes — only the display pass unwrapped the name — so every row filtered
+  and sorted as `[object Object]`. The same defect class is fixed in the TLP
+  and Linked-cases columns of the same table (Linked cases now filters on
+  `#<id> <case name>`) and in the assets table's Analysis-status column.
+  Display output and CSV export are unchanged.
+
+### Changed
+
+- **gunicorn 23.0.0 → 26.1.0.** The gthread deployment is unaffected by the
+  headline eventlet-worker removal; the visible change is stricter HTTP
+  parsing — a request bearing duplicate `Content-Type` headers is now rejected
+  with 400, which no legitimate client emits. Validated by full recreate:
+  healthy boot, celery workers, browser login through nginx, socket.io.
+
+- **UI build/runtime dependencies:** `marked` 18.0.9 → 18.0.10 (the vendored
+  `marked.min.js` — rendered byte-identical HTML across 15 analyst-content
+  cases), `eslint` 10.8.1 → 10.9.0, `vite` 8.2.1 → 8.2.2 (with rolldown
+  1.2.2 → 1.2.6 as a transitive; its only output change is optional-brace
+  formatting, proven by AST comparison).
 
 ---
 
