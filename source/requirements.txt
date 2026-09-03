@@ -29,7 +29,7 @@ python-dateutil==2.9.0.post0
 python-gnupg==0.5.6
 pyminizip~=0.2.6
 PyJWT==2.13.0
-cryptography>=50.0.0
+cryptography>=50.0.1
 ldap3==2.9.1
 pyintelowl>=5.1.0
 pyotp==2.10.0
