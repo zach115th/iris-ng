@@ -21,7 +21,12 @@ var IRIS_CSHELL = {h: null, states: null, sevs: null};
 function iris_cshell_hydrate() {
     var root = document.getElementById('iris-cshell');
     if (!root) return;
-    var cid = root.getAttribute('data-case-id');
+    /* Case ids are digits only (server-rendered attribute) — cid is
+       interpolated into the header fetch URL AND the related-alerts
+       href inside an innerHTML build below, so validate before either;
+       a non-numeric value means broken markup, skip hydration. */
+    var cid = root.getAttribute('data-case-id') || '';
+    if (!/^\d+$/.test(cid)) return;
     fetch('/api/v2/cases/' + cid + '/header',
           {headers: {'Accept': 'application/json'}})
         .then(function (r) { return r.ok ? r.json() : null; })
