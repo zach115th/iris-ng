@@ -2485,7 +2485,13 @@ function iris_wroom_show_pane(name) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    IRIS_WROOM._rid = document.getElementById('iris-wr-room-id').value;
+    /* rid is a room id — digits only, like _cid above (it is interpolated
+       into request URLs and the STIX href). The input is server-rendered
+       from an <int:> route so a mismatch means the page is already broken;
+       fall back to '0', a room that cannot exist, so every API call 404s
+       and the loader bails instead of silently showing another room. */
+    var ridRaw = document.getElementById('iris-wr-room-id').value;
+    IRIS_WROOM._rid = /^\d+$/.test(ridRaw || '') ? ridRaw : '0';
 
     iris_wroom_load_room().then(function (room) {
         if (!room) return;
