@@ -214,7 +214,12 @@ $(function () {
 
     $(document).on('click', '.iris-ac-row', function () {
         var cid = (new URLSearchParams(window.location.search)).get('cid') || '1';
-        window.location.href = '/alert-clusters/' + $(this).attr('data-cluster-id')
+        /* Cluster ids are digits only (server-assigned) — validate before
+           interpolating into the navigation URL; a non-numeric value means
+           broken markup, so do nothing. */
+        var clusterId = $(this).attr('data-cluster-id') || '';
+        if (!/^\d+$/.test(clusterId)) { return; }
+        window.location.href = '/alert-clusters/' + clusterId
             + '?cid=' + encodeURIComponent(cid);
     });
 });
