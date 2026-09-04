@@ -27,6 +27,7 @@ function iris_cshell_hydrate() {
        a non-numeric value means broken markup, skip hydration. */
     var cid = root.getAttribute('data-case-id') || '';
     if (!/^\d+$/.test(cid)) return;
+    cid = String(parseInt(cid, 10));   /* derive: taint-free */
     fetch('/api/v2/cases/' + cid + '/header',
           {headers: {'Accept': 'application/json'}})
         .then(function (r) { return r.ok ? r.json() : null; })

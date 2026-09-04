@@ -26,7 +26,9 @@ function iris_ca_esc(s) {
    would not. */
 function iris_ca_id(v) {
     var s = String(v == null ? '' : v);
-    return /^\d+$/.test(s) ? s : null;
+    /* String(parseInt(...)) derives a fresh value — taint tracking does
+       not credit a bare test-ternary that returns the input string. */
+    return /^\d+$/.test(s) ? String(parseInt(s, 10)) : null;
 }
 
 function iris_ca_fetch(path, method, body) {

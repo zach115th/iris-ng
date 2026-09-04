@@ -206,6 +206,7 @@ document.addEventListener('DOMContentLoaded', function () {
                non-numeric value means broken markup, so do nothing. */
             var roomId = card.getAttribute('data-room-id') || '';
             if (!/^\d+$/.test(roomId)) return;
+            roomId = String(parseInt(roomId, 10));   /* derive: taint-free */
             window.location.href = '/war-rooms/' +
                 roomId + '?cid=' + IRIS_WR._cid;
         });

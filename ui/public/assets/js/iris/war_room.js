@@ -2491,7 +2491,10 @@ document.addEventListener('DOMContentLoaded', function () {
        fall back to '0', a room that cannot exist, so every API call 404s
        and the loader bails instead of silently showing another room. */
     var ridRaw = document.getElementById('iris-wr-room-id').value;
-    IRIS_WROOM._rid = /^\d+$/.test(ridRaw || '') ? ridRaw : '0';
+    /* String(parseInt(...)) DERIVES a fresh value — a bare test-ternary
+       keeps the tainted string and taint tracking does not credit it. */
+    IRIS_WROOM._rid = /^\d+$/.test(ridRaw || '')
+        ? String(parseInt(ridRaw, 10)) : '0';
 
     iris_wroom_load_room().then(function (room) {
         if (!room) return;

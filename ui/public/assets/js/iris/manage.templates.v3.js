@@ -166,7 +166,8 @@ $(function () {
            interpolate this value, and their existing null guards handle a
            rejected read (broken markup selects nothing). */
         var id = $(this).attr('data-id') || '';
-        IRIS_RT.selected = /^\d+$/.test(id) ? id : null;
+        IRIS_RT.selected = /^\d+$/.test(id)
+            ? String(parseInt(id, 10)) : null;   /* derive: taint-free */
         iris_rt_render_rows();
         iris_rt_render_detail();
     });

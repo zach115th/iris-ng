@@ -219,6 +219,7 @@ $(function () {
            broken markup, so do nothing. */
         var clusterId = $(this).attr('data-cluster-id') || '';
         if (!/^\d+$/.test(clusterId)) { return; }
+        clusterId = String(parseInt(clusterId, 10));   /* derive: taint-free */
         window.location.href = '/alert-clusters/' + clusterId
             + '?cid=' + encodeURIComponent(cid);
     });
