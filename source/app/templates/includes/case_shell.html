@@ -1,0 +1,304 @@
+{# v3 case shell — the in-page case header shared by all 8 case tabs.
+   Data hydrates client-side from GET /api/v2/cases/<cid>/header via
+   case_shell.js (vanilla JS — this renders before jQuery loads). The
+   Follow button is static markup so the shared follow assets bind it at
+   DOMContentLoaded. The Summary page sets cshell_summary=True before
+   including: that renders the full actions menu (report/pipeline/review
+   controls keep their historical element ids — their behaviour lives in
+   the Summary bundle and is untouched); other tabs get a link to the
+   Summary for those actions. #}
+{% set _cs_cid = session['current_case'].case_id %}
+{% include 'includes/case_activity_log.html' %}
+<div class="iris-cshell" id="iris-cshell" data-case-id="{{ _cs_cid }}">
+    <div class="iris-cshell-row1">
+        <span class="iris-cshell-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+        </span>
+        <div class="iris-cshell-titleblock">
+            <div class="iris-cshell-titleline">
+                <span class="iris-cshell-eyebrow">#{{ _cs_cid }}</span>
+                <span class="iris-cshell-name" id="iris-cshell-name">{{ session['current_case'].case_name }}</span>
+                {# Read-only padlock / access-denied marker. It used to ride
+                   next to the case name in the topbar; when that was removed as
+                   redundant this came with it, and it is NOT redundant - it is
+                   the only place an analyst is told they hold read-only access
+                   on this case. Same server-rendered <i> string as before. #}
+                {{ session['current_case'].access|safe }}
+            </div>
+            <div class="iris-cshell-meta" id="iris-cshell-meta"></div>
+        </div>
+        <span class="iris-cshell-classif" id="iris-cshell-classif"></span>
+        {# v3: the state + severity chips are DROPDOWN CONTROLS. Items load
+           from the legacy catalogs on first open; picking one PUTs the v2
+           case update. Closing via the state menu keeps the #84 UI gate
+           (reviewer required before close — UI-only by maintainer decision,
+           same as the edit modal). #}
+        <div class="iris-cshell-menuwrap">
+            <button type="button" class="iris-cshell-chip iris-cshell-chipbtn" id="iris-cshell-state" style="display:none;" title="Change case state"></button>
+            <div class="iris-cshell-menu" id="iris-cshell-statemenu" style="display:none;">
+                <div class="iris-cshell-mh">Change case state</div>
+                <div id="iris-cshell-statemenu-items"></div>
+            </div>
+        </div>
+        <div class="iris-cshell-menuwrap">
+            <button type="button" class="iris-cshell-chip iris-cshell-chipbtn" id="iris-cshell-sev" style="display:none;" title="Change case severity"></button>
+            <div class="iris-cshell-menu" id="iris-cshell-sevmenu" style="display:none;">
+                <div class="iris-cshell-mh">Change case severity</div>
+                <div id="iris-cshell-sevmenu-items"></div>
+            </div>
+        </div>
+        <button type="button" class="iris-cshell-btn iris-follow-btn" title="Follow this case"
+                data-object-type="case" data-object-id="{{ _cs_cid }}"><span class="iris-fb-star">&#9734;</span>
+            <span class="iris-fb-cnt">&ndash;</span> <span class="iris-fb-lbl">Follow</span></button>
+        {# v3: the current tab's primary action is promoted into the header
+           (e.g. Add Asset on the Assets tab). Tabs opt in by setting
+           cshell_primary_label + cshell_primary_onclick before including,
+           and cshell_primary_icon to pick the glyph.
+
+           The glyph lives HERE rather than being passed in as markup: a
+           caller-supplied SVG would need |safe on template-authored HTML, and
+           keeping the set closed means every tab's icon is visible in one
+           place. 'computer' stays the default so the Assets tab, which opted
+           in before this was a choice, renders exactly as it did. Each key
+           reuses the glyph that already stands for that object elsewhere in
+           the product — the bug is the same one an asset row shows for its
+           linked IOC count. #}
+        {% if cshell_primary_label %}
+        <button type="button" class="iris-cshell-primary" onclick="{{ cshell_primary_onclick }}">
+            {% if cshell_primary_icon == 'bug' %}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>
+            {% elif cshell_primary_icon == 'clock' %}
+            {# the same glyph the war room's Timelines tab uses #}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {% elif cshell_primary_icon == 'list-checks' %}
+            {# Tasks: the same checklist glyph the war room's Tasks tab uses #}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+            {% elif cshell_primary_icon == 'hard-drive' %}
+            {# Evidence: Lucide hard-drive (ISC) — drives and images are what
+               gets registered #}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></svg>
+            {% else %}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            {% endif %}
+            {{ cshell_primary_label }}</button>
+        {% endif %}
+        <div class="iris-cshell-menuwrap">
+            <button type="button" class="iris-cshell-iconbtn" id="iris-cshell-add" title="Add to case">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            </button>
+            <div class="iris-cshell-menu" id="iris-cshell-addmenu" style="display:none;">
+                <a href="/case/notes?cid={{ _cs_cid }}">Note</a>
+                <a href="/case/tasks?cid={{ _cs_cid }}">Task</a>
+                <a href="/case/assets?cid={{ _cs_cid }}">Asset</a>
+                <a href="/case/ioc?cid={{ _cs_cid }}">IOC</a>
+                <a href="/case/evidences?cid={{ _cs_cid }}">Evidence</a>
+                <a href="#" onclick="load_datastore();return false;">DataStore file</a>
+            </div>
+        </div>
+        <button type="button" class="iris-cshell-iconbtn" title="Datastore" onclick="load_datastore();">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+        </button>
+        <button type="button" class="iris-cshell-iconbtn" id="iris-cshell-activity" title="Live case log">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
+        </button>
+        <div class="iris-cshell-menuwrap">
+            <button type="button" class="iris-cshell-iconbtn" id="iris-cshell-more" title="Case actions">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            </button>
+            <div class="iris-cshell-menu" id="iris-cshell-menu" style="display:none;">
+                {# The current tab's own actions come first — they are the most
+                   contextual thing in the menu. A tab opts in with
+                   cshell_tab_label + a cshell_tab_menu block before including:
+
+                     {% set cshell_tab_label = 'Indicators' %}
+                     {% set cshell_tab_menu %}<a ...>…</a>{% endset %}
+
+                   Block assignment yields Markup under autoescape, so the
+                   anchors render as markup while anything interpolated inside
+                   them is still escaped — no |safe on caller HTML. Tabs keep
+                   the ids their own JS binds to, so nothing rewires. #}
+                {% if cshell_tab_menu %}
+                <div class="iris-cshell-mh">{{ cshell_tab_label or 'This tab' }}</div>
+                {{ cshell_tab_menu }}
+                {% endif %}
+                <div class="iris-cshell-mh">Manage Case</div>
+                <a href="#" onclick="case_detail('{{ _cs_cid }}');return false;">Edit Case Details</a>
+                {% if cshell_summary %}
+                <div class="iris-cshell-mh">Reports</div>
+                <a href="#" onclick="report_template_selector();return false;">Generate report</a>
+                <a href="#" onclick="act_report_template_selector();return false;">Activity report</a>
+                <div class="iris-cshell-mh">Workflow</div>
+                <a href="#" id="case_pipeline" onclick="case_pipeline_popup();return false;">Pipelines</a>
+                <div class="iris-cshell-mh">Processors</div>
+                <div id="case_modal_quick_actions" class="iris-cshell-qa"></div>
+                {% if case.review_status is none or case.review_status.status_name == "Not reviewed" %}
+                <div class="iris-cshell-mh">Review</div>
+                <a href="#" id="request_review">Request review</a>
+                {% endif %}
+                {% else %}
+                <div class="iris-cshell-mh">Reports &amp; workflow</div>
+                <a href="/case?cid={{ _cs_cid }}">Open Summary for reports, pipelines &amp; review&hellip;</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {# v3 shows the counts/people row on the Summary header only — working
+       tabs (Assets reference screenshot) get the compact single-row form. #}
+    {% if cshell_summary %}
+    <div class="iris-cshell-row2">
+        <a class="iris-cshell-count" href="/case/assets?cid={{ _cs_cid }}" style="color:#8fa3ef;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            Assets <b id="iris-cshell-c-assets">&ndash;</b></a>
+        <a class="iris-cshell-count" href="/case/ioc?cid={{ _cs_cid }}" style="color:#e08fb9;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+            IOCs <b id="iris-cshell-c-iocs">&ndash;</b></a>
+        <a class="iris-cshell-count" href="/case/tasks?cid={{ _cs_cid }}" style="color:#f4c430;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+            Tasks <b id="iris-cshell-c-tasks">&ndash;</b></a>
+        <a class="iris-cshell-count" href="/case/evidences?cid={{ _cs_cid }}" style="color:#2dce89;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+            Evidence <b id="iris-cshell-c-evidence">&ndash;</b></a>
+        <span class="iris-cshell-people" id="iris-cshell-people"></span>
+        <span class="iris-cshell-right" id="iris-cshell-right"></span>
+    </div>
+    {% endif %}
+</div>
+<style>
+    /* v3 case shell + topbar tab strip. The shell is chrome ONLY — every
+       AI surface, the dual timeline and the artifact imports render below
+       it untouched (program invariant). */
+    .iris-cshell {
+        background: #15151a; border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 12px; padding: 12px 16px; margin: 12px 0 14px;
+    }
+    .iris-cshell-row1 { display: flex; align-items: center; gap: 10px; }
+    .iris-cshell-icon {
+        width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: rgba(94,114,228,0.15); color: #8fa3ef;
+    }
+    .iris-cshell-titleblock { flex: 1 1 auto; min-width: 0; }
+    .iris-cshell-titleline {
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .iris-cshell-eyebrow {
+        color: #7a7a85; font-size: 0.72rem; margin-right: 6px;
+        letter-spacing: 0.06em;
+    }
+    .iris-cshell-name { color: #e8e8ee; font-weight: 600; font-size: 1.05rem; }
+    .iris-cshell-meta {
+        color: #9a9aa5; font-size: 0.74rem; margin-top: 2px;
+        display: flex; gap: 14px; flex-wrap: wrap;
+    }
+    .iris-cshell-classif { color: #7a7a85; font-size: 0.74rem; white-space: nowrap; }
+    .iris-cshell-chip {
+        display: inline-block; padding: 0 9px; border-radius: 10px;
+        font-size: 0.72rem; white-space: nowrap;
+        border: 1px solid rgba(255,255,255,0.18); color: #c8c8d0;
+    }
+    .iris-cshell-chip.sev-high, .iris-cshell-chip.sev-critical {
+        border-color: rgba(242,89,97,0.55); color: #F25961;
+    }
+    .iris-cshell-chip.closed {
+        border-color: rgba(255,255,255,0.18); color: #9a9aa5;
+    }
+    .iris-cshell-chip.open {
+        border-color: rgba(45,206,137,0.5); color: #2dce89;
+    }
+    .iris-cshell-chipbtn { background: transparent; cursor: pointer; }
+    .iris-cshell-chipbtn:hover { border-color: rgba(139,92,246,0.55); }
+    .iris-cshell-menu a.iris-cshell-current::after {
+        content: '\2713'; float: right; color: #2dce89;
+    }
+    .iris-cshell-btn {
+        background: transparent; border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 10px; color: #c8c8d0; font-size: 0.74rem;
+        padding: 2px 10px; cursor: pointer; white-space: nowrap;
+    }
+    .iris-cshell-btn:hover { border-color: rgba(139,92,246,0.5); }
+    .iris-cshell-primary {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #4655c4; border: 1px solid #4655c4; color: #ffffff;
+        border-radius: 8px; font-size: 0.76rem; font-weight: 600;
+        padding: 3px 12px; cursor: pointer; white-space: nowrap;
+    }
+    .iris-cshell-primary:hover { background: #5464d8; border-color: #5464d8; }
+    .iris-cshell-iconbtn {
+        background: transparent; border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px; color: #9a9aa5; padding: 4px 7px;
+        cursor: pointer; display: inline-flex; align-items: center;
+    }
+    .iris-cshell-iconbtn:hover { color: #e8e8ee; border-color: rgba(139,92,246,0.5); }
+    .iris-cshell-menuwrap { position: relative; }
+    /* Six case pages carry a `.nav-sticky` toolbar directly BELOW this
+       header, and atlantis gives that class z-index 1000. The shell's
+       dropdowns open downward into exactly that band, so at 999 they were
+       painted over: the state, severity, quick-add and manage-case menus
+       all lost their middle rows to the toolbar.
+
+       Raising the menus past 1000 is not the fix — .main-header is fixed at
+       1001 and creates a stacking context, so anything on a case page at
+       1001+ paints over the topbar's own open dropdowns (that is the
+       documented notification-panel bug). The toolbar comes DOWN instead:
+       it only ever needed to outrank the page's fixed panels (910 / 920),
+       never four figures. See the matching note in case_timeline.html. */
+    .nav-sticky { z-index: 930; }
+    .iris-cshell-menu {
+        position: absolute; right: 0; top: calc(100% + 6px); z-index: 1000;
+        min-width: 220px; background: #1b1b22;
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+        padding: 8px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .iris-cshell-mh {
+        color: #7a7a85; font-size: 0.64rem; letter-spacing: 0.08em;
+        text-transform: uppercase; padding: 6px 14px 2px;
+    }
+    .iris-cshell-menu a {
+        display: block; padding: 5px 14px; color: #c8c8d0;
+        font-size: 0.8rem; text-decoration: none;
+    }
+    .iris-cshell-menu a:hover { background: rgba(255,255,255,0.05); color: #e8e8ee; }
+    .iris-cshell-qa a { display: block; padding: 5px 14px; color: #c8c8d0; font-size: 0.8rem; }
+    .iris-cshell-row2 {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .iris-cshell-count {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+        padding: 1px 10px; font-size: 0.74rem; text-decoration: none;
+    }
+    .iris-cshell-count b { color: #e8e8ee; font-weight: 600; }
+    .iris-cshell-count:hover { border-color: rgba(139,92,246,0.5); text-decoration: none; }
+    .iris-cshell-people {
+        display: inline-flex; align-items: center; gap: 4px;
+        color: #9a9aa5; font-size: 0.74rem; margin-left: 6px;
+    }
+    .iris-cshell-av {
+        width: 20px; height: 20px; border-radius: 50%; display: inline-flex;
+        align-items: center; justify-content: center; font-size: 0.58rem;
+        font-weight: 600; color: #e8e8ee; background: rgba(94,114,228,0.35);
+        margin-left: -4px; border: 1px solid #15151a;
+    }
+    .iris-cshell-right {
+        margin-left: auto; display: inline-flex; align-items: center;
+        gap: 6px; flex-wrap: wrap;
+    }
+    .iris-cshell-tag {
+        display: inline-block; padding: 0 8px; border-radius: 9px;
+        font-size: 0.7rem; color: #9a9aa5;
+        border: 1px solid rgba(255,255,255,0.12);
+    }
+    /* Topbar case tabs — v3: plain text links, active underlined. */
+    #h_nav_tab ul.navbar-nav { background: transparent !important; }
+    #h_nav_tab .nav-link { padding: 6px 10px !important; }
+    #h_nav_tab .menu-title {
+        color: #b8b8c2; font-size: 0.86rem; padding-bottom: 3px;
+    }
+    #h_nav_tab .nav-link:hover .menu-title { color: #ffffff; }
+    #h_nav_tab .nav-link.iris-cnav-active .menu-title {
+        color: #ffffff; font-weight: 600;
+        border-bottom: 2px solid #ffffff;
+    }
+</style>
+<script src="/static/assets/js/iris/case_shell.js"></script>

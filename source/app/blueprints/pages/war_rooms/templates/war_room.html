@@ -1,0 +1,1382 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} War Room {% endblock title %}
+
+{% block stylesheets %}
+<style>
+    /* Page-local styling only (project rule: page-level CSS overlays).
+       v3-shaped: header w/ shield box + chips, full-width tab bar, Stream
+       tab with left filter rail + avatar chat + composer. */
+
+    .iris-wr-shieldbox {
+        width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(242, 89, 97, 0.10);
+        border: 1px solid rgba(242, 89, 97, 0.35); color: #F25961;
+    }
+    .iris-wr-slug { color: #7a7a85; font-size: 0.72rem; font-family: monospace; }
+    .iris-wr-meta { color: #9a9aa5; font-size: 0.78rem; }
+    .iris-wr-meta svg { width: 12px; height: 12px; vertical-align: -2px; }
+
+    .iris-wr-chip-lg {
+        display: inline-flex; align-items: center; gap: 6px;
+        height: 28px; padding: 0 12px; font-size: 0.75rem;
+        border-radius: 999px; text-transform: capitalize;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.14); color: #9a9aa5;
+    }
+    .iris-wr-chip-lg svg { width: 12px; height: 12px; }
+    .iris-wr-chip-status-open, .iris-wr-chip-status-active {
+        border-color: rgba(242, 89, 97, 0.55); color: #F25961;
+        background: rgba(242, 89, 97, 0.07);
+    }
+    .iris-wr-chip-status-standby {
+        border-color: rgba(94, 114, 228, 0.55); color: #8fa3ef;
+    }
+    .iris-wr-chip-sev-critical, .iris-wr-chip-sev-high {
+        border-color: rgba(242, 89, 97, 0.55); color: #F25961;
+        background: rgba(242, 89, 97, 0.07);
+    }
+    .iris-wr-chip-sev-medium {
+        border-color: rgba(244, 196, 48, 0.55); color: #f4c430;
+    }
+    .iris-wr-chip-sev-low {
+        border-color: rgba(45, 206, 137, 0.55); color: #2dce89;
+    }
+
+    /* v3 tab bar */
+    .iris-wr-tabbar {
+        display: flex; gap: 4px; flex-wrap: wrap;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        margin-bottom: 14px;
+    }
+    .iris-wr-tab {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 8px 14px; font-size: 0.85rem; color: #9a9aa5;
+        border: none; background: none; cursor: pointer;
+        border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .iris-wr-tab svg { width: 14px; height: 14px; }
+    .iris-wr-tab.active {
+        color: #e8e8ee; border-bottom-color: #8B5CF6;
+    }
+    .iris-wr-pane { display: none; }
+    .iris-wr-pane.active { display: block; }
+
+    /* Stream left rail */
+    .iris-wr-rail {
+        border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px;
+        background: rgba(255, 255, 255, 0.015);
+        padding: 12px 14px; font-size: 0.8rem;
+    }
+    .iris-wr-rail-h {
+        color: #7a7a85; font-size: 0.68rem; letter-spacing: 0.08em;
+        text-transform: uppercase; margin: 14px 0 6px 0;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .iris-wr-rail-h:first-child { margin-top: 0; }
+    .iris-wr-rail-h svg { width: 11px; height: 11px; }
+    .iris-wr-rail-hint { color: #6a6a75; font-size: 0.72rem; }
+    .iris-wr-rail label { font-weight: normal; color: #c8c8d0; margin-bottom: 2px; }
+    .iris-wr-clear { float: right; font-size: 0.72rem; }
+    /* v3 rail rows: label left, blue checkbox right */
+    .iris-wr-railrow {
+        display: flex; align-items: center; padding: 2px 0;
+        color: #c8c8d0; font-size: 0.8rem;
+    }
+    .iris-wr-railrow input[type="checkbox"] {
+        margin-left: auto; accent-color: #5e72e4;
+    }
+    .iris-wr-railrow .iris-wr-railtxt {
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        min-width: 0; cursor: default;
+    }
+    .iris-wr-sublanes { margin-left: 16px; display: none; }
+    .iris-wr-sublanes.open { display: block; }
+    .iris-wr-chev { cursor: pointer; color: #7a7a85; margin-right: 4px;
+        display: inline-block; width: 10px; }
+    .iris-wr-cmdlist { display: none; }
+    .iris-wr-cmdlist.open { display: block; }
+    .iris-wr-cmdlist code {
+        background: rgba(255, 255, 255, 0.06); border-radius: 4px;
+        padding: 0 5px; font-size: 0.72rem; color: #d4c4ff;
+    }
+    .iris-wr-cmdlist div { margin-bottom: 5px; }
+    .iris-wr-cmdlist .iris-wr-cmddesc {
+        color: #6a6a75; font-size: 0.7rem; margin: 0 0 0 2px;
+    }
+
+    /* Chat */
+    #iris-wr-chat {
+        height: 560px; overflow-y: auto; padding: 4px 8px;
+        display: flex; flex-direction: column;
+    }
+    .iris-wr-datesep {
+        text-align: center; color: #7a7a85; font-size: 0.72rem;
+        margin: 12px 0 8px 0; position: relative;
+    }
+    .iris-wr-datesep span {
+        background: #15151a; padding: 0 10px; position: relative; z-index: 1;
+    }
+    .iris-wr-datesep:before {
+        content: ''; position: absolute; left: 0; right: 0; top: 50%;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .iris-wr-msgrow { display: flex; gap: 10px; padding: 5px 2px;
+        border-radius: 8px; position: relative; }
+    .iris-wr-msgrow:hover { background: rgba(255, 255, 255, 0.02); }
+    .iris-wr-msgrow.iris-wr-kind-decision {
+        border-left: 3px solid rgba(244, 196, 48, 0.6);
+        background: rgba(244, 196, 48, 0.04); padding-left: 8px;
+    }
+    .iris-wr-msgrow.iris-wr-kind-note {
+        border-left: 3px solid rgba(139, 92, 246, 0.55);
+        background: rgba(139, 92, 246, 0.04); padding-left: 8px;
+    }
+    .iris-wr-msgrow.iris-wr-reply { margin-left: 34px; }
+    .iris-wr-reply-ref {
+        color: #7a7a85; font-size: 0.7rem; margin-bottom: 1px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .iris-wr-thread-badge {
+        display: inline-block; padding: 0 8px; font-size: 0.7rem;
+        border-radius: 8px; margin-left: 6px;
+        background: rgba(94, 114, 228, 0.12);
+        border: 1px solid rgba(94, 114, 228, 0.4); color: #8fa3ef;
+    }
+    .iris-wr-msg-actions {
+        position: absolute; right: 8px; top: 4px; display: none;
+        gap: 8px; font-size: 0.7rem;
+    }
+    .iris-wr-msgrow:hover .iris-wr-msg-actions { display: flex; }
+    .iris-wr-msg-actions a { color: #9a9aa5; }
+    .iris-wr-cmd-pop {
+        border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px;
+        background: #1a1a22; padding: 6px 10px; margin-bottom: 6px;
+        max-height: 220px; overflow-y: auto; display: none;
+        font-size: 0.78rem;
+    }
+    .iris-wr-cmd-pop .iris-wr-cmd-opt { padding: 2px 4px; cursor: pointer;
+        border-radius: 4px; }
+    .iris-wr-cmd-pop .iris-wr-cmd-opt:hover {
+        background: rgba(139, 92, 246, 0.12); }
+    .iris-wr-cmd-pop .iris-wr-cmd-opt.active {
+        background: rgba(139, 92, 246, 0.22); }
+
+    /* Poll card in the stream */
+    .iris-wr-pollcard {
+        border: 1px solid rgba(94, 114, 228, 0.35); border-radius: 10px;
+        background: rgba(94, 114, 228, 0.05); padding: 10px 14px;
+        margin: 6px 0;
+    }
+    .iris-wr-poll-q { font-weight: 600; }
+    .iris-wr-poll-opt {
+        display: flex; align-items: center; gap: 8px; margin: 5px 0;
+        cursor: pointer; position: relative; padding: 4px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
+        overflow: hidden;
+    }
+    .iris-wr-poll-opt.voted { border-color: rgba(94, 114, 228, 0.6); }
+    .iris-wr-poll-opt.closed { cursor: default; }
+    .iris-wr-poll-bar {
+        position: absolute; left: 0; top: 0; bottom: 0;
+        background: rgba(94, 114, 228, 0.16); z-index: 0;
+    }
+    .iris-wr-poll-opt > span { position: relative; z-index: 1; }
+    .iris-wr-poll-meta { color: #7a7a85; font-size: 0.72rem; margin-top: 4px; }
+    .iris-wr-poll-voters { color: #7a7a85; font-size: 0.68rem; }
+
+    /* Resource picker popover */
+    .iris-wr-resource-pop {
+        position: absolute; bottom: 100%; left: 0; margin-bottom: 8px;
+        width: 400px; max-width: 90%; z-index: 50; display: none;
+        border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 10px;
+        background: #1a1a22; padding: 10px 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+    .iris-wr-res-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+    .iris-wr-res-tab {
+        border: none; background: none; color: #9a9aa5; cursor: pointer;
+        font-size: 0.78rem; padding: 3px 12px; border-radius: 999px;
+    }
+    .iris-wr-res-tab.active {
+        background: rgba(94, 114, 228, 0.25); color: #e8e8ee;
+    }
+    .iris-wr-res-list { max-height: 240px; overflow-y: auto; margin-top: 6px; }
+    .iris-wr-res-item {
+        padding: 5px 6px; cursor: pointer; border-radius: 6px;
+        font-size: 0.8rem;
+    }
+    .iris-wr-res-item:hover { background: rgba(139, 92, 246, 0.12); }
+    .iris-wr-res-item .iris-wr-res-sub {
+        color: #7a7a85; font-size: 0.7rem;
+    }
+    .iris-wr-res-chip {
+        display: inline-block; padding: 0 8px; font-size: 0.78em;
+        border-radius: 8px; background: rgba(139, 92, 246, 0.12);
+        border: 1px solid rgba(139, 92, 246, 0.35); color: #d4c4ff;
+        white-space: nowrap;
+    }
+
+    /* v3 timeline cards */
+    .iris-wr-tlrow { position: relative; padding-left: 30px; }
+    .iris-wr-tlrow.iris-wr-tree-child { padding-left: 66px; }
+    .iris-wr-tldot {
+        position: absolute; left: 6px; top: 26px; width: 11px; height: 11px;
+        border-radius: 50%;
+    }
+    .iris-wr-tlcard {
+        border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px;
+        border-left-width: 3px; border-left-style: solid;
+        background: rgba(255, 255, 255, 0.02);
+        padding: 10px 16px; margin: 8px 0; position: relative;
+    }
+    .iris-wr-tlcard:hover { border-color: rgba(139, 92, 246, 0.35); }
+    .iris-wr-tl-head {
+        font-size: 0.74rem; color: #9a9aa5; letter-spacing: 0.04em;
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .iris-wr-tl-head .iris-wr-tl-time { font-family: monospace; color: #c8c8d0; }
+    .iris-wr-tl-head .iris-wr-tl-catname { text-transform: uppercase; }
+    .iris-wr-tl-srcchip {
+        display: inline-block; padding: 0 8px; font-size: 0.64rem;
+        letter-spacing: 0.08em; text-transform: uppercase;
+        border-radius: 999px; border: 1px solid rgba(94, 114, 228, 0.5);
+        color: #8fa3ef;
+    }
+    .iris-wr-tl-srcchip.room {
+        border-color: rgba(139, 92, 246, 0.5); color: #d4c4ff;
+    }
+    .iris-wr-tl-ref { font-family: monospace; font-size: 0.7rem; color: #7a7a85; }
+    .iris-wr-tl-title { font-weight: 600; margin: 3px 0; }
+    .iris-wr-tl-body { font-size: 0.85rem; color: #c8c8d0; }
+    .iris-wr-tl-chips { margin-top: 7px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .iris-wr-tl-chip {
+        display: inline-block; padding: 0 8px; font-size: 0.7rem;
+        border-radius: 6px;
+    }
+    .iris-wr-tl-chip-assets {
+        background: rgba(244, 196, 48, 0.12);
+        border: 1px solid rgba(244, 196, 48, 0.45); color: #f4c430;
+    }
+    .iris-wr-tl-chip-iocs {
+        background: rgba(242, 89, 97, 0.12);
+        border: 1px solid rgba(242, 89, 97, 0.45); color: #F25961;
+    }
+    .iris-wr-tl-chip-tag {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.14); color: #9a9aa5;
+    }
+    .iris-wr-tl-actions {
+        position: absolute; right: 10px; top: 8px; display: none;
+        gap: 8px; font-size: 0.72rem;
+    }
+    .iris-wr-tlcard:hover .iris-wr-tl-actions { display: flex; }
+    .iris-wr-tl-actions a { color: #9a9aa5; }
+    .iris-wr-tldotname {
+        display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+        background: #5e72e4; margin-right: 5px;
+    }
+    /* Per-timeline row actions (v3: + / pencil / trash) — hover-revealed */
+    .iris-wr-tl-acts { margin-left: auto; display: inline-flex; align-items: center; }
+    .iris-wr-tl-act {
+        visibility: hidden; color: #7a7a85; margin-left: 7px;
+        display: inline-flex; align-items: center;
+    }
+    .iris-wr-railrow:hover .iris-wr-tl-act { visibility: visible; }
+    .iris-wr-tl-act:hover { color: #e8e8ee; }
+    .iris-wr-tl-act.iris-wr-tl-del { color: #a04a52; }
+    .iris-wr-tl-act.iris-wr-tl-del:hover { color: #F25961; }
+    .iris-wr-tl-on {
+        display: inline-block; padding: 0 6px; font-size: 0.6rem;
+        letter-spacing: 0.08em; border-radius: 6px; margin-left: 6px;
+        border: 1px solid rgba(94, 114, 228, 0.5); color: #8fa3ef;
+    }
+
+    /* v3 room tasks */
+    .iris-wr-rt-section {
+        color: #7a7a85; font-size: 0.68rem; letter-spacing: 0.08em;
+        text-transform: uppercase; margin: 12px 0 4px 0;
+    }
+    .iris-wr-rt-row {
+        display: flex; align-items: center; gap: 10px; padding: 7px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 8px;
+        margin: 4px 0; cursor: pointer; position: relative;
+    }
+    .iris-wr-rt-row:hover { border-color: rgba(139, 92, 246, 0.35); }
+    .iris-wr-rt-row.iris-wr-rt-sub { margin-left: 34px; }
+    .iris-wr-rt-row.done-task .iris-wr-rt-title {
+        text-decoration: line-through; color: #7a7a85;
+    }
+    .iris-wr-rt-title { font-size: 0.86rem; }
+    .iris-wr-rt-pill {
+        display: inline-block; padding: 0 8px; font-size: 0.66rem;
+        letter-spacing: 0.04em; border-radius: 999px; white-space: nowrap;
+        background: rgba(255, 255, 255, 0.04);
+    }
+    .iris-wr-rt-pill-no_status { border: 1px solid rgba(255,255,255,0.2); color: #9a9aa5; }
+    .iris-wr-rt-pill-todo { border: 1px solid rgba(94,114,228,0.55); color: #8fa3ef; }
+    .iris-wr-rt-pill-in_progress { border: 1px solid rgba(244,196,48,0.55); color: #f4c430; }
+    .iris-wr-rt-pill-on_hold { border: 1px solid rgba(154,160,181,0.55); color: #9aa0b5; }
+    .iris-wr-rt-pill-done { border: 1px solid rgba(45,206,137,0.55); color: #2dce89; }
+    .iris-wr-rt-pill-cancelled { border: 1px solid rgba(242,89,97,0.55); color: #F25961; }
+    .iris-wr-rt-due {
+        font-size: 0.7rem; color: #9a9aa5; white-space: nowrap;
+    }
+    .iris-wr-rt-due.overdue { color: #F25961; }
+    .iris-wr-rt-actions {
+        position: absolute; right: 10px; top: 6px; display: none; gap: 8px;
+        font-size: 0.7rem; background: #15151a; padding: 0 4px;
+    }
+    .iris-wr-rt-row:hover .iris-wr-rt-actions { display: flex; }
+    .iris-wr-rt-actions a { color: #9a9aa5; }
+    .iris-wr-rt-board {
+        display: flex; gap: 10px; align-items: stretch;
+        overflow-x: auto; padding-bottom: 6px;
+    }
+    .iris-wr-rt-col {
+        flex: 1 0 190px; min-width: 190px; min-height: 380px;
+        display: flex; flex-direction: column;
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 10px; padding: 8px; background: rgba(255,255,255,0.015);
+    }
+    .iris-wr-rt-col.dragover {
+        border-color: rgba(139, 92, 246, 0.5);
+        background: rgba(139, 92, 246, 0.05);
+    }
+    .iris-wr-rt-colhead {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase;
+        color: #9a9aa5; padding: 2px 2px 8px;
+    }
+    .iris-wr-rt-coldot {
+        width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .iris-wr-rt-colcount {
+        margin-left: auto; font-size: 0.65rem; color: #9a9aa5;
+        background: rgba(255,255,255,0.06); border-radius: 8px; padding: 0 7px;
+    }
+    .iris-wr-rt-colempty {
+        text-align: center; color: #5a5a64; font-size: 0.75rem;
+        padding-top: 42px;
+    }
+    .iris-wr-rt-card {
+        border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+        padding: 7px 9px; margin: 6px 0; cursor: pointer;
+        background: rgba(255,255,255,0.02); font-size: 0.8rem;
+    }
+    .iris-wr-rt-card[draggable="true"] { cursor: grab; }
+    .iris-wr-rt-card:hover { border-color: rgba(139, 92, 246, 0.4); }
+    .iris-wr-rt-boardhint {
+        font-size: 0.7rem; color: #7a7a85; margin-top: 6px;
+    }
+    /* Notes tab (v3 two-pane) */
+    .iris-wr-nt-toolbtn {
+        color: #7a7a85; margin-left: 8px;
+        display: inline-flex; align-items: center;
+    }
+    .iris-wr-nt-toolbtn:hover { color: #e8e8ee; }
+    .iris-wr-nt-row {
+        display: flex; align-items: center; gap: 6px; padding: 4px 6px;
+        border-radius: 6px; font-size: 0.8rem; color: #c8c8d0;
+        cursor: pointer;
+    }
+    .iris-wr-nt-row:hover { background: rgba(255,255,255,0.04); }
+    .iris-wr-nt-row.active {
+        background: rgba(94,114,228,0.15); color: #e8e8ee;
+    }
+    .iris-wr-nt-row svg { flex-shrink: 0; }
+    .iris-wr-nt-row .iris-wr-nt-name {
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        flex: 1 1 auto; min-width: 0;
+    }
+    .iris-wr-nt-row .iris-wr-tl-act { margin-left: 0; }
+    .iris-wr-nt-sub { margin-left: 18px; }
+    .iris-wr-nt-folderhead { color: #9a9aa5; cursor: default; }
+    .iris-wr-nt-inline input {
+        flex: 1 1 auto; min-width: 0;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(94,114,228,0.5); border-radius: 6px;
+        color: #e8e8ee; font-size: 0.8rem; padding: 2px 6px; outline: none;
+    }
+    .iris-wr-nt-titleinput {
+        background: transparent; border: 0; color: #e8e8ee;
+        font-size: 1.15rem; font-weight: 600; flex: 1 1 auto; min-width: 0;
+        outline: none; padding: 0;
+    }
+    .iris-wr-nt-titleinput[readonly] { cursor: default; }
+    .iris-wr-nt-view {
+        min-height: 240px; font-size: 0.85rem; color: #c8c8d0; cursor: text;
+    }
+    .iris-wr-nt-view .iris-wr-nt-hintline {
+        color: #5a5a64; font-style: italic;
+    }
+    /* SitReps tab (v3 two-pane) */
+    .iris-wr-sr-toolbar {
+        display: flex; align-items: center; gap: 4px;
+        border: 1px solid rgba(255,255,255,0.08); border-bottom: 0;
+        border-radius: 8px 8px 0 0; padding: 5px 9px;
+        background: rgba(255,255,255,0.02);
+    }
+    .iris-wr-sr-toolbar a.iris-wr-sr-md {
+        color: #9a9aa5; font-size: 0.72rem; padding: 1px 6px;
+        border-radius: 4px; text-decoration: none;
+    }
+    .iris-wr-sr-toolbar a.iris-wr-sr-md:hover {
+        color: #e8e8ee; background: rgba(255,255,255,0.06);
+    }
+    .iris-wr-sr-tbsep {
+        width: 1px; height: 14px; background: rgba(255,255,255,0.12);
+        margin: 0 4px;
+    }
+    .iris-wr-sr-exportlbl {
+        font-size: 0.6rem; margin-left: 2px; letter-spacing: 0.04em;
+    }
+    .iris-wr-sitrep-item {
+        padding: 6px 8px; border-radius: 8px; cursor: pointer;
+        font-size: 0.8rem; color: #c8c8d0;
+    }
+    .iris-wr-sitrep-item:hover { background: rgba(255,255,255,0.04); }
+    .iris-wr-sitrep-item.active {
+        background: rgba(94,114,228,0.15); color: #e8e8ee;
+    }
+    .iris-wr-sitrep-item .iris-wr-sitrep-sub {
+        font-size: 0.7rem; color: #7a7a85;
+    }
+    .iris-wr-sitrep-item.published .iris-wr-sitrep-dot { color: #f4c430; }
+    /* Cases tab (v3) */
+    .iris-wr-cs-chip {
+        display: inline-block; padding: 1px 9px; border-radius: 10px;
+        font-size: 0.7rem; color: #9a9aa5; cursor: pointer;
+        border: 1px solid rgba(255,255,255,0.12);
+    }
+    .iris-wr-cs-chip.active {
+        color: #8fa3ef; border-color: rgba(94,114,228,0.6);
+        background: rgba(94,114,228,0.12);
+    }
+    .iris-wr-cs-row {
+        display: flex; align-items: flex-start; gap: 10px;
+        border: 1px solid rgba(255,255,255,0.07); border-radius: 10px;
+        padding: 10px 12px; margin-top: 8px; cursor: pointer;
+        background: rgba(255,255,255,0.015);
+    }
+    .iris-wr-cs-row:hover { border-color: rgba(139, 92, 246, 0.4); }
+    .iris-wr-cs-row .iris-wr-cs-name { color: #e8e8ee; font-weight: 600; }
+    .iris-wr-cs-state {
+        display: inline-block; padding: 0 8px; border-radius: 9px;
+        font-size: 0.68rem; margin-left: 6px;
+        border: 1px solid rgba(45,206,137,0.55); color: #2dce89;
+    }
+    .iris-wr-cs-state.closed {
+        border-color: rgba(255,255,255,0.2); color: #9a9aa5;
+    }
+    .iris-wr-cs-meta {
+        font-size: 0.74rem; color: #9a9aa5; margin-top: 3px;
+        display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .iris-wr-cs-note { font-size: 0.72rem; color: #7a7a85; margin-top: 3px; }
+    .iris-wr-cs-acts {
+        margin-left: auto; display: inline-flex; gap: 8px;
+        align-items: center; flex-shrink: 0;
+    }
+    .iris-wr-csatt-row {
+        display: flex; align-items: center; gap: 8px; padding: 5px 6px;
+        border-radius: 6px; font-size: 0.8rem; color: #c8c8d0;
+        cursor: pointer;
+    }
+    .iris-wr-csatt-row:hover { background: rgba(255,255,255,0.04); }
+    .iris-wr-pk-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .iris-wr-pk-tile {
+        border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+        padding: 8px 10px; background: rgba(255,255,255,0.015);
+    }
+    .iris-wr-pk-lbl {
+        font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase;
+        color: #7a7a85;
+    }
+    .iris-wr-pk-val { color: #e8e8ee; font-size: 0.85rem; margin-top: 2px; }
+    /* Members tab (v3) */
+    .iris-wr-mb-row {
+        display: flex; align-items: center; gap: 8px;
+        border: 1px solid rgba(255,255,255,0.07); border-radius: 10px;
+        padding: 9px 12px; margin-top: 8px;
+        background: rgba(255,255,255,0.015);
+    }
+    .iris-wr-mb-row .iris-wr-mb-name { color: #e8e8ee; font-weight: 600; }
+    .iris-wr-mb-row .iris-wr-mb-login {
+        color: #7a7a85; font-size: 0.74rem;
+    }
+    .iris-wr-mb-crown { color: #f4c430; display: inline-flex; }
+    .iris-wr-mb-chip {
+        margin-left: auto; display: inline-block; padding: 0 9px;
+        border-radius: 9px; font-size: 0.64rem; letter-spacing: 0.08em;
+        text-transform: uppercase; color: #9a9aa5;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+    .iris-wr-mb-chip.lead {
+        color: #f4c430; border-color: rgba(244,196,48,0.5);
+    }
+    .iris-wr-mbadd-row {
+        display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+        border-radius: 6px; font-size: 0.8rem; color: #c8c8d0;
+        cursor: pointer;
+    }
+    .iris-wr-mbadd-row:hover { background: rgba(255,255,255,0.04); }
+    .iris-wr-mbadd-row.selected {
+        background: rgba(94,114,228,0.15); color: #e8e8ee;
+    }
+    .iris-wr-mbadd-row .iris-wr-mb-login { margin-left: auto; }
+    /* Teams tab (v3) */
+    .iris-wr-tm-row {
+        border: 1px solid rgba(255,255,255,0.07); border-radius: 10px;
+        padding: 9px 12px; margin-top: 8px;
+        background: rgba(255,255,255,0.015);
+    }
+    .iris-wr-tm-head { display: flex; align-items: center; gap: 8px; }
+    .iris-wr-tm-dot {
+        width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    }
+    .iris-wr-tm-name { color: #e8e8ee; font-weight: 600; }
+    .iris-wr-tm-sub { color: #7a7a85; font-size: 0.72rem; }
+    .iris-wr-tm-desc { color: #9a9aa5; font-size: 0.76rem; margin-top: 2px; }
+    .iris-wr-tm-act {
+        color: #9a9aa5; font-size: 0.74rem; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 3px;
+    }
+    .iris-wr-tm-act:hover { color: #e8e8ee; text-decoration: none; }
+    .iris-wr-tm-chip {
+        display: inline-flex; align-items: center; gap: 5px;
+        border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+        padding: 1px 9px; font-size: 0.74rem; color: #c8c8d0;
+        margin: 6px 6px 0 0;
+    }
+    .iris-wr-tm-chip a { color: #7a7a85; display: inline-flex; }
+    .iris-wr-tm-chip a:hover { color: #F25961; }
+    .iris-wr-avatar {
+        width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.68rem; font-weight: 600; color: #e8e8ee;
+        margin-top: 2px;
+    }
+    .iris-wr-msg-head { font-size: 0.8rem; }
+    .iris-wr-msg-head strong { color: #e8e8ee; }
+    .iris-wr-msg-time { color: #7a7a85; font-size: 0.7rem; margin-left: 8px; }
+    .iris-wr-msg-body {
+        font-size: 0.85rem; color: #c8c8d0; white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .iris-wr-sysrow {
+        display: flex; align-items: center; gap: 8px;
+        padding: 4px 8px; margin: 3px 0; font-size: 0.76rem; color: #9a9aa5;
+        border: 1px dashed rgba(255, 255, 255, 0.08); border-radius: 8px;
+    }
+    .iris-wr-sysrow .iris-wr-case-chip { margin-left: auto; }
+    .iris-wr-case-chip {
+        display: inline-block; padding: 0 8px; font-size: 0.7rem;
+        border-radius: 8px; background: rgba(139, 92, 246, 0.12);
+        border: 1px solid rgba(139, 92, 246, 0.35); color: #d4c4ff;
+        white-space: nowrap;
+    }
+    .iris-wr-composer-hints { color: #6a6a75; font-size: 0.7rem; margin-top: 4px; }
+    .iris-wr-composer-hints kbd {
+        background: rgba(255, 255, 255, 0.06); border-radius: 4px;
+        padding: 0 5px; font-size: 0.68rem; color: #9a9aa5;
+    }
+    .iris-wr-topic-chip {
+        display: inline-flex; align-items: center; gap: 4px; padding: 0 8px;
+        font-size: 0.7rem; border-radius: 8px;
+        background: rgba(139, 92, 246, 0.12);
+        border: 1px solid rgba(139, 92, 246, 0.35); color: #d4c4ff;
+    }
+
+    /* SitRep + role pills (kept from slim v1) */
+    .iris-wr-sitrep-row { cursor: pointer; }
+    .iris-wr-status-pill-draft {
+        background: rgba(244, 196, 48, 0.12); border: 1px solid rgba(244, 196, 48, 0.4);
+        color: #f4c430; border-radius: 8px; padding: 0 8px; font-size: 0.72rem;
+    }
+    .iris-wr-status-pill-published {
+        background: rgba(45, 206, 137, 0.12); border: 1px solid rgba(45, 206, 137, 0.4);
+        color: #2dce89; border-radius: 8px; padding: 0 8px; font-size: 0.72rem;
+    }
+    .iris-wr-role {
+        display: inline-block; padding: 1px 8px; font-size: 0.72rem;
+        border-radius: 8px; background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.15); color: #c8c8d0;
+    }
+    .iris-wr-role-lead {
+        background: rgba(139, 92, 246, 0.12);
+        border-color: rgba(139, 92, 246, 0.35); color: #d4c4ff;
+    }
+    #iris-wr-summary-view { white-space: pre-wrap; }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="page-inner">
+    <form style="display:none;">{{ form.hidden_tag() }}</form>
+    <input type="hidden" id="iris-wr-room-id" value="{{ room_id }}">
+
+    {# ---- v3-shaped header ---- #}
+    <div class="card">
+        <div class="card-body d-flex align-items-center" style="padding: 14px 20px; gap: 14px;">
+            <a href="/war-rooms?cid={{ caseid }}" class="text-muted" title="Back to War Rooms" style="font-size: 1.1rem;">&larr;</a>
+            <div class="iris-wr-shieldbox">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            </div>
+            <div style="flex: 1 1 auto; min-width: 0;">
+                <div>
+                    <span class="iris-wr-slug">WR#{{ room_id }}</span>
+                    <span class="h4 mb-0 ml-1" id="iris-wr-name" style="font-weight: 600;">&hellip;</span>
+                </div>
+                <div class="iris-wr-meta" id="iris-wr-meta"></div>
+            </div>
+            <div style="flex-shrink: 0;" class="d-flex align-items-center" >
+                <span id="iris-wr-status" class="mr-1"></span>
+                <span id="iris-wr-severity" class="mr-2"></span>
+                <span id="iris-wr-myrole" class="mr-2"></span>
+                <select class="form-control form-control-sm mr-1" id="iris-wr-status-select"
+                        style="width: 105px; display:none;" title="Room status (lead)">
+                    <option value="open">open</option>
+                    <option value="active">active</option>
+                    <option value="standby">standby</option>
+                    <option value="closed">closed</option>
+                </select>
+                <button class="btn btn-sm btn-secondary" id="iris-wr-edit-btn" style="display:none;">Edit</button>
+                <button class="btn btn-sm btn-outline-danger ml-1" id="iris-wr-delete-btn" style="display:none;"
+                        title="Permanently delete this war room">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    {# ---- v3 tab bar (icons scraped verbatim from the preview SSR) ---- #}
+    <div class="iris-wr-tabbar" id="iris-wr-tabbar">
+        <button class="iris-wr-tab active" data-pane="stream">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Stream</button>
+        <button class="iris-wr-tab" data-pane="summary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            Summary</button>
+        <button class="iris-wr-tab" data-pane="timelines">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Timelines</button>
+        <button class="iris-wr-tab" data-pane="tasks">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+            Tasks <span id="iris-wr-rtask-count"></span></button>
+        <button class="iris-wr-tab" data-pane="notes">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            Notes</button>
+        <button class="iris-wr-tab" data-pane="sitreps">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z"/><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8"/></svg>
+            SitReps <span id="iris-wr-sitrep-count"></span></button>
+        <button class="iris-wr-tab" data-pane="cases">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2.5"/><path d="m10.2 6.3-3.9 3.9"/><circle cx="4.5" cy="12" r="2.5"/><path d="M7 12h10"/><circle cx="19.5" cy="12" r="2.5"/><path d="m13.8 17.7 3.9-3.9"/><circle cx="12" cy="19.5" r="2.5"/></svg>
+            Cases <span id="iris-wr-case-count"></span></button>
+        <button class="iris-wr-tab" data-pane="members">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Members <span id="iris-wr-member-count"></span></button>
+        <button class="iris-wr-tab" data-pane="teams">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg>
+            Teams <span id="iris-wr-team-count"></span></button>
+        <button class="iris-wr-tab" data-pane="correlation">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="3"/><path d="M12 6h5a2 2 0 0 1 2 2v7"/><circle cx="19" cy="18" r="3"/><path d="M12 18H7a2 2 0 0 1-2-2V9"/></svg>
+            Correlation</button>
+    </div>
+
+    {# ================= Stream pane ================= #}
+    <div class="iris-wr-pane active" id="iris-wr-pane-stream">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="iris-wr-rail">
+                    <div class="iris-wr-rail-h">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        Filters <a href="#" class="iris-wr-clear" id="iris-wr-clear-filters">Clear all</a>
+                    </div>
+
+                    <div class="iris-wr-rail-h">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg>
+                        Topics
+                        <a href="#" id="iris-wr-topic-add" class="ml-auto" title="New topic" style="color:#7a7a85;">+</a>
+                    </div>
+                    <div id="iris-wr-rail-topics"></div>
+
+                    <div class="iris-wr-rail-h">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        Threads (<span id="iris-wr-thread-count">0</span>)</div>
+                    <div id="iris-wr-rail-threads"></div>
+                    <div class="iris-wr-rail-hint" id="iris-wr-thread-hint">Reply to any message or use <code>/thread</code> to start one.</div>
+
+                    <div class="iris-wr-rail-h">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 12.5-8 8a2.119 2.119 0 1 1-3-3l8-8"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>
+                        Decisions &amp; Pins (<span id="iris-wr-dp-count">0</span>)</div>
+                    <div class="iris-wr-rail-hint">Use <code>/decision</code> or <code>/pin</code> to record something the room should remember.</div>
+
+                    <div class="iris-wr-rail-h">Stream lanes</div>
+                    <div id="iris-wr-rail-lanes"></div>
+
+                    <div class="iris-wr-rail-h">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2.5"/><path d="m10.2 6.3-3.9 3.9"/><circle cx="4.5" cy="12" r="2.5"/><path d="M7 12h10"/><circle cx="19.5" cy="12" r="2.5"/><path d="m13.8 17.7 3.9-3.9"/><circle cx="12" cy="19.5" r="2.5"/></svg>
+                        Cases (<span id="iris-wr-rail-case-count">0</span>)</div>
+                    <div id="iris-wr-rail-cases"></div>
+
+                    <div class="iris-wr-rail-h" id="iris-wr-cmd-toggle" style="cursor:pointer;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                        Slash commands</div>
+                    <div class="iris-wr-cmdlist" id="iris-wr-cmdlist"></div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card" style="margin-bottom: 0;">
+                    <div class="card-body" style="padding: 12px 14px;">
+                        <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-chat-filter"
+                               placeholder="Filter the stream &mdash; messages, decisions, case activity&hellip;">
+                        <div id="iris-wr-chat"></div>
+                        <div id="iris-wr-stream-empty" class="text-muted" style="display:none;">Nothing here yet.</div>
+                        <div id="iris-wr-composer" class="mt-2" style="display:none;">
+                            <div class="iris-wr-cmd-pop" id="iris-wr-cmd-pop"></div>
+                            <div class="iris-wr-cmd-pop" id="iris-wr-mention-pop"></div>
+                            <div class="mb-1" style="font-size:0.72rem; color:#7a7a85;">
+                                Posting to <span class="iris-wr-topic-chip" id="iris-wr-post-target"># Main</span>
+                                <a href="#" id="iris-wr-target-clear" class="ml-1" style="display:none; color:#9a9aa5;" title="Back to # Main">&times;</a>
+                            </div>
+                            <div class="d-flex align-items-end" style="position:relative;">
+                                <div id="iris-wr-resource-pop" class="iris-wr-resource-pop"></div>
+                                <span class="text-muted mr-2" style="white-space:nowrap;">
+                                    <a href="#" id="iris-wr-poll-btn" title="New poll" style="color:inherit;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></a>
+                                    <a href="#" id="iris-wr-resource-btn" title="Reference a case resource" style="color:inherit;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></a>
+                                </span>
+                                <textarea class="form-control" id="iris-wr-msg-input" rows="1"
+                                          placeholder="Type a message, /command, @user or #resource..." maxlength="4000"
+                                          style="resize:none; overflow-y:auto; max-height:120px;"></textarea>
+                                <button class="btn btn-primary ml-2" id="iris-wr-msg-send">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
+                                    Send</button>
+                            </div>
+                            <div class="iris-wr-composer-hints">
+                                <kbd>Enter</kbd> to send &middot; <kbd>Shift+Enter</kbd> for newline &middot; <kbd>/</kbd> for commands &middot; <kbd>@</kbd> to mention, <kbd>Tab</kbd> completes
+                                <span id="iris-wr-cmd-status" class="ml-2"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ================= Summary pane ================= #}
+    <div class="iris-wr-pane" id="iris-wr-pane-summary">
+        <div class="card"><div class="card-body">
+            <div id="iris-wr-summary-view" class="text-muted">No summary yet.</div>
+        </div></div>
+    </div>
+
+    {# ================= Timelines pane (v3-shaped) ====================== #}
+    <div class="iris-wr-pane" id="iris-wr-pane-timelines">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="iris-wr-rail">
+                    <div class="iris-wr-rail-h">Timelines
+                        <a href="#" id="iris-wr-tl-add" class="ml-auto" title="New room timeline" style="color:#7a7a85;">+</a>
+                    </div>
+                    <a href="#" id="iris-wr-tl-showall" class="iris-wr-rail-hint" style="display:block; margin-bottom:4px;">Show all</a>
+                    <div id="iris-wr-tl-roomlist"></div>
+                    <div id="iris-wr-tl-roomempty" class="iris-wr-rail-hint">No timelines yet.</div>
+                    <div class="iris-wr-rail-h">Linked case timelines</div>
+                    <div id="iris-wr-tl-caselist"></div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card"><div class="card-body">
+                    <div class="d-flex align-items-center mb-3" style="gap:8px; flex-wrap:wrap;">
+                        <input type="text" class="form-control form-control-sm" id="iris-wr-tl-search"
+                               placeholder="Search title/content/category..." style="width:230px;">
+                        <select class="form-control form-control-sm" id="iris-wr-tl-cat" style="width:140px;">
+                            <option value="">Category</option>
+                        </select>
+                        <label class="mb-0 text-muted" style="font-size:0.75rem;">From</label>
+                        <input type="datetime-local" class="form-control form-control-sm" id="iris-wr-tl-from" style="width:190px;">
+                        <label class="mb-0 text-muted" style="font-size:0.75rem;">To</label>
+                        <input type="datetime-local" class="form-control form-control-sm" id="iris-wr-tl-to" style="width:190px;">
+                        <div class="ml-auto d-flex align-items-center" style="gap:8px;">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-dark" id="iris-wr-tl-viewlist">List</button>
+                                <button type="button" class="btn btn-outline-dark" id="iris-wr-tl-viewtree">Tree</button>
+                            </div>
+                            <span class="text-muted" style="font-size:0.75rem;" id="iris-wr-tl-counter"></span>
+                            <button class="btn btn-sm btn-primary" id="iris-wr-tl-addevent" style="display:none;">+ Add event</button>
+                        </div>
+                    </div>
+                    <div id="iris-wr-tl-list"></div>
+                    <div id="iris-wr-tl-empty" class="text-muted" style="display:none;"></div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    {# ================= Tasks pane: v3 room tasks + case aggregation ==== #}
+    <div class="iris-wr-pane" id="iris-wr-pane-tasks">
+        <div class="card"><div class="card-body">
+            <div class="d-flex align-items-center mb-2">
+                <div>
+                    <h5 class="mb-0" style="font-size:1.05rem; font-weight:600;">Tasks</h5>
+                    <div class="text-muted" style="font-size:0.78rem;">
+                        War-room-level coordination tasks with subtasks, statuses, tags and search.
+                    </div>
+                </div>
+                <div class="ml-auto d-flex align-items-center" style="gap:8px;">
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-dark" id="iris-wr-rt-viewlist" title="List view">&#9776;</button>
+                        <button type="button" class="btn btn-outline-dark" id="iris-wr-rt-viewboard" title="Board view">&#9707;</button>
+                    </div>
+                    <button class="btn btn-sm btn-primary" id="iris-wr-rtask-new" style="display:none;">+ New task</button>
+                </div>
+            </div>
+            <div class="d-flex align-items-center mb-2" style="gap:8px;">
+                <input type="text" class="form-control form-control-sm" id="iris-wr-rt-search"
+                       placeholder="Search tasks..." style="flex:1;">
+                <button class="btn btn-sm btn-secondary" id="iris-wr-rt-filters-btn">Filters</button>
+            </div>
+            <div class="mb-2" id="iris-wr-rt-filters" style="display:none; gap:8px;">
+                <select class="form-control form-control-sm" id="iris-wr-rt-fstatus" style="max-width:150px;">
+                    <option value="">Any status</option>
+                    <option value="no_status">No status</option>
+                    <option value="todo">To do</option>
+                    <option value="in_progress">In progress</option>
+                    <option value="on_hold">On hold</option>
+                    <option value="done">Done</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <select class="form-control form-control-sm ml-1" id="iris-wr-rt-fassignee" style="max-width:180px;">
+                    <option value="">Any assignee</option>
+                </select>
+            </div>
+            <div id="iris-wr-rtask-list"></div>
+            <div id="iris-wr-rtask-board" style="display:none;"></div>
+            <div class="text-muted mt-1" id="iris-wr-rt-counter" style="font-size:0.72rem;"></div>
+
+            <hr>
+            <h5 style="font-size:0.95rem;">Case tasks <span class="text-muted" style="font-size:0.78rem;">(read-only, across linked cases you can access)</span></h5>
+            <table class="table table-sm table-hover">
+                <thead><tr><th>Task</th><th>Status</th><th>Case</th><th>Updated</th></tr></thead>
+                <tbody id="iris-wr-tk-tbody"></tbody>
+            </table>
+            <div id="iris-wr-tk-empty" class="text-muted" style="display:none;"></div>
+        </div></div>
+    </div>
+
+    {# ============ Notes pane (v3 two-pane: room notes + case notes) ==== #}
+    <div class="iris-wr-pane" id="iris-wr-pane-notes">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="iris-wr-rail">
+                    <div class="iris-wr-rail-h" style="display:flex; align-items:center;">Notes
+                        <span class="ml-auto" style="letter-spacing:0;">
+                            <a href="#" id="iris-wr-nt-newfolder" class="iris-wr-nt-toolbtn" title="New folder" style="display:none;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></a>
+                            <a href="#" id="iris-wr-nt-newnote" class="iris-wr-nt-toolbtn" title="New note" style="display:none;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg></a>
+                        </span>
+                    </div>
+                    <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-nt-search" placeholder="Search notes..." autocomplete="off">
+                    <div id="iris-wr-nt-roomlist"></div>
+                    <div id="iris-wr-nt-roomempty" class="iris-wr-rail-hint">No room notes yet.</div>
+                    <div class="iris-wr-rail-h mt-3">Linked case notes</div>
+                    <div id="iris-wr-nt-caselist"></div>
+                    <div id="iris-wr-nt-caseempty" class="iris-wr-rail-hint" style="display:none;">No notes in the linked cases you can access.</div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card"><div class="card-body">
+                    <div class="text-muted" id="iris-wr-nt-placeholder">Select a note — or create one with the new-note button.</div>
+                    <div id="iris-wr-nt-doc" style="display:none;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <input type="text" id="iris-wr-nt-title" class="iris-wr-nt-titleinput" maxlength="255" autocomplete="off">
+                            <span id="iris-wr-nt-ro" class="iris-wr-tl-on" style="display:none;">READ-ONLY</span>
+                            <span class="text-muted" id="iris-wr-nt-status" style="margin-left:auto; font-size:0.72rem; white-space:nowrap;"></span>
+                            <a href="#" id="iris-wr-nt-del" class="iris-wr-nt-toolbtn" title="Delete note" style="display:none; color:#a04a52;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></a>
+                        </div>
+                        <div class="text-muted" id="iris-wr-nt-meta" style="font-size:0.72rem;"></div>
+                        <div id="iris-wr-nt-view" class="iris-md-rendered iris-wr-nt-view mt-2"></div>
+                        <textarea id="iris-wr-nt-edit" class="form-control mt-2" rows="16" style="display:none; font-family:monospace; font-size:0.82rem;"></textarea>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    {# ================= SitReps pane (v3 two-pane) ================= #}
+    <div class="iris-wr-pane" id="iris-wr-pane-sitreps">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="iris-wr-rail">
+                    <div class="iris-wr-rail-h" style="display:flex; align-items:center;">SitReps
+                        <a href="#" class="iris-wr-nt-toolbtn ml-auto" id="iris-wr-sitrep-new" title="New SitRep draft" style="display:none; letter-spacing:0;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></a>
+                    </div>
+                    <button class="btn btn-sm btn-secondary mb-1" id="iris-wr-sitrep-ai" style="display:none;">&#10024; AI draft</button>
+                    <div class="text-muted mb-1" id="iris-wr-sitrep-ai-status" style="font-size:0.72rem;"></div>
+                    <div id="iris-wr-sitrep-list"></div>
+                    <div id="iris-wr-sitrep-empty" class="iris-wr-rail-hint" style="display:none;">No SitReps yet.</div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card"><div class="card-body">
+                    <div class="text-muted" id="iris-wr-sr-placeholder" style="text-align:center; padding:60px 0;">Select a SitRep or create a new draft.</div>
+                    <div id="iris-wr-sr-doc" style="display:none;">
+                        <div style="display:flex; align-items:flex-start; gap:8px;">
+                            <div style="flex:1 1 auto; min-width:0;">
+                                <input type="text" id="iris-wr-sr-title" class="iris-wr-nt-titleinput" maxlength="255" autocomplete="off">
+                                <div class="text-muted" id="iris-wr-sr-meta" style="font-size:0.72rem;"></div>
+                            </div>
+                            <span class="text-muted" id="iris-wr-sr-status" style="font-size:0.72rem; white-space:nowrap; margin-top:6px;"></span>
+                            <a href="#" class="iris-wr-sr-export iris-wr-nt-toolbtn" data-fmt="md" title="Download Markdown" style="margin-top:4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span class="iris-wr-sr-exportlbl">MD</span></a>
+                            <a href="#" class="iris-wr-sr-export iris-wr-nt-toolbtn" data-fmt="html" title="Download HTML" style="margin-top:4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span class="iris-wr-sr-exportlbl">HTML</span></a>
+                            <a href="#" class="iris-wr-sr-export iris-wr-nt-toolbtn" data-fmt="pdf" title="Print / save as PDF" style="margin-top:4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span class="iris-wr-sr-exportlbl">PDF</span></a>
+                            <button class="btn btn-sm btn-outline-dark" id="iris-wr-sr-cancel" style="display:none;">Cancel</button>
+                            <button class="btn btn-sm btn-secondary" id="iris-wr-sr-save" style="display:none;">Save</button>
+                            <button class="btn btn-sm btn-primary" id="iris-wr-sr-publishbtn" style="display:none;">&#128228; Publish</button>
+                            <button class="btn btn-sm btn-primary" id="iris-wr-sr-editbtn" style="display:none;">Edit</button>
+                            <a href="#" class="iris-wr-nt-toolbtn" id="iris-wr-sr-del" title="Delete SitRep" style="display:none; color:#a04a52; margin-top:4px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></a>
+                        </div>
+                        <div id="iris-wr-sr-editbox" class="mt-2" style="display:none;">
+                            <div class="iris-wr-sr-toolbar">
+                                <a href="#" class="iris-wr-sr-md" data-md="bold" title="Bold"><strong>B</strong></a>
+                                <a href="#" class="iris-wr-sr-md" data-md="italic" title="Italic"><em>I</em></a>
+                                <a href="#" class="iris-wr-sr-md" data-md="strike" title="Strikethrough"><s>S</s></a>
+                                <span class="iris-wr-sr-tbsep"></span>
+                                <a href="#" class="iris-wr-sr-md" data-md="h1" title="Heading 1">H1</a>
+                                <a href="#" class="iris-wr-sr-md" data-md="h2" title="Heading 2">H2</a>
+                                <a href="#" class="iris-wr-sr-md" data-md="h3" title="Heading 3">H3</a>
+                                <span class="iris-wr-sr-tbsep"></span>
+                                <a href="#" class="iris-wr-sr-md" data-md="ul" title="Bullet list">&bull; List</a>
+                                <a href="#" class="iris-wr-sr-md" data-md="ol" title="Numbered list">1. List</a>
+                                <a href="#" class="iris-wr-sr-md" data-md="quote" title="Quote">&rdquo;</a>
+                                <a href="#" class="iris-wr-sr-md" data-md="code" title="Code">&lt;/&gt;</a>
+                                <a href="#" class="iris-wr-sr-md" data-md="link" title="Link">&#128279;</a>
+                                <a href="#" class="iris-wr-sr-md" data-md="table" title="Table">&#9638;</a>
+                                <a href="#" id="iris-wr-sr-preview-toggle" class="ml-auto" title="Toggle preview" style="color:#9a9aa5; font-size:0.75rem;">&#128065; Preview</a>
+                            </div>
+                            <textarea id="iris-wr-sr-content" class="form-control" rows="16" style="font-family:monospace; font-size:0.82rem; border-top-left-radius:0; border-top-right-radius:0;"></textarea>
+                            <div id="iris-wr-sr-preview" class="iris-md-rendered iris-wr-nt-view" style="display:none; border:1px solid rgba(255,255,255,0.08); border-radius:0 0 8px 8px; padding:12px;"></div>
+                        </div>
+                        <div id="iris-wr-sr-view" class="iris-md-rendered iris-wr-nt-view mt-2" style="display:none;"></div>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+
+    {# ================= Teams pane (v3) ================= #}
+    <div class="iris-wr-pane" id="iris-wr-pane-teams">
+        <div class="card"><div class="card-body">
+            <div style="display:flex; align-items:flex-start; gap:10px;">
+                <div style="flex:1 1 auto; min-width:0;">
+                    <h5 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Teams</h5>
+                    <div class="text-muted" style="font-size:0.78rem;">Group members together and @-mention the group in chat. Every member of a mentioned team gets notified.</div>
+                </div>
+                <button class="btn btn-sm btn-primary" id="iris-wr-team-newbtn" style="display:none; flex-shrink:0;">+ New team</button>
+            </div>
+            <div class="mt-2" id="iris-wr-tm-list"></div>
+            <div class="text-muted mt-2" id="iris-wr-tm-empty" style="display:none;">No teams yet. Create one to start grouping people for @-mentions.</div>
+        </div></div>
+    </div>
+
+    {# ================= Cases pane (v3) ================= #}
+    <div class="iris-wr-pane" id="iris-wr-pane-cases">
+        <div class="card"><div class="card-body">
+            <div style="display:flex; align-items:flex-start; gap:10px;">
+                <div style="flex:1 1 auto; min-width:0;">
+                    <h5 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Attached cases</h5>
+                    <div class="text-muted" style="font-size:0.78rem;">Cases pulled into this war room for coordinated triage. Click a row to peek at the case details.</div>
+                </div>
+                <button class="btn btn-sm btn-primary" id="iris-wr-case-attachbtn" style="display:none; flex-shrink:0;">+ Attach cases</button>
+            </div>
+            <div class="mt-2" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <input type="text" class="form-control form-control-sm" id="iris-wr-cs-filter" placeholder="Filter by name, customer, owner, id..." style="flex:1 1 240px;" autocomplete="off">
+                <span class="text-muted" style="font-size:0.66rem; letter-spacing:0.06em;">STATE</span>
+                <span class="iris-wr-cs-chip active" data-group="state" data-val="">Any</span>
+                <span class="iris-wr-cs-chip" data-group="state" data-val="open">Open</span>
+                <span class="iris-wr-cs-chip" data-group="state" data-val="closed">Closed</span>
+                <span class="text-muted" style="font-size:0.66rem; letter-spacing:0.06em;">TASKS</span>
+                <span class="iris-wr-cs-chip active" data-group="tasks" data-val="">Any</span>
+                <span class="iris-wr-cs-chip" data-group="tasks" data-val="open">Has open</span>
+                <span class="iris-wr-cs-chip" data-group="tasks" data-val="none">None</span>
+                <span class="text-muted" id="iris-wr-cs-counter" style="font-size:0.7rem;"></span>
+            </div>
+            <div class="mt-2" id="iris-wr-cs-list"></div>
+            <div class="text-muted" id="iris-wr-cs-empty" style="display:none;">No cases attached yet.</div>
+        </div></div>
+    </div>
+
+    {# ================= Members pane (v3) ================= #}
+    <div class="iris-wr-pane" id="iris-wr-pane-members">
+        <div class="card"><div class="card-body">
+            <div style="display:flex; align-items:flex-start; gap:10px;">
+                <div style="flex:1 1 auto; min-width:0;">
+                    <h5 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Members</h5>
+                    <div class="text-muted" style="font-size:0.78rem;">People with access to this war room. Leads coordinate, responders execute, observers watch.</div>
+                </div>
+                <button class="btn btn-sm btn-primary" id="iris-wr-member-addbtn" style="display:none; flex-shrink:0;">+ Add member</button>
+            </div>
+            <div class="mt-2" id="iris-wr-mb-list"></div>
+        </div></div>
+    </div>
+
+    {# ================= Correlation pane ================= #}
+    <div class="iris-wr-pane" id="iris-wr-pane-correlation">
+        <div class="card"><div class="card-body">
+            <div class="mb-2">
+                <button class="btn btn-sm btn-primary" id="iris-wr-corr-tag" style="display:none;">Apply campaign tag</button>
+                <a class="btn btn-sm btn-secondary" id="iris-wr-corr-stix" href="#">Export STIX</a>
+                <button class="btn btn-sm btn-secondary" id="iris-wr-corr-misp" style="display:none;">Push to MISP</button>
+                <span class="text-muted ml-1" id="iris-wr-corr-status" style="font-size:0.78rem;"></span>
+            </div>
+            <div class="text-muted mb-2" id="iris-wr-corr-note" style="font-size:0.78rem;"></div>
+            <table class="table table-sm">
+                <thead><tr><th>IOC</th><th>Type</th><th>TLP</th><th>Cases</th></tr></thead>
+                <tbody id="iris-wr-corr-tbody"></tbody>
+            </table>
+            <div id="iris-wr-corr-empty" class="text-muted" style="display:none;"></div>
+        </div></div>
+    </div>
+</div>
+
+<div class="modal fade" id="iris-wr-edit-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit war room</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="iris-wr-edit-name">Name</label>
+                    <input type="text" class="form-control" id="iris-wr-edit-name" maxlength="255">
+                </div>
+                <div class="form-group">
+                    <label for="iris-wr-edit-desc">Description</label>
+                    <textarea class="form-control" id="iris-wr-edit-desc" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="iris-wr-edit-severity">Severity</label>
+                    <select class="form-control" id="iris-wr-edit-severity">
+                        <option value="">(unset)</option>
+                        <option value="low">low</option>
+                        <option value="medium">medium</option>
+                        <option value="high">high</option>
+                        <option value="critical">critical</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="iris-wr-edit-summary">Summary</label>
+                    <textarea class="form-control" id="iris-wr-edit-summary" rows="6"></textarea>
+                </div>
+                <div class="text-danger" id="iris-wr-edit-error" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-edit-save">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="iris-wr-poll-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">&#128202; New poll</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-muted mb-3" style="font-size:0.8rem;">
+                    Post a poll to the war-room stream. Everyone with room access can vote.
+                </div>
+                <div class="form-group">
+                    <label for="iris-wr-poll-question" style="font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase; color:#7a7a85;">Question</label>
+                    <input type="text" class="form-control" id="iris-wr-poll-question"
+                           placeholder="What should we do next?" maxlength="500">
+                </div>
+                <label style="font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase; color:#7a7a85;">Options (<span id="iris-wr-poll-optcount">2</span>/20)</label>
+                <div id="iris-wr-poll-options"></div>
+                <a href="#" id="iris-wr-poll-addopt" style="font-size:0.8rem;">+ Add option</a>
+                <div class="mt-3 p-2" style="border:1px solid rgba(255,255,255,0.1); border-radius:8px;">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="iris-wr-poll-multiple">
+                        <label class="custom-control-label" for="iris-wr-poll-multiple">Allow multiple selections</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="iris-wr-poll-anon">
+                        <label class="custom-control-label" for="iris-wr-poll-anon">Anonymous voting <span class="text-muted">(voter names hidden)</span></label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="iris-wr-poll-autoclose">
+                        <label class="custom-control-label" for="iris-wr-poll-autoclose">Close automatically at&hellip;</label>
+                    </div>
+                    <input type="datetime-local" class="form-control form-control-sm mt-1"
+                           id="iris-wr-poll-closes" style="display:none; max-width:230px;">
+                </div>
+                <div class="text-danger mt-2" id="iris-wr-poll-error" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-poll-create">Create poll</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="iris-wr-rtask-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="iris-wr-rtask-modal-title">New task</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-muted mb-2" id="iris-wr-rtask-parenthint" style="display:none; font-size:0.78rem;"></div>
+                <div class="form-group">
+                    <label for="iris-wr-rtask-f-title">Title</label>
+                    <input type="text" class="form-control" id="iris-wr-rtask-f-title" maxlength="255">
+                </div>
+                <div class="form-group">
+                    <label for="iris-wr-rtask-f-desc">Description</label>
+                    <textarea class="form-control" id="iris-wr-rtask-f-desc" rows="2"></textarea>
+                </div>
+                <div class="d-flex" style="gap:10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label for="iris-wr-rtask-f-status">Status</label>
+                        <select class="form-control" id="iris-wr-rtask-f-status">
+                            <option value="no_status">No status</option>
+                            <option value="todo">To do</option>
+                            <option value="in_progress">In progress</option>
+                            <option value="on_hold">On hold</option>
+                            <option value="done">Done</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label for="iris-wr-rtask-f-due">Due <span class="text-muted">(optional)</span></label>
+                        <input type="date" class="form-control" id="iris-wr-rtask-f-due">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="iris-wr-rtask-f-assignee">Assignee</label>
+                    <select class="form-control" id="iris-wr-rtask-f-assignee">
+                        <option value="">Unassigned</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="iris-wr-rtask-f-tags">&#127991; Tags <span class="text-muted">(comma-separated)</span></label>
+                    <input type="text" class="form-control" id="iris-wr-rtask-f-tags" maxlength="512">
+                </div>
+                <div class="text-danger" id="iris-wr-rtask-f-error" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="iris-wr-rtask-f-delete" style="display:none;">Delete</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-rtask-f-save">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="iris-wr-tl-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document" style="max-width:480px;">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:0; padding-bottom:0;">
+                <h5 class="modal-title" id="iris-wr-tl-modal-title">New timeline</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-2">
+                    <input type="text" class="form-control" id="iris-wr-tl-f-name"
+                           maxlength="120" placeholder="Timeline name" autocomplete="off">
+                </div>
+                <input type="color" id="iris-wr-tl-f-color" value="#5e72e4"
+                       title="Timeline color"
+                       style="width:56px; height:30px; padding:2px; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:transparent; cursor:pointer;">
+            </div>
+            <div class="modal-footer" style="border-top:0;">
+                <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-tl-f-create">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="iris-wr-tlev-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:0; padding-bottom:0;">
+                <h5 class="modal-title" id="iris-wr-tlev-title-h">New timeline entry</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-2" id="iris-wr-tlev-timeline-grp">
+                    <select class="form-control" id="iris-wr-tlev-timeline" title="Timeline"></select>
+                </div>
+                <div class="form-group mb-2">
+                    <input type="text" class="form-control" id="iris-wr-tlev-title" maxlength="255" placeholder="Title" autocomplete="off">
+                </div>
+                <div class="form-group mb-2">
+                    <input type="datetime-local" class="form-control" id="iris-wr-tlev-date" step="1">
+                </div>
+                <div class="d-flex mb-2" style="gap:10px; align-items:center;">
+                    <input type="text" class="form-control" id="iris-wr-tlev-cat" maxlength="64" placeholder="Category (optional)" style="flex:1;">
+                    <input type="color" id="iris-wr-tlev-color" value="#5e72e4" title="Event color"
+                           style="width:42px; height:30px; padding:2px; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:transparent; cursor:pointer; flex-shrink:0;">
+                </div>
+                <div class="form-group mb-2">
+                    <textarea class="form-control" id="iris-wr-tlev-content" rows="5" placeholder="Notes (optional)"></textarea>
+                </div>
+                <div class="form-group mb-0">
+                    <input type="text" class="form-control" id="iris-wr-tlev-tags" maxlength="512" placeholder="Tags (optional, comma-separated)">
+                </div>
+                <div class="text-danger mt-2" id="iris-wr-tlev-error" style="display:none;"></div>
+            </div>
+            <div class="modal-footer" style="border-top:0;">
+                <button type="button" class="btn btn-danger mr-auto" id="iris-wr-tlev-delete" style="display:none;">Delete</button>
+                <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-tlev-save">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="iris-wr-tmnew-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document" style="max-width:480px;">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:0; padding-bottom:0; display:block;">
+                <button type="button" class="close" data-dismiss="modal" style="float:right;"><span>&times;</span></button>
+                <h5 class="modal-title">New team</h5>
+                <div class="text-muted" style="font-size:0.78rem;">Teams are per-war-room. Their name is what people type after @.</div>
+            </div>
+            <div class="modal-body">
+                <label class="text-muted" for="iris-wr-tm-f-name" style="font-size:0.72rem;">Name</label>
+                <input type="text" class="form-control mb-2" id="iris-wr-tm-f-name" maxlength="64" placeholder="e.g. ir-leads" autocomplete="off">
+                <label class="text-muted" for="iris-wr-tm-f-desc" style="font-size:0.72rem;">Description</label>
+                <textarea class="form-control mb-2" id="iris-wr-tm-f-desc" rows="3" maxlength="500" placeholder="Optional — who's in this team, what they own"></textarea>
+                <label class="text-muted mr-2" for="iris-wr-tm-f-color" style="font-size:0.72rem;">Color</label>
+                <input type="color" id="iris-wr-tm-f-color" value="#5e72e4"
+                       style="width:56px; height:30px; padding:2px; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:transparent; cursor:pointer; vertical-align:middle;">
+                <div class="text-danger mt-2" id="iris-wr-tm-f-error" style="display:none;"></div>
+            </div>
+            <div class="modal-footer" style="border-top:0;">
+                <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-tm-f-create">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="iris-wr-mbadd-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document" style="max-width:520px;">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:0; padding-bottom:0; display:block;">
+                <button type="button" class="close" data-dismiss="modal" style="float:right;"><span>&times;</span></button>
+                <h5 class="modal-title">Add member</h5>
+                <div class="text-muted" style="font-size:0.78rem;">Adding a member grants them access to the war room. Case access stays governed by each case's own ACL.</div>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-mbadd-search" placeholder="Search by login or name" autocomplete="off">
+                <div id="iris-wr-mbadd-list" style="max-height:240px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:4px;"></div>
+                <div class="mt-2">
+                    <label class="text-muted" for="iris-wr-mbadd-role" style="font-size:0.72rem;">Role</label>
+                    <select class="form-control form-control-sm" id="iris-wr-mbadd-role" style="max-width:200px;">
+                        <option value="responder">Responder</option>
+                        <option value="observer">Observer</option>
+                        <option value="lead">Lead</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top:0;">
+                <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-mbadd-go">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="iris-wr-csatt-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:0; padding-bottom:0;">
+                <h5 class="modal-title">Attach cases</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-csatt-search" placeholder="Search cases..." autocomplete="off">
+                <div id="iris-wr-csatt-list" style="max-height:320px; overflow-y:auto;"></div>
+            </div>
+            <div class="modal-footer" style="border-top:0;">
+                <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-csatt-go">Attach</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# the peek modal markup is shared — see includes/case_peek_modal.html;
+   ids and class names are unchanged so war_room.js and its CSS still fit #}
+{% with peek_modal_id='iris-wr-cspeek-modal', peek_prefix='iris-wr-pk',
+        peek_view_class='iris-md-rendered iris-wr-nt-view' %}
+{% include 'includes/case_peek_modal.html' %}
+{% endwith %}
+
+{# iris-next: the per-IOC cross-case drawer, shared with the dashboard
+   Correlation tab (extracted there, ids unchanged). Correlation-tab rows
+   opt in via the iris-corr-ioc-row class + data-ioc-* attributes set in
+   war_room.js; the include's own delegated listener does the rest. #}
+{% include 'includes/ioc_context_drawer.html' %}
+
+<div class="modal fade" id="iris-wr-srnew-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document" style="max-width:480px;">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:0; padding-bottom:0;">
+                <h5 class="modal-title">New SitRep draft</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <label for="iris-wr-srnew-title" class="text-muted" style="font-size:0.78rem;">Title</label>
+                <input type="text" class="form-control" id="iris-wr-srnew-title" maxlength="255" placeholder="e.g. Day 1" autocomplete="off">
+            </div>
+            <div class="modal-footer" style="border-top:0;">
+                <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-srnew-create">Create draft</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="iris-wr-srpub-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document" style="max-width:440px;">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:0; padding-bottom:0;">
+                <h5 class="modal-title" id="iris-wr-srpub-title">Publish?</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body text-muted" style="font-size:0.85rem;">
+                It stays editable &mdash; publishing just marks the state.
+            </div>
+            <div class="modal-footer" style="border-top:0;">
+                <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-wr-srpub-confirm">Publish</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="/static/assets/js/iris/war_room.js"></script>
+{% endblock javascripts %}

@@ -1,0 +1,241 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Manage Modules {% endblock title %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/static/assets/css/suggestags.css">
+<link rel="stylesheet" href="/static/assets/css/dataTables.group.min.css">
+{% endblock stylesheets %}
+
+{% block content %}
+
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'modules' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+
+    {# iris-ng v3-parity Modules shell (maintainer direction, 2026-09-02).
+       Overlay, not rebuild: both panels render from the SAME
+       /manage/modules/list + /manage/modules/hooks/list endpoints the
+       legacy DataTables call; every action drives the EXISTING functions
+       in manage.modules.js (add_module / module_detail / enable / disable /
+       remove). Legacy tables stay hidden-but-alive below as the safety
+       valve. Styles reuse the .iris-co-* vocabulary of the other v3
+       settings pages. #}
+    <style>
+        .iris-co-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+        .iris-co-head-icon { flex: 0 0 auto; margin-top: 3px; opacity: 0.85; }
+        .iris-co-title { font-size: 19px; font-weight: 700; color: #e6e6ee; line-height: 1.2; }
+        .iris-co-sub { font-size: 12.5px; color: #9b9baa; margin-top: 2px; }
+        .iris-co-head-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+        .iris-mod-panel { background: #15151a; border: 1px solid rgba(255,255,255,0.06);
+                          border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; }
+        .iris-co-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+                           color: #9b9baa; text-transform: uppercase; margin-bottom: 8px; }
+        .iris-mod-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+        .iris-mod-table th { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em;
+                             color: #8a8a98; text-transform: uppercase; text-align: left;
+                             padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .iris-mod-table td { padding: 8px 10px; color: #d8d8e2;
+                             border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .iris-mod-table tbody tr:hover { background: rgba(139,92,246,0.07); }
+        .iris-mod-name { color: #c9b8f5; font-weight: 600; cursor: pointer; }
+        .iris-mod-name:hover { text-decoration: underline; }
+        .iris-mod-id { font-family: monospace; font-size: 11.5px; color: #6f6f7e; }
+        .iris-mod-hookname { font-family: monospace; font-size: 12px; color: #c9b8f5; }
+        .iris-mod-badge { display: inline-flex; align-items: center; gap: 5px;
+                          font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em;
+                          padding: 2px 9px; border-radius: 10px; text-transform: uppercase; }
+        .iris-mod-badge.active { background: rgba(49,206,54,0.14); color: #6fdc74;
+                                 border: 1px solid rgba(49,206,54,0.35); }
+        .iris-mod-badge.misconfigured { background: rgba(255,173,70,0.12); color: #ffc46b;
+                                        border: 1px solid rgba(255,173,70,0.35); }
+        .iris-mod-badge.inactive { background: rgba(255,255,255,0.06); color: #9b9baa;
+                                   border: 1px solid rgba(255,255,255,0.12); }
+        .iris-mod-more { cursor: pointer; color: #9b9baa; padding: 2px 8px; border-radius: 5px;
+                         user-select: none; font-weight: 700; }
+        .iris-mod-more:hover { background: rgba(139,92,246,0.15); color: #efeaff; }
+        .iris-mod-menu { position: absolute; z-index: 1000; background: #1c1c23;
+                         border: 1px solid rgba(255,255,255,0.12); border-radius: 7px;
+                         min-width: 160px; padding: 5px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .iris-mod-menu a { display: block; padding: 7px 11px; font-size: 12.5px;
+                           color: #d8d8e2; border-radius: 5px; text-decoration: none; }
+        .iris-mod-menu a:hover { background: rgba(139,92,246,0.14); color: #efeaff; }
+        .iris-mod-menu a.danger { color: #f08a96; }
+        .iris-mod-hooks-scroll { max-height: 46vh; overflow-y: auto; }
+        .iris-mod-search { max-width: 300px; margin-left: auto; }
+        .iris-co-empty { color: #9b9baa; font-size: 13px; padding: 14px 6px; }
+        .iris-co-legacy-link { font-size: 11.5px; color: #6f6f7e; }
+        .iris-mod-flex { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    </style>
+
+    <div class="iris-co-head">
+        <span class="iris-co-head-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></span>
+        <div>
+            <div class="iris-co-title">Modules</div>
+            <div class="iris-co-sub">Install, configure and manage DFIR-IRIS modules and their hooks.</div>
+            {{ form.hidden_tag() }}
+        </div>
+        <div class="iris-co-head-actions">
+            <button type="button" class="btn btn-sm btn-dark" id="iris-mod-refresh">Refresh</button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="add_module();">+ Add module</button>
+        </div>
+    </div>
+
+    <div class="iris-mod-panel">
+        <div class="iris-mod-flex">
+            <span class="iris-co-eyebrow" style="margin-bottom: 0;">Modules <span id="iris-mod-count"></span></span>
+        </div>
+        <div id="iris-mod-list"></div>
+    </div>
+
+    <div class="iris-mod-panel">
+        <div class="iris-mod-flex">
+            <span class="iris-co-eyebrow" style="margin-bottom: 0;">Registered hooks <span id="iris-hook-count"></span></span>
+            <input type="text" class="form-control form-control-sm iris-mod-search" id="iris-hook-search"
+                   placeholder="Search hooks..." autocomplete="off">
+        </div>
+        <div class="iris-mod-hooks-scroll" id="iris-hook-list"></div>
+    </div>
+
+    <div class="text-right mt-2 mb-3">
+        <a href="#" class="iris-co-legacy-link" id="iris-mod-legacy-toggle"
+           onclick="$('#iris-mod-legacy').toggle(); return false;">Show legacy view</a>
+    </div>
+
+    <div id="iris-mod-legacy" style="display: none;">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col">
+                            <div class="card-title">Modules management</div>
+                        </div>
+                        <div class="col">
+                            <button type="button" class="btn btn-sm btn-dark float-right ml-2" onclick="refresh_modules();">
+                                Refresh
+                            </button>
+                            <button class="btn btn-sm btn-dark float-right ml-2" onclick="add_module();">Add module</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+
+                    <div class="table-responsive" id="module_table_wrapper">
+                        <div class="selectgroup">
+                            <span id="table_buttons"></span>
+                        </div>
+                        <table class="table display table table-striped table-hover" width="100%"
+                            cellspacing="0" id="modules_table">
+                            <thead>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Module name</th>
+                                    <th>Has pipeline</th>
+                                    <th>Module version</th>
+                                    <th>Interface version</th>
+                                    <th>Date added</th>
+                                    <th>Added by</th>
+                                    <th>Active</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Module name</th>
+                                    <th>Has pipeline</th>
+                                    <th>Module version</th>
+                                    <th>Interface version</th>
+                                    <th>Date added</th>
+                                    <th>Added by</th>
+                                    <th>Active</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col">
+                            <div class="card-title">Registered hooks</div>
+                        </div>
+                        <div class="col">
+                            <button type="button" class="btn btn-sm btn-icon btn-round btn-outline-black float-right" onclick="refresh_modules_hooks();">
+                                <i class="fas fa-sync rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+
+                    <div class="table-responsive" id="hooks_table_wrapper">
+                        <div class="selectgroup">
+                            <span id="table_buttons"></span>
+                        </div>
+                        <table class="table display table table-striped table-hover" width="100%"
+                            cellspacing="0" id="hooks_table">
+                            <thead>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Registrant module</th>
+                                    <th>Hook name</th>
+                                    <th>Hook description</th>
+                                    <th>Automatic trigger</th>
+                                    <th>Active</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Registrant module</th>
+                                    <th>Hook name</th>
+                                    <th>Hook description</th>
+                                    <th>Automatic trigger</th>
+                                    <th>Active</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>{# /iris-mod-legacy #}
+    <div class="modal" tabindex="-1" role="dialog" id="modal_add_module" data-backdrop="true">
+        <div class="modal-xl modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-content" id="modal_add_module_content">
+
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div>
+    <div class="modal bg-shadow-gradient" tabindex="-1" role="dialog" id="modal_update_param" data-backdrop="true">
+        <div class="modal-xl modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content shadow-lg p-3 mb-5 rounded" id="modal_update_param_content">
+
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div>
+</div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>
+    {% endif %}
+
+    {% endblock content %}
+
+    {% block javascripts %}
+    <script src="/static/assets/js/plugin/ace/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/assets/js/plugin/ace/src-noconflict/ext-language_tools.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="/static/assets/js/plugin/datatables/dataTables.group.min.js"></script>
+    <script src="/static/assets/js/iris/manage.modules.js"></script>
+    <script src="/static/assets/js/iris/manage.modules.v3.js"></script>
+    {% endblock javascripts %}

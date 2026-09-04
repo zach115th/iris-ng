@@ -1,0 +1,432 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Alert Cluster #{{ cluster_id }} {% endblock title %}
+
+{% block stylesheets %}
+<style>
+    /* v3-parity cluster detail: back link, header block, 7-tab bar. All
+       page-local (project rule). */
+    .iris-acd-back { color: #9a9aa5; font-size: 0.85rem; text-decoration: none; }
+    .iris-acd-back:hover { color: #d4c4ff; }
+    .iris-acd-head { display: flex; justify-content: space-between; align-items: flex-start;
+        gap: 12px; margin-top: 6px; }
+    .iris-acd-icon { width: 40px; height: 40px; border-radius: 9px; flex-shrink: 0;
+        background: rgba(242, 89, 97, 0.12); border: 1px solid rgba(242, 89, 97, 0.4);
+        display: flex; align-items: center; justify-content: center; color: #ff8b91; }
+    .iris-acd-title { font-size: 1.25rem; font-weight: 700; color: #e8e8ee; }
+    .iris-acd-meta { color: #9a9aa5; font-size: 0.82rem; margin-top: 2px; }
+    .iris-acd-meta span { margin-right: 14px; }
+    .iris-acd-fields { display: flex; gap: 60px; margin: 14px 0 4px 0; flex-wrap: wrap; }
+    .iris-acd-fieldlabel { color: #9a9aa5; font-size: 0.7rem; text-transform: uppercase;
+        letter-spacing: 0.05em; margin-bottom: 4px; }
+    .iris-ac-chip { display: inline-block; border-radius: 10px; padding: 1px 10px;
+        font-size: 0.75rem; white-space: nowrap; }
+    .iris-ac-st-open { background: rgba(255, 158, 39, 0.15);
+        border: 1px solid rgba(255, 158, 39, 0.5); color: #ffc46b; }
+    .iris-ac-st-investigating { background: rgba(94,155,242,0.15);
+        border: 1px solid rgba(94,155,242,0.5); color: #9cc4ff; }
+    .iris-ac-st-escalated { background: rgba(139,92,246,0.15);
+        border: 1px solid rgba(139,92,246,0.5); color: #d4c4ff; }
+    .iris-ac-st-dismissed, .iris-ac-st-closed { background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.15); color: #9a9aa5; }
+
+    /* v3-style header dropdowns (status chip / severity chip / owner text). */
+    .iris-acd-dd { position: relative; display: inline-block; }
+    .iris-acd-dd-trigger { cursor: pointer; user-select: none; }
+    .iris-acd-dd-panel { display: none; position: absolute; top: calc(100% + 6px);
+        left: 0; z-index: 1050; min-width: 220px; background: #15151a;
+        border: 1px solid rgba(255,255,255,0.14); border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 8px; }
+    .iris-acd-dd.open .iris-acd-dd-panel { display: block; }
+    .iris-acd-dd-search { width: 100%; background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 7px;
+        color: #e8e8ee; font-size: 0.82rem; padding: 5px 10px; margin-bottom: 6px; }
+    .iris-acd-dd-opt { display: flex; justify-content: space-between;
+        align-items: center; padding: 6px 10px; border-radius: 7px;
+        color: #c9c9d4; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+    .iris-acd-dd-opt:hover { background: rgba(139,92,246,0.15); color: #e8e8ee; }
+    .iris-acd-dd-opt .iris-acd-dd-check { color: #2dce89; margin-left: 14px; }
+    .iris-acd-dd-opt .iris-acd-dd-sub { color: #9a9aa5; margin-left: 6px; }
+    .iris-acd-dd-opts { max-height: 260px; overflow-y: auto; }
+    .iris-acd-owner-text { color: #9a9aa5; font-style: italic; font-size: 0.9rem; }
+    .iris-acd-owner-text.assigned { color: #e8e8ee; font-style: normal; }
+    .iris-acd-tabs { display: flex; gap: 22px; border-bottom: 1px solid rgba(255,255,255,0.08);
+        margin-top: 14px; flex-wrap: wrap; }
+    .iris-acd-tab { padding: 8px 2px; color: #9a9aa5; cursor: pointer; font-size: 0.88rem;
+        border-bottom: 2px solid transparent; user-select: none; white-space: nowrap; }
+    .iris-acd-tab.active { color: #e8e8ee; font-weight: 600; border-bottom-color: #8b5cf6; }
+    .iris-acd-count { background: rgba(255,255,255,0.08); border-radius: 8px;
+        padding: 0 7px; font-size: 0.72rem; margin-left: 5px; color: #c9c9d4; }
+    .iris-acd-pane { display: none; padding-top: 16px; }
+    .iris-acd-pane.active { display: block; }
+
+    /* Summary editor (v3: double-click to edit, autosave). */
+    .iris-acd-savebar { display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+        color: #9a9aa5; font-size: 0.8rem; }
+    .iris-acd-saved-ok { color: #2dce89; }
+    #iris-acd-summary-view { min-height: 90px; border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px; padding: 12px 14px; cursor: text; white-space: pre-wrap;
+        color: #e8e8ee; }
+    #iris-acd-summary-view.iris-acd-empty { color: #9a9aa5; font-style: italic; }
+    #iris-acd-summary-edit { min-height: 140px; width: 100%; background: #15151a;
+        color: #e8e8ee; border: 1px solid rgba(139,92,246,0.5); border-radius: 8px;
+        padding: 12px 14px; display: none; }
+
+    /* Tables shared by Alerts / Assets / IOCs panes. */
+    .iris-acd-table th { color: #9a9aa5; font-size: 0.72rem; text-transform: uppercase;
+        letter-spacing: 0.04em; border-top: 0; }
+    .iris-acd-table td { vertical-align: middle; }
+    .iris-acd-rowtitle { font-weight: 600; color: #e8e8ee; }
+    .iris-acd-sub { color: #9a9aa5; font-size: 0.78rem; }
+    .iris-acd-tag { display: inline-block; background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #c9c9d4;
+        padding: 0 8px; font-size: 0.72rem; margin: 2px 4px 0 0; }
+    .iris-acd-mono { font-family: monospace; }
+    .iris-ac-sev { border: 1px solid transparent; }
+    .iris-ac-sev-critical { background: rgba(242,89,97,0.15); border-color: rgba(242,89,97,0.5); color: #ff8b91; }
+    .iris-ac-sev-high { background: rgba(255,158,39,0.15); border-color: rgba(255,158,39,0.5); color: #ffc46b; }
+    .iris-ac-sev-medium { background: rgba(244,196,48,0.14); border-color: rgba(244,196,48,0.45); color: #f4d570; }
+    .iris-ac-sev-low { background: rgba(94,114,228,0.16); border-color: rgba(94,114,228,0.5); color: #aab6ff; }
+    .iris-ac-sev-none { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #9a9aa5; }
+
+    /* Correlation graph. */
+    #iris-acd-graph-wrap { position: relative; border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px; height: 560px; overflow: hidden; display: flex; }
+    #iris-acd-graph-area { position: relative; flex: 1 1 auto; min-width: 0; }
+    #iris-acd-graph { width: 100%; height: 100%; }
+
+    /* v3 node detail panel (right side, opens on node click). */
+    #iris-acd-node-panel { display: none; flex: 0 0 300px; border-left: 1px solid
+        rgba(255,255,255,0.08); background: rgba(21,21,26,0.6); flex-direction: column; }
+    #iris-acd-node-panel.open { display: flex; }
+    .iris-acd-np-head { display: flex; align-items: flex-start; gap: 10px;
+        padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .iris-acd-np-kind { color: #9a9aa5; font-size: 0.68rem; text-transform: uppercase;
+        letter-spacing: 0.06em; }
+    .iris-acd-np-title { color: #e8e8ee; font-weight: 600; font-size: 0.9rem;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .iris-acd-np-close { margin-left: auto; color: #9a9aa5; cursor: pointer;
+        font-size: 1.1rem; line-height: 1; }
+    .iris-acd-np-close:hover { color: #e8e8ee; }
+    .iris-acd-np-body { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px; }
+    .iris-acd-np-desc { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+        padding: 10px 12px; color: #c9c9d4; font-size: 0.82rem; white-space: pre-wrap;
+        margin-bottom: 14px; }
+    .iris-acd-np-sechead { display: flex; justify-content: space-between;
+        color: #9a9aa5; font-size: 0.68rem; text-transform: uppercase;
+        letter-spacing: 0.06em; margin-bottom: 8px; }
+    .iris-acd-np-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+        border-radius: 7px; color: #e8e8ee; font-size: 0.85rem; cursor: pointer; }
+    .iris-acd-np-row:hover { background: rgba(139,92,246,0.12); }
+    .iris-acd-np-foot { padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .iris-acd-np-open { display: block; width: 100%; text-align: center;
+        background: rgba(37,99,235,0.85); color: #fff; border-radius: 8px;
+        padding: 7px 0; font-size: 0.85rem; text-decoration: none; }
+    .iris-acd-np-open:hover { background: rgba(37,99,235,1); color: #fff;
+        text-decoration: none; }
+    .iris-acd-graph-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+        flex-wrap: wrap; }
+    .iris-acd-graph-hint { position: absolute; top: 10px; left: 10px; max-width: 300px;
+        background: rgba(21,21,26,0.9); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px; padding: 8px 12px; color: #9a9aa5; font-size: 0.78rem; }
+    .iris-acd-graph-legend { position: absolute; bottom: 10px; left: 10px;
+        background: rgba(21,21,26,0.9); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px; padding: 4px 10px; color: #9a9aa5; font-size: 0.75rem; }
+    .iris-acd-legend-dot { display: inline-block; width: 9px; height: 9px;
+        border-radius: 50%; margin: 0 4px 0 10px; }
+
+    /* Timeline pane. */
+    .iris-acd-tl-item { position: relative; padding: 0 0 18px 22px; }
+    .iris-acd-tl-item::before { content: ''; position: absolute; left: 4px; top: 5px;
+        width: 9px; height: 9px; border-radius: 50%; background: #f25961; }
+    .iris-acd-tl-chip { background: rgba(242,89,97,0.15); border: 1px solid rgba(242,89,97,0.5);
+        color: #ff8b91; border-radius: 8px; padding: 0 8px; font-size: 0.68rem;
+        letter-spacing: 0.05em; margin-left: 8px; }
+
+    /* Activity pane. */
+    #iris-acd-comment-box { max-width: 760px; margin: 10px auto 0 auto; }
+    #iris-acd-comment-input { width: 100%; min-height: 90px; background: #15151a;
+        color: #e8e8ee; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px;
+        padding: 10px 12px; }
+    .iris-acd-comment { border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+        padding: 10px 14px; margin-bottom: 10px; }
+
+    /* AI triage (moved from the old list-page panel — ids preserved so the
+       triage logic travels intact). */
+    #iris-ac-triage-narrative { white-space: pre-wrap; }
+    .iris-ac-conf-high { color: #2dce89; }
+    .iris-ac-conf-medium { color: #f4c430; }
+    .iris-ac-conf-low { color: #9a9aa5; }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="page-inner">
+    {{ form.csrf_token }}
+    <input type="hidden" id="iris-acd-cluster-id" value="{{ cluster_id }}">
+    <div class="container-fluid">
+        <a class="iris-acd-back" id="iris-acd-back" href="/alert-clusters?cid={{ caseid }}">&larr; Alert Clusters</a>
+
+        <div id="iris-acd-notfound" class="text-muted py-5 text-center" style="display:none;">
+            This alert cluster does not exist or is not visible to you.
+        </div>
+
+        <div id="iris-acd-main" style="display:none;">
+            <div class="iris-acd-head">
+                <div class="d-flex" style="gap: 12px;">
+                    <div class="iris-acd-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                    </div>
+                    <div>
+                        <div class="iris-acd-title" id="iris-acd-title"></div>
+                        <div class="iris-acd-meta" id="iris-acd-meta"></div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="iris-acd-escalate-btn">
+                    &nearr;&nbsp; Escalate or merge&hellip;</button>
+            </div>
+
+            <div class="iris-acd-fields">
+                <div class="iris-acd-dd" id="iris-acd-dd-status">
+                    <div class="iris-acd-fieldlabel">Status</div>
+                    <span class="iris-acd-dd-trigger" id="iris-acd-status-chip"></span>
+                    <div class="iris-acd-dd-panel">
+                        <input type="text" class="iris-acd-dd-search" placeholder="Search status&hellip;">
+                        <div class="iris-acd-dd-opts"></div>
+                    </div>
+                </div>
+                <div class="iris-acd-dd" id="iris-acd-dd-severity">
+                    <div class="iris-acd-fieldlabel">Severity</div>
+                    <span class="iris-acd-dd-trigger" id="iris-acd-severity-chip"
+                          title="Derived from member alerts; picking a value pins it"></span>
+                    <div class="iris-acd-dd-panel">
+                        <input type="text" class="iris-acd-dd-search" placeholder="Search severity&hellip;">
+                        <div class="iris-acd-dd-opts"></div>
+                    </div>
+                </div>
+                <div class="iris-acd-dd" id="iris-acd-dd-owner">
+                    <div class="iris-acd-fieldlabel">Owner</div>
+                    <span class="iris-acd-dd-trigger iris-acd-owner-text" id="iris-acd-owner-text"></span>
+                    <div class="iris-acd-dd-panel">
+                        <input type="text" class="iris-acd-dd-search" placeholder="Search user&hellip;">
+                        <div class="iris-acd-dd-opts"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="iris-acd-tabs" id="iris-acd-tabs">
+                <div class="iris-acd-tab active" data-pane="summary">Summary</div>
+                <div class="iris-acd-tab" data-pane="alerts">Alerts<span class="iris-acd-count" id="iris-acd-count-alerts">0</span></div>
+                <div class="iris-acd-tab" data-pane="assets">Assets<span class="iris-acd-count" id="iris-acd-count-assets">0</span></div>
+                <div class="iris-acd-tab" data-pane="iocs">IOCs<span class="iris-acd-count" id="iris-acd-count-iocs">0</span></div>
+                <div class="iris-acd-tab" data-pane="correlation">Correlation</div>
+                <div class="iris-acd-tab" data-pane="timeline">Timeline</div>
+                <div class="iris-acd-tab" data-pane="activity">Activity</div>
+            </div>
+
+            <!-- Summary -->
+            <div class="iris-acd-pane active" id="iris-acd-pane-summary">
+                <div class="iris-acd-savebar">
+                    <span id="iris-acd-save-state" class="iris-acd-saved-ok">&#10003; All changes saved</span>
+                    <span id="iris-acd-save-sub">Synced</span>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-summary-refresh">&#8635; Refresh</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-summary-save">&#128190; Save</button>
+                </div>
+                <div id="iris-acd-summary-view" class="iris-acd-empty">Double-click to edit&hellip;</div>
+                <textarea id="iris-acd-summary-edit" spellcheck="true"></textarea>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <!-- iris-ng extension: cluster-attached investigation flows -->
+                        <h6 class="mb-2">Investigation flows</h6>
+                        <div id="iris-ac-flows" class="text-muted" style="font-size: 0.8rem;">Loading&hellip;</div>
+                    </div>
+                    <div class="col-md-6">
+                        <!-- iris-ng extension: AI triage (ids preserved from the
+                             original panel so the moved logic binds unchanged) -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">&#10024; AI triage</h6>
+                            <div>
+                                <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-ac-triage-generate">Generate</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-ac-triage-rerun" style="display: none;">Re-run</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-ac-triage-edit-btn" style="display: none;">Edit</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-ac-triage-revert" style="display: none;">Revert to AI</button>
+                            </div>
+                        </div>
+                        <div id="iris-ac-triage-status" class="text-muted mb-2"></div>
+                        <div id="iris-ac-triage-panel" style="display: none;">
+                            <div class="mb-1">
+                                <strong id="iris-ac-triage-name"></strong>
+                                <span id="iris-ac-triage-conf" class="ml-2"></span>
+                                <span id="iris-ac-triage-edited-badge" class="ml-2 text-warning" style="display: none;">edited</span>
+                            </div>
+                            <div id="iris-ac-triage-narrative" class="mb-2"></div>
+                            <div class="text-muted" style="font-size: 0.75rem;" id="iris-ac-triage-footer"></div>
+                        </div>
+                        <div id="iris-ac-triage-editor" style="display: none;">
+                            <input type="text" class="form-control form-control-sm mb-1" id="iris-ac-triage-edit-name" maxlength="80" placeholder="Name">
+                            <textarea class="form-control form-control-sm mb-1" rows="8" id="iris-ac-triage-edit-body"></textarea>
+                            <button type="button" class="btn btn-xs btn-primary" id="iris-ac-triage-save">Save</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-ac-triage-cancel">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div class="iris-acd-pane" id="iris-acd-pane-alerts">
+                <div class="card"><div class="card-body p-2">
+                    <table class="table table-sm iris-acd-table mb-0">
+                        <thead><tr><th>Alert</th><th>Severity</th><th>Source</th><th>Status</th><th>Event time</th><th style="width:40px;"></th></tr></thead>
+                        <tbody id="iris-acd-alerts-body"></tbody>
+                    </table>
+                </div></div>
+            </div>
+
+            <!-- Assets -->
+            <div class="iris-acd-pane" id="iris-acd-pane-assets">
+                <div class="card"><div class="card-body p-2">
+                    <table class="table table-sm iris-acd-table mb-0">
+                        <thead><tr><th>Asset</th><th>Type</th><th>IP / Domain</th><th>Compromise</th></tr></thead>
+                        <tbody id="iris-acd-assets-body"></tbody>
+                    </table>
+                </div></div>
+            </div>
+
+            <!-- IOCs -->
+            <div class="iris-acd-pane" id="iris-acd-pane-iocs">
+                <div class="card"><div class="card-body p-2">
+                    <table class="table table-sm iris-acd-table mb-0">
+                        <thead><tr><th>Value</th><th>Type</th><th>TLP</th><th>Tags</th></tr></thead>
+                        <tbody id="iris-acd-iocs-body"></tbody>
+                    </table>
+                </div></div>
+            </div>
+
+            <!-- Correlation -->
+            <div class="iris-acd-pane" id="iris-acd-pane-correlation">
+                <div class="iris-acd-graph-toolbar">
+                    <input type="text" class="form-control form-control-sm" style="max-width: 320px;"
+                           id="iris-acd-graph-search" placeholder="Search alerts, IOCs, assets&hellip;  (Enter to cycle)">
+                    <span class="iris-ac-chip iris-ac-sev-high" id="iris-acd-graph-chip-alerts">Alerts 0</span>
+                    <span class="iris-ac-chip iris-ac-sev-low" id="iris-acd-graph-chip-iocs">IOCs 0</span>
+                    <span class="iris-ac-chip" style="background:rgba(45,206,137,0.14);border:1px solid rgba(45,206,137,0.45);color:#7be0b0;" id="iris-acd-graph-chip-assets">Assets 0</span>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-graph-zoomin" title="Zoom in">+</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-graph-zoomout" title="Zoom out">&minus;</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-graph-fit" title="Fit">&#8862;</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-graph-play" title="Re-run layout">&#9655;</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-graph-refresh" title="Redraw">&#8635;</button>
+                </div>
+                <div id="iris-acd-graph-wrap">
+                    <div id="iris-acd-graph-area">
+                        <svg id="iris-acd-graph"></svg>
+                        <div class="iris-acd-graph-hint">Click a node to see details. Nodes shared across
+                            alerts are correlation points.</div>
+                        <div class="iris-acd-graph-legend">
+                            <span class="iris-acd-legend-dot" style="background:#ff9e27;margin-left:0;"></span>Alert
+                            <span class="iris-acd-legend-dot" style="background:#5e9bf2;"></span>IOC
+                            <span class="iris-acd-legend-dot" style="background:#2dce89;"></span>Asset
+                        </div>
+                    </div>
+                    <div id="iris-acd-node-panel">
+                        <div class="iris-acd-np-head">
+                            <div style="min-width:0;">
+                                <div class="iris-acd-np-kind" id="iris-acd-np-kind"></div>
+                                <div class="iris-acd-np-title" id="iris-acd-np-title"></div>
+                            </div>
+                            <span class="iris-acd-np-close" id="iris-acd-np-close" title="Close">&times;</span>
+                        </div>
+                        <div class="iris-acd-np-body">
+                            <div class="iris-acd-np-desc" id="iris-acd-np-desc" style="display:none;"></div>
+                            <div class="iris-acd-np-sechead">
+                                <span id="iris-acd-np-related-label">Related indicators</span>
+                                <span id="iris-acd-np-related-count"></span>
+                            </div>
+                            <div id="iris-acd-np-related"></div>
+                        </div>
+                        <div class="iris-acd-np-foot" id="iris-acd-np-foot" style="display:none;">
+                            <a class="iris-acd-np-open" id="iris-acd-np-open" href="#">Open alert</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="iris-acd-pane" id="iris-acd-pane-timeline">
+                <div id="iris-acd-timeline-body" class="pt-2"></div>
+            </div>
+
+            <!-- Activity -->
+            <div class="iris-acd-pane" id="iris-acd-pane-activity">
+                <div id="iris-acd-comment-box">
+                    <textarea id="iris-acd-comment-input" placeholder="Add a note or update on this alert cluster&hellip;"></textarea>
+                    <div class="text-right mt-2">
+                        <button type="button" class="btn btn-sm btn-primary" id="iris-acd-comment-post">&#9655; Post</button>
+                    </div>
+                    <div id="iris-acd-comments" class="mt-3 text-muted">Loading&hellip;</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Escalate-or-merge modal -->
+<div class="modal fade" id="iris-acd-escalate-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Escalate or merge cluster</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="iris-acd-esc-mode"
+                               id="iris-acd-esc-mode-new" value="new_case" checked>
+                        <label class="form-check-label" for="iris-acd-esc-mode-new">
+                            Escalate to a <strong>new case</strong> (all member alerts)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="iris-acd-esc-mode"
+                               id="iris-acd-esc-mode-merge" value="merge">
+                        <label class="form-check-label" for="iris-acd-esc-mode-merge">
+                            Merge all member alerts into an <strong>existing case</strong></label>
+                    </div>
+                </div>
+                <div class="form-group" id="iris-acd-esc-title-group">
+                    <label for="iris-acd-esc-title">Case title</label>
+                    <input type="text" class="form-control" id="iris-acd-esc-title">
+                </div>
+                <div class="form-group" id="iris-acd-esc-case-group" style="display:none;">
+                    <label for="iris-acd-esc-case">Target case</label>
+                    <select class="form-control" id="iris-acd-esc-case"></select>
+                </div>
+                <div class="form-group">
+                    <label for="iris-acd-esc-note">Escalation note (optional)</label>
+                    <textarea class="form-control" id="iris-acd-esc-note" rows="3"></textarea>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="iris-acd-esc-event" checked>
+                    <label class="form-check-label" for="iris-acd-esc-event">
+                        Import member alerts as timeline events</label>
+                </div>
+                <div class="text-muted" style="font-size: 0.8rem;">All member IOCs and assets are
+                    imported. The cluster closes and records the case it escalated to.</div>
+                <div id="iris-acd-esc-error" class="text-danger mt-2" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="iris-acd-esc-submit">Escalate</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="/static/assets/js/plugin/d3.v7.min.js"></script>
+    <script src="/static/assets/js/iris/flow_checklist.js"></script>
+    <script src="/static/assets/js/iris/alert_cluster_detail.js"></script>
+{% endblock javascripts %}

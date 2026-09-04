@@ -1,0 +1,599 @@
+#  IRIS Source Code
+#  Copyright (C) 2021 - Airbus CyberSecurity (SAS)
+#  ir@cyberactionlab.net
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 3 of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+from flask_login import current_user
+import datetime
+
+from sqlalchemy import and_
+from sqlalchemy import func
+
+from app import db
+from app import app
+from app.datamgmt.states import update_ioc_state
+from app.datamgmt.conversions import convert_sort_direction
+from app.iris_engine.access_control.utils import ac_get_fast_user_cases_access
+from app.models.cases import Cases
+from app.models.models import Client
+from app.models.models import Comments
+from app.models.models import Ioc
+from app.models.models import IocComments
+from app.models.models import IocAssetLink
+from app.models.models import IocNoteLink
+from app.models.models import IocType
+from app.models.models import MispAttributeLink
+from app.models.models import MispEventLink
+from app.models.models import Notes
+from app.models.models import CaseAssets
+from app.models.models import Tlp
+from app.models.models import UserActivity
+from app.models.authorization import User
+from app.models.authorization import UserCaseEffectiveAccess
+from app.models.authorization import CaseAccessLevel
+from app.models.pagination_parameters import PaginationParameters
+
+
+def get_iocs(case_identifier) -> list[Ioc]:
+    return Ioc.query.filter(
+        Ioc.case_id == case_identifier
+    ).all()
+
+
+def get_ioc(ioc_id, caseid=None):
+    q = Ioc.query.filter(Ioc.ioc_id == ioc_id)
+
+    if caseid:
+        q = q.filter(Ioc.case_id == caseid)
+
+    return q.first()
+
+
+def get_ioc_creator(ioc):
+    """Resolve who ADDED an IOC, or None when nothing recorded it.
+
+    `Ioc.user_id` cannot answer this on historical rows: until 2026-08-25
+    `iocs_update()` reassigned it to whoever saved the IOC last, so on any IOC
+    edited before that fix it names the last editor, not the creator. Callers
+    must NOT fall back to `Ioc.user` and label it "added by" — that names the
+    wrong person. Two real creation records are tried in order:
+
+      1. The 'created' entry in `modification_history`. Authoritative, but only
+         written since 2026-08-01, so older IOCs do not carry one.
+      2. The `UserActivity` row `iocs_create()` writes as `Added ioc "<value>"`.
+         `track_activity()` calls `.capitalize()` on the message, which
+         lowercases the remainder of the string, so this must be compared
+         case-insensitively. It legitimately fails when the IOC VALUE has been
+         edited since creation — the log holds the value as it was when added —
+         and that is reported as unresolved rather than guessed at.
+
+    Returns ``{'name', 'login', 'at', 'source'}`` or ``None``. `at` is the real
+    creation time in UTC (IOCs have no date_added column of their own).
+    """
+    history = ioc.modification_history if isinstance(ioc.modification_history, dict) else {}
+    for key in sorted(history, key=lambda k: float(k)):
+        entry = history[key] or {}
+        if 'created' in (entry.get('action') or ''):
+            user = User.query.filter(User.id == entry.get('user_id')).first()
+            return {
+                'name': (user.name if user else None) or entry.get('user'),
+                'login': entry.get('user'),
+                'at': datetime.datetime.utcfromtimestamp(float(key)),
+                'source': 'history'
+            }
+
+    if ioc.case_id is None or not ioc.ioc_value:
+        return None
+
+    expected = 'added ioc "{}"'.format(ioc.ioc_value)
+    row = (
+        UserActivity.query
+        .filter(UserActivity.case_id == ioc.case_id,
+                func.lower(UserActivity.activity_desc) == expected.lower())
+        .order_by(UserActivity.activity_date.asc())
+        .first()
+    )
+    if row is None:
+        return None
+
+    user = User.query.filter(User.id == row.user_id).first()
+    return {
+        'name': (user.name if user else None) or (user.user if user else None),
+        'login': user.user if user else None,
+        'at': row.activity_date,
+        'source': 'activity'
+    }
+
+
+def update_ioc(ioc_type, ioc_tags, ioc_value, ioc_description, ioc_tlp, userid, ioc_id):
+    ioc = get_ioc(ioc_id)
+
+    if ioc:
+        ioc.ioc_type = ioc_type
+        ioc.ioc_tags = ioc_tags
+        ioc.ioc_value = ioc_value
+        ioc.ioc_description = ioc_description
+        ioc.ioc_tlp_id = ioc_tlp
+        ioc.user_id = userid
+
+        db.session.commit()
+
+    else:
+        return False
+
+
+def delete_ioc(ioc: Ioc):
+    # Delete the relevant records from the AssetComments table
+    com_ids = IocComments.query.with_entities(
+        IocComments.comment_id
+    ).filter(
+        IocComments.comment_ioc_id == ioc.ioc_id,
+    ).all()
+
+    com_ids = [c.comment_id for c in com_ids]
+    IocComments.query.filter(IocComments.comment_id.in_(com_ids)).delete()
+
+    Comments.query.filter(
+        Comments.comment_id.in_(com_ids)
+    ).delete()
+
+    db.session.delete(ioc)
+
+    update_ioc_state(ioc.case_id)
+
+
+def get_detailed_iocs(caseid):
+    detailed_iocs = (Ioc.query.with_entities(
+        Ioc.ioc_id,
+        Ioc.ioc_uuid,
+        Ioc.ioc_value,
+        Ioc.ioc_type_id,
+        IocType.type_name.label('ioc_type'),
+        Ioc.ioc_type_id,
+        Ioc.ioc_description,
+        Ioc.ioc_tags,
+        Ioc.ioc_misp,
+        Tlp.tlp_name,
+        Tlp.tlp_bscolor,
+        Ioc.ioc_tlp_id
+    ).filter(Ioc.case_id == caseid)
+     .join(Ioc.ioc_type)
+     .outerjoin(Ioc.tlp)
+     .order_by(IocType.type_name).all())
+
+    return detailed_iocs
+
+
+def get_ioc_links(ioc_id):
+    search_condition = and_(Cases.case_id.in_([]))
+
+    user_search_limitations = ac_get_fast_user_cases_access(current_user.id)
+    if user_search_limitations:
+        search_condition = and_(Cases.case_id.in_(user_search_limitations))
+
+    ioc = Ioc.query.filter(Ioc.ioc_id == ioc_id).first()
+
+    # Search related iocs based on value and type
+    related_iocs = (Ioc.query.with_entities(
+        Cases.case_id,
+        Cases.name.label('case_name'),
+        Client.name.label('client_name')
+    ).filter(and_(
+        Ioc.ioc_value == ioc.ioc_value,
+        Ioc.ioc_type_id == ioc.ioc_type_id,
+        Ioc.ioc_id != ioc_id,
+        search_condition)
+    ).join(Ioc.case)
+     .join(Cases.client)
+     .all())
+
+    return related_iocs
+
+
+def get_iocs_misp_links(ioc_ids):
+    """Bulk MISP sync state per IOC: {ioc_id: {event/attribute ids + uuids}}.
+
+    Read-only view of what IrisMISPSync already published — the Intel tab
+    surfaces it rather than re-querying MISP.
+    """
+    out = {}
+    if not ioc_ids:
+        return out
+    rows = MispAttributeLink.query.with_entities(
+        MispAttributeLink.ioc_id,
+        MispAttributeLink.misp_attribute_id,
+        MispAttributeLink.misp_attribute_uuid,
+        MispAttributeLink.last_synced_at,
+        MispEventLink.misp_event_id,
+        MispEventLink.misp_event_uuid,
+    ).filter(
+        MispAttributeLink.event_link_id == MispEventLink.id,
+        MispAttributeLink.ioc_id.in_(ioc_ids)
+    ).all()
+    for r in rows:
+        out[r.ioc_id] = {
+            'attribute_id': r.misp_attribute_id,
+            'attribute_uuid': r.misp_attribute_uuid,
+            'event_id': r.misp_event_id,
+            'event_uuid': r.misp_event_uuid,
+            'last_synced_at': (r.last_synced_at.isoformat()
+                               if r.last_synced_at else None),
+        }
+    return out
+
+
+def get_iocs_note_links(ioc_ids):
+    """Bulk note provenance for a list of IOCs: {ioc_id: [{note_id, note_title}]}.
+
+    One join instead of N lookups. Single source for every surface that shows
+    note pills — the legacy list endpoint and the v2 bulk links endpoint both
+    call this, so the two can never drift.
+    """
+    out = {}
+    if not ioc_ids:
+        return out
+    rows = IocNoteLink.query.with_entities(
+        IocNoteLink.ioc_id, Notes.note_id, Notes.note_title
+    ).filter(
+        IocNoteLink.note_id == Notes.note_id,
+        IocNoteLink.ioc_id.in_(ioc_ids)
+    ).all()
+    for r in rows:
+        out.setdefault(r.ioc_id, []).append(
+            {'note_id': r.note_id, 'note_title': r.note_title})
+    return out
+
+
+def get_iocs_asset_links(ioc_ids):
+    """Bulk asset links for a list of IOCs: {ioc_id: [{asset_id, asset_name}]}."""
+    out = {}
+    if not ioc_ids:
+        return out
+    rows = IocAssetLink.query.with_entities(
+        IocAssetLink.ioc_id, CaseAssets.asset_id, CaseAssets.asset_name
+    ).filter(
+        IocAssetLink.asset_id == CaseAssets.asset_id,
+        IocAssetLink.ioc_id.in_(ioc_ids)
+    ).all()
+    for r in rows:
+        out.setdefault(r.ioc_id, []).append(
+            {'asset_id': r.asset_id, 'asset_name': r.asset_name})
+    return out
+
+
+def get_cases_brief(case_ids):
+    """Row-level detail for a set of cases: {case_id: {...}}.
+
+    Feeds the cross-case link cards on the IOC page. One query for every
+    linked case rather than a peek call per row — the peek modal still
+    exists for the full picture, this is only what a row shows.
+
+    Purely a read of the rows requested; the CALLER decides which case ids
+    it is allowed to ask about.
+    """
+    out = {}
+    ids = [int(i) for i in (case_ids or [])]
+    if not ids:
+        return out
+    from app.models.alerts import Severity
+    from app.models.authorization import User
+    from app.models.cases import CaseState
+    from app.models.cases import Cases
+    from app.models.models import Client
+    rows = (Cases.query
+            .with_entities(Cases.case_id, Cases.name, Cases.soc_id,
+                           Cases.open_date, Cases.close_date,
+                           CaseState.state_name, Severity.severity_name,
+                           Client.name.label('client_name'),
+                           User.name.label('owner_name'))
+            .outerjoin(CaseState, Cases.state_id == CaseState.state_id)
+            .outerjoin(Severity, Cases.severity_id == Severity.severity_id)
+            .outerjoin(Client, Cases.client_id == Client.client_id)
+            .outerjoin(User, Cases.owner_id == User.id)
+            .filter(Cases.case_id.in_(ids))
+            .all())
+    for r in rows:
+        out[r.case_id] = {
+            'case_id': r.case_id,
+            'name': r.name,
+            'soc_id': r.soc_id,
+            'state_name': r.state_name,
+            'severity_name': r.severity_name,
+            'client_name': r.client_name,
+            'owner_name': r.owner_name,
+            'open_date': r.open_date.isoformat() if r.open_date else None,
+            'close_date': r.close_date.isoformat() if r.close_date else None,
+        }
+    return out
+
+
+def get_ioc_links_bulk(ioc_ids):
+    """Return cross-case IOC links for a list of IOC IDs in a single self-join query.
+
+    Returns a dict mapping ioc_id → list of dicts {case_id, case_name, client_name}.
+    Replaces the N individual get_ioc_links calls in the IOC list endpoint.
+    """
+    result = {ioc_id: [] for ioc_id in ioc_ids}
+    if not ioc_ids:
+        return result
+
+    user_search_limitations = ac_get_fast_user_cases_access(current_user.id)
+
+    # Aliased tables for the self-join: src = the case's IOC, tgt = the linked IOC in another case
+    src = db.aliased(Ioc, name='src')
+    tgt = db.aliased(Ioc, name='tgt')
+    tgt_cases = db.aliased(Cases, name='tgt_cases')
+    tgt_client = db.aliased(Client, name='tgt_client')
+
+    q = (db.session.query(
+        src.ioc_id.label('source_ioc_id'),
+        tgt_cases.case_id,
+        tgt_cases.name.label('case_name'),
+        tgt_client.name.label('client_name'),
+    ).select_from(src)
+     .join(tgt, and_(
+         tgt.ioc_value == src.ioc_value,
+         tgt.ioc_type_id == src.ioc_type_id,
+         tgt.ioc_id != src.ioc_id,
+     ))
+     .join(tgt_cases, tgt_cases.case_id == tgt.case_id)
+     .join(tgt_client, tgt_client.client_id == tgt_cases.client_id)
+     .filter(src.ioc_id.in_(ioc_ids)))
+
+    if not user_search_limitations:
+        # empty list = no accessible cases; return immediately (same as original in_([]) behaviour)
+        return result
+
+    q = q.filter(tgt_cases.case_id.in_(user_search_limitations))
+
+    for row in q.all():
+        result[row.source_ioc_id].append({
+            'case_id': row.case_id,
+            'case_name': row.case_name,
+            'client_name': row.client_name,
+        })
+
+    return result
+
+
+def add_ioc(ioc: Ioc, user_id, caseid):
+    ioc.user_id = user_id
+    ioc.case_id = caseid
+    db.session.add(ioc)
+
+    update_ioc_state(caseid=caseid)
+    db.session.commit()
+
+
+def case_iocs_db_exists(ioc: Ioc):
+    iocs = Ioc.query.filter(Ioc.case_id == ioc.case_id,
+                            Ioc.ioc_value == ioc.ioc_value,
+                            Ioc.ioc_type_id == ioc.ioc_type_id)
+    return iocs.first() is not None
+
+
+def get_ioc_types_list():
+    ioc_types = IocType.query.with_entities(
+        IocType.type_id,
+        IocType.type_name,
+        IocType.type_description,
+        IocType.type_taxonomy,
+        IocType.type_validation_regex,
+        IocType.type_validation_expect,
+    ).all()
+
+    l_types = [row._asdict() for row in ioc_types]
+    return l_types
+
+
+def add_ioc_type(name:str, description:str, taxonomy:str):
+    ioct = IocType(type_name=name,
+                   type_description=description,
+                   type_taxonomy=taxonomy
+                )
+
+    db.session.add(ioct)
+    db.session.commit()
+    return ioct
+
+
+def check_ioc_type_id(type_id: int):
+    type_id = IocType.query.filter(
+        IocType.type_id == type_id
+    ).first()
+
+    return type_id
+
+
+def get_ioc_type_id(type_name: str):
+    type_id = IocType.query.filter(
+        IocType.type_name == type_name
+    ).first()
+
+    return type_id if type_id else None
+
+
+def get_tlps():
+    return [(tlp.tlp_id, tlp.tlp_name) for tlp in Tlp.query.all()]
+
+
+def get_tlps_dict():
+    tlpDict = {}
+    for tlp in Tlp.query.all():
+        tlpDict[tlp.tlp_name]=tlp.tlp_id 
+    return tlpDict
+
+
+def get_case_ioc_comments(ioc_id):
+    return Comments.query.filter(
+        IocComments.comment_ioc_id == ioc_id
+    ).with_entities(
+        Comments
+    ).join(
+        IocComments,
+        Comments.comment_id == IocComments.comment_id
+    ).order_by(
+        Comments.comment_date.asc()
+    ).all()
+
+
+def add_comment_to_ioc(ioc_id, comment_id):
+    ec = IocComments()
+    ec.comment_ioc_id = ioc_id
+    ec.comment_id = comment_id
+
+    db.session.add(ec)
+    db.session.commit()
+
+
+def get_case_iocs_comments_count(iocs_list):
+    return IocComments.query.filter(
+        IocComments.comment_ioc_id.in_(iocs_list)
+    ).with_entities(
+        IocComments.comment_ioc_id,
+        IocComments.comment_id
+    ).group_by(
+        IocComments.comment_ioc_id,
+        IocComments.comment_id
+    ).all()
+
+
+def get_case_ioc_comment(ioc_id, comment_id):
+    return (IocComments.query.filter(
+        IocComments.comment_ioc_id == ioc_id,
+        IocComments.comment_id == comment_id
+    ).with_entities(
+        Comments.comment_id,
+        Comments.comment_text,
+        Comments.comment_date,
+        Comments.comment_update_date,
+        Comments.comment_uuid,
+        User.name,
+        User.user
+    ).join(IocComments.comment)
+            .join(Comments.user).first())
+
+
+def delete_ioc_comment(ioc_id, comment_id):
+    comment = Comments.query.filter(
+        Comments.comment_id == comment_id,
+        Comments.comment_user_id == current_user.id
+    ).first()
+    if not comment:
+        return False, "You are not allowed to delete this comment"
+
+    IocComments.query.filter(
+        IocComments.comment_ioc_id == ioc_id,
+        IocComments.comment_id == comment_id
+    ).delete()
+
+    db.session.delete(comment)
+    db.session.commit()
+
+    return True, "Comment deleted"
+
+
+def get_ioc_by_value(ioc_value, caseid=None):
+    if caseid:
+        Ioc.query.filter(Ioc.ioc_value == ioc_value, Ioc.case_id == caseid).first()
+
+    return Ioc.query.filter(Ioc.ioc_value == ioc_value).first()
+
+
+def user_list_cases_view(user_id):
+    res = UserCaseEffectiveAccess.query.with_entities(
+        UserCaseEffectiveAccess.case_id
+    ).filter(and_(
+        UserCaseEffectiveAccess.user_id == user_id,
+        UserCaseEffectiveAccess.access_level != CaseAccessLevel.deny_all.value
+    )).all()
+
+    return [r.case_id for r in res]
+
+
+def _build_filter_ioc_query(
+        caseid: int = None,
+        ioc_type_id: int = None,
+        ioc_type: str = None,
+        ioc_tlp_id: int = None,
+        ioc_value: str = None,
+        ioc_description: str = None,
+        ioc_tags: str = None,
+        sort_by=None,
+        sort_dir='asc'):
+    """
+    Get a list of iocs from the database, filtered by the given parameters
+    """
+
+    conditions = []
+    if ioc_type_id is not None:
+        conditions.append(Ioc.ioc_type_id == ioc_type_id)
+
+    if ioc_type is not None:
+        conditions.append(Ioc.ioc_type == ioc_type)
+
+    if ioc_tlp_id is not None:
+        conditions.append(Ioc.ioc_tlp_id == ioc_tlp_id)
+
+    if ioc_value is not None:
+        conditions.append(Ioc.ioc_value == ioc_value)
+
+    if ioc_description is not None:
+        conditions.append(Ioc.ioc_description == ioc_description)
+
+    if ioc_tags is not None:
+        conditions.append(Ioc.ioc_tags == ioc_tags)
+
+    if caseid is not None:
+        conditions.append(Ioc.case_id == caseid)
+
+    query = Ioc.query.filter(*conditions)
+
+    if sort_by is not None:
+        order_func = convert_sort_direction(sort_dir)
+
+        if sort_by == 'opened_by':
+            query = query.join(User, Ioc.user_id == User.id).order_by(order_func(User.name))
+
+        elif hasattr(Ioc, sort_by):
+            query = query.order_by(order_func(getattr(Ioc, sort_by)))
+
+    return query
+
+
+def get_filtered_iocs(
+        pagination_parameters: PaginationParameters,
+        caseid: int = None,
+        ioc_type_id: int = None,
+        ioc_type: str = None,
+        ioc_tlp_id: int = None,
+        ioc_value: str = None,
+        ioc_description: str = None,
+        ioc_tags: str = None
+        ):
+
+    query = _build_filter_ioc_query(caseid=caseid, ioc_type_id=ioc_type_id, ioc_type=ioc_type, ioc_tlp_id=ioc_tlp_id, ioc_value=ioc_value,
+                                    ioc_description=ioc_description, ioc_tags=ioc_tags,
+                                    sort_by=pagination_parameters.get_order_by(), sort_dir=pagination_parameters.get_direction())
+
+    try:
+        filtered_iocs = query.paginate(page=pagination_parameters.get_page(), per_page=pagination_parameters.get_per_page(), error_out=False)
+
+    except Exception as e:
+        app.logger.exception(f"Error getting cases: {str(e)}")
+        return None
+
+    return filtered_iocs

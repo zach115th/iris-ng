@@ -1,0 +1,378 @@
+{# v3 "Live case log" drawer, opened by the shell header's activity pulse.
+
+   Distinct from the per-case notification bell on purpose. The bell is a
+   FEED addressed to one analyst: it honours a read watermark, drops your own
+   interactive edits, and offers "Mark as read". This is a LOG of what
+   happened in the case: no watermark, everyone's actions, and scoped to the
+   view you are standing in.
+
+   Scoping is best-effort by construction - UserActivity rows are text only,
+   with no object type or id - so the drawer states its scope, reports rows
+   it could not attribute rather than dropping them silently, and always
+   offers "All activity" as the way to see everything.
+#}
+<style>
+.iris-clog-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    z-index: 1060; display: none;
+}
+.iris-clog {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(92vw, 430px);
+    background: #101017; border-left: 1px solid rgba(255,255,255,0.08);
+    box-shadow: -8px 0 28px rgba(0,0,0,0.5);
+    /* Above the topbar (1001) on purpose: it is a modal drawer, and unlike a
+       dropdown it is meant to cover the chrome while open. */
+    z-index: 1061; display: none; flex-direction: column;
+}
+.iris-clog.is-open, .iris-clog-backdrop.is-open { display: flex; }
+.iris-clog-head {
+    padding: 14px 16px 12px 16px; display: flex; align-items: flex-start;
+    gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+}
+.iris-clog-icon { color: #a78bfa; margin-top: 2px; }
+.iris-clog-titles { flex: 1 1 auto; min-width: 0; }
+.iris-clog-eyebrow {
+    font-size: 9.5px; letter-spacing: .7px; text-transform: uppercase;
+    color: #8b8b9e; font-weight: 600;
+}
+.iris-clog-title { font-size: 15px; font-weight: 600; color: #e8e6f0; }
+.iris-clog-sync { font-size: 10.5px; color: #6f6f83; white-space: nowrap; margin-top: 3px; }
+.iris-clog-hbtn {
+    background: none; border: 0; color: #8b8b9e; cursor: pointer; padding: 2px 4px;
+    line-height: 1; border-radius: 5px;
+}
+.iris-clog-hbtn:hover { color: #e8e8ee; background: rgba(255,255,255,0.06); }
+.iris-clog-scope {
+    padding: 9px 16px; display: flex; align-items: center; gap: 7px;
+    flex-wrap: wrap; border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+}
+.iris-clog-chip {
+    font-size: 11px; padding: 3px 10px; border-radius: 999px; cursor: pointer;
+    background: rgba(255,255,255,0.05); color: #a9a9bd;
+    border: 1px solid rgba(255,255,255,0.09);
+}
+.iris-clog-chip:hover { color: #e8e8ee; }
+.iris-clog-chip.is-on {
+    background: rgba(139,92,246,0.18); border-color: rgba(139,92,246,0.45);
+    color: #d4c4ff;
+}
+.iris-clog-body { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px; }
+.iris-clog-row {
+    display: flex; gap: 10px; padding: 10px 12px; margin-bottom: 8px;
+    background: #17171f; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 9px;
+}
+.iris-clog-av {
+    width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+    background: rgba(139,92,246,0.18); color: #d4c4ff;
+    font-size: 10px; font-weight: 600; display: flex;
+    align-items: center; justify-content: center;
+}
+.iris-clog-main { flex: 1 1 auto; min-width: 0; }
+.iris-clog-meta {
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    margin-bottom: 3px;
+}
+.iris-clog-who { font-size: 12px; font-weight: 600; color: #e8e6f0; }
+.iris-clog-when { font-size: 10.5px; color: #6f6f83; }
+.iris-clog-badge {
+    font-size: 9px; letter-spacing: .4px; text-transform: uppercase;
+    padding: 1px 6px; border-radius: 4px; font-weight: 600;
+    background: rgba(96,165,250,0.15); color: #93c5fd;
+}
+.iris-clog-kind {
+    font-size: 9px; letter-spacing: .4px; text-transform: uppercase;
+    padding: 1px 6px; border-radius: 4px; font-weight: 600;
+    background: rgba(255,255,255,0.06); color: #9a9ab0;
+}
+.iris-clog-text { font-size: 12px; color: #c3c3d4; word-break: break-word; }
+.iris-clog-empty {
+    padding: 26px 16px; text-align: center; color: #6f6f83; font-size: 12px;
+    line-height: 1.6;
+}
+.iris-clog-foot {
+    padding: 9px 16px; border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 10.5px; color: #6f6f83; flex-shrink: 0;
+}
+.iris-clog-link {
+    background: none; border: 0; padding: 0; color: #a78bfa; cursor: pointer;
+    font-size: inherit; text-decoration: underline;
+}
+</style>
+
+<div class="iris-clog-backdrop" id="iris-clog-backdrop"></div>
+<div class="iris-clog" id="iris-clog" role="dialog" aria-label="Live case log"
+     aria-hidden="true" data-case-id="{{ session['current_case'].case_id }}">
+    <div class="iris-clog-head">
+        <span class="iris-clog-icon">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
+        </span>
+        <div class="iris-clog-titles">
+            <div class="iris-clog-eyebrow">Activity</div>
+            <div class="iris-clog-title">Live case log</div>
+        </div>
+        <div class="iris-clog-sync" id="iris-clog-sync"></div>
+        <button type="button" class="iris-clog-hbtn" id="iris-clog-refresh" title="Refresh">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+        </button>
+        <button type="button" class="iris-clog-hbtn" id="iris-clog-close" title="Close">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
+    <div class="iris-clog-scope" id="iris-clog-scope"></div>
+    <div class="iris-clog-body" id="iris-clog-body"></div>
+    <div class="iris-clog-foot" id="iris-clog-foot" style="display:none;"></div>
+</div>
+
+<script>
+(function () {
+    var CLOG = {cat: null, pageCat: null, syncedAt: null, timer: null};
+
+    /* Which view the analyst is standing in. Derived from the path so a new
+       case tab needs no template change - it simply starts unscoped. */
+    var PATH_CATEGORY = [
+        ['/case/timeline', 'timeline'],
+        ['/case/ioc', 'ioc'],
+        ['/case/assets', 'asset'],
+        ['/case/notes', 'note'],
+        ['/case/tasks', 'task'],
+        ['/case/evidences', 'evidence']
+    ];
+    var CATEGORY_LABEL = {
+        timeline: 'Timeline', ioc: 'IOCs', asset: 'Assets', note: 'Notes',
+        task: 'Tasks', evidence: 'Evidence', datastore: 'Datastore', case: 'Case'
+    };
+
+    function el(id) { return document.getElementById(id); }
+    function root() { return el('iris-clog'); }
+    function caseId() {
+        var r = root();
+        return r ? r.getAttribute('data-case-id') : null;
+    }
+
+    function pageCategory() {
+        var path = (window.location.pathname || '').replace(/\/+$/, '');
+        for (var i = 0; i < PATH_CATEGORY.length; i++) {
+            if (path.indexOf(PATH_CATEGORY[i][0]) === 0) { return PATH_CATEGORY[i][1]; }
+        }
+        return null;
+    }
+
+    function relTime(iso) {
+        if (!iso) { return ''; }
+        var secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+        if (secs < 45) { return 'just now'; }
+        if (secs < 3600) { return Math.floor(secs / 60) + 'm ago'; }
+        if (secs < 86400) { return Math.floor(secs / 3600) + 'h ago'; }
+        return Math.floor(secs / 86400) + 'd ago';
+    }
+
+    function initials(name) {
+        var parts = (name || '?').trim().split(/\s+/).slice(0, 2);
+        return parts.map(function (p) { return p.charAt(0).toUpperCase(); }).join('') || '?';
+    }
+
+    function renderScope() {
+        var bar = el('iris-clog-scope');
+        if (!bar) { return; }
+        bar.innerHTML = '';
+        var opts = [[null, 'All activity']];
+        if (CLOG.pageCat) {
+            opts.push([CLOG.pageCat, 'This view: ' + (CATEGORY_LABEL[CLOG.pageCat] || CLOG.pageCat)]);
+        }
+        opts.forEach(function (opt) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'iris-clog-chip' + (CLOG.cat === opt[0] ? ' is-on' : '');
+            b.textContent = opt[1];
+            b.addEventListener('click', function () {
+                CLOG.cat = opt[0];
+                renderScope();
+                load();
+            });
+            bar.appendChild(b);
+        });
+    }
+
+    function renderRows(data) {
+        var body = el('iris-clog-body');
+        var foot = el('iris-clog-foot');
+        if (!body) { return; }
+        body.innerHTML = '';
+
+        if (!data.items || !data.items.length) {
+            var msg = document.createElement('div');
+            msg.className = 'iris-clog-empty';
+            /* An empty state is a claim - only make one that is supported.
+               "Nothing here" and "some entries could not be placed" are
+               different statements and the payload distinguishes them. */
+            if (data.category && data.unattributed) {
+                msg.textContent = 'No ' + (CATEGORY_LABEL[data.category] || data.category)
+                    + ' activity in the last ' + data.window_days + ' days. '
+                    + data.unattributed + ' other entr'
+                    + (data.unattributed === 1 ? 'y' : 'ies')
+                    + ' could not be attributed to a view.';
+            } else if (data.category) {
+                msg.textContent = 'No ' + (CATEGORY_LABEL[data.category] || data.category)
+                    + ' activity in the last ' + data.window_days + ' days.';
+            } else {
+                msg.textContent = 'No activity in the last ' + data.window_days + ' days.';
+            }
+            body.appendChild(msg);
+        }
+
+        (data.items || []).forEach(function (item) {
+            var row = document.createElement('div');
+            row.className = 'iris-clog-row';
+
+            var av = document.createElement('div');
+            av.className = 'iris-clog-av';
+            av.textContent = initials(item.by);
+            row.appendChild(av);
+
+            var main = document.createElement('div');
+            main.className = 'iris-clog-main';
+
+            var meta = document.createElement('div');
+            meta.className = 'iris-clog-meta';
+            var who = document.createElement('span');
+            who.className = 'iris-clog-who';
+            who.textContent = item.by;
+            meta.appendChild(who);
+            var when = document.createElement('span');
+            when.className = 'iris-clog-when';
+            when.textContent = relTime(item.at);
+            when.title = item.at || '';
+            meta.appendChild(when);
+            if (item.from_api) {
+                var api = document.createElement('span');
+                api.className = 'iris-clog-badge';
+                api.textContent = 'API';
+                meta.appendChild(api);
+            }
+            /* Only label a row with a view when one was actually derived -
+               an "ACTIVITY" chip on every unplaced row is noise. */
+            if (!CLOG.cat && item.kind && CATEGORY_LABEL[item.kind]) {
+                var k = document.createElement('span');
+                k.className = 'iris-clog-kind';
+                k.textContent = CATEGORY_LABEL[item.kind];
+                meta.appendChild(k);
+            }
+            main.appendChild(meta);
+
+            var text = document.createElement('div');
+            text.className = 'iris-clog-text';
+            /* textContent, not innerHTML - descriptions carry analyst-supplied
+               object names. */
+            text.textContent = item.text || '';
+            main.appendChild(text);
+
+            row.appendChild(main);
+            body.appendChild(row);
+        });
+
+        if (foot) {
+            var notes = [];
+            if (data.matched > data.shown) {
+                notes.push('Showing the newest ' + data.shown + ' of ' + data.matched + '.');
+            }
+            if (data.scan_capped) {
+                notes.push('Only the most recent ' + data.scanned + ' entries were examined.');
+            }
+            if (data.category && data.unattributed && data.items.length) {
+                notes.push(data.unattributed + ' entr'
+                    + (data.unattributed === 1 ? 'y' : 'ies')
+                    + ' could not be attributed to a view.');
+            }
+            if (notes.length) {
+                foot.textContent = notes.join(' ');
+                foot.style.display = '';
+            } else {
+                foot.style.display = 'none';
+            }
+        }
+    }
+
+    function tickSync() {
+        var s = el('iris-clog-sync');
+        if (!s) { return; }
+        s.textContent = CLOG.syncedAt ? 'Synced ' + relTime(CLOG.syncedAt) : '';
+    }
+
+    function load() {
+        var cid = caseId();
+        var body = el('iris-clog-body');
+        if (!cid || !body) { return; }
+        body.innerHTML = '<div class="iris-clog-empty">Loading&hellip;</div>';
+        var url = '/api/v2/cases/' + cid + '/notifications/activity-log'
+            + (CLOG.cat ? '?category=' + encodeURIComponent(CLOG.cat) : '');
+        fetch(url, {credentials: 'same-origin', headers: {'Accept': 'application/json'}})
+            .then(function (r) {
+                return r.text().then(function (t) {
+                    var j = null;
+                    if (t) { try { j = JSON.parse(t); } catch (e) { j = null; } }
+                    return {ok: r.ok, status: r.status, json: j};
+                });
+            })
+            .then(function (resp) {
+                if (!resp.ok || !resp.json) {
+                    body.innerHTML = '';
+                    var err = document.createElement('div');
+                    err.className = 'iris-clog-empty';
+                    err.textContent = 'Could not load the case log (HTTP '
+                        + resp.status + ').';
+                    body.appendChild(err);
+                    return;
+                }
+                CLOG.syncedAt = new Date().toISOString();
+                tickSync();
+                renderRows(resp.json);
+            })
+            .catch(function (e) {
+                body.innerHTML = '';
+                var err = document.createElement('div');
+                err.className = 'iris-clog-empty';
+                err.textContent = 'Could not load the case log: ' + (e.message || e);
+                body.appendChild(err);
+            });
+    }
+
+    function open() {
+        var r = root(), b = el('iris-clog-backdrop');
+        if (!r) { return; }
+        CLOG.pageCat = pageCategory();
+        /* Open scoped to the view the analyst is in; "All activity" is one
+           click away and never hidden. */
+        CLOG.cat = CLOG.pageCat;
+        r.classList.add('is-open');
+        r.setAttribute('aria-hidden', 'false');
+        if (b) { b.classList.add('is-open'); }
+        renderScope();
+        load();
+        if (CLOG.timer) { clearInterval(CLOG.timer); }
+        CLOG.timer = setInterval(tickSync, 15000);
+    }
+
+    function close() {
+        var r = root(), b = el('iris-clog-backdrop');
+        if (r) { r.classList.remove('is-open'); r.setAttribute('aria-hidden', 'true'); }
+        if (b) { b.classList.remove('is-open'); }
+        if (CLOG.timer) { clearInterval(CLOG.timer); CLOG.timer = null; }
+    }
+
+    window.irisCaseActivityLog = {open: open, close: close, reload: load};
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var c = el('iris-clog-close');
+        if (c) { c.addEventListener('click', close); }
+        var b = el('iris-clog-backdrop');
+        if (b) { b.addEventListener('click', close); }
+        var rf = el('iris-clog-refresh');
+        if (rf) { rf.addEventListener('click', load); }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { close(); }
+        });
+    });
+})();
+</script>

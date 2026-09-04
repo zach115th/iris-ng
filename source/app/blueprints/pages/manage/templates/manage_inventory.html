@@ -1,0 +1,1013 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Inventory {% endblock title %}
+
+{% block stylesheets %}
+<style>
+/* iris-next: v3-style master/detail for the drive inventory (the same card
+   language as the case Assets tab). Page-local by project rule. */
+.iris-di-wrap { display: flex; gap: 18px; align-items: flex-start; }
+.iris-di-left { flex: 1 1 55%; min-width: 0; }
+.iris-di-right { flex: 1 1 45%; min-width: 320px; }
+.iris-di-card {
+    border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid rgba(255,255,255,0.14);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; cursor: pointer;
+    background: rgba(255,255,255,0.02); transition: background .12s ease;
+}
+.iris-di-card:hover { background: rgba(139,92,246,0.07); }
+.iris-di-card.iris-di-sel {
+    background: rgba(139,92,246,0.10); border-color: rgba(139,92,246,0.45);
+    border-left-color: #8b5cf6;
+}
+.iris-di-card.iris-di-overdue { border-left-color: #f4c430; }
+.iris-di-name { font-weight: 600; color: #e8e8ee; font-size: 0.9rem; }
+.iris-di-meta { color: #9a9aa5; font-size: 0.78rem; display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 2px; }
+.iris-di-bc {
+    font-family: ui-monospace,Menlo,Consolas,monospace; font-size: 0.78rem;
+    background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.35);
+    color: #d4c4ff; border-radius: 6px; padding: 0 6px;
+}
+.iris-di-detailcard {
+    border: 1px solid rgba(139,92,246,0.35); border-radius: 8px;
+    padding: 14px 16px; background: rgba(255,255,255,0.02);
+}
+.iris-di-dh { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.iris-di-dh h4 { margin: 0; font-size: 1.05rem; }
+.iris-di-flabel {
+    font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    color: rgba(250,250,250,0.42); margin-top: 8px;
+}
+.iris-di-fval { font-size: 0.85rem; color: #e8e8ee; }
+.iris-di-overdue-note {
+    color: #f4c430; font-size: 0.8rem; background: rgba(244,196,48,0.08);
+    border: 1px solid rgba(244,196,48,0.30); border-radius: 6px; padding: 6px 10px; margin-top: 8px;
+}
+.iris-di-ev {
+    border: 1px solid rgba(139,92,246,0.20); background: rgba(139,92,246,0.06);
+    border-radius: 6px; padding: 6px 10px; margin-top: 6px; font-size: 0.8rem;
+}
+.iris-di-statemsg { font-style: italic; color: #7a7a85; padding: 8px 2px; }
+@media (max-width: 1100px) { .iris-di-wrap { flex-direction: column; } .iris-di-right { min-width: 0; width: 100%; } }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+{# iris-next: the Inventory view, moved VERBATIM from the dashboard tab of the
+   same name (sidebar section: Manage). The pane wrapper keeps its historical
+   id and gains `show active` so it renders as a normal page region. The
+   /api/v2/dashboard/* endpoints it calls are untouched. #}
+<div class="page-inner">
+    <form style="display:none;">{{ form.hidden_tag() }}</form>
+    <h4 class="page-title mb-3">Inventory</h4>
+    {# iris-next: Inventory pane — physical evidence-drive lookup + management.
+       Scan/key a barcode to resolve the drive's location, current case, and the
+       evidence items on it. Open to any logged-in user (evidence-locker flow). #}
+    <div class="tab-pane fade show active" id="iris-dash-inventory" role="tabpanel">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card card-round">
+            <div class="card-body">
+              <h4 class="card-title">Scan or enter a bar code</h4>
+              <p class="text-muted small mb-2">Look up a physical evidence drive by its bar code to see its location, associated case, and the evidence items it holds.</p>
+              <div class="input-group input-group-lg" style="max-width: 640px;">
+                <input type="text" class="form-control" id="iris-inv-scan" autocomplete="off"
+                       placeholder="Scan barcode or type and press Enter">
+                <div class="input-group-append">
+                  <button class="btn btn-primary" type="button" onclick="iris_inventory_lookup();">
+                    <i class="fas fa-search mr-1"></i> Look up
+                  </button>
+                </div>
+              </div>
+              <div id="iris-inv-lookup-msg" class="mt-2 small"></div>
+              <div id="iris-inv-lookup-result" class="mt-3" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# iris-next: drive status summary — donut + stat tiles. Populated by iris_inventory_load_drives(). #}
+      <style>
+        .iris-inv-stat-tile { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid; border-radius: 6px; padding: 12px 20px; min-width: 100px; flex: 1 1 auto; }
+        .iris-inv-tile-count { font-size: 28px; font-weight: 700; color: #fff; line-height: 1.1; }
+        .iris-inv-tile-label { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; margin-top: 3px; text-transform: uppercase; }
+        .iris-inv-overdue-badge { display:inline-block; margin-left:6px; padding:1px 6px; background:rgba(255,166,0,0.15); border:1px solid rgba(255,166,0,0.35); border-radius:4px; color:#ffad46; font-size:10px; font-weight:600; white-space:nowrap; }
+      </style>
+      <div class="row" id="iris-inv-summary-row" style="display:none;">
+        <div class="col-md-12">
+          <div class="card card-round">
+            <div class="card-body" style="padding:16px 24px;">
+              <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;">
+                <div style="position:relative;width:160px;height:160px;flex-shrink:0;">
+                  <canvas id="iris-inv-status-chart"></canvas>
+                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;line-height:1.25;">
+                    <div id="iris-inv-chart-total" style="font-size:26px;font-weight:700;color:#fff;"></div>
+                    <div style="font-size:10px;letter-spacing:1px;color:rgba(255,255,255,0.4);">DRIVES</div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:12px;flex:1;flex-wrap:wrap;">
+                  <div class="iris-inv-stat-tile" style="border-left-color:#2dce89;">
+                    <div class="iris-inv-tile-count" id="iris-inv-tile-wiped">0</div>
+                    <div class="iris-inv-tile-label">Wiped</div>
+                  </div>
+                  <div class="iris-inv-stat-tile" style="border-left-color:#f4c430;">
+                    <div class="iris-inv-tile-count" id="iris-inv-tile-available">0</div>
+                    <div class="iris-inv-tile-label">Available</div>
+                  </div>
+                  <div class="iris-inv-stat-tile" style="border-left-color:#5e72e4;">
+                    <div class="iris-inv-tile-count" id="iris-inv-tile-in_use">0</div>
+                    <div class="iris-inv-tile-label">In use</div>
+                  </div>
+                  <div class="iris-inv-stat-tile" style="border-left-color:#f5365c;">
+                    <div class="iris-inv-tile-count" id="iris-inv-tile-retired">0</div>
+                    <div class="iris-inv-tile-label">Retired</div>
+                  </div>
+                </div>
+              </div>
+              <div id="iris-inv-overdue-alert" style="display:none;margin-top:12px;padding:8px 12px;background:rgba(255,166,0,0.08);border:1px solid rgba(255,166,0,0.3);border-radius:6px;color:#ffad46;font-size:12px;">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                <span id="iris-inv-overdue-count"></span> drive(s) have exceeded the configured retention period — consider wiping and rotating them.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# iris-next: capacity planning — order-more indicator. Shown when drives exist
+         and case history covers the rolling window. Populated by iris_inventory_load_capacity(). #}
+      <div class="row" id="iris-inv-capacity-row" style="display:none;">
+        <div class="col-md-12">
+          <div class="card card-round">
+            <div class="card-body" style="padding:16px 24px;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+                <div style="flex-shrink:0;">
+                  <div style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px;">Drive runway</div>
+                  <div id="iris-inv-cap-runway" style="display:inline-block;padding:5px 14px;border-radius:20px;font-weight:700;font-size:16px;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"></div>
+                </div>
+                <div style="flex:1;min-width:200px;">
+                  <div style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px;">Effective 30-day supply</div>
+                  <div id="iris-inv-cap-supply" style="font-size:13px;color:rgba(255,255,255,0.8);"></div>
+                  <div id="iris-inv-cap-rate" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;"></div>
+                </div>
+              </div>
+              <div id="iris-inv-cap-order-alert" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.35);border-radius:6px;color:#f87171;font-size:13px;"></div>
+              <div id="iris-inv-cap-insufficient" style="display:none;margin-top:8px;font-size:12px;color:rgba(255,255,255,0.35);font-style:italic;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card card-round">
+            <div class="card-header d-flex align-items-center">
+              <h4 class="card-title mb-0">Drive inventory <span class="text-muted" id="iris-di-count" style="font-size:0.85rem;"></span></h4>
+              <div class="ml-auto d-flex align-items-center" style="gap:6px;">
+                <button class="btn btn-sm btn-primary" type="button" onclick="iris_inventory_open_register();">
+                  <i class="fas fa-plus mr-1"></i> Register drive
+                </button>
+                <button class="btn btn-sm btn-light" type="button" onclick="iris_inventory_load_drives();" title="Refresh">
+                  <i class="fas fa-sync"></i>
+                </button>
+                <a href="#" class="small text-muted" id="iris-di-legacy-toggle" onclick="iris_di_toggle_legacy();return false;">Show legacy table</a>
+              </div>
+            </div>
+            <div class="card-body">
+              {# iris-next: v3 master/detail replaces the flat table as the
+                 visible surface. The table stays in the DOM hidden below —
+                 the safety valve, and iris_inv_render_rows still writes it
+                 so the two can never drift. #}
+              <div class="iris-di-wrap" id="iris-di-wrap">
+                <div class="iris-di-left">
+                  <input type="text" class="form-control form-control-sm mb-2" id="iris-di-search"
+                         placeholder="Search drives (bar code, label, location, case)..." autocomplete="off">
+                  <div id="iris-di-list"></div>
+                  <div class="iris-di-statemsg" id="iris-di-state" style="display:none;"></div>
+                </div>
+                <div class="iris-di-right">
+                  <div class="text-muted" id="iris-di-placeholder" style="text-align:center; padding-top:40px;">
+                    Select a drive to see its details and the evidence items it holds.
+                  </div>
+                  <div id="iris-di-detail" style="display:none;"></div>
+                </div>
+              </div>
+              <div id="iris-di-legacy" style="display:none;">
+              <div class="table-responsive">
+                <table class="table table-striped table-hover" id="iris-inv-drives-table" style="width:100%; font-size: 12px;">
+                  <thead>
+                    <tr>
+                      <th data-sort-key="barcode">Bar code<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="label">Label<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="status">Status<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="location">Physical location<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="case">Case<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="capacity">Capacity<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th data-sort-key="added">Added<span class="iris-inv-sort-icon">⇅</span></th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="iris-inv-drives-body"></tbody>
+                </table>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {# /Inventory pane #}
+
+    {# iris-next: Register / edit drive modal (Inventory tab). #}
+    <div class="modal" tabindex="-1" role="dialog" id="iris-inv-drive-modal" data-backdrop="true">
+      <div class="modal-lg modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="iris-inv-modal-title">Register drive</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="iris-inv-drive-id" value="">
+            <div class="form-group">
+              <label class="placeholder">Bar code *</label>
+              <input class="form-control" id="iris-inv-f-barcode" placeholder="Bar code number">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Label</label>
+              <input class="form-control" id="iris-inv-f-label" placeholder="e.g. WD 4TB #3">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Serial number</label>
+              <input class="form-control" id="iris-inv-f-serial" placeholder="Drive serial number">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Physical location</label>
+              <input class="form-control" id="iris-inv-f-location" placeholder="e.g. Evidence Locker A, Shelf 3, Bin 7">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Status</label>
+              <select class="form-control" id="iris-inv-f-status">
+                <option value="wiped">Wiped (in rotation)</option>
+                <option value="in_use">In use</option>
+                <option value="available">Available (retention over — awaiting wipe)</option>
+                <option value="retired">Retired</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Associated case</label>
+              <select class="form-control" id="iris-inv-f-case" style="width:100%;">
+                <option value="">— none —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Capacity</label>
+              <input class="form-control" id="iris-inv-f-capacity" placeholder="e.g. 4TB">
+            </div>
+            <div class="form-group">
+              <label class="placeholder">Notes</label>
+              <textarea class="form-control" id="iris-inv-f-notes" rows="2"></textarea>
+            </div>
+            <div id="iris-inv-modal-msg" class="small text-danger"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-danger mr-auto" id="iris-inv-wipe-btn" style="display:none;"
+                    onclick="iris_inventory_wipe();">Wipe &amp; return to rotation</button>
+            <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="iris-inv-save-btn" onclick="iris_inventory_save();">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal " tabindex="-1" role="dialog" id="modal_add_gtask" data-backdrop="true">
+        <div class="modal-xl modal-dialog" role="document">
+            <div class="modal-content" id="modal_add_gtask_content">
+
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="/static/assets/js/core/charts.js"></script>
+    <script src="/static/assets/js/core/Chart.PieceLabel.min.js"></script>
+<script>
+        var IRIS_INV = { loaded: false, casesLoaded: false, _chart: null, _drives: [], _sortCol: null, _sortDir: 1 };
+
+        function iris_inv_csrf() {
+            var el = document.getElementById('csrf_token');
+            return el ? el.value : '';
+        }
+        function iris_inv_esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+            });
+        }
+        function iris_inv_status_badge(st) {
+            /* Maintainer vocabulary (2026-08-28): 'wiped' = in rotation
+             * (green, like the donut has always coloured it); 'available' =
+             * retention over, awaiting wipe (amber). */
+            var map = { available: 'badge-warning', in_use: 'badge-primary', wiped: 'badge-success', retired: 'badge-dark' };
+            var label = { available: 'Available', in_use: 'In use', wiped: 'Wiped', retired: 'Retired' }[st] || iris_inv_esc(st);
+            var tip = { available: 'Retention period over — wipe this drive to return it to rotation',
+                        wiped: 'Wiped and back in rotation — ready for a new case',
+                        in_use: 'Assigned to a case', retired: 'Out of service' }[st] || '';
+            return '<span class="badge ' + (map[st] || 'badge-light') + '" title="' + tip + '">' + label + '</span>';
+        }
+
+        function iris_inventory_on_show() {
+            if (!IRIS_INV.loaded) {
+                IRIS_INV.loaded = true;
+                iris_inventory_load_drives();
+            }
+            setTimeout(function () { $('#iris-inv-scan').trigger('focus'); }, 200);
+        }
+
+        function iris_inventory_lookup() {
+            var bc = ($('#iris-inv-scan').val() || '').trim();
+            var msg = $('#iris-inv-lookup-msg');
+            var res = $('#iris-inv-lookup-result');
+            msg.text('').removeClass('text-danger text-success');
+            if (!bc) { msg.addClass('text-danger').text('Enter or scan a bar code.'); return; }
+            msg.text('Looking up…');
+            $.ajax({
+                url: '/api/v2/dashboard/inventory/lookup?barcode=' + encodeURIComponent(bc),
+                method: 'GET', dataType: 'json'
+            }).done(function (resp) {
+                msg.text('');
+                // v2 API returns the payload directly (no {status,data} envelope).
+                var d = (resp && resp.data) ? resp.data : resp;
+                if (!d || !d.barcode) { res.hide(); msg.addClass('text-danger').text('No result.'); return; }
+                iris_inventory_render_result(d);
+            }).fail(function (xhr) {
+                res.hide();
+                var m = 'Lookup failed.';
+                try { m = JSON.parse(xhr.responseText).message || m; } catch (e) {}
+                msg.addClass('text-danger').text(m);
+            });
+        }
+
+        function iris_inventory_render_result(d) {
+            var res = $('#iris-inv-lookup-result');
+            var caseHtml = d.case
+                ? '<a href="/case?cid=' + d.case.case_id + '">#' + d.case.case_id + ' - ' + iris_inv_esc(d.case.case_name) + '</a>'
+                : '<span class="text-muted">— none —</span>';
+            var rows = (d.evidences || []).map(function (e) {
+                return '<tr>'
+                    + '<td><a href="/case/evidences?cid=' + e.case_id + '&shared=' + e.id + '">' + iris_inv_esc(e.filename || ('#' + e.id)) + '</a></td>'
+                    + '<td>' + iris_inv_esc(e.type_name || 'Unspecified') + '</td>'
+                    + '<td><code>' + iris_inv_esc(e.file_hash || '') + '</code></td>'
+                    + '<td>' + iris_inv_esc(e.file_size != null ? e.file_size : '') + '</td>'
+                    + '</tr>';
+            }).join('');
+            if (!rows) { rows = '<tr><td colspan="4" class="text-muted text-center">No evidence items linked to this drive.</td></tr>'; }
+
+            var html = ''
+                + '<div class="card" style="border:1px solid rgba(139,92,246,0.35);">'
+                + '  <div class="card-body">'
+                + '    <div class="d-flex align-items-center mb-2" style="gap:10px;">'
+                + '      <h4 class="mb-0">' + iris_inv_esc(d.label || d.barcode) + '</h4>'
+                + '      ' + iris_inv_status_badge(d.status)
+                + '      <button class="btn btn-sm btn-light ml-auto" onclick="iris_inventory_open_edit(' + d.id + ');"><i class="fas fa-pen mr-1"></i>Edit</button>'
+                + '    </div>'
+                + '    <div class="row">'
+                + '      <div class="col-md-4"><small class="text-muted">Bar code</small><div><code>' + iris_inv_esc(d.barcode) + '</code></div></div>'
+                + '      <div class="col-md-4"><small class="text-muted">Physical location</small><div>' + (d.physical_location ? iris_inv_esc(d.physical_location) : '<span class="text-muted">—</span>') + '</div></div>'
+                + '      <div class="col-md-4"><small class="text-muted">Associated case</small><div>' + caseHtml + '</div></div>'
+                + '    </div>'
+                + '    <div class="row mt-2">'
+                + '      <div class="col-md-4"><small class="text-muted">Serial number</small><div>' + (d.serial_number ? iris_inv_esc(d.serial_number) : '<span class="text-muted">—</span>') + '</div></div>'
+                + '      <div class="col-md-4"><small class="text-muted">Capacity</small><div>' + (d.capacity ? iris_inv_esc(d.capacity) : '<span class="text-muted">—</span>') + '</div></div>'
+                + '      <div class="col-md-4"><small class="text-muted">Notes</small><div>' + (d.notes ? iris_inv_esc(d.notes) : '<span class="text-muted">—</span>') + '</div></div>'
+                + '    </div>'
+                + '    <hr>'
+                + '    <h5>Evidence items on this drive (' + (d.evidences ? d.evidences.length : 0) + ')</h5>'
+                + '    <div class="table-responsive"><table class="table table-sm table-striped" style="font-size:12px;">'
+                + '      <thead><tr><th>Name</th><th>Type</th><th>Hash</th><th>Size</th></tr></thead>'
+                + '      <tbody>' + rows + '</tbody>'
+                + '    </table></div>'
+                + '  </div>'
+                + '</div>';
+            res.html(html).show();
+        }
+
+        function iris_inv_capacity_bytes(s) {
+            if (!s) { return -1; }
+            var m = String(s).match(/^([\d.]+)\s*(TB|GB|MB|KB)?$/i);
+            if (!m) { return 0; }
+            var n = parseFloat(m[1]);
+            var u = (m[2] || '').toUpperCase();
+            if (u === 'TB') { return n * 1e12; }
+            if (u === 'GB') { return n * 1e9; }
+            if (u === 'MB') { return n * 1e6; }
+            if (u === 'KB') { return n * 1e3; }
+            return n;
+        }
+
+        function iris_inv_sort_key(d, col) {
+            switch (col) {
+                case 'barcode':  return (d.barcode || '').toLowerCase();
+                case 'label':    return (d.label || '').toLowerCase();
+                case 'status':   return (d.status || '').toLowerCase();
+                case 'location': return (d.physical_location || '').toLowerCase();
+                case 'case':     return d.case_id ? d.case_id : Infinity;
+                case 'capacity': return iris_inv_capacity_bytes(d.capacity);
+                case 'added':    return d.date_added || '';
+                default:         return '';
+            }
+        }
+
+        function iris_inv_render_rows() {
+            var body = $('#iris-inv-drives-body');
+            var rows = IRIS_INV._drives.slice();
+            var col = IRIS_INV._sortCol;
+            var dir = IRIS_INV._sortDir;
+            if (col) {
+                rows.sort(function (a, b) {
+                    var av = iris_inv_sort_key(a, col);
+                    var bv = iris_inv_sort_key(b, col);
+                    if (av === Infinity && bv !== Infinity) { return 1; }
+                    if (bv === Infinity && av !== Infinity) { return -1; }
+                    if (av < bv) { return -dir; }
+                    if (av > bv) { return dir; }
+                    return 0;
+                });
+            }
+            body.html(rows.map(function (d) {
+                var caseTxt = d.case_id ? ('#' + d.case_id + (d.case_name ? ' - ' + iris_inv_esc(d.case_name) : '')) : '<span class="text-muted">—</span>';
+                var added = d.date_added ? iris_inv_esc(d.date_added.substring(0, 10)) : '';
+                return '<tr>'
+                    + '<td><a href="javascript:void(0);" class="iris-inv-scan-link" data-barcode="' + iris_inv_esc(d.barcode) + '"><code>' + iris_inv_esc(d.barcode) + '</code></a></td>'
+                    + '<td>' + iris_inv_esc(d.label || '') + '</td>'
+                    + '<td>' + iris_inv_status_badge(d.status) + (d.overdue ? '<span class="iris-inv-overdue-badge" title="In use longer than the configured retention period"><i class="fas fa-exclamation-triangle"></i> Overdue</span>' : '') + '</td>'
+                    + '<td>' + iris_inv_esc(d.physical_location || '') + '</td>'
+                    + '<td>' + caseTxt + '</td>'
+                    + '<td>' + iris_inv_esc(d.capacity || '') + '</td>'
+                    + '<td>' + added + '</td>'
+                    + '<td>'
+                    + '  <button class="btn btn-xs btn-light" title="Edit" onclick="iris_inventory_open_edit(' + d.id + ');"><i class="fas fa-pen"></i></button>'
+                    + '  <button class="btn btn-xs btn-light" title="Delete" onclick="iris_inventory_delete(' + d.id + ');"><i class="fas fa-trash"></i></button>'
+                    + '</td>'
+                    + '</tr>';
+            }).join(''));
+            body.off('click', '.iris-inv-scan-link').on('click', '.iris-inv-scan-link', function () {
+                iris_inventory_scan_value($(this).attr('data-barcode'));
+            });
+            // Update header indicators.
+            $('#iris-inv-drives-table thead th[data-sort-key]').each(function () {
+                var $th = $(this);
+                var $icon = $th.find('.iris-inv-sort-icon');
+                if ($th.attr('data-sort-key') === col) {
+                    $th.addClass('iris-inv-sort-active');
+                    $icon.text(dir === 1 ? '▲' : '▼');
+                } else {
+                    $th.removeClass('iris-inv-sort-active');
+                    $icon.text('⇅');
+                }
+            });
+            /* iris-next: the card view renders from the same data, right
+             * after the (hidden) table — one writer, two presentations.
+             * render_rows only runs when a fetch succeeded with rows, so
+             * this is also where the card list learns the state is ready. */
+            if (typeof iris_di_liststate === 'function') { iris_di_liststate('ready'); }
+        }
+
+        function iris_inventory_load_drives() {
+            var body = $('#iris-inv-drives-body');
+            body.html('<tr><td colspan="8" class="text-center text-muted">Loading…</td></tr>');
+            /* iris-next: mirror the list state into the card view — loading,
+             * empty and failed are three DIFFERENT claims and the cards must
+             * never show "no drives" about a list that was never fetched. */
+            if (typeof iris_di_liststate === 'function') { iris_di_liststate('loading'); }
+            $.ajax({ url: '/api/v2/dashboard/inventory/drives', method: 'GET', dataType: 'json' })
+            .done(function (resp) {
+                // v2 API returns the array directly (no {status,data} envelope).
+                var rows = Array.isArray(resp) ? resp : ((resp && resp.data) ? resp.data : []);
+                var counts = { available: 0, in_use: 0, wiped: 0, retired: 0 };
+                var overdueCount = 0;
+                rows.forEach(function (d) {
+                    if (counts.hasOwnProperty(d.status)) { counts[d.status]++; }
+                    if (d.overdue) { overdueCount++; }
+                });
+                if (!rows.length) {
+                    IRIS_INV._drives = [];
+                    body.html('<tr><td colspan="8" class="text-center text-muted">No drives registered yet.</td></tr>');
+                    if (typeof iris_di_liststate === 'function') { iris_di_liststate('empty'); }
+                    iris_inventory_render_chart(counts, 0);
+                    var capRow = document.getElementById('iris-inv-capacity-row');
+                    if (capRow) { capRow.style.display = 'none'; }
+                    return;
+                }
+                IRIS_INV._drives = rows;
+                iris_inventory_render_chart(counts, overdueCount);
+                iris_inv_render_rows();
+                iris_inventory_load_capacity();
+            })
+            .fail(function () {
+                body.html('<tr><td colspan="8" class="text-center text-danger">Failed to load drives.</td></tr>');
+                if (typeof iris_di_liststate === 'function') { iris_di_liststate('failed'); }
+            });
+        }
+
+        function iris_inventory_scan_value(bc) {
+            $('a[href="#iris-dash-inventory"]').tab('show');
+            $('#iris-inv-scan').val(bc);
+            iris_inventory_lookup();
+        }
+
+        function iris_inventory_render_chart(counts, overdueCount) {
+            var total = (counts.available || 0) + (counts.in_use || 0) + (counts.wiped || 0) + (counts.retired || 0);
+            var row = document.getElementById('iris-inv-summary-row');
+            if (!row) { return; }
+            if (!total) { row.style.display = 'none'; return; }
+            row.style.display = '';
+
+            // Update total center label and individual tiles.
+            var totalEl = document.getElementById('iris-inv-chart-total');
+            if (totalEl) { totalEl.textContent = total; }
+            ['available', 'in_use', 'wiped', 'retired'].forEach(function (k) {
+                var el = document.getElementById('iris-inv-tile-' + k);
+                if (el) { el.textContent = counts[k] || 0; }
+            });
+
+            // Show/hide the overdue retention alert.
+            var alert = document.getElementById('iris-inv-overdue-alert');
+            var alertCount = document.getElementById('iris-inv-overdue-count');
+            if (alert) {
+                if (overdueCount > 0) {
+                    if (alertCount) { alertCount.textContent = overdueCount; }
+                    alert.style.display = '';
+                } else {
+                    alert.style.display = 'none';
+                }
+            }
+
+            // Destroy previous instance before recreating (handles Refresh clicks).
+            if (IRIS_INV._chart) { IRIS_INV._chart.destroy(); IRIS_INV._chart = null; }
+            var ctx = document.getElementById('iris-inv-status-chart');
+            if (!ctx) { return; }
+            IRIS_INV._chart = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Wiped', 'Available', 'In use', 'Retired'],
+                    datasets: [{
+                        data: [counts.wiped || 0, counts.available || 0, counts.in_use || 0, counts.retired || 0],
+                        backgroundColor: ['#2dce89', '#f4c430', '#5e72e4', '#f5365c'],
+                        borderColor: '#15151a',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutoutPercentage: 74,
+                    legend: { display: false },
+                    tooltips: {
+                        callbacks: {
+                            label: function (tooltipItem, data) {
+                                var val = data.datasets[0].data[tooltipItem.index];
+                                var label = data.labels[tooltipItem.index];
+                                var pct = total > 0 ? Math.round(val / total * 100) : 0;
+                                return ' ' + label + ': ' + val + '  (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function iris_inventory_load_capacity() {
+            fetch('/api/v2/dashboard/inventory/capacity')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    // v2 endpoint returns the dict directly; error shape has status:'error'.
+                    if (!d || d.status === 'error') {
+                        var row = document.getElementById('iris-inv-capacity-row');
+                        if (row) { row.style.display = 'none'; }
+                        return;
+                    }
+                    iris_inventory_render_capacity(d);
+                })
+                .catch(function () {
+                    var row = document.getElementById('iris-inv-capacity-row');
+                    if (row) { row.style.display = 'none'; }
+                });
+        }
+
+        function iris_inventory_render_capacity(d) {
+            var row     = document.getElementById('iris-inv-capacity-row');
+            var runway  = document.getElementById('iris-inv-cap-runway');
+            var supply  = document.getElementById('iris-inv-cap-supply');
+            var rate    = document.getElementById('iris-inv-cap-rate');
+            var order   = document.getElementById('iris-inv-cap-order-alert');
+            var insuf   = document.getElementById('iris-inv-cap-insufficient');
+            if (!row || !runway) { return; }
+
+            if (d.insufficient_data) {
+                runway.textContent = '—';
+                runway.style.background = '';
+                runway.style.color = 'rgba(255,255,255,0.35)';
+                runway.style.border = '1px solid rgba(255,255,255,0.1)';
+                supply.textContent = d.in_rotation_count + ' in rotation (wiped), '
+                    + d.awaiting_wipe_count + ' awaiting wipe, '
+                    + d.wipe_eligible_count + ' wipe-eligible';
+                rate.textContent = '';
+                order.style.display = 'none';
+                insuf.textContent = 'Insufficient case history in the last ' + d.window_months + ' months — cannot estimate intake rate.';
+                insuf.style.display = '';
+                row.style.display = '';
+                return;
+            }
+
+            insuf.style.display = 'none';
+            var months  = d.runway_months;
+            var isLow   = d.order_recommended;
+            var isWarn  = !isLow && months < d.target_runway_months * 1.5;
+            runway.textContent = months + ' mo';
+            if (isLow) {
+                runway.style.background = 'rgba(239,68,68,0.12)';
+                runway.style.color = '#f87171';
+                runway.style.border = '1px solid rgba(239,68,68,0.35)';
+            } else if (isWarn) {
+                runway.style.background = 'rgba(255,166,0,0.10)';
+                runway.style.color = '#ffad46';
+                runway.style.border = '1px solid rgba(255,166,0,0.35)';
+            } else {
+                runway.style.background = 'rgba(45,206,137,0.10)';
+                runway.style.color = '#2dce89';
+                runway.style.border = '1px solid rgba(45,206,137,0.3)';
+            }
+
+            /* Supply vocabulary: wiped = in rotation (usable now); available
+             * = awaiting wipe (one wipe away); wipe-eligible = in_use past
+             * retention. All three make up the effective supply. */
+            var parts = [d.in_rotation_count + ' in rotation'];
+            if (d.awaiting_wipe_count > 0) { parts.push(d.awaiting_wipe_count + ' awaiting wipe'); }
+            if (d.wipe_eligible_count > 0) { parts.push(d.wipe_eligible_count + ' wipe-eligible'); }
+            supply.textContent = parts.join(' + ') + ' = ' + d.effective_supply + ' drives';
+            rate.textContent = d.avg_cases_per_month + ' avg cases/month over ' + d.window_months + '-month window';
+
+            if (isLow) {
+                order.innerHTML = '<i class="fas fa-cart-plus mr-1"></i>'
+                    + ' Order approximately <b>' + d.order_quantity + ' drive(s)</b>'
+                    + ' to restore a ' + d.target_runway_months + '-month runway.';
+                order.style.display = '';
+            } else {
+                order.style.display = 'none';
+            }
+            row.style.display = '';
+        }
+
+        function iris_inv_ensure_cases() {
+            if (IRIS_INV.casesLoaded) { return $.Deferred().resolve().promise(); }
+            return $.ajax({ url: '/manage/cases/list', method: 'GET', dataType: 'json' })
+                .done(function (resp) {
+                    var cases = (resp && resp.data) ? resp.data : [];
+                    var sel = $('#iris-inv-f-case');
+                    sel.find('option:not(:first)').remove();
+                    cases.forEach(function (c) {
+                        var cid = c.case_id != null ? c.case_id : c.id;
+                        var nm = c.case_name || c.name || ('#' + cid);
+                        sel.append($('<option>').val(cid).text('#' + cid + ' - ' + nm));
+                    });
+                    IRIS_INV.casesLoaded = true;
+                });
+        }
+
+        function iris_inventory_open_register() {
+            $('#iris-inv-drive-id').val('');
+            $('#iris-inv-modal-title').text('Register drive');
+            $('#iris-inv-f-barcode, #iris-inv-f-label, #iris-inv-f-serial, #iris-inv-f-location, #iris-inv-f-capacity, #iris-inv-f-notes').val('');
+            /* A freshly registered drive is in rotation — 'wiped' in the
+             * maintainer's vocabulary ('available' = awaiting wipe). */
+            $('#iris-inv-f-status').val('wiped');
+            $('#iris-inv-modal-msg').text('');
+            $('#iris-inv-wipe-btn').hide();
+            iris_inv_ensure_cases().always(function () { $('#iris-inv-f-case').val(''); });
+            $('#iris-inv-drive-modal').modal({ show: true });
+        }
+
+        function iris_inventory_open_edit(id) {
+            iris_inv_ensure_cases().always(function () {
+                $.ajax({ url: '/api/v2/dashboard/inventory/drives', method: 'GET', dataType: 'json' })
+                .done(function (resp) {
+                    var list = Array.isArray(resp) ? resp : ((resp && resp.data) ? resp.data : []);
+                    var d = list.filter(function (x) { return x.id === id; })[0];
+                    if (!d) { return; }
+                    $('#iris-inv-drive-id').val(d.id);
+                    $('#iris-inv-modal-title').text('Edit drive — ' + (d.label || d.barcode));
+                    $('#iris-inv-f-barcode').val(d.barcode || '');
+                    $('#iris-inv-f-label').val(d.label || '');
+                    $('#iris-inv-f-serial').val(d.serial_number || '');
+                    $('#iris-inv-f-location').val(d.physical_location || '');
+                    $('#iris-inv-f-status').val(d.status || 'wiped');
+                    $('#iris-inv-f-case').val(d.case_id != null ? String(d.case_id) : '');
+                    $('#iris-inv-f-capacity').val(d.capacity || '');
+                    $('#iris-inv-f-notes').val(d.notes || '');
+                    $('#iris-inv-modal-msg').text('');
+                    $('#iris-inv-wipe-btn').show();
+                    $('#iris-inv-drive-modal').modal({ show: true });
+                });
+            });
+        }
+
+        function iris_inventory_save() {
+            var id = $('#iris-inv-drive-id').val();
+            var caseVal = $('#iris-inv-f-case').val();
+            var payload = {
+                barcode: $('#iris-inv-f-barcode').val(),
+                label: $('#iris-inv-f-label').val(),
+                serial_number: $('#iris-inv-f-serial').val(),
+                physical_location: $('#iris-inv-f-location').val(),
+                status: $('#iris-inv-f-status').val(),
+                case_id: caseVal ? parseInt(caseVal, 10) : null,
+                capacity: $('#iris-inv-f-capacity').val(),
+                notes: $('#iris-inv-f-notes').val(),
+                csrf_token: iris_inv_csrf()
+            };
+            if (!(payload.barcode || '').trim()) { $('#iris-inv-modal-msg').text('Bar code is required.'); return; }
+            var url = '/api/v2/dashboard/inventory/drives' + (id ? ('/' + id) : '');
+            $.ajax({
+                url: url, method: id ? 'PUT' : 'POST',
+                contentType: 'application/json',
+                headers: { 'X-CSRFToken': iris_inv_csrf() },
+                data: JSON.stringify(payload)
+            }).done(function () {
+                $('#iris-inv-drive-modal').modal('hide');
+                iris_inventory_load_drives();
+            }).fail(function (xhr) {
+                var m = 'Save failed.';
+                try { m = JSON.parse(xhr.responseText).message || m; } catch (e) {}
+                $('#iris-inv-modal-msg').text(m);
+            });
+        }
+
+        function iris_inventory_wipe() {
+            var id = $('#iris-inv-drive-id').val();
+            if (!id) { return; }
+            if (!confirm('Wipe this drive and return it to rotation? Evidence records are kept but unlinked from the drive, and the case + location assignment is cleared.')) { return; }
+            $.ajax({
+                url: '/api/v2/dashboard/inventory/drives/' + id + '/wipe', method: 'POST',
+                contentType: 'application/json',
+                headers: { 'X-CSRFToken': iris_inv_csrf() },
+                data: JSON.stringify({ csrf_token: iris_inv_csrf() })
+            }).done(function () {
+                $('#iris-inv-drive-modal').modal('hide');
+                iris_inventory_load_drives();
+            }).fail(function (xhr) {
+                var m = 'Wipe failed.';
+                try { m = JSON.parse(xhr.responseText).message || m; } catch (e) {}
+                $('#iris-inv-modal-msg').text(m);
+            });
+        }
+
+        function iris_inventory_delete(id) {
+            if (!confirm('Delete this drive record? Evidence items on it are kept (unlinked). This does not delete any evidence.')) { return; }
+            $.ajax({
+                url: '/api/v2/dashboard/inventory/drives/' + id, method: 'DELETE',
+                contentType: 'application/json',
+                headers: { 'X-CSRFToken': iris_inv_csrf() },
+                data: JSON.stringify({ csrf_token: iris_inv_csrf() })
+            }).done(function () { iris_inventory_load_drives(); })
+            .fail(function () { alert('Delete failed.'); });
+        }
+
+        // Enter-to-scan on the lookup box.
+        $(document).on('keydown', '#iris-inv-scan', function (e) {
+            if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); iris_inventory_lookup(); }
+        });
+
+        // Column sort on Drive inventory table headers.
+        $(document).on('click', '#iris-inv-drives-table thead th[data-sort-key]', function () {
+            var col = $(this).attr('data-sort-key');
+            if (IRIS_INV._sortCol === col) {
+                IRIS_INV._sortDir = IRIS_INV._sortDir === 1 ? -1 : 1;
+            } else {
+                IRIS_INV._sortCol = col;
+                IRIS_INV._sortDir = 1;
+            }
+            iris_inv_render_rows();
+        });
+    </script>
+    <script>
+    /* iris-next: v3 master/detail card view over the drive inventory.
+     * OVERLAY, not a rebuild: the data comes from the same IRIS_INV._drives
+     * the (hidden) legacy table renders, Register/Edit/Delete drive the
+     * existing modal functions, and the per-drive evidence list rides the
+     * existing /api/v2/dashboard/inventory/lookup endpoint. List and
+     * evidence loads each keep three states apart — loading, failed and
+     * empty are different claims. */
+    var IRIS_DI = {
+        sel: null, q: '', showLegacy: false,
+        listState: null,          // null = not fetched yet
+        ev: {}, evInflight: {}, evFailed: {}   // per drive id, by design
+    };
+
+    function iris_di_liststate(st) {
+        IRIS_DI.listState = st;
+        if (st === 'loading') {
+            /* A real refetch is starting — drop the per-drive evidence
+             * cache so an edited drive (barcode moved, items relinked)
+             * cannot show yesterday's list. In-flight lookups may still
+             * land afterwards; they re-key by id, which is fine. */
+            IRIS_DI.ev = {};
+            IRIS_DI.evFailed = {};
+        }
+        iris_di_render();
+    }
+
+    function iris_di_toggle_legacy() {
+        IRIS_DI.showLegacy = !IRIS_DI.showLegacy;
+        document.getElementById('iris-di-legacy').style.display =
+            IRIS_DI.showLegacy ? '' : 'none';
+        document.getElementById('iris-di-wrap').style.display =
+            IRIS_DI.showLegacy ? 'none' : '';
+        document.getElementById('iris-di-legacy-toggle').textContent =
+            IRIS_DI.showLegacy ? 'Show card view' : 'Show legacy table';
+    }
+
+    function iris_di_by_id(id) {
+        return (IRIS_INV._drives || []).filter(function (d) {
+            return d.id === id;
+        })[0] || null;
+    }
+
+    function iris_di_match(d) {
+        if (!IRIS_DI.q) { return true; }
+        var q = IRIS_DI.q.toLowerCase();
+        return [d.barcode, d.label, d.serial_number, d.physical_location,
+                d.capacity, d.case_name,
+                d.case_id != null ? ('#' + d.case_id) : '']
+            .some(function (v) {
+                return String(v == null ? '' : v).toLowerCase().indexOf(q) !== -1;
+            });
+    }
+
+    function iris_di_card_html(d) {
+        var cls = 'iris-di-card' + (d.id === IRIS_DI.sel ? ' iris-di-sel' : '')
+                + (d.overdue ? ' iris-di-overdue' : '');
+        var caseTxt = d.case_id
+            ? ('#' + d.case_id + (d.case_name ? ' - ' + iris_inv_esc(d.case_name) : ''))
+            : '—';
+        return '<div class="' + cls + '" data-id="' + d.id + '">'
+            + '<div class="d-flex align-items-center" style="gap:8px; flex-wrap:wrap;">'
+            + '<span class="iris-di-bc">' + iris_inv_esc(d.barcode) + '</span>'
+            + '<span class="iris-di-name">' + iris_inv_esc(d.label || '(no label)') + '</span>'
+            + '<span class="ml-auto">' + iris_inv_status_badge(d.status)
+            + (d.overdue ? ' <span class="iris-inv-overdue-badge" title="In use longer than the configured retention period"><i class="fas fa-exclamation-triangle"></i> Overdue</span>' : '')
+            + '</span></div>'
+            + '<div class="iris-di-meta">'
+            + (d.physical_location ? '<span><i class="fas fa-map-marker-alt mr-1"></i>' + iris_inv_esc(d.physical_location) + '</span>' : '')
+            + (d.capacity ? '<span>' + iris_inv_esc(d.capacity) + '</span>' : '')
+            + '<span>Case: ' + caseTxt + '</span>'
+            + (d.date_added ? '<span>Added ' + iris_inv_esc(d.date_added.substring(0, 10)) + '</span>' : '')
+            + '</div></div>';
+    }
+
+    function iris_di_field(label, valHtml) {
+        return '<div class="iris-di-flabel">' + label + '</div>'
+             + '<div class="iris-di-fval">' + valHtml + '</div>';
+    }
+
+    function iris_di_ev_html(d) {
+        var h = '<div class="iris-di-flabel">Evidence items on this drive</div>';
+        if (IRIS_DI.evFailed[d.id]) {
+            return h + '<div class="iris-di-statemsg">'
+                 + 'Could not load the evidence list — try reselecting the drive.'
+                 + '</div>';
+        }
+        var items = IRIS_DI.ev[d.id];
+        if (items === undefined) {
+            /* Not looked yet (or in flight) — never claim "none" here. */
+            return h + '<div class="iris-di-statemsg">Loading…</div>';
+        }
+        if (!items.length) {
+            return h + '<div class="iris-di-statemsg">No evidence items are '
+                 + 'linked to this drive.</div>';
+        }
+        return h + items.map(function (e) {
+            return '<div class="iris-di-ev">'
+                + '<a href="/case/evidences?cid=' + e.case_id + '&shared=' + e.id + '">'
+                + iris_inv_esc(e.filename || ('#' + e.id)) + '</a>'
+                + ' <span class="text-muted">· ' + iris_inv_esc(e.type_name || 'Unspecified') + '</span>'
+                + (e.file_hash ? '<div style="font-family:monospace; font-size:0.72rem; word-break:break-all;" class="text-muted">' + iris_inv_esc(e.file_hash) + '</div>' : '')
+                + '</div>';
+        }).join('');
+    }
+
+    function iris_di_detail_html(d) {
+        var caseHtml = d.case_id
+            ? '<a href="/case?cid=' + d.case_id + '">#' + d.case_id
+              + (d.case_name ? ' - ' + iris_inv_esc(d.case_name) : '') + '</a>'
+            : '<span class="text-muted">— none —</span>';
+        return '<div class="iris-di-detailcard">'
+            + '<div class="iris-di-dh">'
+            + '<h4>' + iris_inv_esc(d.label || d.barcode) + '</h4>'
+            + iris_inv_status_badge(d.status)
+            + '<span class="ml-auto">'
+            + '<button class="btn btn-sm btn-light" onclick="iris_inventory_open_edit(' + d.id + ');"><i class="fas fa-pen mr-1"></i>Edit</button> '
+            + '<button class="btn btn-sm btn-danger" onclick="iris_inventory_delete(' + d.id + ');"><i class="fas fa-trash mr-1"></i>Delete</button>'
+            + '</span></div>'
+            + (d.overdue ? '<div class="iris-di-overdue-note"><i class="fas fa-exclamation-triangle mr-1"></i>In use longer than the configured retention period.</div>' : '')
+            + iris_di_field('Bar code', '<span class="iris-di-bc">' + iris_inv_esc(d.barcode) + '</span>')
+            + iris_di_field('Serial number', d.serial_number ? iris_inv_esc(d.serial_number) : '<span class="text-muted">—</span>')
+            + iris_di_field('Physical location', d.physical_location ? iris_inv_esc(d.physical_location) : '<span class="text-muted">—</span>')
+            + iris_di_field('Capacity', d.capacity ? iris_inv_esc(d.capacity) : '<span class="text-muted">—</span>')
+            + iris_di_field('Associated case', caseHtml)
+            + (d.date_added ? iris_di_field('Added', iris_inv_esc(d.date_added.substring(0, 10))) : '')
+            + (d.notes ? iris_di_field('Notes', iris_inv_esc(d.notes)) : '')
+            + iris_di_ev_html(d)
+            + '</div>';
+    }
+
+    function iris_di_fetch_ev(d) {
+        if (IRIS_DI.ev[d.id] !== undefined || IRIS_DI.evInflight[d.id]) { return; }
+        /* The in-flight marker is a SEPARATE flag: assigning a sentinel to
+         * the cache is indistinguishable from data (the truthy-sentinel
+         * trap), and without it every re-render re-fires the request. */
+        IRIS_DI.evInflight[d.id] = true;
+        delete IRIS_DI.evFailed[d.id];
+        $.ajax({
+            url: '/api/v2/dashboard/inventory/lookup?barcode='
+                 + encodeURIComponent(d.barcode),
+            method: 'GET', dataType: 'json'
+        }).done(function (resp) {
+            var p = (resp && resp.data) ? resp.data : resp;
+            IRIS_DI.ev[d.id] = (p && p.evidences) ? p.evidences : [];
+        }).fail(function () {
+            IRIS_DI.evFailed[d.id] = true;
+        }).always(function () {
+            delete IRIS_DI.evInflight[d.id];
+            iris_di_render();
+        });
+    }
+
+    function iris_di_render() {
+        var list = document.getElementById('iris-di-list');
+        var state = document.getElementById('iris-di-state');
+        var ph = document.getElementById('iris-di-placeholder');
+        var det = document.getElementById('iris-di-detail');
+        var count = document.getElementById('iris-di-count');
+        if (!list) { return; }
+
+        var st = IRIS_DI.listState;
+        if (st !== 'ready') {
+            list.innerHTML = '';
+            state.style.display = '';
+            state.textContent =
+                st === 'loading' ? 'Loading drives…'
+                : st === 'failed' ? 'Could not load the drive list — use Refresh to retry.'
+                : st === 'empty' ? 'No drives registered yet — use Register drive to add the first one.'
+                : 'Loading drives…';
+            count.textContent = '';
+            ph.style.display = '';
+            det.style.display = 'none';
+            return;
+        }
+        state.style.display = 'none';
+
+        var drives = IRIS_INV._drives || [];
+        count.textContent = '(' + drives.length + ')';
+        if (IRIS_DI.sel !== null && !iris_di_by_id(IRIS_DI.sel)) {
+            IRIS_DI.sel = null;   // e.g. the selected drive was deleted
+        }
+        var shown = drives.filter(iris_di_match);
+        list.innerHTML = shown.map(iris_di_card_html).join('')
+            || '<div class="iris-di-statemsg">No drive matches the search.</div>';
+
+        var d = IRIS_DI.sel !== null ? iris_di_by_id(IRIS_DI.sel) : null;
+        if (!d) {
+            ph.style.display = '';
+            det.style.display = 'none';
+            return;
+        }
+        ph.style.display = 'none';
+        det.style.display = '';
+        det.innerHTML = iris_di_detail_html(d);
+        iris_di_fetch_ev(d);
+    }
+
+    document.addEventListener('click', function (e) {
+        var card = e.target.closest && e.target.closest('.iris-di-card');
+        if (!card) { return; }
+        if (e.target.closest('a')) { return; }
+        IRIS_DI.sel = parseInt(card.getAttribute('data-id'), 10);
+        iris_di_render();
+    });
+    document.addEventListener('input', function (e) {
+        if (e.target && e.target.id === 'iris-di-search') {
+            IRIS_DI.q = e.target.value.trim();
+            iris_di_render();
+        }
+    });
+    </script>
+    <script>
+    /* On the dashboard the tab onclick was the entry point; here the page IS
+     * the view, so load on ready. */
+    document.addEventListener('DOMContentLoaded', function () {
+        iris_inventory_on_show();
+    });
+    </script>
+{% endblock javascripts %}

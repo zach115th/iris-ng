@@ -1,0 +1,450 @@
+{% extends "layouts/default_ext.html" %} {% block title %} Case summary {% endblock title %}
+{% block stylesheets %}
+{% include 'includes/header_case.html' %}
+<link rel="stylesheet" href="/static/assets/css/select2.css">
+<link rel="stylesheet" href="/static/assets/css/bootstrap-multiselect.min.css">
+<link rel="stylesheet" href="/static/assets/css/bootstrap-select.min.css">
+{% endblock stylesheets %}
+{% block content %}
+{% if current_user.is_authenticated %}
+
+{% include 'includes/navigation_ext.html' %}
+{% include 'includes/sidenav.html' %}
+
+<div class="main-panel">
+
+    <div class="content">
+        {# v3 case shell replaces the gradient header + the action-button
+           strip (case-nav_landing) - the actions now live in the shell's
+           "..." menu with their historical element ids, so the Summary
+           bundle's bindings (#request_review, #case_pipeline,
+           #case_modal_quick_actions) are untouched. #}
+        <div class="page-inner pt-2 pb-0">
+            {% set cshell_summary = True %}
+            {% include 'includes/case_shell.html' %}
+        </div>
+
+        <div class="page-inner pt-0">
+                <div id="caseReviewState" data-review-state="{{ case.review_status.status_name }}" data-reviewer-id="{{ case.reviewer_id }}" data-reviewer-name="{{ case.reviewer.name }}" style="display: none;"></div>
+
+                {% if case.reviewer_id == current_user.id and case.review_status.status_name != "Reviewed" and case.review_status.status_name != "Not reviewed" %}
+                    <div class="row row-card-no-pd review-card mt--3 mb--3 bg-warning-gradient" style="display: none;">
+                        <div class="col-md-12">
+                            <h4 class="font-weight-bold"><i class="fa-solid fa-triangle-exclamation text-danger ml-2 mr-2"></i>Review requested
+                                <button class="btn btn-sm float-right btn-dark mr-3 mt-2 btn-start-review">Start review</button>
+                                <button class="btn btn-sm float-right btn-success mr-3 mt-2 btn-confirm-review" style="display:none">Confirm review</button>
+                                <button class="btn btn-sm float-right btn-light mr-3 mt-2 btn-cancel-review" style="display:none">Cancel review</button></h4>
+
+                            <span class="ml-2" id="reviewSubtitle">You have been requested to review this case.</span>
+                        </div>
+                    </div>
+                {% elif case.review_status.status_name == "Review in progress" %}
+                    <div class="row row-card-no-pd mt--3 mb--3 bg-warning-gradient">
+                        <div class="col-md-12">
+                            <h4 class="font-weight-bold mt-1"><i class="fa-solid fa-list-check ml-2 mr-2"></i>Review by {{ case.reviewer.name }} in progress</h4>
+                        </div>
+                    </div>
+                {% elif case.review_status.status_name == "Pending review" %}
+                    <div class="row row-card-no-pd mt--3 mb--3 bg-warning-gradient">
+                        <div class="col-md-12">
+                            <h4 class="font-weight-bold mt-1"><i class="fa-solid fa-triangle-exclamation text-danger ml-2 mr-2"></i>Review by {{ case.reviewer.name }} pending</h4>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {# v3-style two-column summary row: AI commentary beside the
+                   analyst's case summary instead of stacked. Chrome only —
+                   BOTH blocks are untouched inside (the AI panel is an
+                   invariant surface; only its container narrows), and the
+                   columns wrap back to stacked below ~1100px so neither card
+                   is crushed on a narrow viewport. #}
+                <style>
+                    .iris-sum-cols {
+                        display: flex; gap: 14px;
+                        align-items: flex-start; flex-wrap: wrap;
+                    }
+                    .iris-sum-cols > .iris-sum-col {
+                        flex: 1 1 520px; min-width: 0;
+                    }
+                    /* Both cards own the same bottom margin so their bottoms
+                       align — 1.25rem is the AI panel's own value. */
+                    .iris-sum-cols #rescard1 { margin-bottom: 1.25rem; }
+                    /* FALLBACK ONLY — the real height is MEASURED by
+                       iris_sum_fit below (the cards' tops move with the shell
+                       header, which hydrates late and wraps, and with the
+                       review banners). A viewport unit is roughly right with
+                       no JS; it is not the mechanism. */
+                    .iris-sum-cols .iris-ai-panel,
+                    .iris-sum-cols #rescard1 { min-height: 55vh; }
+
+                    /* Case summary card restyled to read as the AI panel's
+                       sibling. The values are COPIED from case_ai_panel.html's
+                       .iris-ai-* tokens (bg, border, radius, eyebrow, button)
+                       under a separate .iris-cs-* prefix so the two surfaces
+                       stay independently editable — same look, no coupling. */
+                    #rescard1.iris-cs-card {
+                        background:
+                          radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0),
+                          #0b0b0d;
+                        background-size: 18px 18px;
+                        border: 1px solid rgba(255, 255, 255, 0.10);
+                        border-radius: 14px;
+                        color: #fafafa;
+                        overflow: hidden;
+                    }
+                    #rescard1 .iris-cs-header {
+                        display: flex; align-items: center;
+                        justify-content: space-between; gap: 1rem;
+                        padding: 14px 18px;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+                        background: rgba(255, 255, 255, 0.015);
+                    }
+                    .iris-cs-titlelink {
+                        display: flex; align-items: center; gap: 10px;
+                        text-decoration: none; min-width: 0;
+                    }
+                    .iris-cs-titlelink:hover { text-decoration: none; }
+                    .iris-cs-eyebrow {
+                        font-size: 10.5px; font-weight: 600;
+                        letter-spacing: 0.14em; text-transform: uppercase;
+                        color: rgba(250, 250, 250, 0.62); white-space: nowrap;
+                    }
+                    .iris-cs-sep { color: rgba(255, 255, 255, 0.10); }
+                    .iris-cs-title {
+                        margin: 0; font-size: 14px; font-weight: 600;
+                        color: #fafafa; line-height: 1.2;
+                    }
+                    .iris-cs-actions {
+                        display: flex; align-items: center; gap: 8px;
+                        flex-wrap: wrap; justify-content: flex-end;
+                    }
+                    .iris-cs-actions small { color: rgba(250, 250, 250, 0.62); }
+                    .iris-cs-btn {
+                        display: inline-flex; align-items: center; gap: 6px;
+                        padding: 6px 14px; border-radius: 8px;
+                        font-size: 12.5px; font-weight: 500; color: #fafafa;
+                        background: rgba(255, 255, 255, 0.06);
+                        border: 1px solid rgba(255, 255, 255, 0.10);
+                        cursor: pointer; line-height: 1;
+                        transition: background 120ms ease, border-color 120ms ease;
+                    }
+                    .iris-cs-btn:hover { background: rgba(255, 255, 255, 0.10); border-color: rgba(255,255,255,0.18); }
+                    #rescard1 .card-body { background: transparent; color: #fafafa; }
+                </style>
+                <script>
+                /* Extend both summary cards to the bottom of the window.
+                   MEASURED, never derived: top comes from each card's own
+                   rect (scroll-corrected so a re-measure while scrolled gives
+                   the same answer), the bottom margin is read from computed
+                   style, and the only constant is the named breathing gap.
+                   A floor element (the AI chat bar's input row) is honoured
+                   if this page ever gains one; today Summary has none. */
+                var IRIS_SUM_FIT_GAP = 18;
+                function iris_sum_fit() {
+                    var floor = window.innerHeight || 800;
+                    var form = document.getElementById('iris-chat-form');
+                    if (form) {
+                        var fr = form.getBoundingClientRect();
+                        /* zero-height means "not rendered", NOT "at the top
+                           of the screen" */
+                        if (fr.height > 0) { floor = Math.min(floor, fr.top + (window.scrollY || 0)); }
+                    }
+                    [{el: document.querySelector('.iris-sum-cols .iris-ai-panel'),
+                      body: document.querySelector('.iris-sum-cols .iris-ai-panel-body')},
+                     {el: document.getElementById('rescard1'),
+                      body: document.getElementById('case_summary_card')}
+                    ].forEach(function (c) {
+                        if (!c.el) { return; }
+                        /* a collapsed card must NOT be held open at window
+                           height — fall back to natural size */
+                        if (c.body && c.body.offsetParent === null) {
+                            if (c.el.style.minHeight) { c.el.style.minHeight = ''; }
+                            return;
+                        }
+                        var r = c.el.getBoundingClientRect();
+                        if (r.height === 0) { return; /* not rendered */ }
+                        var topAbs = r.top + (window.scrollY || 0);
+                        var mb = parseFloat(window.getComputedStyle(c.el).marginBottom) || 0;
+                        var h = Math.max(220, Math.round(floor - topAbs - mb - IRIS_SUM_FIT_GAP));
+                        var v = h + 'px';
+                        /* write only on change — a ResizeObserver watches the
+                           container this write resizes, so an unconditional
+                           write would re-fire it forever */
+                        if (c.el.style.minHeight !== v) { c.el.style.minHeight = v; }
+                    });
+                }
+                document.addEventListener('DOMContentLoaded', function () {
+                    iris_sum_fit();
+                    var raf = null;
+                    var kick = function () {
+                        if (raf) { return; }
+                        raf = requestAnimationFrame(function () { raf = null; iris_sum_fit(); });
+                    };
+                    window.addEventListener('resize', kick);
+                    if (window.ResizeObserver) {
+                        var ro = new ResizeObserver(kick);
+                        /* the shell header hydrates late and wraps; the review
+                           banners appear above the row — both move the tops */
+                        var shell = document.getElementById('iris-cshell');
+                        if (shell) { ro.observe(shell); }
+                        var wrap = document.querySelector('.iris-sum-cols');
+                        if (wrap && wrap.parentElement) { ro.observe(wrap.parentElement); }
+                    }
+                    /* collapsing the Case summary body must release the card's
+                       height (jQuery is loaded by DOMContentLoaded — this
+                       inline script runs before it, the handler does not) */
+                    if (window.jQuery) {
+                        window.jQuery(document).on(
+                            'shown.bs.collapse hidden.bs.collapse',
+                            '#case_summary_card', kick);
+                    }
+                });
+                </script>
+                <div class="iris-sum-cols">
+                    <div class="iris-sum-col">
+                {% include 'case_ai_panel.html' %}
+                    </div>
+                    <div class="iris-sum-col">
+                        {# The .row.row-card-no-pd / .col-md-12 scaffolding is
+                           GONE, not neutralised: Atlantis styles that row as a
+                           card in its own right (background, radius, padding,
+                           30px bottom margin) and strips borders off any .card
+                           inside it — the "double card" outline. The card sits
+                           directly in the flex column, exactly as the AI panel
+                           does in the other one. #}
+                        {# Restyled to read as the AI panel's sibling — the
+                           same header grammar (eyebrow | title | actions)
+                           and the same card chrome. Every id and handler is
+                           unchanged: case.summary.js only writes .text()/
+                           .html() into these elements and toggles
+                           badge-success/-danger on #last_saved, so the
+                           layout classes were free to move. #}
+                        <div class="card iris-cs-card" id="rescard1">
+                            <div class="card-header iris-cs-header">
+                                {{ form.hidden_tag() }}
+                                <a href="#case_summary_card" class="iris-cs-titlelink" data-toggle="collapse" aria-expanded="true" aria-controls="case_summary_card">
+                                    <span class="iris-cs-eyebrow">Analyst Commentary</span>
+                                    <span aria-hidden="true" class="iris-cs-sep">|</span>
+                                    <h4 class="iris-cs-title">Case Summary {{ "(Syncing with DB )" if case.id }}</h4>
+                                </a>
+                                <div class="iris-cs-actions">
+                                    <small id="content_typing"></small>
+                                    <small id="content_last_saved_by"></small>
+                                    <span id="last_saved" class="badge"></span>
+                                    <small id="content_last_sync"></small>
+                                    <button class="iris-cs-btn" onclick="edit_case_summary();" id="sum_edit_btn">Edit</button>
+                                    <button type="button" id="sum_refresh_btn" class="iris-cs-btn" onclick="sync_editor();">
+                                        Refresh
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="collapsed" id="case_summary_card">
+                                <div class="card-body">
+                                   <div class="row mb-1">
+                                        <div class="col" id="summary_edition_btn" style="display:none;">
+                                                <div class="btn btn-sm btn-light mr-1 " title="CTRL-B" onclick="editor.insertSnippet('**${1:$SELECTION}**');editor.focus();"><i class="fa-solid fa-bold"></i></div>
+                                                <div class="btn btn-sm btn-light mr-1" title="CTRL-I" onclick="editor.insertSnippet('*${1:$SELECTION}*');editor.focus();"><i class="fa-solid fa-italic"></i></div>
+                                                <div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-1" onclick="editor.insertSnippet('# ${1:$SELECTION}');editor.focus();">H1</div>
+                                                <div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-2" onclick="editor.insertSnippet('## ${1:$SELECTION}');editor.focus();">H2</div>
+                                                <div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-3" onclick="editor.insertSnippet('### ${1:$SELECTION}');editor.focus();">H3</div>
+                                                <div class="btn btn-sm btn-light mr-1" title="CTRL-SHIFT-4" onclick="editor.insertSnippet('#### ${1:$SELECTION}');editor.focus();">H4</div>
+                                                <div class="btn btn-sm btn-light mr-1" title="Insert code" onclick="editor.insertSnippet('```${1:$SELECTION}```');editor.focus();"><i class="fa-solid fa-code"></i></div>
+                                                <div class="btn btn-sm btn-light mr-1" title="Insert link" onclick="editor.insertSnippet('[${1:$SELECTION}](url)');editor.focus();"><i class="fa-solid fa-link"></i></div>
+                                                <div class="btn btn-sm btn-light mr-1" title="Insert table" onclick="editor.insertSnippet('|\t|\t|\t|\n|--|--|--|\n|\t|\t|\t|\n|\t|\t|\t|');editor.focus();"><i class="fa-solid fa-table"></i></div>
+                                                <div class="btn btn-sm btn-light mr-1" title="Insert bullet list" onclick="editor.insertSnippet('\n- \n- \n- ');editor.focus();"><i class="fa-solid fa-list"></i></div>
+                                                <div class="btn btn-sm btn-light mr-1" title="Insert numbered list" onclick="editor.insertSnippet('\n1. a  \n2. b  \n3. c  ');editor.focus();"><i class="fa-solid fa-list-ol"></i></div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6" id="container_editor_summary">
+                                            <div style="display: none" id="fetched_crc"></div>
+                                            <div id="editor_summary" contenteditable="true" spellcheck="true" data-theme="{% if current_user.in_dark_mode %}dark{% else %}light{% endif %}"></div>
+                                            <textarea id="case_summary" rows="10" cols="82" style="display: none"></textarea>
+                                        </div>
+                                        <div class="col-md-6" id="ctrd_casesum">
+                                            <div id="targetDiv"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal " tabindex="-1" role="dialog" id="modal_select_report" data-backdrop="true">
+                <div class="modal-lg modal-dialog" role="document">
+                  <div class="modal-content">
+                      <div class="modal-header">
+                      <h5>Select report template</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                      </div>
+                      <div class="modal-body">
+                          {% if reports| length == 0 %}
+                              <div class="alert alert-warning" role="alert">
+                                  <h4 class="alert-heading">No report template found</h4>
+                                  <p>Report templates are configured in <a href="/manage/templates?cid={{case.case_id}}">the management section</a>.</p>
+                              </div>
+                          {% else %}
+                          <div class="col">
+                            <p>Since IRIS v2.0.0, the report generation supports images. Integration of images might fail depending on the situation.<br/><code>Safe Mode</code> can be used to generate the report without them.</p>
+                          </div>
+
+                          <select class="selectpicker form-control bg-outline-success dropdown-submenu" data-show-subtext="true" data-live-search="true" id="select_report">
+                                {% for report in reports %}
+                                      <option data-toggle="tooltip"  value="{{ report[0] }}"  data-subtext="{{ report[3] }}">{{ report[1] }} ({{ report[2].capitalize() }})</option>
+                                {% endfor %}
+                          </select>
+                      </div>
+                      <div class="modal-footer">
+                          <a href="#" class="btn btn-light float-left mt-2 mr-auto" onclick="gen_report(true);">
+                              <span class="btn-label">
+                                <i class="fa fa-file-download"></i>
+                              </span>
+                              Generate in Safe Mode
+                          </a>
+                          <a href="#" class="btn btn-light float-right mt-2 ml-2" onclick="gen_report(false);">
+                              <span class="btn-label">
+                                <i class="fa fa-file-download"></i>
+                              </span>
+                              Generate
+                            </a>
+                          {% endif %}
+                      </div>
+                  </div><!-- /.modal-content -->
+                </div><!-- /.modal-dialog -->
+            </div>
+            <div class="modal " tabindex="-1" role="dialog" id="modal_select_report_act" data-backdrop="true">
+                <div class="modal-lg modal-dialog" role="document">
+                  <div class="modal-content">
+                      <div class="modal-header">
+                      <h5>Select activity report template</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                      </div>
+                      <div class="modal-body">
+                          {% if reports| length == 0 %}
+                              <div class="alert alert-warning" role="alert">
+                                  <h4 class="alert-heading">No report template found</h4>
+                                  <p>Report templates are configured in <a href="/manage/templates?cid={{case.case_id}}">the management section</a>.</p>
+                              </div>
+                          {% else %}
+                              <div class="col">
+                                <p>Since IRIS v2.0.0, the report generation supports images. Integration of images might fail depending on the situation.<br/><code>Safe Mode</code> can be used to generate the report without them.</p>
+                              </div>
+                              <select class="selectpicker form-control bg-outline-success dropdown-submenu mb-2" data-show-subtext="true" data-live-search="true" id="select_report_act">
+                                    {% for report in reports_act %}
+                                          <option data-toggle="tooltip"  value="{{ report[0] }}"  data-subtext="{{ report[3] }}">{{ report[1] }} ({{ report[2].capitalize() }})</option>
+                                    {% endfor %}
+                              </select>
+
+                      </div>
+
+                      <div class="modal-footer">
+                          <a href="#" class="btn btn-light float-left mt-2 mr-auto" onclick="gen_act_report(true);">
+                              <span class="btn-label">
+                                <i class="fa fa-file-download"></i>
+                              </span>
+                              Generate in Safe Mode
+                          </a>
+                          <a href="#" class="btn btn-light float-right mt-2 ml-2" onclick="gen_act_report(false);">
+                              <span class="btn-label">
+                                <i class="fa fa-file-download"></i>
+                              </span>
+                              Generate
+                            </a>
+                          {% endif %}
+                      </div>
+                  </div><!-- /.modal-content -->
+                </div><!-- /.modal-dialog -->
+            </div>
+            <div class="modal " tabindex="-1" role="dialog" id="modal_choose_reviewer" data-backdrop="true">
+              <div class="modal-lg modal-dialog" role="document">
+                  <div class="modal-content">
+                    <form method="post" action="" id="form_choose_reviewer">
+                          <div class="modal-header">
+                          <h5>Choose reviewer</h5>
+                          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span></button>
+                          </div>
+                          <div class="modal-body">
+                              <div class="row mb-2">
+                                  <div class="col-12">
+                                      <div class="form-group">
+                                        <select class="selectpicker form-control" data-dropup-auto="false" data-live-search="true" id="reviewer_id">
+                                        </select>
+                                      </div>
+                                  </div>
+                              </div>
+                             <div class="row mt-4">
+                                 <div class="col-12 d-flex">
+                                     <button type="button" class="btn btn-default mr-auto" data-dismiss="modal">Cancel</button>
+                                     <button type="button" class="btn btn-outline-success ml-auto" id="submit_set_reviewer">Request</button>
+                                 </div>
+                             </div>
+                          </div>
+                    </form>
+                  </div><!-- /.modal-content -->
+              </div><!-- /.modal-dialog -->
+            </div>
+            <div class="modal" tabindex="-1" role="dialog" id="modal_case_detail" data-backdrop="true">
+                <div class="modal-xl modal-dialog" role="document">
+                    <div class="modal-content" id="info_case_modal_content">
+
+                    </div><!-- /.modal-content -->
+                </div><!-- /.modal-dialog -->
+            </div>
+            <div class="modal bg-shadow-gradient" tabindex="-1" role="dialog" id="modal_ac_additional" data-backdrop="true">
+            </div>
+            <div class="modal bg-shadow-gradient" tabindex="-1" role="dialog" id="modal_case_review" data-backdrop="static" data-keyboard="false">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Case Review</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <p>Do you confirm that the case has been reviewed?</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <button type="button" class="btn btn-danger float-left" data-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-success float-right" id="confirmReview">Confirm Review</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% include 'includes/footer.html' %}
+{% endif %} {% endblock content %} {% block javascripts %}
+
+<script src="/static/assets/js/plugin/ace/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="/static/assets/js/plugin/ace/src-noconflict/ext-language_tools.js" type="text/javascript" charset="utf-8"></script>
+<script src="/static/assets/js/core/socket.io.js"></script>
+<script src="/static/assets/js/plugin/select/select2.js"></script>
+
+<script src="/static/assets/js/plugin/marked/marked.min.js"></script>
+<script src="/static/assets/js/iris/datatablesUtils.js"></script>
+<script src="/static/assets/js/iris/case.js"></script>
+<script src="/static/assets/js/iris/manage.cases.common.js"></script>
+<script src="/static/assets/js/iris/case.common.js"></script>
+<script src="/static/assets/js/iris/case.summary.js"></script>
+<script src="/static/assets/js/iris/case.time.js"></script>
+<script src="/static/assets/js/plugin/select/bootstrap-select.min.js"></script>
+<script src="/static/assets/js/plugin/select/bootstrap-multiselect.min.js"></script>
+
+<script>
+    $('#modal_select_report').selectpicker();
+    load_menu_mod_options_modal([{{case.case_id}}], 'case', $("#case_modal_quick_actions"));
+</script>
+
+{% endblock javascripts %}

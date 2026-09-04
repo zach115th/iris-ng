@@ -1,0 +1,650 @@
+#  IRIS Source Code
+#
+#  Tier-1 AI endpoints for cases. v0 is synchronous: a POST runs the LLM
+#  inline and returns the result. The call typically takes 5-30s; if the
+#  client times out, the artifact is still persisted and a follow-up GET
+#  retrieves it.
+
+from flask import Blueprint
+from flask import request
+
+from app.blueprints.access_controls import ac_api_requires
+from app.blueprints.access_controls import ac_api_return_access_denied
+from app.blueprints.rest.endpoints import response_api_error
+from app.blueprints.rest.endpoints import response_api_not_found
+from app.blueprints.rest.endpoints import response_api_success
+from app.blueprints.rest.parsing import parse_boolean
+from app.blueprints.responses import response
+from app.iris_engine.ai.ai_jobs import enqueue_ai_job
+from app.iris_engine.ai.ai_jobs import AiJobError
+from flask_login import current_user
+from app.iris_engine.access_control.utils import ac_fast_check_current_user_has_case_access
+from app.iris_engine.ai.case_summary import CaseSummaryError
+from app.iris_engine.ai.case_summary import generate_case_summary
+from app.iris_engine.ai.case_summary import get_cached_summary
+from app.iris_engine.ai.case_summary import revert_summary_edit
+from app.iris_engine.ai.case_summary import save_summary_edit
+from app.iris_engine.ai.case_summary import summary_edit_is_stale
+from app.iris_engine.ai.attack_suggester import AttackSuggesterError
+from app.iris_engine.ai.attack_suggester import suggest_attack_techniques
+from app.iris_engine.ai.case_chat import CaseChatError
+from app.iris_engine.ai.case_chat import ask_case
+from app.iris_engine.ai.asset_profile import AssetProfileError
+from app.iris_engine.ai.asset_profile import generate_asset_profile
+from app.iris_engine.ai.asset_profile import get_cached_asset_profile
+from app.iris_engine.ai.ioc_profile import IocProfileError
+from app.iris_engine.ai.ioc_profile import generate_ioc_profile
+from app.iris_engine.ai.ioc_profile import get_cached_ioc_profile
+from app.iris_engine.ai.event_analysis import EventAnalysisError
+from app.iris_engine.ai.event_analysis import generate_event_analysis
+from app.iris_engine.ai.event_analysis import get_cached_event_analysis
+from app.iris_engine.ai.evidence_type_suggester import EvidenceTypeSuggesterError
+from app.iris_engine.ai.evidence_type_suggester import suggest_evidence_type
+from app.iris_engine.ai.ioc_extractor import IocExtractorError
+from app.iris_engine.ai.ioc_extractor import extract_iocs
+from app.iris_engine.ai.tag_suggester import TagSuggesterError
+from app.iris_engine.ai.tag_suggester import suggest_tags
+from app.iris_engine.ai.timeline_analysis import TimelineAnalysisError
+from app.iris_engine.ai.timeline_analysis import generate_timeline_analysis
+from app.iris_engine.ai.timeline_analysis import get_cached_analysis as get_cached_timeline_analysis
+from app.models.authorization import CaseAccessLevel
+from app.models.models import CaseAiArtifact
+
+case_ai_blueprint = Blueprint(
+    'case_ai_rest_v2',
+    __name__,
+    url_prefix='/<int:case_identifier>/ai'
+)
+
+
+def _serialize_artifact(artifact: CaseAiArtifact) -> dict:
+    """Serialize an AI artifact.
+
+    `content` deliberately carries the ANALYST-CORRECTED text when a manual
+    edit exists, so every existing consumer (panel, scripts, exports) shows the
+    corrected version without changes — a hand-fixed executive summary is the
+    authoritative one. The untouched model output stays available as
+    `ai_content` to back "View AI original" / "Revert to AI".
+    """
+    edited = artifact.is_edited
+    return {
+        'id': artifact.id,
+        'case_id': artifact.case_id,
+        'kind': artifact.kind,
+        'prompt_id': artifact.prompt_id,
+        'model': artifact.model,
+        'input_hash': artifact.input_hash,
+        'content': artifact.display_content,
+        'ai_content': artifact.content,
+        'confidence': artifact.confidence,
+        'generated_at': artifact.generated_at.isoformat() if artifact.generated_at else None,
+        'is_edited': edited,
+        'edited_at': artifact.edited_at.isoformat() if artifact.edited_at else None,
+        'edited_by': artifact.edited_by.name if artifact.edited_by else None,
+        # Only meaningful (and only computed) for an edited artifact.
+        'edit_is_stale': summary_edit_is_stale(artifact) if edited else False
+    }
+
+
+@case_ai_blueprint.get('/summary')
+@ac_api_requires()
+def get_case_summary(case_identifier):
+    """Return the latest cached AI summary for the case, or 404 if none exists."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.read_only, CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    artifact = get_cached_summary(case_identifier)
+    if artifact is None:
+        return response_api_not_found()
+    return response_api_success(_serialize_artifact(artifact))
+
+
+def _accepted(job):
+    """202 Accepted envelope for an enqueued async AI job (docs/19 §5b.3).
+    The client polls GET /api/v2/ai/jobs/<task_id> until state is terminal."""
+    return response(202, data={
+        'task_id': job.task_id,
+        'state': job.state,
+        'feature': job.feature,
+        'queue_position': job.queue_position if hasattr(job, 'queue_position') else None,
+    })
+
+
+@case_ai_blueprint.post('/summary')
+@ac_api_requires()
+def generate_case_summary_endpoint(case_identifier):
+    """Generate (or return cached) AI summary for the case.
+
+    Async by default (docs/19 §5b.3): enqueues the job on ai_queue and returns
+    202 + task_id. Pass ?sync=true to run inline and return the artifact
+    directly (kept for scripts / regression harnesses).
+
+    Query params:
+      - force=true  bypass the cache and re-run the model
+      - sync=true   run inline instead of enqueuing
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    force = request.args.get('force', False, type=parse_boolean) or False
+    sync = request.args.get('sync', False, type=parse_boolean) or False
+    discard_edit = request.args.get('discard_edit', False, type=parse_boolean) or False
+
+    # Manual-edit guard. Each generation INSERTS a new artifact row and reads
+    # take the latest, so regenerating over an edited summary silently orphans
+    # the analyst's corrections. Refuse with 409 unless the caller explicitly
+    # opts in via discard_edit=true. Enforced here rather than client-side so
+    # the async path, scripts and API clients are covered too.
+    if not discard_edit:
+        existing = get_cached_summary(case_identifier)
+        if existing is not None and existing.is_edited:
+            # 409 Conflict, not 400 — the request is well-formed, it just
+            # conflicts with stored state. response_api_error() is hardcoded to
+            # 400, so build the same body shape via response() directly.
+            return response(409, data={
+                'message': (
+                    'This summary has been manually edited. Re-generating will '
+                    'discard those edits — retry with discard_edit=true to '
+                    'confirm, or revert the edit first.'
+                ),
+                'data': {
+                    'reason': 'manual_edit_present',
+                    'edited_at': existing.edited_at.isoformat() if existing.edited_at else None,
+                    'edited_by': existing.edited_by.name if existing.edited_by else None
+                }
+            })
+
+    if sync:
+        try:
+            artifact = generate_case_summary(case_identifier, force=force)
+        except CaseSummaryError as exc:
+            return response_api_error(str(exc))
+        return response_api_success(_serialize_artifact(artifact))
+
+    try:
+        job = enqueue_ai_job(
+            feature='case_summary',
+            case_id=case_identifier,
+            user_id=current_user.id,
+            params={'force': force},
+        )
+    except AiJobError as exc:
+        return response_api_error(str(exc))
+    return _accepted(job)
+
+
+@case_ai_blueprint.put('/summary/edit')
+@ac_api_requires()
+def edit_case_summary_endpoint(case_identifier):
+    """Save an analyst correction over the generated executive summary.
+
+    Body: {"content": "<markdown>"}. The original model output is preserved on
+    the artifact, so the edit stays reversible. Requires full case access —
+    same bar as generating the summary.
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    body = request.get_json(silent=True) or {}
+    content = body.get('content')
+    if not isinstance(content, str):
+        return response_api_error('Missing or invalid "content" field')
+
+    try:
+        artifact = save_summary_edit(case_identifier, content, current_user.id)
+    except CaseSummaryError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.delete('/summary/edit')
+@ac_api_requires()
+def revert_case_summary_edit_endpoint(case_identifier):
+    """Discard the analyst correction and restore the original AI output."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    try:
+        artifact = revert_summary_edit(case_identifier)
+    except CaseSummaryError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.get('/timeline-analysis')
+@ac_api_requires()
+def get_case_timeline_analysis(case_identifier):
+    """Return the latest cached AI technical-analysis artifact, or 404."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.read_only, CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    artifact = get_cached_timeline_analysis(case_identifier)
+    if artifact is None:
+        return response_api_not_found()
+    return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.post('/timeline-analysis')
+@ac_api_requires()
+def generate_case_timeline_analysis(case_identifier):
+    """Generate (or return cached) AI technical analysis for the case.
+
+    Uses the user's CaseAnalysisSystemPrompt — analyst-grade structured
+    narrative covering what is evidenced vs suspected, gaps, priorities,
+    and forensic actions. Heavier than the executive summary; runs against
+    the full timeline + IOCs + assets.
+
+    Query params:
+      - force=true  bypass the cache and re-run the model
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    force = request.args.get('force', False, type=parse_boolean) or False
+
+    try:
+        artifact = generate_timeline_analysis(case_identifier, force=force)
+    except TimelineAnalysisError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.post('/ask')
+@ac_api_requires()
+def case_ai_ask(case_identifier):
+    """Case-scoped chat assistant.
+
+    Body (JSON):
+      - question: str  (required)
+      - history:  list of {role: 'user'|'assistant', content: str}  (optional, last 10 turns)
+
+    Returns: {question, answer, model, usage} — not persisted server-side; the
+    client owns the conversation state across turns.
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.read_only, CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    body = request.get_json(silent=True) or {}
+    question = body.get('question')
+    history = body.get('history') or []
+    variant = body.get('variant')  # Optional: 'notes' / 'timeline' / 'iocs' / etc.
+
+    if not isinstance(question, str) or not question.strip():
+        return response_api_error("'question' is required and must be a non-empty string")
+
+    sync = request.args.get('sync', False, type=parse_boolean) or False
+
+    if sync:
+        try:
+            result = ask_case(
+                case_identifier,
+                question,
+                history=history,
+                variant=variant if isinstance(variant, str) else None
+            )
+        except CaseChatError as exc:
+            return response_api_error(str(exc))
+        return response_api_success(result)
+
+    # Async by default (docs/19 §5b.3): the chat answer is returned via the
+    # job's result_json once done. Client polls GET /api/v2/ai/jobs/<task_id>.
+    try:
+        job = enqueue_ai_job(
+            feature='chat',
+            case_id=case_identifier,
+            user_id=current_user.id,
+            params={
+                'question': question,
+                'history': history,
+                'variant': variant if isinstance(variant, str) else None,
+            },
+        )
+    except AiJobError as exc:
+        return response_api_error(str(exc))
+    return _accepted(job)
+
+
+@case_ai_blueprint.get('/timeline/events/<int:event_id>/analysis')
+@ac_api_requires()
+def get_event_analysis(case_identifier, event_id):
+    """Return the latest cached single-event AI analysis, or 404."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.read_only, CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    artifact = get_cached_event_analysis(case_identifier, event_id)
+    if artifact is None:
+        return response_api_not_found()
+    return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.get('/iocs/<int:ioc_id>/profile')
+@ac_api_requires()
+def get_ioc_profile(case_identifier, ioc_id):
+    """Return the latest cached AI profile for one indicator, or 404."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.read_only, CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    artifact = get_cached_ioc_profile(case_identifier, ioc_id)
+    if artifact is None:
+        return response_api_not_found()
+    return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.post('/iocs/<int:ioc_id>/profile')
+@ac_api_requires()
+def generate_ioc_profile_endpoint(case_identifier, ioc_id):
+    """Generate (or return cached) an AI profile of one indicator.
+
+    Built from the indicator plus everything tied to it — the other cases it
+    appears in, notes citing it, linked assets and timeline events.
+
+    Query params:
+      - force=true   bypass the cache and re-run the model
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    force = request.args.get('force', False, type=parse_boolean) or False
+
+    try:
+        artifact = generate_ioc_profile(case_identifier, ioc_id, force=force)
+    except IocProfileError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.get('/assets/<int:asset_id>/profile')
+@ac_api_requires()
+def get_asset_profile(case_identifier, asset_id):
+    """Return the latest cached AI profile for one asset, or 404."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.read_only, CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    artifact = get_cached_asset_profile(case_identifier, asset_id)
+    if artifact is None:
+        return response_api_not_found()
+    return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.post('/assets/<int:asset_id>/profile')
+@ac_api_requires()
+def generate_asset_profile_endpoint(case_identifier, asset_id):
+    """Generate (or return cached) an AI profile of one asset.
+
+    Built from the asset's own fields plus everything linked to it —
+    indicators, evidence, timeline events and analyst comments.
+
+    Query params:
+      - force=true   bypass the cache and re-run the model
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    force = request.args.get('force', False, type=parse_boolean) or False
+
+    try:
+        artifact = generate_asset_profile(case_identifier, asset_id,
+                                          force=force)
+    except AssetProfileError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.post('/evidence-type-suggestion')
+@ac_api_requires()
+def suggest_evidence_type_endpoint(case_identifier):
+    """Suggest a single EvidenceTypes catalog entry for a file being registered.
+
+    Stateless / not cached. The file may not exist on the server yet (the
+    Register evidence modal computes hash locally before any upload).
+    Body fields are passed straight to the prompt.
+
+    Body (JSON):
+      - filename:    str  (required, the local file name as the analyst sees it)
+      - size_bytes:  int  (optional, file size in bytes)
+      - file_hash:   str  (optional, MD5 hex from the modal's compute step)
+      - magic_hex:   str  (optional, first 4 KB of the file as a hex string)
+      - description: str  (optional, analyst-typed description / context)
+
+    Returns: {
+      suggestion: {
+        type_id: int,            # validated against EvidenceTypes catalog
+        type_name: str,          # canonical from DB, not the model
+        type_description: str,
+        confidence: float,
+        reason: str | null
+      } | null,
+      model: str,
+      catalog_size: int
+    }
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    body = request.get_json(silent=True) or {}
+    filename = body.get('filename') or ''
+    if isinstance(filename, str):
+        filename = filename.strip()
+    else:
+        filename = ''
+
+    size_bytes = body.get('size_bytes')
+    if size_bytes is not None and not isinstance(size_bytes, int):
+        try:
+            size_bytes = int(size_bytes)
+        except (TypeError, ValueError):
+            size_bytes = None
+
+    file_hash = body.get('file_hash')
+    magic_hex = body.get('magic_hex')
+    description = body.get('description')
+
+    if not filename and not (isinstance(magic_hex, str) and magic_hex.strip()):
+        return response_api_error("'filename' or 'magic_hex' is required")
+
+    try:
+        result = suggest_evidence_type(
+            filename=filename,
+            size_bytes=size_bytes,
+            file_hash=file_hash if isinstance(file_hash, str) else None,
+            magic_hex=magic_hex if isinstance(magic_hex, str) else None,
+            description=description if isinstance(description, str) else None,
+        )
+    except EvidenceTypeSuggesterError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(result)
+
+
+@case_ai_blueprint.post('/ioc-extraction')
+@ac_api_requires()
+def extract_iocs_endpoint(case_identifier):
+    """Extract IOCs from free text (a note body, alert paste, etc.).
+
+    Stateless / not cached. The caller (typically the note editor's ✨
+    Extract IOCs button) is responsible for promoting accepted suggestions
+    into real Ioc rows via the existing POST /api/v2/cases/{id}/iocs.
+
+    Body (JSON):
+      - text:        str  (required, the note body / free-text source)
+
+    Returns: {
+      iocs: [
+        {value, type, type_id, tlp_id, tlp_name, confidence, reason,
+         noise_flag, tags},
+        ...  # 0..10 entries, sorted by confidence
+      ],
+      rationale: str | null,
+      model:     str,
+      default_tlp: {id, name} | null,
+    }
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    body = request.get_json(silent=True) or {}
+    text = body.get('text')
+    if not isinstance(text, str) or not text.strip():
+        return response_api_error("'text' is required")
+
+    try:
+        result = extract_iocs(text, case_id=case_identifier)
+    except IocExtractorError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(result)
+
+
+@case_ai_blueprint.post('/tag-suggestion')
+@ac_api_requires()
+def suggest_tags_endpoint(case_identifier):
+    """Suggest MISP machine tags for a case object (IOC / asset / task / case / event).
+
+    Body (JSON):
+      - object_type: 'ioc' | 'asset' | 'task' | 'case' | 'event'  (required)
+      - object_id:   int  (required; for object_type=='case' it's ignored, the case_identifier is authoritative)
+
+    Returns: {
+      suggestions: [{tag, kind, expanded, description, reason, confidence, matched_synonym}],
+      model:        str,
+      object_type:  str,
+      object_id:    int,
+      catalog_size: int,
+    }
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    body = request.get_json(silent=True) or {}
+    object_type = body.get('object_type')
+    object_id = body.get('object_id')
+
+    if object_type == 'case':
+        object_id = case_identifier  # case_id is the authoritative id for case-level suggestion
+    elif not isinstance(object_id, int):
+        return response_api_error("'object_id' must be an int")
+    if not isinstance(object_type, str):
+        return response_api_error("'object_type' is required")
+
+    try:
+        result = suggest_tags(
+            case_id=case_identifier,
+            object_type=object_type,
+            object_id=object_id,
+        )
+    except TagSuggesterError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(result)
+
+
+@case_ai_blueprint.post('/attack-suggestion')
+@ac_api_requires()
+def suggest_attack_techniques_endpoint(case_identifier):
+    """Suggest MITRE ATT&CK techniques for an event-in-progress.
+
+    Stateless / not cached. The event may not exist in the DB yet (analyst is
+    in the create modal). Body fields are passed straight to the prompt.
+
+    Body (JSON):
+      - title:         str  (required if no description)
+      - content:       str  (event description; required if no title)
+      - source:        str  (optional, event source string)
+      - category:      str  (optional, event category name)
+      - existing_tags: str  (optional, comma-separated tags already on the event)
+
+    Returns: {
+      techniques: [{id, name, confidence, reason}, ...]  # 0-4 entries, sorted by confidence
+      rationale:  str | null
+      tags_string: str   # 'T1078, T1059.001' — ready to paste into event_tags
+      model: str
+    }
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    body = request.get_json(silent=True) or {}
+    title = body.get('title') or ''
+    content = body.get('content')
+    source = body.get('source')
+    category = body.get('category')
+    existing_tags = body.get('existing_tags')
+
+    title = title.strip() if isinstance(title, str) else ''
+    if not isinstance(content, str):
+        content = None
+    if not title and not (content or '').strip():
+        return response_api_error("'title' or 'content' is required")
+
+    try:
+        result = suggest_attack_techniques(
+            title=title,
+            content=content,
+            source=source if isinstance(source, str) else None,
+            category=category if isinstance(category, str) else None,
+            existing_tags=existing_tags if isinstance(existing_tags, str) else None,
+        )
+    except AttackSuggesterError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(result)
+
+
+@case_ai_blueprint.post('/timeline/events/<int:event_id>/analysis')
+@ac_api_requires()
+def generate_event_analysis_endpoint(case_identifier, event_id):
+    """Generate (or return cached) AI analysis for a single timeline event.
+
+    Query params:
+      - force=true   bypass the cache and re-run the model
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    force = request.args.get('force', False, type=parse_boolean) or False
+
+    try:
+        artifact = generate_event_analysis(case_identifier, event_id, force=force)
+    except EventAnalysisError as exc:
+        return response_api_error(str(exc))
+
+    return response_api_success(_serialize_artifact(artifact))

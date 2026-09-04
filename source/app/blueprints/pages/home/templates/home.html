@@ -1,0 +1,162 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Home {% endblock title %}
+
+{% block stylesheets %}
+<style>
+    .iris-home-hero { display: flex; align-items: center; justify-content: space-between;
+                      flex-wrap: wrap; gap: 16px;
+                      background: linear-gradient(120deg, rgba(139,92,246,0.14), rgba(11,11,13,0.0) 60%),
+                                  #17171c;
+                      border: 1px solid rgba(139,92,246,0.25); border-radius: 8px;
+                      padding: 18px 22px; margin-bottom: 18px; }
+    .iris-home-hello .eyebrow { font-size: 0.7rem; letter-spacing: 0.14em;
+                                text-transform: uppercase; color: #9a9aa5; }
+    .iris-home-hello .name { font-size: 1.45rem; font-weight: 600; color: #e8e6f0; }
+    .iris-home-tiles { display: flex; gap: 34px; flex-wrap: wrap; }
+    .iris-home-tile { text-align: right; min-width: 90px; display: block;
+                      text-decoration: none; }
+    a.iris-home-tile:hover { text-decoration: none; }
+    a.iris-home-tile:hover .num { color: #b9a6f0; }
+    .iris-home-tile .num { font-size: 1.6rem; font-weight: 700; color: #e8e6f0; }
+    .iris-home-tile .lbl { font-size: 0.66rem; letter-spacing: 0.08em;
+                           text-transform: uppercase; color: #9a9aa5; white-space: nowrap; }
+    .iris-home-tile.accent .num { color: #b9a6f0; }
+    .iris-home-sec { display: flex; align-items: center; justify-content: space-between;
+                     margin-bottom: 10px; }
+    .iris-home-sec .t { font-size: 0.9rem; font-weight: 600; color: #e8e6f0; }
+    .iris-home-sec .t .count { color: #b9a6f0; font-weight: 600; margin-left: 6px; }
+    .iris-home-sec a.viewall { font-size: 0.75rem; color: #b9a6f0; }
+    .iris-home-item { display: flex; justify-content: space-between; gap: 10px;
+                      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+                      font-size: 0.85rem; align-items: baseline; }
+    .iris-home-item:last-child { border-bottom: none; }
+    .iris-home-item .meta { color: #7e7b8c; font-size: 0.72rem; flex-shrink: 0; }
+    .iris-home-item .cid { color: #7e7b8c; font-size: 0.75rem; margin-right: 8px; }
+    .iris-home-empty { color: #7e7b8c; font-size: 0.8rem; padding: 22px 0;
+                       text-align: center; }
+    .iris-home-chip { border-radius: 8px; padding: 0 8px; font-size: 0.7rem;
+                      background: rgba(139,92,246,0.12); color: #d4c4ff;
+                      border: 1px solid rgba(139,92,246,0.35); white-space: nowrap; }
+    .iris-home-sev { border-radius: 8px; padding: 0 8px; font-size: 0.68rem; white-space: nowrap; }
+    .iris-home-sev-high, .iris-home-sev-critical { background: rgba(245,54,92,0.15); color: #f5365c; }
+    .iris-home-sev-medium { background: rgba(244,196,48,0.15); color: #f4c430; }
+    .iris-home-sev-low, .iris-home-sev-informational { background: rgba(255,255,255,0.06); color: #9a9aa5; }
+    .iris-home-pill-outline { border-radius: 10px; padding: 0 9px; font-size: 0.7rem;
+                              border: 1px solid rgba(255,255,255,0.25); color: #c8c6d0;
+                              white-space: nowrap; }
+    .iris-home-sub { color: #7e7b8c; font-size: 0.74rem; margin-top: 1px; }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="page-inner">
+    {{ form.csrf_token }}
+    <div class="container-fluid">
+
+        <div class="iris-home-hero">
+            <div class="iris-home-hello">
+                <div class="eyebrow" id="iris-home-greeting">Welcome</div>
+                <div class="name">{{ current_user.name }}</div>
+            </div>
+            <div class="iris-home-tiles">
+                <a class="iris-home-tile accent" href="/overview?cid={{ caseid }}" title="Open the case overview">
+                    <div class="num" id="iris-home-t-cases">&ndash;</div>
+                    <div class="lbl">My open cases</div>
+                </a>
+                <a class="iris-home-tile" href="/alerts?cid={{ caseid }}" title="Open the alerts page">
+                    <div class="num" id="iris-home-t-alerts">&ndash;</div>
+                    <div class="lbl">My open alerts</div>
+                </a>
+                <div class="iris-home-tile">
+                    <div class="num" id="iris-home-t-tasks">&ndash;</div>
+                    <div class="lbl">Pending tasks</div>
+                </div>
+                <div class="iris-home-tile">
+                    <div class="num" id="iris-home-t-closed">&ndash;</div>
+                    <div class="lbl">Closed (30d)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="iris-home-sec">
+                            <span class="t">My open cases<span class="count" id="iris-home-c-cases"></span></span>
+                            <a class="viewall" href="/overview?cid={{ caseid }}">View all &rarr;</a>
+                        </div>
+                        <div id="iris-home-cases"><div class="iris-home-empty">Loading&hellip;</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="iris-home-sec">
+                            <span class="t">My open alerts<span class="count" id="iris-home-c-alerts"></span></span>
+                            <a class="viewall" href="/alerts?cid={{ caseid }}">View all &rarr;</a>
+                        </div>
+                        <div id="iris-home-alerts"><div class="iris-home-empty">Loading&hellip;</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="iris-home-sec"><span class="t">My pending tasks<span class="count" id="iris-home-c-tasks"></span></span></div>
+                        <div id="iris-home-tasks"><div class="iris-home-empty">Loading&hellip;</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="iris-home-sec">
+                            <span class="t">&#9733; Following<span class="count" id="iris-home-c-follow"></span></span>
+                        </div>
+                        <div id="iris-home-feed"><div class="iris-home-empty">Loading&hellip;</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="iris-home-sec">
+                            <span class="t">Case activities</span>
+                            <a class="viewall" href="/activities?cid={{ caseid }}">View all &rarr;</a>
+                        </div>
+                        <div id="iris-home-activities"><div class="iris-home-empty">Loading&hellip;</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="iris-home-sec"><span class="t">My reviews</span></div>
+                        <div id="iris-home-reviews"><div class="iris-home-empty">Loading&hellip;</div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="iris-home-sec"><span class="t">Latest notifications</span></div>
+                        <div id="iris-home-notifs"><div class="iris-home-empty">Loading&hellip;</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+    <script>var IRIS_HOME_UID = {{ current_user.id }};</script>
+    <script src="/static/assets/js/iris/home.js"></script>
+{% endblock javascripts %}

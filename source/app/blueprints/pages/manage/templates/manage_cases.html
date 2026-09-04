@@ -1,0 +1,496 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Manage Cases {% endblock title %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/static/assets/css/dataTables.select.min.css">
+<link rel="stylesheet" href="/static/assets/css/bootstrap-select.min.css">
+<link rel="stylesheet" href="/static/assets/css/bootstrap-multiselect.min.css">
+<style>
+/* iris-next: v3-shaped cases management. Page-local by project rule. */
+.iris-mc-sub { color: #9a9aa5; font-size: 0.8rem; font-weight: 400; margin-left: 10px; }
+.iris-mc-searchrow { display: flex; gap: 10px; margin-bottom: 12px; }
+.iris-mc-searchrow input { flex: 1 1 auto; }
+.iris-mc-filters {
+    display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
+    margin-bottom: 14px; font-size: 0.82rem; color: #9a9aa5;
+}
+.iris-mc-filters label { margin: 0; color: #9a9aa5; }
+.iris-mc-chip {
+    border: 1px solid rgba(255,255,255,0.15); background: transparent;
+    color: #c8c8d0; border-radius: 9999px; padding: 2px 14px;
+    font-size: 0.8rem; cursor: pointer;
+}
+.iris-mc-chip.active {
+    background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.45);
+    color: #d4c4ff;
+}
+.iris-mc-filters select, .iris-mc-filters input[type=date] {
+    background: #1a1a22; color: #c8c8d0; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px; padding: 3px 8px; font-size: 0.8rem;
+}
+#iris-mc-table { width: 100%; font-size: 0.85rem; }
+#iris-mc-table th {
+    color: #9a9aa5; font-weight: 600; font-size: 0.78rem; cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.10); padding: 8px 10px;
+    white-space: nowrap; user-select: none;
+}
+#iris-mc-table th .iris-mc-sort { opacity: 0.45; margin-left: 4px; }
+#iris-mc-table th.iris-mc-sort-active { color: #d4c4ff; }
+#iris-mc-table td {
+    padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
+    vertical-align: middle;
+}
+#iris-mc-table tbody tr:hover td { background: rgba(139,92,246,0.05); }
+.iris-mc-name a { color: #a78bfa; text-decoration: none; }
+.iris-mc-name a:hover { text-decoration: underline; }
+.iris-mc-state {
+    display: inline-block; font-size: 0.68rem; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 10px;
+    border-radius: 9999px; border: 1px solid rgba(139,92,246,0.45);
+    color: #d4c4ff; background: rgba(139,92,246,0.10); white-space: nowrap;
+}
+.iris-mc-state.iris-mc-state-closed {
+    border-color: rgba(255,255,255,0.18); color: #9a9aa5;
+    background: rgba(255,255,255,0.05);
+}
+.iris-mc-state.iris-mc-state-muted {
+    border-color: rgba(255,255,255,0.12); color: #7a7a85;
+    background: transparent;
+}
+.iris-mc-menuwrap { position: relative; display: inline-block; }
+.iris-mc-dots {
+    background: transparent; border: none; color: #9a9aa5; cursor: pointer;
+    font-size: 1rem; padding: 2px 10px; border-radius: 6px;
+}
+.iris-mc-dots:hover { color: #e8e8ee; background: rgba(255,255,255,0.06); }
+.iris-mc-menu {
+    position: absolute; right: 0; top: 100%; z-index: 1000;
+    background: #1c1c24; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; min-width: 170px; padding: 4px 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.iris-mc-menu a {
+    display: block; padding: 6px 14px; color: #c8c8d0; font-size: 0.82rem;
+    text-decoration: none; white-space: nowrap;
+}
+.iris-mc-menu a:hover { background: rgba(139,92,246,0.12); color: #e8e8ee; }
+.iris-mc-menu a.iris-mc-danger { color: #f87171; }
+.iris-mc-statemsg { font-style: italic; color: #7a7a85; padding: 14px 4px; }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <div class="card-title">Cases management
+                        <span class="iris-mc-sub">Every case you have access to &mdash; close, reopen or delete from here.</span>
+                    </div>
+                    <div class="ml-auto d-flex align-items-center" style="gap:6px;">
+                        <button type="button" class="btn btn-sm btn-outline-dark"
+                            onclick="refresh_case_table();">
+                            <i class="fas fa-sync mr-1"></i> Refresh
+                        </button>
+                        <button type="button" class="btn btn-sm btn-primary"
+                            onclick="load_add_case();">
+                            Create new case
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {# iris-next: v3-shaped surface. The hidden legacy DataTable
+                       below stays the FETCHER — this view renders from its
+                       xhr.dt payload, so the two views share one request and
+                       cannot drift. #}
+                    <div class="iris-mc-searchrow">
+                        <input type="text" class="form-control" id="iris-mc-q"
+                               placeholder="Search by case name..." autocomplete="off">
+                        <button class="btn btn-primary" type="button" onclick="iris_mc_render();">Search</button>
+                    </div>
+                    <div class="iris-mc-filters">
+                        <label>State:</label>
+                        <button type="button" class="iris-mc-chip active" data-mcstate="open">Open</button>
+                        <button type="button" class="iris-mc-chip" data-mcstate="closed">Closed</button>
+                        <button type="button" class="iris-mc-chip" data-mcstate="all">All</button>
+                        <label>Customer</label>
+                        <select id="iris-mc-customer"><option value="">Any</option></select>
+                        <label>Owner</label>
+                        <select id="iris-mc-owner"><option value="">Any</option></select>
+                        <label>Opened</label>
+                        <input type="date" id="iris-mc-od-from"> <span>&rarr;</span>
+                        <input type="date" id="iris-mc-od-to">
+                        <label>Closed</label>
+                        <input type="date" id="iris-mc-cd-from"> <span>&rarr;</span>
+                        <input type="date" id="iris-mc-cd-to">
+                        <a href="#" class="small text-muted ml-auto" id="iris-mc-legacy-toggle"
+                           onclick="iris_mc_toggle_legacy();return false;">Show legacy table</a>
+                    </div>
+                    <h4 style="font-size:1rem; color:#e8e8ee;">Cases
+                        <span class="text-muted" id="iris-mc-count" style="font-size:0.8rem;"></span></h4>
+                    <div id="iris-mc-view">
+                        <table id="iris-mc-table">
+                            <thead>
+                                <tr>
+                                    <th data-mckey="case_id">ID<span class="iris-mc-sort">&#8645;</span></th>
+                                    <th data-mckey="case_name">Name<span class="iris-mc-sort">&#8645;</span></th>
+                                    <th data-mckey="client_name">Customer<span class="iris-mc-sort">&#8645;</span></th>
+                                    <th data-mckey="state_name">State<span class="iris-mc-sort">&#8645;</span></th>
+                                    <th data-mckey="case_open_date">Open date<span class="iris-mc-sort">&#8645;</span></th>
+                                    <th data-mckey="case_close_date">Close date<span class="iris-mc-sort">&#8645;</span></th>
+                                    <th data-mckey="case_soc_id">SOC ticket<span class="iris-mc-sort">&#8645;</span></th>
+                                    <th data-mckey="owner">Owner<span class="iris-mc-sort">&#8645;</span></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="iris-mc-body"></tbody>
+                        </table>
+                        <div class="iris-mc-statemsg" id="iris-mc-state" style="display:none;"></div>
+                    </div>
+                    <div id="iris-mc-legacy" style="display:none;">
+                    <div class="col-md-12">
+                        <div class="table-responsive" id="cases_table_wrapper">
+                            <div class="selectgroup">
+                                <span id="table_buttons"></span>
+                            </div>
+                            <table class="table display wrap col-border table-striped table-hover" width="100%"
+                                cellspacing="0" id="cases_table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Customer</th>
+                                        <th>State</th>
+                                        <th>Open date</th>
+                                        <th>Close date</th>
+                                        <th>SOC Ticket</th>
+                                        <th>Opening user</th>
+                                    </tr>
+                                </thead>
+                                <tfoot>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Customer</th>
+                                        <th>State</th>
+                                        <th>Open date</th>
+                                        <th>Close date</th>
+                                        <th>SOC Ticket</th>
+                                        <th>Opening user</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                     </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal " tabindex="-1" role="dialog" id="modal_case_detail" data-backdrop="true">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content" id="info_case_modal_content">
+
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div>
+<div class="modal bg-shadow-gradient" tabindex="-1" role="dialog" id="modal_ac_additional" data-backdrop="true">
+            </div>
+{% endif %}
+
+{% endblock content %}
+
+{% block javascripts %}
+
+<script src="/static/assets/js/core/jquery.validate.js"></script>
+<script src="/static/assets/js/plugin/datatables/dataTables.cellEdit.js"></script>
+<script src="/static/assets/js/plugin/datatables/dataTables.buttons.min.js"></script>
+<script src="/static/assets/js/plugin/datatables/dataTables.select.min.js"></script>
+<script src="/static/assets/js/plugin/datatables/dataTables.responsive.min.js"></script>
+<script src="/static/assets/js/plugin/datatables/buttons.html5.min.js"></script>
+<script src="/static/assets/js/plugin/datatables/buttons.print.min.js"></script>
+<script src="/static/assets/js/plugin/datatables/buttons.print.min.js"></script>
+
+<script src="/static/assets/js/plugin/select/bootstrap-select.min.js"></script>
+<script src="/static/assets/js/plugin/select/bootstrap-multiselect.min.js"></script>
+
+<script src="/static/assets/js/iris/datatablesUtils.js"></script>
+<script src="/static/assets/js/iris/manage.cases.common.js"></script>
+<script src="/static/assets/js/iris/manage.cases.js"></script>
+
+<script>
+    $('form#form_new_case').validate();
+</script>
+
+<script>
+/* iris-next: v3-shaped cases view. OVERLAY, not a rebuild — the hidden
+ * legacy DataTable stays the FETCHER (this view renders from its xhr.dt
+ * payload: one request, two presentations, no drift), the name link and
+ * every row action drive the page's existing functions (case_detail,
+ * close_case, reopen_case, remove_case), and close/reopen/delete refresh
+ * both views through the existing refresh_case_table(). */
+var IRIS_MC = {
+    rows: null,          // null = not fetched yet
+    state: 'loading',    // loading | failed | ready
+    st: 'open',          // v3 defaults the State chip to Open
+    sortCol: null, sortDir: 1,
+    showLegacy: false
+};
+
+function iris_mc_esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+}
+
+/* Rows carry mm/dd/yyyy strings — compare as yyyy-mm-dd, never through
+ * new Date() (stored-value rule; date inputs already emit yyyy-mm-dd). */
+function iris_mc_iso(d) {
+    if (!d) { return ''; }
+    var p = String(d).split('/');
+    return p.length === 3 ? p[2] + '-' + p[0] + '-' + p[1] : '';
+}
+
+function iris_mc_toggle_legacy() {
+    IRIS_MC.showLegacy = !IRIS_MC.showLegacy;
+    document.getElementById('iris-mc-legacy').style.display =
+        IRIS_MC.showLegacy ? '' : 'none';
+    document.getElementById('iris-mc-view').style.display =
+        IRIS_MC.showLegacy ? 'none' : '';
+    document.getElementById('iris-mc-legacy-toggle').textContent =
+        IRIS_MC.showLegacy ? 'Show cases view' : 'Show legacy table';
+}
+
+function iris_mc_fill_selects() {
+    var fill = function (id, values) {
+        var sel = document.getElementById(id);
+        var cur = sel.value;
+        sel.innerHTML = '<option value="">Any</option>' + values.map(function (v) {
+            return '<option value="' + iris_mc_esc(v) + '">' + iris_mc_esc(v) + '</option>';
+        }).join('');
+        if (values.indexOf(cur) !== -1) { sel.value = cur; }
+    };
+    var uniq = function (key) {
+        var seen = {};
+        (IRIS_MC.rows || []).forEach(function (r) {
+            if (r[key]) { seen[r[key]] = true; }
+        });
+        return Object.keys(seen).sort();
+    };
+    fill('iris-mc-customer', uniq('client_name'));
+    fill('iris-mc-owner', uniq('owner'));
+}
+
+function iris_mc_match(r) {
+    var q = ($('#iris-mc-q').val() || '').trim().toLowerCase();
+    if (q && String(r.case_name || '').toLowerCase().indexOf(q) === -1) { return false; }
+    if (IRIS_MC.st === 'open' && r.case_close_date) { return false; }
+    if (IRIS_MC.st === 'closed' && !r.case_close_date) { return false; }
+    var cust = $('#iris-mc-customer').val();
+    if (cust && r.client_name !== cust) { return false; }
+    var own = $('#iris-mc-owner').val();
+    if (own && r.owner !== own) { return false; }
+    var od = iris_mc_iso(r.case_open_date);
+    var odF = $('#iris-mc-od-from').val(), odT = $('#iris-mc-od-to').val();
+    if (odF && (!od || od < odF)) { return false; }
+    if (odT && (!od || od > odT)) { return false; }
+    var cd = iris_mc_iso(r.case_close_date);
+    var cdF = $('#iris-mc-cd-from').val(), cdT = $('#iris-mc-cd-to').val();
+    if (cdF && (!cd || cd < cdF)) { return false; }
+    if (cdT && (!cd || cd > cdT)) { return false; }
+    return true;
+}
+
+function iris_mc_state_chip(r) {
+    if (r.case_close_date) {
+        return '<span class="iris-mc-state iris-mc-state-closed">Closed</span>';
+    }
+    var name = r.state_name || 'Unspecified';
+    var cls = (name === 'Unspecified')
+        ? 'iris-mc-state iris-mc-state-muted' : 'iris-mc-state';
+    return '<span class="' + cls + '">' + iris_mc_esc(name) + '</span>';
+}
+
+function iris_mc_sortval(r, key) {
+    if (key === 'case_id') { return r.case_id || 0; }
+    if (key === 'case_open_date' || key === 'case_close_date') {
+        return iris_mc_iso(r[key]);
+    }
+    return String(r[key] == null ? '' : r[key]).toLowerCase();
+}
+
+function iris_mc_menu_html(r) {
+    var items = '<a href="#" data-mcact="info" data-mcid="' + r.case_id + '">Open case info</a>';
+    if (!r.case_close_date) {
+        items += '<a href="#" data-mcact="close" data-mcid="' + r.case_id + '">Close case</a>';
+    } else {
+        items += '<a href="#" data-mcact="reopen" data-mcid="' + r.case_id + '">Reopen case</a>';
+    }
+    items += '<a href="#" class="iris-mc-danger" data-mcact="delete" data-mcid="' + r.case_id + '">Delete case</a>';
+    return '<div class="iris-mc-menuwrap">'
+        + '<button type="button" class="iris-mc-dots" title="Actions">&#8943;</button>'
+        + '<div class="iris-mc-menu" style="display:none;">' + items + '</div></div>';
+}
+
+function iris_mc_render() {
+    var body = document.getElementById('iris-mc-body');
+    var msg = document.getElementById('iris-mc-state');
+    var count = document.getElementById('iris-mc-count');
+    if (!body) { return; }
+    if (IRIS_MC.state !== 'ready') {
+        body.innerHTML = '';
+        count.textContent = '';
+        msg.style.display = '';
+        msg.textContent = IRIS_MC.state === 'failed'
+            ? 'Could not load the case list — use Refresh to retry.'
+            : 'Loading cases…';
+        return;
+    }
+    var rows = (IRIS_MC.rows || []).filter(iris_mc_match);
+    var col = IRIS_MC.sortCol, dir = IRIS_MC.sortDir;
+    if (col) {
+        rows = rows.slice().sort(function (a, b) {
+            var av = iris_mc_sortval(a, col), bv = iris_mc_sortval(b, col);
+            if (av < bv) { return -dir; }
+            if (av > bv) { return dir; }
+            return 0;
+        });
+    }
+    count.textContent = rows.length + ' of ' + (IRIS_MC.rows || []).length;
+    if (!rows.length) {
+        body.innerHTML = '';
+        msg.style.display = '';
+        /* An empty list must say WHY (none-vs-filtered rule). */
+        msg.textContent = (IRIS_MC.rows || []).length
+            ? 'No case matches the current filters — the State chip is on "'
+              + IRIS_MC.st + '".'
+            : 'No cases you have access to.';
+        return;
+    }
+    msg.style.display = 'none';
+    body.innerHTML = rows.map(function (r) {
+        return '<tr>'
+            + '<td>#' + iris_mc_esc(r.case_id) + '</td>'
+            + '<td class="iris-mc-name"><a href="javascript:void(0);" '
+            + 'onclick="case_detail(\'' + parseInt(r.case_id, 10) + '\');">'
+            + iris_mc_esc(r.case_name) + '</a></td>'
+            + '<td>' + iris_mc_esc(r.client_name) + '</td>'
+            + '<td>' + iris_mc_state_chip(r) + '</td>'
+            + '<td>' + iris_mc_esc(r.case_open_date) + '</td>'
+            + '<td>' + (r.case_close_date ? iris_mc_esc(r.case_close_date) : '<span class="text-muted">&mdash;</span>') + '</td>'
+            + '<td>' + iris_mc_esc(r.case_soc_id) + '</td>'
+            + '<td>' + iris_mc_esc(r.owner) + '</td>'
+            + '<td>' + iris_mc_menu_html(r) + '</td>'
+            + '</tr>';
+    }).join('');
+    // Sort indicators
+    document.querySelectorAll('#iris-mc-table th[data-mckey]').forEach(function (th) {
+        var icon = th.querySelector('.iris-mc-sort');
+        if (th.getAttribute('data-mckey') === col) {
+            th.classList.add('iris-mc-sort-active');
+            icon.textContent = dir === 1 ? '▲' : '▼';
+        } else {
+            th.classList.remove('iris-mc-sort-active');
+            icon.textContent = '⇅';
+        }
+    });
+}
+
+function iris_mc_row_by_id(id) {
+    return (IRIS_MC.rows || []).filter(function (r) {
+        return r.case_id === id;
+    })[0] || null;
+}
+
+function iris_mc_close_case(id) {
+    /* #84 reviewer-before-close, INHERITED (a relocated control carries the
+     * original's guards): close_case()'s own gate reads the case-info
+     * modal's button, which does not exist on a list row — so the gate
+     * reads the row's reviewer_id from the list payload instead. */
+    var row = iris_mc_row_by_id(id);
+    if (row && !row.reviewer_id) { return iris_case_reviewer_required(); }
+    close_case(id);
+}
+
+function iris_mc_close_menus() {
+    document.querySelectorAll('.iris-mc-menu').forEach(function (m) {
+        m.style.display = 'none';
+    });
+}
+
+/* The DataTable is the fetcher — this view renders from its payload. */
+$('#cases_table').on('xhr.dt', function (e, settings, json) {
+    IRIS_MC.rows = (json && json.data) ? json.data : [];
+    IRIS_MC.state = 'ready';
+    iris_mc_fill_selects();
+    iris_mc_render();
+});
+$('#cases_table').on('error.dt', function () {
+    IRIS_MC.state = 'failed';
+    iris_mc_render();
+});
+
+document.addEventListener('click', function (e) {
+    var dots = e.target.closest && e.target.closest('.iris-mc-dots');
+    if (dots) {
+        var menu = dots.parentNode.querySelector('.iris-mc-menu');
+        var open = menu.style.display !== 'none';
+        iris_mc_close_menus();
+        menu.style.display = open ? 'none' : '';
+        return;
+    }
+    var act = e.target.closest && e.target.closest('[data-mcact]');
+    if (act) {
+        e.preventDefault();
+        iris_mc_close_menus();
+        var id = parseInt(act.getAttribute('data-mcid'), 10);
+        var kind = act.getAttribute('data-mcact');
+        if (kind === 'info') { case_detail(String(id)); }
+        else if (kind === 'close') { iris_mc_close_case(id); }
+        else if (kind === 'reopen') { reopen_case(id); }
+        else if (kind === 'delete') { remove_case(id); }
+        return;
+    }
+    if (!(e.target.closest && e.target.closest('.iris-mc-menuwrap'))) {
+        iris_mc_close_menus();
+    }
+    var chip = e.target.closest && e.target.closest('.iris-mc-chip');
+    if (chip) {
+        document.querySelectorAll('.iris-mc-chip').forEach(function (c) {
+            c.classList.remove('active');
+        });
+        chip.classList.add('active');
+        IRIS_MC.st = chip.getAttribute('data-mcstate');
+        iris_mc_render();
+    }
+});
+document.addEventListener('input', function (e) {
+    if (e.target && ['iris-mc-q', 'iris-mc-od-from', 'iris-mc-od-to',
+                     'iris-mc-cd-from', 'iris-mc-cd-to'].indexOf(e.target.id) !== -1) {
+        iris_mc_render();
+    }
+});
+document.addEventListener('change', function (e) {
+    if (e.target && ['iris-mc-customer', 'iris-mc-owner'].indexOf(e.target.id) !== -1) {
+        iris_mc_render();
+    }
+});
+document.addEventListener('click', function (e) {
+    var th = e.target.closest && e.target.closest('#iris-mc-table th[data-mckey]');
+    if (!th) { return; }
+    var key = th.getAttribute('data-mckey');
+    if (IRIS_MC.sortCol === key) { IRIS_MC.sortDir = -IRIS_MC.sortDir; }
+    else { IRIS_MC.sortCol = key; IRIS_MC.sortDir = 1; }
+    iris_mc_render();
+});
+document.addEventListener('DOMContentLoaded', function () {
+    iris_mc_render();   // paints the loading state until xhr.dt arrives
+});
+</script>
+
+{% endblock javascripts %}

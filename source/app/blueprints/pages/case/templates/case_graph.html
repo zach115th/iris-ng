@@ -1,0 +1,155 @@
+{% extends "layouts/default_ext.html" %}
+{% block title %} Case Graph {% endblock title %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/static/assets/css/select2.css">
+<link rel="stylesheet" href="/static/assets/css/bootstrap-select.min.css">
+
+<link href="/static/assets/css/vis.min.css" rel="stylesheet" type="text/css" />
+
+<style>
+/* iris-next: knowledge-map layer filter (page-local overlay on Atlantis chrome,
+   same pattern as the timeline page compaction -- see docs/19 §11g). */
+.iris-graph-layers {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 4px 14px;
+    margin-right: 12px;
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    border-radius: 999px;
+    background: rgba(139, 92, 246, 0.10);
+    white-space: nowrap;
+}
+.iris-graph-layers-title {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #d4c4ff;
+    font-weight: 600;
+}
+.iris-graph-layer {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    font-size: 12px;
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+}
+.iris-graph-layer input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+    accent-color: #8b5cf6;
+}
+.iris-graph-swatch {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+}
+.iris-graph-counts {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.65);
+    border-left: 1px solid rgba(255, 255, 255, 0.20);
+    padding-left: 12px;
+}
+/* The toggles are noise on a narrow viewport -- the graph itself needs the room. */
+@media (max-width: 1200px) {
+    .iris-graph-layers { display: none; }
+}
+</style>
+{% endblock stylesheets %}
+{% block content %}
+
+{% include 'includes/navigation_ext.html' %}
+
+{% include 'includes/sidenav.html' %}
+<div class="main-panel">
+
+    <div class="content">
+        {# v3 case shell (shared chrome; content below untouched) #}
+        <div class="page-inner pt-2 pb-0">
+            {% include 'includes/case_shell.html' %}
+        </div>
+
+        <nav class="navbar navbar-header navbar-expand-lg bg-primary-gradient nav-sticky">
+            <ul class="container-fluid mt-3 mb--2">
+
+                <ul class="navbar-nav topbar-nav ml-md-auto align-items-center page-navigation page-navigation-style-2 page-navigation-secondary">
+                    <li class="nav-item ml-2">
+                            <span class="text-white text-sm mr-2" id="last_resfresh">Loading</span>
+                    </li>
+                    <!-- iris-next: knowledge-map layer filter. Toggles filter the
+                         already-fetched payload client-side; no API round-trip. -->
+                    <li class="nav-item">
+                        <div class="iris-graph-layers" id="iris-graph-layer-panel">
+                            <span class="iris-graph-layers-title">Layers</span>
+                            <label class="iris-graph-layer" for="iris-graph-layer-asset">
+                                <input type="checkbox" id="iris-graph-layer-asset" checked>
+                                <span class="iris-graph-swatch" style="background:#5e72e4;"></span>Assets
+                            </label>
+                            <label class="iris-graph-layer" for="iris-graph-layer-ioc">
+                                <input type="checkbox" id="iris-graph-layer-ioc" checked>
+                                <span class="iris-graph-swatch" style="background:#f5365c;"></span>IOCs
+                            </label>
+                            <label class="iris-graph-layer" for="iris-graph-layer-note">
+                                <input type="checkbox" id="iris-graph-layer-note" checked>
+                                <span class="iris-graph-swatch" style="background:#8b5cf6;"></span>Notes
+                            </label>
+                            <label class="iris-graph-layer" for="iris-graph-layer-evidence">
+                                <input type="checkbox" id="iris-graph-layer-evidence" checked>
+                                <span class="iris-graph-swatch" style="background:#f4c430;"></span>Evidence
+                            </label>
+                            <span class="iris-graph-counts" id="iris-graph-counts"></span>
+                        </div>
+                    </li>
+                    <li class="nav-item hidden-caret">
+                        <button class="btn btn-primary btn-sm" onclick="get_case_graph();">
+                            <span class="menu-title">Refresh</span>
+                        </button>
+                    </li>
+                </ul>
+            </ul>
+        </nav>
+        {% if current_user.is_authenticated %}
+        {{ form.hidden_tag() }}
+        <div class="page-inner">
+            <div class="row">
+                <div class="loader1 text-center ml-mr-auto" id="loading_msg">Loading...</div>
+                <div class="card mb-4 col-md-12" id="card_main_load" style="display:none;">
+                        <div class="card-body">
+                                <div class="row">
+                                    <div id='graph-container'></div>
+                                </div>
+                        </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    {% include 'includes/footer.html' %}
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+
+<script src="/static/assets/js/plugin/vis/vis.min.js"></script>
+<script src="/static/assets/js/plugin/vis/vis-network.min.js"></script>
+{# bootstrap-slider was an unused upstream leftover on this page: nothing here
+   renders a slider, and jQuery UI (loaded globally) already owns $.fn.slider,
+   so it only logged a namespace-collision warning and bound nothing. #}
+
+<script src="/static/assets/js/plugin/select/select2.js"></script>
+<script src="/static/assets/js/plugin/select/bootstrap-select.min.js"></script>
+
+<script src="/static/assets/js/iris/case.common.js"></script>
+<script src="/static/assets/js/iris/case.graph.js"></script>
+{% endblock javascripts %}
+
+
+

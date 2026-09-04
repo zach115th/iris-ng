@@ -1,0 +1,362 @@
+{% extends "layouts/default_ext.html" %} {% block title %} Case Assets {% endblock title %} {% block stylesheets %}
+{% include 'includes/header_case.html' %}
+<link rel="stylesheet" href="/static/assets/css/bootstrap-select.min.css">
+{% endblock stylesheets %}
+{% block content %}
+{% include 'includes/navigation_ext.html' %}
+
+{% include 'includes/sidenav.html' %}
+<div class="main-panel">
+
+    <div class="content">
+        {# v3 case shell (shared chrome; content below untouched). The
+           Assets tab promotes its primary action into the header — v3
+           reference: Add Asset sits in the header chip group. #}
+        <div class="page-inner pt-2 pb-0">
+            {% set cshell_primary_label = 'Add Asset' %}
+            {% set cshell_primary_onclick = 'add_assets();' %}
+            {# This tab's own actions, promoted into the header ⋮ menu. The
+               ids are the ones case_assets_v3.js already binds to. #}
+            {% set cshell_tab_label = 'Assets' %}
+            {% set cshell_tab_menu %}
+                <a href="#" onclick="fire_upload_assets();return false;">Import from CSV</a>
+                <a href="#" id="iris-ca-export">Export to CSV</a>
+                <a href="#" id="iris-ca-legacy-toggle">Show legacy table</a>
+            {% endset %}
+            {% include 'includes/case_shell.html' %}
+        </div>
+
+        {% if current_user.is_authenticated %}
+        {{ form.hidden_tag() }}
+        {# Legacy toolbar + DataTable stay in the DOM (hidden) so their
+           machinery — DataTables init, CSV upload, filters, module quick
+           actions — keeps working untouched; the v3 master/detail below is
+           rendered from the same /case/assets/filter payload. #}
+        <nav style="display:none;" class="navbar navbar-header navbar-expand-lg pt-2 pb-2 bg-case-gradient nav-sticky">
+                <div class="container-fluid">
+                    <div class="collapse" id="search-nav">
+                        <div id="tables_button"></div>
+                     </div>
+					<ul class="navbar-nav topbar-nav ml-md-auto align-items-center page-navigation page-navigation-style-2 page-navigation-secondary">
+                        <li class="nav-item ml-2">
+                            <span class="text-white text-sm mr-2" id="last_resfresh">Loading</span>
+                            <span class="text-warning text-sm mr-2" id="page_warning"></span>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-primary btn-sm" onclick="reload_assets();">
+                                <span class="menu-title">Refresh</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-dark btn-sm" onclick="add_assets();">
+                                <span class="menu-title">Add assets</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <div class="dropdown">
+                              <button class="btn btn-sm btn-border btn-black" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                  <span class="menu-title"><i class="fas fa-ellipsis-v"></i></span>
+                              </button>
+                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class="dropdown-item" href="#" onclick="fire_upload_assets();">Upload CSV of assets</a>
+
+                              </div>
+                            </div>
+                        </li>
+					</ul>
+            </div>
+
+
+        </nav>
+
+        {# v3 Assets master/detail #}
+        <div class="page-inner pt-2">
+            <div class="iris-ca-head">
+                <h4 style="color:#e8e8ee; font-weight:600; margin:0;">Assets <span class="text-muted" id="iris-ca-count" style="font-size:0.85rem;"></span></h4>
+                <span style="margin-left:auto; display:inline-flex; gap:8px; align-items:center;">
+                    <button type="button" class="iris-cshell-iconbtn" id="iris-ca-refresh" title="Refresh">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                    </button>
+                    {# The ⋮ menu is promoted into the shell header above, so
+                       each action is offered in exactly one place. #}
+                </span>
+            </div>
+            <div class="iris-ca-wrap">
+                <div class="iris-ca-left">
+                    <input type="text" class="form-control form-control-sm mb-2" id="iris-ca-search" placeholder="Search assets..." autocomplete="off">
+                    <div id="iris-ca-list"></div>
+                    <div class="text-muted" id="iris-ca-loading">Loading&hellip;</div>
+                    <div class="text-muted" id="iris-ca-none" style="display:none;">No assets yet — Add Asset to create the first one.</div>
+                </div>
+                <div class="iris-ca-right">
+                    <div class="text-muted" id="iris-ca-placeholder" style="text-align:center; padding-top:60px;">Select an asset to see its details.</div>
+                    <div id="iris-ca-detail" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+        <style>
+            .iris-ca-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+            .iris-ca-wrap { display: flex; gap: 14px; align-items: flex-start; }
+            .iris-ca-left { flex: 1 1 55%; min-width: 0; }
+            .iris-ca-right {
+                flex: 1 1 45%; min-width: 320px; background: #15151a;
+                border: 1px solid rgba(255,255,255,0.07); border-radius: 12px;
+                padding: 14px 16px; position: sticky; top: 70px;
+                /* FALLBACK ONLY. The real height is measured in JS
+                   (iris_ca_fit_card): this card is sticky, so its top is
+                   only `top:70px` once pinned — at rest it sits lower and
+                   any fixed-offset calc overshoots the AI chat bar by
+                   exactly that difference. This value is what a no-JS
+                   render gets, and it is correct once scrolled. */
+                height: calc(100vh - 160px);
+                display: flex; flex-direction: column; overflow: hidden;
+            }
+            /* the card itself never scrolls — its body does */
+            #iris-ca-detail {
+                display: flex; flex-direction: column;
+                flex: 1 1 auto; min-height: 0;
+            }
+            .iris-ca-dbody {
+                flex: 1 1 auto; min-height: 0; overflow-y: auto;
+                /* scroll without a visible bar (same treatment as the
+                   working-timeline panel) */
+                scrollbar-width: none; -ms-overflow-style: none;
+            }
+            .iris-ca-dbody::-webkit-scrollbar { display: none; }
+            /* Comments: the list scrolls, the composer stays put at the
+               bottom of the card instead of trailing the last comment. */
+            .iris-ca-dbody-split {
+                overflow: hidden; display: flex; flex-direction: column;
+            }
+            .iris-ca-clist {
+                flex: 1 1 auto; min-height: 0; overflow-y: auto;
+                scrollbar-width: none; -ms-overflow-style: none;
+            }
+            .iris-ca-clist::-webkit-scrollbar { display: none; }
+            /* AI asset profile block, below the recorded fields */
+            .iris-ca-prof-btn {
+                background: rgba(139,92,246,0.18);
+                border: 1px solid rgba(139,92,246,0.45);
+                color: #d4c4ff; border-radius: 999px;
+                font-size: 13px; line-height: 1; padding: 5px 10px;
+                cursor: pointer; margin-right: 6px;
+            }
+            .iris-ca-prof-btn:hover { background: rgba(139,92,246,0.3); }
+            .iris-ca-linkbtn {
+                background: transparent;
+                border: 1px solid rgba(255,255,255,0.14);
+                color: #b9b9c4; border-radius: 999px;
+                font-size: 12px; line-height: 1; padding: 5px 9px;
+                cursor: pointer; margin-right: 6px;
+            }
+            .iris-ca-linkbtn:hover {
+                color: #e8e8ee; border-color: rgba(255,255,255,0.3);
+            }
+            .iris-ca-prof {
+                margin-top: 14px; padding: 10px 12px;
+                background: rgba(139,92,246,0.06);
+                border: 1px solid rgba(139,92,246,0.28);
+                border-radius: 10px;
+            }
+            .iris-ca-prof-h {
+                font-size: 0.68rem; letter-spacing: 0.08em;
+                text-transform: uppercase; color: #a78bfa;
+                margin-bottom: 6px;
+            }
+            .iris-ca-prof-body {
+                font-size: 0.8rem; color: #c8c8d0; line-height: 1.5;
+            }
+            .iris-ca-prof-f {
+                margin-top: 8px; padding-top: 6px;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                font-size: 0.66rem; color: #7a7a85;
+            }
+            .iris-ca-cfoot {
+                flex-shrink: 0; display: flex; gap: 6px;
+                padding-top: 10px; margin-top: 4px;
+                border-top: 1px solid rgba(255,255,255,0.07);
+            }
+            .iris-ca-row {
+                border: 1px solid rgba(255,255,255,0.07); border-left-width: 3px;
+                border-radius: 10px; padding: 9px 12px; margin-bottom: 8px;
+                cursor: pointer; background: rgba(255,255,255,0.015);
+            }
+            .iris-ca-row:hover { border-color: rgba(139,92,246,0.4); }
+            .iris-ca-row.active { background: rgba(94,114,228,0.12); }
+            .iris-ca-row .iris-ca-name { color: #e8e8ee; font-weight: 600; }
+            .iris-ca-row .iris-ca-meta {
+                color: #9a9aa5; font-size: 0.75rem; margin-top: 2px;
+                display: flex; gap: 10px; flex-wrap: wrap;
+            }
+            .iris-ca-row .iris-ca-meta code {
+                color: #8fa3ef; background: transparent; font-size: 0.75rem;
+            }
+            .iris-ca-tag {
+                display: inline-block; padding: 0 8px; border-radius: 9px;
+                font-size: 0.68rem; color: #9a9aa5; margin-top: 4px;
+                border: 1px solid rgba(255,255,255,0.12); margin-right: 4px;
+            }
+            .iris-ca-comp-chip {
+                display: inline-flex; align-items: center; gap: 5px;
+                padding: 1px 10px; border-radius: 10px; font-size: 0.74rem;
+                border: 1px solid rgba(255,255,255,0.18); color: #c8c8d0;
+            }
+            .iris-ca-comp-1 { border-color: rgba(242,89,97,0.55); color: #F25961; }
+            .iris-ca-comp-2 { border-color: rgba(45,206,137,0.5); color: #2dce89; }
+            .iris-ca-dtabs {
+                display: flex; gap: 4px; margin: 10px 0;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+            }
+            .iris-ca-dtab {
+                background: transparent; border: 0; color: #9a9aa5;
+                font-size: 0.8rem; padding: 5px 10px; cursor: pointer;
+                border-bottom: 2px solid transparent;
+            }
+            .iris-ca-dtab.active { color: #e8e8ee; border-bottom-color: #8B5CF6; }
+            /* v3 hover actions on timeline cards — hidden until hover */
+            .iris-ca-tlcard .iris-ca-tlacts { opacity: 0; transition: opacity 0.12s; }
+            .iris-ca-tlcard:hover .iris-ca-tlacts,
+            .iris-ca-tlcard .iris-ca-tlacts:focus-within { opacity: 1; }
+            .iris-ca-tlacts a:hover, .iris-ca-tlacts button:hover { color: #e8e8ee !important; }
+            .iris-ca-field { margin-right: 16px; display: inline-block; font-size: 0.78rem; }
+            .iris-ca-field .lbl {
+                color: #7a7a85; font-size: 0.62rem; letter-spacing: 0.08em;
+                text-transform: uppercase; margin-right: 5px;
+            }
+            .iris-ca-field code { color: #8fa3ef; background: transparent; }
+            .iris-ca-desc {
+                color: #c8c8d0; font-size: 0.85rem; margin-top: 12px;
+                white-space: pre-wrap;
+            }
+            .iris-ca-foot {
+                color: #7a7a85; font-size: 0.7rem; margin-top: 14px;
+                display: flex; gap: 16px; flex-wrap: wrap;
+            }
+        </style>
+        <script src="/static/assets/js/iris/case_assets_v3.js"></script>
+
+        <div class="page-inner" id="iris-cassets-legacy" style="display:none;">
+            <div class="row ">
+                <div class="loader1 text-center ml-mr-auto" id="loading_msg">Loading...</div>
+                <div class="col-md-12">
+                    <div class="card" id="card_main_load" style="display:none;">
+                        <div class="card-body">
+                            <div class="col" id="assets_table_wrapper">
+                              <table class="table display table-striped table-hover responsive" width="100%" cellspacing="0" id="assets_table" >
+                                <thead>
+                                  <tr>
+                                      <th>Name</th>
+                                      <th>Type</th>
+                                      <th>Description</th>
+                                      <th>IP</th>
+                                      <th>Compromised</th>
+                                      <th>IOC</th>
+                                      <th>Tags</th>
+                                      <th>Analysis</th>
+                                  </tr>
+                                </thead>
+                                <tfoot>
+                                  <tr>
+                                      <th>Name</th>
+                                      <th>Type</th>
+                                      <th>Description</th>
+                                      <th>IP</th>
+                                      <th>Compromised</th>
+                                      <th>IOC</th>
+                                      <th>Tags</th>
+                                      <th>Analysis</th>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {# add-event modal container — same markup as the timeline page's;
+           filled by the shared event_modal.js when + Add event is clicked
+           on the detail Timeline tab #}
+        <div class="modal shadow-lg" tabindex="-1" id="modal_add_event" data-backdrop="static">
+            <div class="modal-xl modal-dialog" role="document">
+                <div class="modal-content" id="modal_add_event_content">
+
+                </div>
+            </div>
+        </div>
+
+        <div class="modal modal-case-focus" tabindex="-1" role="dialog" id="modal_add_asset" data-backdrop="true">
+            <div class="modal-xl modal-dialog" role="document">
+                <div class="modal-content" id="modal_add_asset_content">
+
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+        {% endif %}
+    </div>
+    <div class="modal " tabindex="-1" role="dialog" id="modal_upload_assets" data-backdrop="true">
+      <div class="modal-lg modal-dialog" role="document">
+        <form method="post" action="" id="form_upload_assets">
+
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5>Upload assets list (CSV format)</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                  aria-hidden="true">&times;</span></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="placeholder">Expected CSV File format</label>
+                    <textarea class="form-control col-md-12 col-sm-12 sizable-textarea" rows="2" disabled>asset_name,asset_type_name,asset_description,asset_ip,asset_domain,asset_tags (separated with &quot;|&quot;)</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="placeholder">CSV File format example</label>
+                    <textarea class="form-control col-md-12 col-sm-12 sizable-textarea" rows="3" disabled>asset_name,asset_type_name,asset_description,asset_ip,asset_domain,asset_tags
+    "My computer","Mac - Computer","Computer of Mme Michu","192.168.15.5","iris.local","Compta|Mac"
+    "XCAS","Windows - Server","Xcas server","192.168.15.48","iris.local",""</textarea>
+                </div>
+                  <div class="form-group">
+                      <label class="placeholder">Choose CSV file to import : </label>
+                      <input id="input_upload_assets" type="file" accept="text/csv">
+                  </div>
+            </div>
+            <div class='invalid-feedback' id='ioc-invalid-msg'></div>
+            <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark mr-auto" onclick="generate_sample_csv();">Download sample CSV</button>
+                    <button type="button" class="btn btn-outline-success" onclick="upload_assets();">Upload</button>
+            </div>
+          </div><!-- /.modal-content -->
+        </form>
+      </div><!-- /.modal-dialog -->
+    </div>
+    {% include 'includes/footer.html' %}
+
+</div>
+
+{% set chat_variant = 'assets' %}
+{% set chat_eyebrow = '✨ Assets Assistant' %}
+{% set chat_placeholder = 'Ask about these assets…  (e.g. which assets sit in the same trust zone?)' %}
+{% set chat_blurb = 'Focused on this case\'s asset inventory. Cross-references the timeline / IOCs / notes when needed.' %}
+{% set chat_suggestions = [
+    "Which assets are crown-jewels in this case?",
+    "Are any assets missing from the inventory based on the timeline?",
+    "Which assets have IOCs hitting them?",
+    "What containment/recovery tasks are missing per asset?"
+] %}
+{% include 'case_ai_chat_bar.html' %}
+
+{% endblock content %}
+{% block javascripts %}
+{% include 'includes/footer_case.html' %}
+<script src="/static/assets/js/plugin/sortable/sortable.js "></script>
+<script src="/static/assets/js/iris/case.asset.js"></script>
+{# shared add-event modal loader — the Timeline tab's + Add event opens
+   the timeline page's real modal IN PLACE (container below) #}
+<script src="/static/assets/js/iris/event_modal.js"></script>
+
+
+{% endblock javascripts %}

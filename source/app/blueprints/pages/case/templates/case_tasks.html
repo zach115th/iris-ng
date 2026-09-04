@@ -1,0 +1,474 @@
+{% extends "layouts/default_ext.html" %}
+
+{% block title %} Case Tasks {% endblock title %}
+
+{% block stylesheets %}
+{% include 'includes/header_case.html' %}
+<link rel="stylesheet" href="/static/assets/css/bootstrap-multiselect.min.css">
+<style>
+/* iris-next: indented dependency-tree view for the Tasks page */
+#iris-task-tree-card .iris-tree-graphs { display: flex; flex-wrap: wrap; gap: 28px; }
+#iris-task-tree-card .iris-tree-graph { flex: 1 1 460px; min-width: 360px; }
+#iris-task-tree-card .iris-tree-graph-head {
+    font-weight: 600; font-size: 13px; letter-spacing: .3px;
+    padding-bottom: 8px; margin-bottom: 10px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+}
+#iris-task-tree-card .iris-tree-body { font-size: 12px; }
+#iris-task-tree-card .iris-tree-node { position: relative; }
+/* rail + connector for nested children */
+#iris-task-tree-card .iris-tree-children {
+    margin-left: 10px; padding-left: 16px;
+    border-left: 1px solid rgba(139, 92, 246, 0.30);
+}
+#iris-task-tree-card .iris-tree-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; margin: 2px 0; border-radius: 6px;
+    cursor: pointer; transition: background .12s ease;
+}
+#iris-task-tree-card .iris-tree-row:hover { background: rgba(139, 92, 246, 0.10); }
+#iris-task-tree-card .iris-tree-toggle {
+    width: 14px; flex: 0 0 14px; text-align: center;
+    color: #9b87d6; font-size: 11px; user-select: none;
+}
+#iris-task-tree-card .iris-tree-toggle.iris-tree-leaf { visibility: hidden; }
+#iris-task-tree-card .iris-tree-id { color: #9b87d6; font-weight: 600; flex: 0 0 auto; }
+#iris-task-tree-card .iris-tree-title {
+    flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#iris-task-tree-card .iris-tree-row.iris-tree-cycle .iris-tree-title { font-style: italic; opacity: .8; }
+#iris-task-tree-card .iris-tree-empty { color: #7a7a85; font-style: italic; padding: 6px 8px; }
+#iris-task-tree-card .iris-tree-children.iris-collapsed { display: none; }
+
+/* iris-next: v3-shaped kanban board view.
+   Columns are built from the LIVE task-status catalog, not a hardcoded list,
+   so a deployment that has added a status gets a column for it. */
+#iris-task-board-card .iris-tb-board {
+    display: flex; gap: 10px; align-items: stretch;
+    overflow-x: auto; padding-bottom: 6px;
+}
+/* Column height is MEASURED at runtime into --iris-tb-h (viewport floor minus
+   the board's own top and the AI chat bar), because the board's top edge moves
+   with the case header, the toolbar and viewport width. The 420px here is a
+   LABELLED FALLBACK for the first paint and for no-JS, not the mechanism. */
+#iris-task-board-card .iris-tb-col {
+    flex: 1 0 200px; min-width: 200px;
+    height: var(--iris-tb-h, 420px);
+    display: flex; flex-direction: column;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px; padding: 8px; background: rgba(255, 255, 255, 0.015);
+}
+/* Cards scroll inside the column so the header stays put and a long column
+   never stretches the page. */
+#iris-task-board-card .iris-tb-colbody {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
+}
+#iris-task-board-card .iris-tb-col.dragover {
+    border-color: rgba(139, 92, 246, 0.5);
+    background: rgba(139, 92, 246, 0.05);
+}
+#iris-task-board-card .iris-tb-colhead {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #9a9aa5; padding: 2px 2px 8px;
+}
+#iris-task-board-card .iris-tb-coldot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+#iris-task-board-card .iris-tb-colcount {
+    margin-left: auto; font-size: 0.65rem; color: #9a9aa5;
+    background: rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 0 7px;
+}
+#iris-task-board-card .iris-tb-colempty {
+    text-align: center; color: #5a5a64; font-size: 0.75rem; padding-top: 42px;
+}
+#iris-task-board-card .iris-tb-card {
+    border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;
+    padding: 7px 9px; margin: 6px 0; cursor: pointer;
+    background: rgba(255, 255, 255, 0.02); font-size: 0.8rem;
+}
+#iris-task-board-card .iris-tb-card[draggable="true"] { cursor: grab; }
+#iris-task-board-card .iris-tb-card:hover { border-color: rgba(139, 92, 246, 0.4); }
+#iris-task-board-card .iris-tb-card.iris-tb-dragging { opacity: .45; }
+#iris-task-board-card .iris-tb-card-title {
+    display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#iris-task-board-card .iris-tb-card-id {
+    display: block; color: #9b87d6; font-size: 0.7rem; margin-top: 2px;
+}
+#iris-task-board-card .iris-tb-card-desc {
+    margin-top: 5px; font-size: 0.72rem; line-height: 1.35; color: #9a9aa5;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+#iris-task-board-card .iris-tb-card-date {
+    margin-top: 6px; font-size: 0.66rem; color: #7a7a85;
+}
+#iris-task-board-card .iris-tb-card-meta {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+}
+#iris-task-board-card .iris-tb-chip {
+    display: inline-block; padding: 0 7px; font-size: 0.66rem;
+    border-radius: 999px; white-space: nowrap;
+    border: 1px solid rgba(94, 114, 228, 0.55); color: #8fa3ef;
+}
+#iris-task-board-card .iris-tb-chip-none {
+    border-color: rgba(255, 255, 255, 0.18); color: #7a7a85;
+}
+#iris-task-board-card .iris-tb-chip-tag {
+    border-color: rgba(255, 255, 255, 0.14); color: #9a9aa5;
+}
+#iris-task-board-card .iris-tb-hint {
+    font-size: 0.7rem; color: #7a7a85; margin-top: 6px;
+}
+
+/* iris-next: v3 card view (master list + display/edit panel). Same layout the
+   v3 Assets and IOC pages use, so the three read alike. */
+.iris-tk-wrap { display: flex; gap: 14px; align-items: flex-start; }
+.iris-tk-left { flex: 1 1 55%; min-width: 0; }
+.iris-tk-right {
+    flex: 1 1 45%; min-width: 320px; background: #15151a;
+    border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px;
+    padding: 14px 16px; position: sticky; top: 70px;
+    /* FALLBACK ONLY. The real height is measured in iris_tk_fit_card(): the
+       card is sticky, so it only sits at top:70px once PINNED - at rest it
+       starts lower and any fixed-offset calc overshoots the AI chat bar by
+       exactly that difference. This value is what a no-JS render gets. */
+    height: calc(100vh - 160px);
+    display: flex; flex-direction: column; overflow: hidden;
+}
+#iris-tk-detail { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+/* The card never scrolls - its body does. */
+.iris-tk-dbody {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    scrollbar-width: none; -ms-overflow-style: none;
+}
+.iris-tk-dbody::-webkit-scrollbar { display: none; }
+/* Comments: the list scrolls, the composer stays put at the bottom of the
+   card rather than trailing the last comment. */
+.iris-tk-dbody-split { overflow: hidden; display: flex; flex-direction: column; }
+.iris-tk-clist {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    scrollbar-width: none; -ms-overflow-style: none;
+}
+.iris-tk-clist::-webkit-scrollbar { display: none; }
+
+.iris-tk-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.07); border-left-width: 3px;
+    border-radius: 8px; padding: 8px 10px; margin-bottom: 6px;
+    cursor: pointer; background: rgba(255, 255, 255, 0.02);
+}
+.iris-tk-row:hover { border-color: rgba(139, 92, 246, 0.40); }
+.iris-tk-row.selected {
+    border-color: rgba(139, 92, 246, 0.55); background: rgba(139, 92, 246, 0.08);
+}
+.iris-tk-row-main { flex: 1 1 auto; min-width: 0; }
+.iris-tk-row-title {
+    display: block; font-size: 0.86rem; color: #e8e8ee;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.iris-tk-row-sub {
+    display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-top: 4px;
+    font-size: 0.68rem; color: #7a7a85;
+}
+.iris-tk-chip {
+    display: inline-block; padding: 0 7px; font-size: 0.66rem;
+    border-radius: 999px; white-space: nowrap;
+    border: 1px solid rgba(94, 114, 228, 0.55); color: #8fa3ef;
+}
+.iris-tk-chip-none { border-color: rgba(255, 255, 255, 0.18); color: #7a7a85; }
+.iris-tk-chip-tag { border-color: rgba(255, 255, 255, 0.14); color: #9a9aa5; }
+.iris-tk-chip-status { border-color: rgba(255, 255, 255, 0.18); color: #c8c8d0; }
+
+.iris-tk-dhead { display: flex; align-items: flex-start; gap: 10px; padding-bottom: 10px; }
+.iris-tk-dhead-main { flex: 1 1 auto; min-width: 0; }
+.iris-tk-dtitle {
+    display: block; font-size: 1.02rem; font-weight: 600; color: #e8e8ee;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.iris-tk-dsub { font-size: 0.7rem; color: #7a7a85; margin-top: 2px; }
+.iris-tk-dacts { display: flex; gap: 6px; flex-shrink: 0; }
+.iris-tk-linkbtn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.14);
+    color: #b9b9c4; border-radius: 999px;
+    font-size: 12px; line-height: 1; padding: 5px 9px;
+    cursor: pointer;
+}
+.iris-tk-linkbtn:hover { color: #e8e8ee; border-color: rgba(255,255,255,0.3); }
+.iris-tk-tabs {
+    display: flex; gap: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 12px;
+}
+.iris-tk-tab {
+    background: none; border: 0; color: #9a9aa5; font-size: 0.78rem;
+    padding: 6px 2px; border-bottom: 2px solid transparent; cursor: pointer;
+}
+.iris-tk-tab.active { color: #e8e8ee; border-bottom-color: #8b5cf6; }
+.iris-tk-meta { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; }
+.iris-tk-meta-k {
+    font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #7a7a85; display: block; margin-bottom: 3px;
+}
+.iris-tk-desc { font-size: 0.82rem; color: #c8c8d0; line-height: 1.5; }
+.iris-tk-desc table { width: 100%; margin: 8px 0; font-size: 0.76rem; }
+.iris-tk-desc th, .iris-tk-desc td {
+    border: 1px solid rgba(139, 92, 246, 0.30); padding: 4px 6px;
+}
+.iris-tk-desc th { background: rgba(139, 92, 246, 0.18); }
+/* Inline edit form (v3: the Details pane becomes the form, no modal). */
+.iris-tk-fld { margin-bottom: 12px; }
+.iris-tk-fld label { display: block; margin-bottom: 4px; }
+.iris-tk-frow { display: flex; gap: 12px; }
+.iris-tk-frow > .iris-tk-fld { flex: 1 1 50%; min-width: 0; }
+.iris-tk-section {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.92rem; font-weight: 600; color: #e8e8ee;
+    padding-bottom: 6px; margin: 4px 0 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.iris-tk-section i { color: #6f7bd6; font-size: 0.85rem; }
+#iris-tk-f-desc { font-family: inherit; font-size: 0.8rem; margin-bottom: 12px; }
+.iris-tk-fulllink { margin-top: 10px; font-size: 0.72rem; }
+.iris-tk-fulllink a { color: #9b87d6; text-decoration: none; }
+.iris-tk-fulllink a:hover { text-decoration: underline; }
+
+.iris-tk-links { margin-top: 14px; }
+.iris-tk-linkrow {
+    display: flex; gap: 10px; align-items: baseline;
+    margin-bottom: 4px; font-size: 0.76rem;
+}
+.iris-tk-linklabel {
+    flex: 0 0 120px; color: #9a9aa5; font-size: 0.66rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+}
+.iris-tk-linkitem {
+    display: block; color: #d4c4ff; text-decoration: none;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.iris-tk-linkitem:hover { color: #e8ddff; text-decoration: underline; }
+.iris-tk-foot {
+    margin-top: 14px; padding-top: 10px; font-size: 0.66rem; color: #7a7a85;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex; flex-wrap: wrap; gap: 14px;
+}
+.iris-tk-comment {
+    border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 8px;
+    padding: 8px 10px; margin-bottom: 6px; font-size: 0.78rem; color: #c8c8d0;
+}
+.iris-tk-comment-meta { font-size: 0.66rem; color: #7a7a85; margin-bottom: 4px; }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+{% include 'includes/navigation_ext.html' %}
+
+
+{% include 'includes/sidenav.html' %}
+<div class="main-panel">
+
+    <div class="content">
+        {# v3 case shell (shared chrome; content below untouched).
+           Tasks promotes its primary action into the header, like
+           Assets/IOC/Timeline/Evidence — the toolbar copy is removed. #}
+        <div class="page-inner pt-2 pb-0">
+            {% set cshell_primary_label = 'Add task' %}
+            {% set cshell_primary_onclick = 'add_task();' %}
+            {% set cshell_primary_icon = 'list-checks' %}
+            {% set cshell_tab_label = 'Tasks' %}
+            {% set cshell_tab_menu %}
+                <a href="#" id="iris-tk-export" onclick="iris_tasks_export_csv();return false;">Export to CSV</a>
+            {% endset %}
+            {% include 'includes/case_shell.html' %}
+        </div>
+
+
+
+        {% if current_user.is_authenticated %}
+        {{ form.hidden_tag() }}
+            <nav class="navbar navbar-header navbar-expand-lg pt-2 pb-2 bg-case-gradient nav-sticky">
+                <div class="container-fluid">
+                    {# iris-next: the DataTables button strip is HIDDEN — its
+                       CSV button stays in the DOM because the shell menu's
+                       "Export to CSV" triggers it; copy + colvis were removed
+                       from the Buttons config in case.tasks.js.
+                       The old wrapper id is deliberately DROPPED: atlantis.css
+                       carries `#search-nav { display: block !important; }`,
+                       which beats a normal inline display:none (the codified
+                       !important-vs-inline trap) — no rule targets the plain
+                       tables_button id, so hiding it actually hides it. #}
+                    <div id="tables_button" style="display:none;"></div>
+					<ul class="navbar-nav topbar-nav ml-md-auto align-items-center page-navigation page-navigation-style-2 page-navigation-secondary">
+                        <li class="nav-item ml-2">
+                            <span class="text-white text-sm mr-2" id="last_resfresh">Loading</span>
+                        </li>
+                        {# iris-next: Refresh is the Assets tab's icon button —
+                           same glyph, same class (styled by the shell include). #}
+                        <li class="nav-item">
+                            <button type="button" class="iris-cshell-iconbtn" onclick="get_tasks();" title="Refresh">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                            </button>
+                        </li>
+                        {# iris-next: three views over the same task list, v3-style icon group.
+                           Table and Tree predate this; Board is the v3 kanban. #}
+                        <li class="nav-item">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Task view">
+                                <button type="button" class="btn btn-primary btn-sm iris-task-view-btn" data-view="table"
+                                        onclick="set_task_view('table');" title="Table view">
+                                    <i class="fa-solid fa-list"></i>
+                                </button>
+                                <button type="button" class="btn btn-dark btn-sm iris-task-view-btn" data-view="cards"
+                                        onclick="set_task_view('cards');" title="Card view — pick a task to view, edit or comment on it">
+                                    <i class="fa-solid fa-table-cells-large"></i>
+                                </button>
+                                <button type="button" class="btn btn-dark btn-sm iris-task-view-btn" data-view="board"
+                                        onclick="set_task_view('board');" title="Board view — drag a card to change its status">
+                                    <i class="fa-solid fa-table-columns"></i>
+                                </button>
+                                <button type="button" class="btn btn-dark btn-sm iris-task-view-btn" data-view="tree"
+                                        onclick="set_task_view('tree');" title="Dependency tree view — blocks / depends on">
+                                    <i class="fa-solid fa-sitemap"></i>
+                                </button>
+                            </div>
+                        </li>
+                        {# iris-next: Add task moved into the case shell header
+                           (between Follow and +) — no toolbar duplicate. #}
+					</ul>
+                </div>
+			</nav>
+        <div class="page-inner ">
+            <div class="row ">
+                 <div class="col-md-12">
+                        <div class="loader1 text-center ml-mr-auto" id="loading_msg">Loading...</div>
+                        <section class="card" id="card_main_load" style="display:none;">
+
+                            <div class="card-body">
+                                <div class="table-responsive" id="tasks_table_wrapper">
+                                    <table class="table display wrap col-border table-striped table-hover dataTable" width="100%"
+                                        cellspacing="0" id="tasks_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>Description</th>
+                                                <th>Status</th>
+                                                <th>Assigned to</th>
+                                                <th>Open date</th>
+                                                <th>Tags</th>
+                                            </tr>
+                                        </thead>
+                                        <tfoot>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>Description</th>
+                                                <th>Status</th>
+                                                <th>Assigned to</th>
+                                                <th>Open date</th>
+                                                <th>Tags</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+
+                        {# iris-next: v3 card view - master list + display/edit panel.
+                           Same shape as the v3 Assets and IOC pages, and driven by
+                           the SAME machinery as the rest of this page: Edit Task
+                           opens the existing modal, Delete calls the existing
+                           delete_task(), comments ride the existing endpoints.
+                           The panel lives only in this view - the table view is a
+                           DataTable whose columns do not survive being halved, and
+                           v3's board is full width too. #}
+                        <div id="iris-task-cards-view" style="display:none;">
+                            <div class="iris-tk-wrap">
+                                <div class="iris-tk-left">
+                                    <input type="text" class="form-control form-control-sm mb-2"
+                                           id="iris-tk-search" placeholder="Search tasks..." autocomplete="off">
+                                    <div id="iris-tk-list"></div>
+                                    <div class="text-muted" id="iris-tk-none" style="display:none;">
+                                        No tasks in this case yet — use Add task to create the first one.
+                                    </div>
+                                </div>
+                                <div class="iris-tk-right">
+                                    <div class="text-muted" id="iris-tk-placeholder"
+                                         style="text-align:center; padding-top:60px;">Select a task to see its details.</div>
+                                    <div id="iris-tk-detail" style="display:none;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- iris-next: v3 kanban board (toggled, hidden by default).
+                             Columns are rendered from the live task-status catalog. -->
+                        <section class="card" id="iris-task-board-card" style="display:none;">
+                            <div class="card-body">
+                                <div id="iris-task-board"></div>
+                                <div class="iris-tb-hint" id="iris-task-board-hint"></div>
+                            </div>
+                        </section>
+
+                        <!-- iris-next: indented dependency-tree view (toggled, hidden by default) -->
+                        <section class="card" id="iris-task-tree-card" style="display:none;">
+                            <div class="card-body">
+                                <div class="iris-tree-graphs">
+                                    <div class="iris-tree-graph">
+                                        <div class="iris-tree-graph-head">
+                                            <i class="fa-solid fa-ban text-warning mr-1"></i>Blocks
+                                            <small class="text-muted ml-1">— parent must finish before its children can start</small>
+                                        </div>
+                                        <div id="iris-task-tree-blocks" class="iris-tree-body"></div>
+                                    </div>
+                                    <div class="iris-tree-graph">
+                                        <div class="iris-tree-graph-head">
+                                            <i class="fa-solid fa-link text-info mr-1"></i>Depends on
+                                            <small class="text-muted ml-1">— parent depends on its children</small>
+                                        </div>
+                                        <div id="iris-task-tree-depends" class="iris-tree-body"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal " tabindex="-1" role="dialog" id="modal_add_task" data-backdrop="true">
+            <div class="modal-xxl modal-dialog" role="document">
+                <div class="modal-content" id="modal_add_task_content">
+
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+        {% endif %}
+
+    </div>
+
+    {% include 'includes/footer.html' %}
+</div>
+
+{% set chat_variant = 'tasks' %}
+{% set chat_eyebrow = '✨ Tasks Assistant' %}
+{% set chat_placeholder = 'Ask about these tasks…  (e.g. which tasks are stale?)' %}
+{% set chat_blurb = 'Focused on this case\'s task list. Calls out coverage gaps, unowned tasks, and missing follow-ups.' %}
+{% set chat_suggestions = [
+    "What's the IR-phase coverage of these tasks?",
+    "Which open tasks are stale or unowned?",
+    "What tasks are missing given the timeline?",
+    "Which 'Done' tasks have no captured outcome?"
+] %}
+{% include 'case_ai_chat_bar.html' %}
+
+{% endblock content %}
+
+{% block javascripts %}
+{% include 'includes/footer_case.html' %}
+
+<script src="/static/assets/js/plugin/datatables/dataTables.cellEdit.js"></script>
+<script src="/static/assets/js/plugin/select/bootstrap-multiselect.min.js"></script>
+<script src="/static/assets/js/iris/case.tasks.js"></script>
+
+
+{% endblock javascripts %}

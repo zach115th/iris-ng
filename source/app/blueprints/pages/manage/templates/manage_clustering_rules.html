@@ -1,0 +1,117 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Clustering Rules {% endblock title %}
+
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'clustering_rules' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+<form style="display:none;">{{ form.hidden_tag() }}</form>
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div>
+                    <div class="card-title">Clustering Rules</div>
+                    <div class="text-muted"><small>Auto-stack alerts into alert clusters on match.</small></div>
+                </div>
+                <div></div>
+            </div>
+        </div>
+        <div class="card-body">
+
+                                <h2>Alert Clustering Rules</h2>
+                                <p>Rules group incoming alerts into <a href="/alert-clusters">Alert Clusters</a>
+                                   by shared correlation-key values. Evaluated ascending by priority at ingest;
+                                   the first matching rule claims the alert (an alert belongs to at most one
+                                   cluster). A new matching alert arriving more than the stacking window after
+                                   the cluster's last alert closes it and opens a fresh one.</p>
+
+                                <div class="mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="iris_clu_rules_load();">Refresh</button>
+                                    <button type="button" class="btn btn-sm btn-primary ml-2" onclick="iris_clu_rule_new();">New rule</button>
+                                </div>
+                                <table class="table table-sm table-striped" id="iris-clu-rules-table">
+                                    <thead><tr><th>Priority</th><th>Name</th><th>Conditions</th><th>Correlation keys</th><th>Window (min)</th><th>Enabled</th><th class="text-right">Actions</th></tr></thead>
+                                    <tbody id="iris-clu-rules-body"><tr><td colspan="7" class="text-muted">Loading…</td></tr></tbody>
+                                </table>
+
+                                <div id="iris-clu-rule-editor" class="border rounded p-3 mb-3" style="display: none;">
+                                    <h4 id="iris-clu-rule-editor-title">New rule</h4>
+                                    <input type="hidden" id="cr-edit-id">
+                                    <div class="row mb-2">
+                                        <div class="col-md-5">
+                                            <label for="cr-name">Name</label>
+                                            <input type="text" class="form-control" id="cr-name" maxlength="256">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="cr-priority">Priority <small class="text-muted">asc</small></label>
+                                            <input type="number" class="form-control" id="cr-priority" value="100" min="1">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="cr-window">Window (min)</label>
+                                            <input type="number" class="form-control" id="cr-window" value="1440" min="1">
+                                        </div>
+                                        <div class="col-md-3 pt-4">
+                                            <div class="form-check">
+                                                <label class="form-check-label">
+                                                    <input class="form-check-input" type="checkbox" id="cr-enabled" checked>
+                                                    <span class="form-check-sign">Enabled</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <label for="cr-keys">Correlation keys <small class="text-muted">— comma-separated dotted paths; rule + customer are always part of the grouping</small></label>
+                                            <input type="text" class="form-control" id="cr-keys" placeholder="alert_context.hostname, alert_source">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="cr-title-template">Cluster title template <small class="text-muted">— {path} tokens, e.g. {alert_context.hostname}</small></label>
+                                            <input type="text" class="form-control" id="cr-title-template" placeholder="Repeated alerts on {alert_context.hostname}">
+                                        </div>
+                                    </div>
+                                    <label>Match conditions</label>
+                                    <div id="cr-conditions" class="mb-2"></div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4">
+                                            <label for="cr-test-lastn">Dry-run against newest N alerts</label>
+                                            <input type="number" class="form-control" id="cr-test-lastn" value="20" min="1" max="200">
+                                        </div>
+                                        <div class="col-md-8 pt-4">
+                                            <button type="button" class="btn btn-sm btn-dark" onclick="iris_clu_rule_test();">Test conditions</button>
+                                            <span id="cr-test-result" class="ml-2"></span>
+                                        </div>
+                                    </div>
+                                    <div id="cr-test-detail" class="mb-2" style="font-size: 0.8rem;"></div>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="iris_clu_rule_save();">Save rule</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="iris_clu_rule_cancel();">Cancel</button>
+                                        <span id="cr-save-result" class="ml-2"></span>
+                                    </div>
+                                </div>
+
+                                <p class="text-muted" style="font-size: 0.85rem;">
+                                    <b>Backfill</b> runs full first-match clustering over every alert not yet in a
+                                    cluster, oldest first — use it after creating or changing rules. It never
+                                    re-clusters an alert that already belongs to a cluster.
+                                </p>
+
+        </div>
+    </div>
+</div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/js/iris/condition_builder.js"></script>
+<script src="/static/assets/js/iris/manage.clustering.js"></script>
+<script>document.addEventListener('DOMContentLoaded', function () { iris_clu_rules_load(); });</script>
+{% endblock javascripts %}

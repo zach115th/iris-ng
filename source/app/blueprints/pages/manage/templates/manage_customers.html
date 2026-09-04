@@ -1,0 +1,183 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Manage Customers {% endblock title %}
+
+{% block stylesheets %}
+
+    <link rel="stylesheet" href="/static/assets/css/suggestags.css">
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+    {% if current_user.is_authenticated %}
+    {{ form.hidden_tag() }}
+        <div class="page-inner">
+{% set settings_active = 'customers' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+
+    {# iris-ng v3-parity Customers shell (maintainer direction, 2026-09-02).
+       Overlay, not rebuild: the master/detail renders from the SAME
+       /manage/customers/list + /manage/customers/<id> endpoints, Add/Edit
+       drive the EXISTING customer modal (add_customer/customer_detail),
+       Delete the existing delete_customer, and contacts ride the EXISTING
+       contact modal routes. The legacy DataTable card stays hidden-but-alive
+       below as the safety valve. Styles reuse the .iris-co-* vocabulary from
+       the Case Objects page — one look for the settings-family pages. #}
+    <style>
+        .iris-co-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+        .iris-co-head-icon { flex: 0 0 auto; margin-top: 3px; opacity: 0.85; }
+        .iris-co-title { font-size: 19px; font-weight: 700; color: #e6e6ee; line-height: 1.2; }
+        .iris-co-sub { font-size: 12.5px; color: #9b9baa; margin-top: 2px; }
+        .iris-co-head-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+        .iris-co-body { display: flex; gap: 16px; align-items: flex-start; }
+        .iris-co-list { flex: 0 0 46%; min-width: 0; background: #15151a;
+                        border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; }
+        .iris-co-detail { flex: 1 1 auto; min-width: 0; background: #15151a;
+                          border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px; }
+        .iris-co-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+                           color: #9b9baa; text-transform: uppercase; margin-bottom: 8px; }
+        .iris-co-search { width: 100%; margin-bottom: 8px; }
+        .iris-co-rows { max-height: 62vh; overflow-y: auto; }
+        .iris-co-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+                       border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; border-radius: 5px; }
+        .iris-co-row:hover { background: rgba(139,92,246,0.08); }
+        .iris-co-row.selected { background: rgba(139,92,246,0.16); }
+        .iris-co-row-main { min-width: 0; flex: 1 1 auto; }
+        .iris-co-row-name { font-size: 13.5px; color: #e2e2ea; font-weight: 600;
+                            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .iris-co-row-desc { font-size: 12px; color: #9b9baa;
+                            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .iris-co-row-id { flex: 0 0 auto; font-size: 11px; color: #6f6f7e; font-family: monospace; }
+        .iris-co-empty { color: #9b9baa; font-size: 13px; padding: 14px 6px; }
+        .iris-co-d-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .iris-co-d-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+                             color: #9b9baa; text-transform: uppercase; }
+        .iris-co-d-name { font-size: 14px; color: #e6e6ee; font-weight: 600;
+                          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .iris-co-d-actions { margin-left: auto; display: flex; gap: 8px; }
+        .iris-co-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+                          gap: 14px 22px; }
+        .iris-co-f-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em;
+                           color: #8a8a98; text-transform: uppercase; margin-bottom: 3px; }
+        .iris-co-f-value { font-size: 13px; color: #d8d8e2; word-break: break-word; }
+        .iris-cust-contacts { margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.07);
+                              padding-top: 14px; }
+        .iris-cust-contacts-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .iris-cust-contact { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px;
+                             border: 1px solid rgba(255,255,255,0.06); border-radius: 6px;
+                             margin-bottom: 8px; cursor: pointer; }
+        .iris-cust-contact:hover { background: rgba(139,92,246,0.08); }
+        .iris-cust-contact-name { font-size: 13px; font-weight: 600; color: #e2e2ea; }
+        .iris-cust-contact-meta { font-size: 12px; color: #9b9baa; }
+        .iris-co-legacy-link { font-size: 11.5px; color: #6f6f7e; }
+        @media (max-width: 991px) { .iris-co-body { display: block; }
+            .iris-co-list { margin-bottom: 14px; } }
+    </style>
+
+    <div class="iris-co-head">
+        <span class="iris-co-head-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <div>
+            <div class="iris-co-title">Customers</div>
+            <div class="iris-co-sub">Manage customer records and their contacts.</div>
+        </div>
+        <div class="iris-co-head-actions">
+            <button type="button" class="btn btn-sm btn-dark" id="iris-cust-refresh">Refresh</button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="add_customer();">+ Add customer</button>
+        </div>
+    </div>
+
+    <div class="iris-co-body">
+        <div class="iris-co-list">
+            <div class="iris-co-eyebrow">Customers <span id="iris-cust-count"></span></div>
+            <input type="text" class="form-control form-control-sm iris-co-search" id="iris-cust-search"
+                   placeholder="Search by name or description..." autocomplete="off">
+            <div class="iris-co-rows" id="iris-cust-rows"></div>
+        </div>
+        <div class="iris-co-detail" id="iris-cust-detail">
+            <div class="iris-co-empty">Select a customer to see its details.</div>
+        </div>
+    </div>
+    <div class="text-right mt-2">
+        <a href="#" class="iris-co-legacy-link" id="iris-cust-legacy-toggle"
+           onclick="$('#iris-cust-legacy').toggle(); return false;">Show legacy view</a>
+    </div>
+
+    <div id="iris-cust-legacy" style="display: none;">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="card-title">Customers management</div>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-sm btn-dark float-right ml-2" onclick="refresh_customer_table(true);">
+                                        Refresh
+                                    </button>
+                                    <button class="btn btn-sm btn-dark float-right ml-2" onclick="add_customer();">Add customer</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+
+                            <div class="table-responsive" id="customers_table_wrapper">
+                                <div class="selectgroup">
+                                    <span id="table_buttons"></span>
+                                </div>
+                                <table class="table display table table-striped table-hover" width="100%"
+                                       cellspacing="0" id="customers_table">
+                                    <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Customer ID</th>
+                                        <th>Description</th>
+                                    </tr>
+                                    </thead>
+                                    <tfoot>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Customer ID</th>
+                                        <th>Description</th>
+                                    </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>{# /iris-cust-legacy #}
+            <div class="modal" tabindex="-1" role="dialog" id="modal_add_customer" data-backdrop="true">
+                <div class="modal-lg modal-dialog" role="document">
+                    <div class="modal-content" id="modal_add_customer_content">
+
+                    </div><!-- /.modal-content -->
+                </div><!-- /.modal-dialog -->
+            </div>
+            {# iris-ng: mount for the EXISTING contact modal routes
+               (/manage/customers/<id>/contacts/...), same ids the customer
+               view page uses so the modal templates land unchanged. #}
+            <div class="modal" tabindex="-1" role="dialog" id="modal_add_contact" data-backdrop="true">
+                <div class="modal-lg modal-dialog" role="document">
+                    <div class="modal-content" id="modal_add_contact_content">
+
+                    </div><!-- /.modal-content -->
+                </div><!-- /.modal-dialog -->
+            </div>
+        </div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>
+    {% endif %}
+
+{% endblock content %}
+
+{% block javascripts %}
+
+    <script src="/static/assets/js/iris/manage.customers.js"></script>
+    <script src="/static/assets/js/iris/manage.customers.v3.js"></script>
+
+{% endblock javascripts %}

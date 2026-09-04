@@ -1,0 +1,30 @@
+{# Global addressed-to-me notifications bell (iris-ng v2, Phase 5).
+   Include INSIDE the topbar <ul> of BOTH navigation templates (the header
+   exists twice - project rule). Pair with
+   includes/global_notifications_assets.html outside the <ul>.
+   Distinct from the per-case bell: that one shows what changed in the case
+   in context; this one shows what is addressed to ME across the instance. #}
+{% if current_user.is_authenticated %}
+<li class="nav-item dropdown hidden-caret" id="iris-gnotif-item">
+	<a class="nav-link position-relative" href="#" id="iris-gnotif-bell" role="button"
+	   title="My notifications" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+		<i class="fa fa-inbox"></i>
+		<span id="iris-gnotif-badge" class="iris-gnotif-badge" style="display:none;">0</span>
+	</a>
+	<div class="dropdown-menu dropdown-menu-right iris-gnotif-panel animated shadow-xl" aria-labelledby="iris-gnotif-bell">
+		<div class="iris-gnotif-head">
+			<div>
+				<div class="iris-gnotif-title">My notifications</div>
+				<div class="iris-gnotif-sub">mentions &middot; assignments &middot; escalations</div>
+			</div>
+			<button type="button" class="iris-gnotif-ack" id="iris-gnotif-ack" disabled>Mark all read</button>
+		</div>
+		<div class="iris-gnotif-body" id="iris-gnotif-body">
+			<div class="iris-gnotif-empty">Loading&hellip;</div>
+		</div>
+		<div class="iris-gnotif-foot">
+			<a href="/user/settings?cid={{ session['current_case'].case_id if session.get('current_case') else 1 }}#notifications">Notification settings</a>
+		</div>
+	</div>
+</li>
+{% endif %}

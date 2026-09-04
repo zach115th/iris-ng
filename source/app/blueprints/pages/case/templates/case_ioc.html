@@ -1,0 +1,529 @@
+{% extends "layouts/default_ext.html" %} 
+{% block title %} Case IOC {% endblock title %} 
+
+{% block stylesheets %}
+{% include 'includes/header_case.html' %}
+{% endblock stylesheets %}
+
+{% block content %}
+
+{% include 'includes/navigation_ext.html' %}
+
+{% include 'includes/sidenav.html' %}
+<div class="main-panel">
+
+    <div class="content">
+        {# v3 case shell (shared chrome; content below untouched). Like the
+           Assets tab, the IOC tab promotes its primary action into the header
+           chip group; the section header below keeps only Refresh + the ⋮
+           menu, so Add IOC is offered once. #}
+        <div class="page-inner pt-2 pb-0">
+            {% set cshell_primary_label = 'Add IOC' %}
+            {% set cshell_primary_onclick = 'add_ioc();' %}
+            {% set cshell_primary_icon = 'bug' %}
+            {# This tab's own actions, promoted into the header ⋮ menu. The
+               ids are the ones case_iocs_v3.js already binds to. #}
+            {% set cshell_tab_label = 'Indicators' %}
+            {% set cshell_tab_menu %}
+                <a href="#" onclick="fire_upload_iocs();return false;">Import from CSV</a>
+                <a href="#" id="iris-ci-export">Export to CSV</a>
+                <a href="#" id="iris-ci-legacy-toggle">Show / hide legacy table</a>
+            {% endset %}
+            {% include 'includes/case_shell.html' %}
+        </div>
+
+
+        {% if current_user.is_authenticated %}
+        {{ form.hidden_tag() }}
+         {# hidden, not removed: its buttons + module quick-actions are still
+            wired and the v3 header drives the same functions #}
+         <nav style="display:none;" class="navbar navbar-header navbar-expand-lg pt-2 pb-2 bg-case-gradient nav-sticky">
+                <div class="container-fluid">
+                    <div class="collapse" id="search-nav">
+                        <div id="tables_button"></div>
+                     </div>
+					<ul class="navbar-nav topbar-nav ml-md-auto align-items-center page-navigation page-navigation-style-2 page-navigation-secondary">
+                        <li class="nav-item ml-2">
+                            <span class="text-white text-sm mr-2" id="last_resfresh">Loading</span>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-primary btn-sm" onclick="reload_iocs();">
+                                <span class="menu-title">Refresh</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-dark btn-sm" onclick="add_ioc();">
+                                <span class="menu-title">Add IOC</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <div class="dropdown">
+                              <button class="btn btn-sm btn-border btn-black" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                  <span class="menu-title"><i class="fas fa-ellipsis-v"></i></span>
+                              </button>
+                              <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class="dropdown-item" href="#" onclick="fire_upload_iocs();">Upload CSV of IOCs</a>
+                              </div>
+                            </div>
+                        </li>
+					</ul>
+            </div>
+
+
+        </nav>
+
+        <style>
+            .iris-ci-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+            .iris-ci-wrap { display: flex; gap: 14px; align-items: flex-start; }
+            .iris-ci-left { flex: 1 1 55%; min-width: 0; }
+            .iris-ci-right {
+                flex: 1 1 45%; min-width: 320px; background: #15151a;
+                border: 1px solid rgba(255,255,255,0.07); border-radius: 12px;
+                padding: 14px 16px; position: sticky; top: 70px;
+                /* FALLBACK ONLY — the real height is measured in JS
+                   (iris_ci_fit_card); this card is sticky so a fixed-offset
+                   calc overshoots the AI chat bar until it pins. */
+                height: calc(100vh - 160px);
+                display: flex; flex-direction: column; overflow: hidden;
+            }
+            #iris-ci-detail {
+                display: flex; flex-direction: column;
+                flex: 1 1 auto; min-height: 0;
+            }
+            .iris-ci-dbody {
+                flex: 1 1 auto; min-height: 0; overflow-y: auto;
+                scrollbar-width: none; -ms-overflow-style: none;
+            }
+            .iris-ci-dbody::-webkit-scrollbar { display: none; }
+            .iris-ci-dbody-split {
+                overflow: hidden; display: flex; flex-direction: column;
+            }
+            .iris-ci-clist {
+                flex: 1 1 auto; min-height: 0; overflow-y: auto;
+                scrollbar-width: none; -ms-overflow-style: none;
+            }
+            .iris-ci-clist::-webkit-scrollbar { display: none; }
+            .iris-ci-cfoot {
+                flex-shrink: 0; display: flex; gap: 6px;
+                padding-top: 10px; margin-top: 4px;
+                border-top: 1px solid rgba(255,255,255,0.07);
+            }
+            .iris-ci-row {
+                border: 1px solid rgba(255,255,255,0.07); border-left-width: 3px;
+                border-left-color: rgba(139,92,246,0.55);
+                border-radius: 10px; padding: 9px 12px; margin-bottom: 8px;
+                cursor: pointer; background: rgba(255,255,255,0.015);
+            }
+            .iris-ci-row:hover { border-color: rgba(139,92,246,0.4); }
+            .iris-ci-row.active { background: rgba(94,114,228,0.12); }
+            .iris-ci-val { color: #e8e8ee; font-weight: 600; word-break: break-all; }
+            .iris-ci-meta {
+                color: #9a9aa5; font-size: 0.75rem; margin-top: 2px;
+                display: flex; gap: 6px; flex-wrap: wrap;
+            }
+            .iris-ci-tag {
+                display: inline-block; padding: 0 8px; border-radius: 9px;
+                font-size: 0.68rem; color: #9a9aa5;
+                border: 1px solid rgba(255,255,255,0.12);
+            }
+            .iris-ci-notepill {
+                border: 1px solid rgba(139,92,246,0.35);
+                background: rgba(139,92,246,0.12); color: #d4c4ff;
+                border-radius: 8px; padding: 0 8px; font-size: 0.66rem;
+                white-space: nowrap;
+            }
+            .iris-ci-xcase {
+                border: 1px solid rgba(143,163,239,0.35);
+                background: rgba(143,163,239,0.12); color: #8fa3ef;
+                border-radius: 8px; padding: 0 7px; font-size: 0.66rem;
+            }
+            .iris-ci-dtabs {
+                display: flex; gap: 4px; margin: 10px 0; flex-wrap: wrap;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+            }
+            .iris-ci-dtab {
+                background: transparent; border: 0; color: #9a9aa5;
+                font-size: 0.8rem; padding: 5px 10px; cursor: pointer;
+                border-bottom: 2px solid transparent;
+            }
+            .iris-ci-dtab.active { color: #e8e8ee; border-bottom-color: #8B5CF6; }
+            /* Cross-case cards: the case's own detail, click to peek. */
+            .iris-ci-ccard {
+                border: 1px solid rgba(255,255,255,0.07); border-left-width: 3px;
+                border-left-color: rgba(143,163,239,0.55);
+                border-radius: 10px; padding: 9px 12px; margin-bottom: 8px;
+                background: rgba(255,255,255,0.015); cursor: pointer;
+            }
+            .iris-ci-ccard.open { border-color: rgba(139,92,246,0.30); }
+            .iris-ci-crow { padding: 0; cursor: pointer; }
+            .iris-ci-ccard:hover { border-color: rgba(139,92,246,0.4); }
+            .iris-ci-cchev { color: #7a7a85; font-size: 0.7rem; }
+            .iris-ci-cbody {
+                margin-top: 10px; padding-top: 10px;
+                border-top: 1px solid rgba(255,255,255,0.06);
+            }
+            .iris-ci-pk-summary {
+                border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+                padding: 10px; margin-top: 4px;
+            }
+            .iris-ci-cname { color: #e8e8ee; font-weight: 600; }
+            .iris-ci-cmeta {
+                color: #9a9aa5; font-size: 0.75rem; margin-top: 2px;
+            }
+            .iris-ci-ccl {
+                display: inline-block; padding: 0 8px; border-radius: 10px;
+                font-size: 0.7rem; border: 1px solid rgba(255,255,255,0.18);
+                white-space: nowrap;
+            }
+            /* Case tiles, rendered inline in the panel (the war room
+               shows the same ones inside its popup). */
+            .iris-ci-pk-grid {
+                display: grid; grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+            .iris-ci-pk-tile {
+                border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+                padding: 8px 10px; background: rgba(255,255,255,0.015);
+            }
+            .iris-ci-pk-lbl {
+                color: #7a7a85; font-size: 0.62rem; letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+            .iris-ci-pk-val { color: #e8e8ee; font-size: 0.86rem; margin-top: 2px; }
+            /* Notes read in place. The row is the toggle; the small arrow
+               is still a link to the Notes page for editing. */
+            .iris-ci-notewrap {
+                border-bottom: 1px solid rgba(255,255,255,0.04);
+            }
+            .iris-ci-notewrap.open {
+                border: 1px solid rgba(139,92,246,0.30); border-radius: 10px;
+                background: rgba(255,255,255,0.015); margin-bottom: 8px;
+            }
+            .iris-ci-noterow {
+                display: flex; align-items: center; gap: 8px;
+                padding: 6px 10px; cursor: pointer;
+            }
+            .iris-ci-noterow:hover .iris-ci-notetitle { color: #e8e8ee; }
+            .iris-ci-notechev { color: #7a7a85; font-size: 0.7rem; }
+            .iris-ci-notetitle {
+                color: #d4c4ff; font-size: 0.8rem; flex: 1 1 auto;
+                min-width: 0; overflow: hidden; text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .iris-ci-noteopen {
+                color: #7a7a85; font-size: 0.8rem; text-decoration: none;
+                padding: 0 4px; flex-shrink: 0;
+            }
+            .iris-ci-noteopen:hover { color: #8fa3ef; text-decoration: none; }
+            .iris-ci-notebody {
+                padding: 2px 12px 10px; border-top: 1px solid rgba(255,255,255,0.06);
+            }
+            .iris-ci-noteview {
+                color: #c8c8d0; font-size: 0.8rem; word-break: break-word;
+            }
+            .iris-ci-noteview h1, .iris-ci-noteview h2, .iris-ci-noteview h3,
+            .iris-ci-noteview h4, .iris-ci-noteview h5, .iris-ci-noteview h6 {
+                color: #e8e8ee; font-size: 0.86rem; font-weight: 600;
+                margin: 10px 0 4px;
+            }
+            .iris-ci-noteview p, .iris-ci-noteview ul, .iris-ci-noteview ol {
+                margin: 0 0 8px;
+            }
+            .iris-ci-noteview code {
+                background: rgba(255,255,255,0.06); color: #8fa3ef;
+                padding: 0 4px; border-radius: 3px;
+            }
+            .iris-ci-noteview pre {
+                background: rgba(255,255,255,0.04); padding: 8px;
+                border-radius: 6px; overflow-x: auto;
+            }
+            .iris-ci-noteview a { color: #8fa3ef; }
+            .iris-ci-noteview img { max-width: 100%; }
+            .iris-ci-noteview table {
+                width: 100%; font-size: 0.74rem; margin-bottom: 8px;
+            }
+            .iris-ci-noteview table th, .iris-ci-noteview table td {
+                border: 1px solid rgba(139,92,246,0.30); padding: 3px 6px;
+                color: #c8c8d0;
+            }
+            .iris-ci-noteview table th { background: rgba(139,92,246,0.18); }
+            .iris-ci-noteview blockquote {
+                border-left: 3px solid rgba(139,92,246,0.45);
+                margin: 0 0 8px; padding-left: 10px; color: #9a9aa5;
+            }
+            /* Linked-asset cards — deliberately the same treatment as a row
+               in the Assets page list (border-left keyed to compromise
+               status, name / meta / tag layout), so the same asset reads
+               the same way on both surfaces. */
+            .iris-ci-acard {
+                display: block; position: relative;
+                border: 1px solid rgba(255,255,255,0.07); border-left-width: 3px;
+                border-radius: 10px; padding: 9px 12px; margin-bottom: 8px;
+                background: rgba(255,255,255,0.015); text-decoration: none;
+            }
+            .iris-ci-acard:hover {
+                border-color: rgba(139,92,246,0.4); text-decoration: none;
+            }
+            .iris-ci-aname { color: #e8e8ee; font-weight: 600; }
+            .iris-ci-ameta {
+                color: #9a9aa5; font-size: 0.75rem; margin-top: 2px;
+                display: flex; gap: 10px; flex-wrap: wrap;
+            }
+            .iris-ci-ameta code {
+                color: #8fa3ef; background: transparent; font-size: 0.75rem;
+            }
+            .iris-ci-atag {
+                display: inline-block; padding: 0 8px; border-radius: 9px;
+                font-size: 0.68rem; color: #9a9aa5; margin-top: 4px;
+                border: 1px solid rgba(255,255,255,0.12); margin-right: 4px;
+            }
+            .iris-ci-comp-chip {
+                display: inline-flex; align-items: center; gap: 5px;
+                padding: 1px 10px; border-radius: 10px; font-size: 0.74rem;
+                border: 1px solid rgba(255,255,255,0.18); color: #c8c8d0;
+            }
+            .iris-ci-comp-1 { border-color: rgba(242,89,97,0.55); color: #F25961; }
+            .iris-ci-comp-2 { border-color: rgba(45,206,137,0.5); color: #2dce89; }
+            .iris-ci-aid {
+                position: absolute; right: 12px; bottom: 7px;
+                color: #55555e; font-size: 0.68rem;
+            }
+            /* Timeline cards — same treatment as the Assets tab: the hover
+               action strip is revealed on hover and kept reachable by
+               keyboard via :focus-within. */
+            .iris-ci-tlcard .iris-ci-tlacts { opacity: 0; transition: opacity 0.12s; }
+            .iris-ci-tlcard:hover .iris-ci-tlacts,
+            .iris-ci-tlcard .iris-ci-tlacts:focus-within { opacity: 1; }
+            .iris-ci-tlacts a:hover, .iris-ci-tlacts button:hover { color: #e8e8ee !important; }
+            .iris-ci-field { font-size: 0.78rem; color: #c8c8d0; }
+            .iris-ci-field .lbl {
+                color: #7a7a85; font-size: 0.62rem; letter-spacing: 0.08em;
+                text-transform: uppercase; margin-right: 5px;
+            }
+            .iris-ci-valbox {
+                margin-top: 10px; padding: 8px 12px;
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 8px;
+            }
+            .iris-ci-valbox code { color: #8fa3ef; font-size: 0.82rem; }
+            .iris-ci-desc {
+                margin-top: 10px; font-size: 0.82rem; color: #c8c8d0;
+                white-space: pre-wrap;
+            }
+            .iris-ci-foot {
+                margin-top: 12px; padding-top: 8px;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                display: flex; gap: 14px; flex-wrap: wrap;
+                font-size: 0.66rem; color: #7a7a85;
+            }
+            .iris-ci-intel-block {
+                margin-bottom: 12px; padding: 10px 12px;
+                background: rgba(255,255,255,0.02);
+                border: 1px solid rgba(255,255,255,0.07);
+                border-radius: 10px;
+            }
+            .iris-ci-intel-h {
+                font-size: 0.66rem; letter-spacing: 0.08em;
+                text-transform: uppercase; color: #8fa3ef; margin-bottom: 6px;
+            }
+            /* module-authored report markup renders here — keep it readable
+               without letting it break the panel */
+            .iris-ci-intel-html { font-size: 0.76rem; color: #c8c8d0; overflow-x: auto; }
+            .iris-ci-intel-html table { width: 100%; font-size: 0.72rem; }
+            .iris-ci-intel-html td, .iris-ci-intel-html th {
+                padding: 3px 6px; border-bottom: 1px solid rgba(255,255,255,0.06);
+            }
+            .iris-ci-intel-html img { max-width: 100%; }
+            .iris-ci-prof-btn {
+                background: rgba(139,92,246,0.18);
+                border: 1px solid rgba(139,92,246,0.45);
+                color: #d4c4ff; border-radius: 999px;
+                font-size: 13px; line-height: 1; padding: 5px 10px;
+                cursor: pointer; margin-right: 6px;
+            }
+            .iris-ci-prof-btn:hover { background: rgba(139,92,246,0.3); }
+            .iris-ci-linkbtn {
+                background: transparent;
+                border: 1px solid rgba(255,255,255,0.14);
+                color: #b9b9c4; border-radius: 999px;
+                font-size: 12px; line-height: 1; padding: 5px 9px;
+                cursor: pointer; margin-right: 6px;
+            }
+            .iris-ci-linkbtn:hover {
+                color: #e8e8ee; border-color: rgba(255,255,255,0.3);
+            }
+            .iris-ci-prof {
+                margin-top: 14px; padding: 10px 12px;
+                background: rgba(139,92,246,0.06);
+                border: 1px solid rgba(139,92,246,0.28);
+                border-radius: 10px;
+            }
+            .iris-ci-prof-h {
+                font-size: 0.68rem; letter-spacing: 0.08em;
+                text-transform: uppercase; color: #a78bfa; margin-bottom: 6px;
+            }
+            .iris-ci-prof-body {
+                font-size: 0.8rem; color: #c8c8d0; line-height: 1.5;
+            }
+            .iris-ci-prof-f {
+                margin-top: 8px; padding-top: 6px;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                font-size: 0.66rem; color: #7a7a85;
+            }
+        </style>
+        <script src="/static/assets/js/iris/case_iocs_v3.js"></script>
+
+        {# ---- v3 indicators view: master list + detail panel, rendered from
+               the same payload the legacy table eats and driving the same
+               modal functions. The legacy card below stays in the DOM
+               (hidden) so its machinery keeps working. ---- #}
+        <div class="page-inner pt-0">
+            <div class="iris-ci-head">
+                <h4 style="margin:0; color:#e8e8ee; font-weight:600;">Indicators
+                    <span class="text-muted" style="font-size:0.8rem;" id="iris-ci-count"></span>
+                </h4>
+                {# Neither Add IOC nor the ⋮ menu is duplicated here — both are
+                   promoted into the shell header above, so each action is
+                   offered in exactly one place. Refresh stays. #}
+                <div style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+                    <button type="button" class="iris-cshell-btn" onclick="get_case_ioc();" title="Refresh">&#8635;</button>
+                </div>
+            </div>
+            <div class="iris-ci-wrap">
+                <div class="iris-ci-left">
+                    <input type="text" class="form-control" id="iris-ci-search"
+                           placeholder="Search IOCs..." autocomplete="off">
+                    <div id="iris-ci-list" style="margin-top:10px;"></div>
+                </div>
+                <div class="iris-ci-right">
+                    <div id="iris-ci-placeholder" class="text-muted"
+                         style="font-size:0.85rem;">Select an indicator to see its details.</div>
+                    <div id="iris-ci-detail" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-inner" id="iris-ci-legacy" style="display:none;">
+            <div class="row">
+                <div class="loader1 text-center ml-mr-auto" id="loading_msg">Loading...</div>
+                <div class="col-md-12">
+                    <div class="card" id="card_main_load" style="display:none;">
+                        <div class="card-body">
+                              <table class="table display wrap col-border table-striped table-hover" width="100%" cellspacing="0" id="ioc_table" >
+                                <thead>
+                                  <tr>
+                                      <th>Value</th>
+                                      <th>Type</th>
+                                      <th>Description</th>
+                                      <th>Tags</th>
+                                      <th>Linked cases</th>
+                                      <th>TLP</th>
+                                  </tr>
+                                </thead>
+                                <tfoot>
+                                  <tr>
+                                      <th>Value</th>
+                                      <th>Type</th>
+                                      <th>Description</th>
+                                      <th>Tags</th>
+                                      <th>Linked cases</th>
+                                      <th>TLP</th>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    
+    </div>
+
+    {% include 'includes/footer.html' %}
+</div>
+{# add-event modal container — same markup as the timeline page's; filled
+   by the shared event_modal.js when + Add event is clicked on the detail
+   Timeline tab #}
+<div class="modal shadow-lg" tabindex="-1" id="modal_add_event" data-backdrop="static">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content" id="modal_add_event_content">
+
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" role="dialog" id="modal_add_ioc" data-backdrop="true">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content" id="modal_add_ioc_content">
+
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+
+<div class="modal " tabindex="-1" role="dialog" id="modal_upload_ioc" data-backdrop="true">
+  <div class="modal-lg modal-dialog" role="document">
+    <form method="post" action="" id="form_upload_ioc">
+
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5>Upload IOC list (CSV format)</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+              aria-hidden="true">&times;</span></button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="placeholder">Expected CSV File format</label>
+                <textarea class="form-control col-md-12 col-sm-12 sizable-textarea" rows="2" disabled>ioc_value,ioc_type,ioc_description,ioc_tags,ioc_tlp
+&lt;Value&gt;,&lt;Type&gt;,&lt;Description&gt;,&lt;TLP&gt;,Tags separated with &quot;|&quot;</textarea>
+            </div>
+            <div class="form-group">
+                <label class="placeholder">CSV File format example</label>
+                <textarea class="form-control col-md-12 col-sm-12 sizable-textarea" rows="3" disabled>ioc_value,ioc_type,ioc_description,ioc_tags,ioc_tlp
+1.1.1.1,IP,Cloudfare DNS IP address,Cloudfare|DNS,green
+wannacry.exe,File,Wannacry sample found,Wannacry|Malware|PE,amber</textarea>
+            </div>
+              <div class="form-group">
+                  <label class="placeholder">Choose CSV file to import : </label>
+                  <input id="input_upload_ioc" type="file" accept="text/csv">
+              </div>
+        </div>
+        <div class='invalid-feedback' id='ioc-invalid-msg'></div>
+        <div class="modal-footer">
+                <button type="button" class="btn btn-outline-dark mr-auto" onclick="generate_sample_csv();">Download sample CSV</button>
+                <button type="button" class="btn btn-outline-success" onclick="upload_ioc();">Upload</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </form>
+  </div><!-- /.modal-dialog -->
+</div>
+
+{% set chat_variant = 'ioc' %}
+{% set chat_eyebrow = '✨ IOC Assistant' %}
+{% set chat_placeholder = 'Ask about these IOCs…  (e.g. which IOCs are likely to false-positive?)' %}
+{% set chat_blurb = 'Focused on this case\'s indicators. Flags weak IOCs, missing taxonomies, and IOC-asset link gaps.' %}
+{% set chat_suggestions = [
+    "Which IOCs are evidence-backed vs. analyst-asserted?",
+    "Which IOCs might be CDN / parked / sinkhole noise?",
+    "Are any IOCs missing TLP or MISP type taxonomy?",
+    "Which IOCs lack an asset link?"
+] %}
+{% include 'case_ai_chat_bar.html' %}
+
+
+{% endblock content %}
+
+{% block javascripts %}
+
+{% include 'includes/footer_case.html' %}
+<script src="/static/assets/js/iris/case.ioc.js"></script>
+{# shared add-event modal loader — the Timeline tab's + Add event opens
+   the timeline page's real modal IN PLACE (container below) #}
+<script src="/static/assets/js/iris/event_modal.js"></script>
+
+{% endblock javascripts %}

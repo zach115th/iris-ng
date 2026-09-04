@@ -1,0 +1,45 @@
+{#
+  Shared "peek at a case" modal — the tiles + safe-rendered summary popup.
+
+  Extracted from the war-room Cases tab so every surface that peeks at a case
+  shows the SAME thing. Both ids and class names are prefixed, so a page can
+  keep its historical ids while sharing this markup:
+
+      {% with peek_modal_id='iris-wr-cspeek-modal', peek_prefix='iris-wr-pk',
+              peek_view_class='iris-md-rendered iris-wr-nt-view' %}
+        {% include 'includes/case_peek_modal.html' %}
+      {% endwith %}
+
+  The including page owns the styling of <prefix>-grid / -tile / -lbl / -val
+  and populates the fields from GET /api/v2/cases/<id>/peek.
+#}
+{% set pk = peek_prefix | default('iris-cpk') %}
+<div class="modal fade" id="{{ peek_modal_id | default('iris-cpk-modal') }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:0; padding-bottom:0; display:block;">
+                <button type="button" class="close" data-dismiss="modal" style="float:right;"><span>&times;</span></button>
+                <div class="text-muted" id="{{ pk }}-eyebrow" style="font-size:0.68rem; letter-spacing:0.08em;"></div>
+                <h5 class="modal-title" id="{{ pk }}-title" style="margin-top:2px;"></h5>
+            </div>
+            <div class="modal-body">
+                <div class="{{ pk }}-grid">
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">State</div><div class="{{ pk }}-val" id="{{ pk }}-state"></div></div>
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Severity</div><div class="{{ pk }}-val" id="{{ pk }}-sev"></div></div>
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Customer</div><div class="{{ pk }}-val" id="{{ pk }}-cust"></div></div>
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Owner</div><div class="{{ pk }}-val" id="{{ pk }}-owner"></div></div>
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Opened</div><div class="{{ pk }}-val" id="{{ pk }}-opened"></div></div>
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Closed</div><div class="{{ pk }}-val" id="{{ pk }}-closed"></div></div>
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Reviewer</div><div class="{{ pk }}-val" id="{{ pk }}-reviewer"></div></div>
+                    <div class="{{ pk }}-tile" style="grid-column: span 2;"><div class="{{ pk }}-lbl">Tags</div><div class="{{ pk }}-val" id="{{ pk }}-tags"></div></div>
+                </div>
+                <div class="text-muted mt-3" style="font-size:0.66rem; letter-spacing:0.08em;">SUMMARY</div>
+                <div class="{{ peek_view_class | default('iris-md-rendered') }} mt-1" id="{{ pk }}-summary" style="border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; min-height:80px;"></div>
+            </div>
+            <div class="modal-footer" style="border-top:0;">
+                <span class="text-muted mr-auto" style="font-size:0.72rem;">Click outside or press <kbd>Esc</kbd> to close.</span>
+                <a class="btn btn-primary" id="{{ pk }}-open" href="#">Open case &rarr;</a>
+            </div>
+        </div>
+    </div>
+</div>

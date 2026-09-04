@@ -1,0 +1,159 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Overview {% endblock title %}
+
+{% block stylesheets %}
+
+    <link rel="stylesheet" href="/static/assets/css/suggestags.css">
+    <link href="/static/assets/css/dataTables.buttons.min.css" rel="stylesheet">
+    <link href="/static/assets/css/dataTables.contextualActions.min.css" rel="stylesheet">
+    <link href="/static/assets/css/dataTables.select.min.css" rel="stylesheet">
+    <link href="/static/assets/css/dataTables.responsive.css" rel="stylesheet">
+    <link href="/static/assets/css/dataTables.searchBuilder.css" rel="stylesheet">
+
+    <style>
+        /* v3-parity styling (page-local overlay - project pattern). */
+        #overviewTableTitle { font-size: 1.35rem; font-weight: 600; }
+        .iris-ov-sub { color: #7e7b8c; font-size: 0.72rem; margin-top: 1px; }
+        .iris-ov-pill { border-radius: 10px; padding: 1px 10px; font-size: 0.74rem;
+                        white-space: nowrap; display: inline-block; }
+        /* state colours - v3's mapping, matched by NAME slug with a muted fallback */
+        .iris-ov-st-open          { background: rgba(94,114,228,0.16); color: #7f95f0; }
+        .iris-ov-st-containment   { background: rgba(251,99,64,0.16);  color: #fb6340; }
+        .iris-ov-st-eradication   { background: rgba(139,92,246,0.18); color: #b9a6f0; }
+        .iris-ov-st-remediation   { background: rgba(17,205,239,0.14); color: #11cdef; }
+        .iris-ov-st-recovery      { background: rgba(45,206,137,0.14); color: #2dce89; }
+        .iris-ov-st-reporting     { background: rgba(17,205,239,0.14); color: #11cdef; }
+        .iris-ov-st-closed        { background: rgba(45,206,137,0.16); color: #2dce89; }
+        .iris-ov-st-default       { background: rgba(255,255,255,0.07); color: #9a9aa5; }
+        /* severity colours */
+        .iris-ov-sev-critical      { background: rgba(245,54,92,0.22);  color: #ff8095; }
+        .iris-ov-sev-high          { background: rgba(245,54,92,0.14);  color: #f5365c; }
+        .iris-ov-sev-medium        { background: rgba(244,196,48,0.16); color: #f4c430; }
+        .iris-ov-sev-low           { background: rgba(255,255,255,0.07); color: #9a9aa5; }
+        .iris-ov-sev-informational { background: rgba(94,114,228,0.14); color: #7f95f0; }
+        .iris-ov-sev-default       { background: rgba(255,255,255,0.07); color: #9a9aa5; }
+    </style>
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+    {{ form.hidden_tag() }}
+        <div class="page-inner">
+            <div class="row">
+                <div class="loader1 text-center ml-mr-auto" id="loading_msg">Loading...</div>
+                <div class="col-md-12">
+                    <div class="card" id="card_main_load">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="card-title" id="overviewTableTitle">Open cases</div>
+                                </div>
+                                <div class="col">
+                                    <button type="button" class="btn btn-sm btn-outline-black float-right" onclick="get_cases_overview(false);">
+                                        Refresh
+                                    </button>
+
+                              <div class="selectgroup float-right mt--1">
+                                    <div class="form-check float-right">
+                                         <label class="form-check-label">
+                                             <input class="form-check-input" type="checkbox" id="overviewLoadClosedCase">
+                                                 <span class="form-check-sign"> Show closed cases
+                                                 </span>
+                                         </label>
+                                    </div>
+
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" id="overview_table_wrapper">
+
+                                                                    <span id="table_buttons"></span>
+                                <table class="table display wrap col-border table-striped table-hover" width="100%"
+                                        cellspacing="0" id="overview_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Outcome</th>
+                                            <th>Case ID</th>
+                                            <th>Classification</th>
+                                            <th>Open since</th>
+                                            <th>Tasks</th>
+                                            <th>Title</th>
+                                            <th>SOC ID</th>
+                                            <th>Opened</th>
+                                            <th>Closed</th>
+                                            <th>Customer</th>
+                                            <th>State</th>
+                                            <th>Severity</th>
+                                            <th>Owner</th>
+                                            <th>Tags</th>
+                                        </tr>
+                                    </thead>
+                                    <tfoot>
+                                        <tr>
+                                            <th></th>
+                                            <th></th>
+                                            <th></th>
+                                            <th></th>
+                                            <th></th>
+                                            <th>Title</th>
+                                            <th>SOC ID</th>
+                                            <th>Opened</th>
+                                            <th>Closed</th>
+                                            <th>Customer</th>
+                                            <th>State</th>
+                                            <th>Severity</th>
+                                            <th>Owner</th>
+                                            <th>Tags</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal modal-case-focus" tabindex="-1" role="dialog" id="caseViewModal" data-backdrop="true">
+            <div class="modal-xl modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="col md-12">
+                            <div class="row">
+                                <div class="col align-self-center">
+                                    <h4 class="modal-title mr-4">Case</h4>
+                                    <small><a class="text-muted modal-subtitle"></a></small>
+                                </div>
+                                <div class="col">
+                                    <div class="row float-right">
+                                        <button type="button" class="pull-right btn bg-transparent" data-dismiss="modal" aria-label="Close"><span
+                                            aria-hidden="true"><i class="fa fa-times"></i></span></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-body">
+                        <div class="container col-md-12">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock content %}
+
+{% block javascripts %}
+
+    <script src="/static/assets/js/iris/datatablesUtils.js"></script>
+    <script src="/static/assets/js/plugin/datatables/dataTables.responsive.min.js"></script>
+    <script src="/static/assets/js/plugin/datatables/dataTables.searchBuilder.js"></script>
+    <script src="/static/assets/js/plugin/datatables/dataTables.dateTime.min.js"></script>
+    <script src="/static/assets/js/plugin/datatables/dataTables.searchBuilder.bs4.js"></script>
+    <script src="/static/assets/js/iris/overview.js"></script>
+
+{% endblock javascripts %}

@@ -1,0 +1,65 @@
+{#  Top-of-app announcement banners (Settings > Banners, v3 parity).
+    Included from BOTH navs (the header exists twice - project rule).
+    Vanilla JS: the navs render before jQuery loads. Text is rendered with
+    textContent (admin-authored, but escaping is not optional) and the level
+    picks a colour through a fixed map - a stored value never reaches a
+    style attribute. Dismissal is a per-browser-session convenience
+    (sessionStorage, guarded: some contexts throw on access). #}
+<style>
+    .iris-ann-banner {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 18px; font-size: 13px; color: #efeaff;
+        border-bottom: 1px solid rgba(0,0,0,0.25);
+    }
+    .iris-ann-info    { background: #1f3a5f; }
+    .iris-ann-warning { background: #6b4e11; }
+    .iris-ann-danger  { background: #6e1f2a; }
+    .iris-ann-banner .iris-ann-dismiss {
+        margin-left: auto; cursor: pointer; opacity: 0.7;
+        background: none; border: none; color: inherit; font-size: 15px;
+    }
+    .iris-ann-banner .iris-ann-dismiss:hover { opacity: 1; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var host = document.querySelector('.main-panel');
+    if (!host) { return; }
+    var dismissed = [];
+    try { dismissed = JSON.parse(sessionStorage.getItem('iris_ann_dismissed') || '[]'); }
+    catch (e) { /* storage unavailable - show everything */ }
+    var LEVELS = { info: 'iris-ann-info', warning: 'iris-ann-warning', danger: 'iris-ann-danger' };
+    var cid = new URLSearchParams(location.search).get('cid');
+    fetch('/manage/banners/active' + (cid ? '?cid=' + cid : ''), { credentials: 'same-origin' })
+        .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+        .then(function (j) {
+            var rows = (j.data || []).filter(function (b) {
+                return dismissed.indexOf(b.id) === -1;
+            });
+            if (!rows.length) { return; }
+            var wrap = document.createElement('div');
+            wrap.id = 'iris-ann-banners';
+            rows.forEach(function (b) {
+                var el = document.createElement('div');
+                el.className = 'iris-ann-banner ' + (LEVELS[b.level] || 'iris-ann-info');
+                var txt = document.createElement('span');
+                txt.textContent = b.message;
+                var x = document.createElement('button');
+                x.className = 'iris-ann-dismiss';
+                x.setAttribute('title', 'Dismiss for this session');
+                x.innerHTML = '&times;';
+                x.addEventListener('click', function () {
+                    el.remove();
+                    try {
+                        dismissed.push(b.id);
+                        sessionStorage.setItem('iris_ann_dismissed', JSON.stringify(dismissed));
+                    } catch (e) { /* convenience only */ }
+                });
+                el.appendChild(txt);
+                el.appendChild(x);
+                wrap.appendChild(el);
+            });
+            host.insertBefore(wrap, host.firstChild);
+        })
+        .catch(function () { /* banner feed unavailable - never block the page */ });
+});
+</script>

@@ -1,0 +1,178 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Manage Templates {% endblock title %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/static/assets/css/suggestags.css">
+{% endblock stylesheets %}
+
+{% block content %}
+
+{% if current_user.is_authenticated %}
+{{ form.hidden_tag() }}
+<div class="page-inner">
+{% set settings_active = 'report_templates' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+
+    {# iris-ng v3-parity Report Templates shell (maintainer direction,
+       2026-09-02). Overlay, not rebuild: the list AND the detail pane render
+       from the SAME /manage/templates/list payload the legacy DataTable
+       calls; Add drives the EXISTING upload modal (add_report_template),
+       Download the existing download route, Delete the existing
+       delete_report confirm. Report templates are immutable uploads — there
+       is no edit. The legacy table stays hidden-but-alive below; note its
+       name link DELETES the template (legacy quirk), the v3 row click only
+       selects. #}
+    <style>
+        .iris-co-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+        .iris-co-head-icon { flex: 0 0 auto; margin-top: 3px; opacity: 0.85; }
+        .iris-co-title { font-size: 19px; font-weight: 700; color: #e6e6ee; line-height: 1.2; }
+        .iris-co-sub { font-size: 12.5px; color: #9b9baa; margin-top: 2px; }
+        .iris-co-head-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+        .iris-co-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+                           color: #9b9baa; text-transform: uppercase; margin-bottom: 8px; }
+        .iris-co-empty { color: #9b9baa; font-size: 13px; padding: 14px 6px; }
+        .iris-co-legacy-link { font-size: 11.5px; color: #6f6f7e; }
+        .iris-rt-grid { display: grid; grid-template-columns: 360px minmax(0, 1fr);
+                        gap: 14px; align-items: start; }
+        @media (max-width: 1100px) { .iris-rt-grid { grid-template-columns: 1fr; } }
+        .iris-rt-panel { background: #15151a; border: 1px solid rgba(255,255,255,0.06);
+                         border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+        .iris-rt-row { display: flex; align-items: center; gap: 8px; padding: 9px 10px;
+                       border-radius: 7px; cursor: pointer; border: 1px solid transparent; }
+        .iris-rt-row:hover { background: rgba(139,92,246,0.07); }
+        .iris-rt-row.active { background: rgba(139,92,246,0.12);
+                              border-color: rgba(139,92,246,0.35); }
+        .iris-rt-row-name { font-size: 13px; font-weight: 600; color: #e2e2ea; }
+        .iris-rt-row-sub { font-size: 11.5px; color: #8a8a98; overflow: hidden;
+                           text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+        .iris-rt-row-id { margin-left: auto; font-family: monospace; font-size: 11px;
+                          color: #6f6f7e; }
+        .iris-rt-search { margin-bottom: 8px; }
+        .iris-rt-d-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+                          margin-bottom: 10px; }
+        .iris-rt-d-title { font-size: 15px; font-weight: 700; color: #e6e6ee; }
+        .iris-rt-d-id { font-family: monospace; font-size: 11px; color: #6f6f7e; }
+        .iris-rt-d-actions { margin-left: auto; display: flex; gap: 8px; }
+        .iris-rt-chip { display: inline-flex; align-items: center; font-size: 10.5px;
+                        font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+                        padding: 2px 9px; border-radius: 10px;
+                        background: rgba(139,92,246,0.12); color: #d4c4ff;
+                        border: 1px solid rgba(139,92,246,0.35); }
+        .iris-rt-meta { display: grid; grid-template-columns: 150px 1fr; gap: 6px 12px;
+                        font-size: 13px; margin-top: 10px; }
+        .iris-rt-meta dt { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em;
+                           color: #8a8a98; text-transform: uppercase; margin: 0; }
+        .iris-rt-meta dd { color: #d8d8e2; margin: 0; word-break: break-word; }
+        .iris-rt-desc { color: #b8b8c4; font-size: 13px; margin-top: 4px; }
+    </style>
+
+    <div class="iris-co-head">
+        <span class="iris-co-head-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/></svg></span>
+        <div>
+            <div class="iris-co-title">Report Templates</div>
+            <div class="iris-co-sub">Docx, HTML or Markdown skeletons that get filled in with case data on render.</div>
+        </div>
+        <div class="iris-co-head-actions">
+            <button type="button" class="btn btn-sm btn-dark" id="iris-rt-refresh">Refresh</button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="add_report_template();">+ Add template</button>
+        </div>
+    </div>
+
+    <div class="iris-rt-grid">
+        <div class="iris-rt-panel">
+            <div class="iris-co-eyebrow">Templates <span id="iris-rt-count"></span></div>
+            <input type="text" class="form-control form-control-sm iris-rt-search" id="iris-rt-search"
+                   placeholder="Search by name or description..." autocomplete="off">
+            <div id="iris-rt-rows"></div>
+        </div>
+
+        <div class="iris-rt-panel">
+            <div class="iris-co-eyebrow">Template</div>
+            <div id="iris-rt-detail"></div>
+        </div>
+    </div>
+
+    <div class="text-right mt-2 mb-3">
+        <a href="#" class="iris-co-legacy-link" id="iris-rt-legacy-toggle"
+           onclick="$('#iris-rt-legacy').toggle(); return false;">Show legacy view</a>
+    </div>
+
+    <div id="iris-rt-legacy" style="display: none;">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col">
+                            <div class="card-title">Report Templates Management</div>
+                        </div>
+                        <div class="col">
+                            <button type="button" class="btn btn-sm btn-dark float-right ml-2" onclick="refresh_template_table();">
+                                Refresh
+                            </button>
+                            <button class="btn btn-sm btn-dark float-right ml-2" onclick="add_report_template();">Add template</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+
+                    <div class="table-responsive" id="assets_table_wrapper">
+                        <div class="selectgroup">
+                            <span id="table_buttons"></span>
+                        </div>
+                        <table class="table display table table-striped table-hover" width="100%"
+                            cellspacing="0" id="reports_table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Naming format</th>
+                                    <th>Date created</th>
+                                    <th>Created by</th>
+                                    <th>Language</th>
+                                    <th>Type</th>
+                                    <th>Download</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Naming format</th>
+                                    <th>Date created</th>
+                                    <th>Created by</th>
+                                    <th>Language</th>
+                                    <th>Type</th>
+                                    <th>Download</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>{# /iris-rt-legacy #}
+    </div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>{# pre-existing missing close: page-inner was never closed, leaving the
+           modal structurally inside it (15 opens / 14 closes before this fix) #}
+    <div class="modal fade " tabindex="-1" role="dialog" id="modal_add_report_template" data-backdrop="true">
+        <div class="modal-lg modal-dialog" role="document">
+            <div class="modal-content" id="modal_report_template_content">
+
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div>
+    {% endif %}
+
+    {% endblock content %}
+
+    {% block javascripts %}
+
+    <script src="/static/assets/js/iris/manage.templates.js"></script>
+    <script src="/static/assets/js/iris/manage.templates.v3.js"></script>
+    {% endblock javascripts %}

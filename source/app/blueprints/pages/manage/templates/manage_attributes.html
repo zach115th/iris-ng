@@ -1,0 +1,256 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Manage Attributes {% endblock title %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/static/assets/css/suggestags.css">
+{% endblock stylesheets %}
+
+{% block content %}
+
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'attributes' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+
+    {# iris-ng v3-parity Custom Attributes shell (maintainer direction, 2026-09-02).
+       Overlay, not rebuild: the object-type list AND the schema editor render
+       from the SAME /manage/attributes/list payload the legacy DataTable
+       calls (it already carries attribute_content + attribute_for), saves
+       post to the SAME /manage/attributes/update/<id> endpoint with the
+       SAME payload keys as manage.attributes.js, and the analyst preview is
+       the EXISTING /manage/attributes/preview render injected inline. The
+       legacy table stays hidden-but-alive below as the safety valve.
+
+       ONE DELIBERATE v3 DIFFERENCE: v3's Display name / Description inputs
+       are editable; our update endpoint accepts ONLY attribute_content, so
+       an editable input here would be a control whose value nothing reads
+       (the inverse of the removed-control-without-reader rule). They render
+       read-only until a name/description writer exists. #}
+    <style>
+        .iris-co-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+        .iris-co-head-icon { flex: 0 0 auto; margin-top: 3px; opacity: 0.85; }
+        .iris-co-title { font-size: 19px; font-weight: 700; color: #e6e6ee; line-height: 1.2; }
+        .iris-co-sub { font-size: 12.5px; color: #9b9baa; margin-top: 2px; }
+        .iris-co-head-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+        .iris-co-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+                           color: #9b9baa; text-transform: uppercase; margin-bottom: 8px; }
+        .iris-co-empty { color: #9b9baa; font-size: 13px; padding: 14px 6px; }
+        .iris-co-legacy-link { font-size: 11.5px; color: #6f6f7e; }
+        .iris-attr-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr);
+                          gap: 14px; align-items: start; }
+        @media (max-width: 1100px) { .iris-attr-grid { grid-template-columns: 1fr; } }
+        .iris-attr-panel { background: #15151a; border: 1px solid rgba(255,255,255,0.06);
+                           border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+        .iris-attr-row { display: flex; align-items: center; gap: 8px; padding: 9px 10px;
+                         border-radius: 7px; cursor: pointer; border: 1px solid transparent; }
+        .iris-attr-row:hover { background: rgba(139,92,246,0.07); }
+        .iris-attr-row.active { background: rgba(139,92,246,0.12);
+                                border-color: rgba(139,92,246,0.35); }
+        .iris-attr-row-name { font-size: 13px; font-weight: 600; color: #e2e2ea; }
+        .iris-attr-row-sub { font-size: 11.5px; color: #8a8a98; }
+        .iris-attr-row-id { margin-left: auto; font-family: monospace; font-size: 11px;
+                            color: #6f6f7e; }
+        .iris-attr-ed-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+                             flex-wrap: wrap; }
+        .iris-attr-sel-label { font-size: 12px; color: #9b9baa; }
+        .iris-attr-ed-actions { margin-left: auto; display: flex; gap: 8px; }
+        .iris-attr-field-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em;
+                                 color: #8a8a98; text-transform: uppercase; margin-bottom: 4px; }
+        .iris-attr-meta-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px;
+                               margin-bottom: 12px; }
+        @media (max-width: 900px) { .iris-attr-meta-grid { grid-template-columns: 1fr; } }
+        .iris-attr-json-head { display: flex; align-items: center; margin-bottom: 4px; }
+        .iris-attr-valid { margin-left: auto; font-size: 11.5px; font-weight: 600; }
+        .iris-attr-valid.ok { color: #6fdc74; }
+        .iris-attr-valid.bad { color: #f08a96; }
+        #iris-attr-editor { border: 1px solid rgba(255,255,255,0.10); border-radius: 6px; }
+        .iris-attr-ref { margin-top: 12px; font-size: 12.5px; color: #b8b8c4; }
+        .iris-attr-ref summary { cursor: pointer; color: #c9b8f5; font-weight: 600;
+                                 font-size: 12.5px; }
+        .iris-attr-ref pre { background: #101014; border: 1px solid rgba(255,255,255,0.08);
+                             border-radius: 6px; padding: 10px; font-size: 11.5px;
+                             color: #b8b8c4; margin-top: 8px; overflow-x: auto; }
+        .iris-attr-ref ul { margin: 8px 0 0 0; padding-left: 18px; }
+        .iris-attr-ref li { margin-bottom: 2px; }
+        /* The preview fragment is the modal-shaped render of
+           modal_preview_attribute.html — hide the modal chrome (title + close
+           button), keep the tab nav it carries. */
+        #iris-attr-preview .modal-header h4 { display: none; }
+        #iris-attr-preview .modal-header .row.text-right { display: none; }
+        #iris-attr-preview .modal-header { border: none; background: transparent;
+                                           padding: 0 0 8px 0; }
+        #iris-attr-preview .modal-body { padding: 0; }
+    </style>
+
+    <div class="iris-co-head">
+        <span class="iris-co-head-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></span>
+        <div>
+            <div class="iris-co-title">Custom Attributes</div>
+            <div class="iris-co-sub">Extend the default fields of cases, IOCs, assets, tasks, notes, evidence, timeline events and customers.</div>
+            {{ form.hidden_tag() }}
+        </div>
+        <div class="iris-co-head-actions">
+            <button type="button" class="btn btn-sm btn-dark" id="iris-attr-refresh">Refresh</button>
+        </div>
+    </div>
+
+    <div class="iris-attr-grid">
+        <div class="iris-attr-panel">
+            <div class="iris-co-eyebrow">Object types <span id="iris-attr-count"></span></div>
+            <div id="iris-attr-rows"></div>
+        </div>
+
+        <div>
+            <div class="iris-attr-panel">
+                <div class="iris-attr-ed-head">
+                    <span class="iris-co-eyebrow" style="margin-bottom: 0;">Schema editor</span>
+                    <span class="iris-attr-sel-label" id="iris-attr-sel-label"></span>
+                    <div class="iris-attr-ed-actions">
+                        <button type="button" class="btn btn-sm btn-primary" id="iris-attr-save">Save</button>
+                        <button type="button" class="btn btn-sm btn-outline-warning" id="iris-attr-partial">Partial overwrite</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="iris-attr-complete">Complete overwrite</button>
+                    </div>
+                </div>
+                <div id="iris-attr-editor-wrap" style="display: none;">
+                    <div class="iris-attr-meta-grid">
+                        <div>
+                            <div class="iris-attr-field-label">Display name</div>
+                            <input type="text" class="form-control form-control-sm" id="iris-attr-name"
+                                   readonly title="Fixed by the platform — the attributes update endpoint only accepts the schema JSON.">
+                        </div>
+                        <div>
+                            <div class="iris-attr-field-label">Description</div>
+                            <input type="text" class="form-control form-control-sm" id="iris-attr-desc"
+                                   readonly title="Fixed by the platform — the attributes update endpoint only accepts the schema JSON.">
+                        </div>
+                    </div>
+                    <div class="iris-attr-json-head">
+                        <span class="iris-attr-field-label" style="margin-bottom: 0;">Schema JSON</span>
+                        <span class="iris-attr-valid" id="iris-attr-valid"></span>
+                    </div>
+                    <div id="iris-attr-editor"></div>
+                    <div class="alert alert-warning mt-3" style="display: none;" role="alert" id="iris-attr-errors">
+                        <span id="iris-attr-errors-msg"></span><br/>
+                        <b>Logs:</b>
+                        <ul id="iris-attr-errors-list"></ul>
+                    </div>
+                    <details class="iris-attr-ref">
+                        <summary>Field-type reference</summary>
+                        <pre>{
+    "Tab Name 1": {                     // A tab in the object's modal
+        "Field 1": {
+            "type": "input_string",     // Field type — see the list below
+            "mandatory": true,          // Required on save?
+            "value": ""                 // Default value
+        }
+    }
+}</pre>
+                        <ul>
+                            <li><b>input_string</b> — standard text input</li>
+                            <li><b>input_textfield</b> — multi-line text input</li>
+                            <li><b>input_checkbox</b> — checkbox (value must be a bool)</li>
+                            <li><b>input_date</b> — date input</li>
+                            <li><b>input_datetime</b> — date and time input</li>
+                            <li><b>input_select</b> — select input; needs an "options" list of strings</li>
+                            <li><b>raw</b> — static content rendered as raw text</li>
+                            <li><b>html</b> — static content rendered as HTML (prone to vulnerabilities — careful)</li>
+                        </ul>
+                        <p class="mt-2 mb-0">Saving updates the defaults AND migrates every existing object of this type
+                            (missing tabs and fields are added; existing values are kept).
+                            <b>Partial overwrite</b> resets the attribute values of matching tabs on every object.
+                            <b>Complete overwrite</b> resets ALL custom attributes on every object, including
+                            module-pushed ones. Native object fields are never modified.</p>
+                    </details>
+                </div>
+                <div id="iris-attr-editor-empty" class="iris-co-empty">Select an object type to edit its schema.</div>
+            </div>
+
+            <div class="iris-attr-panel">
+                <div class="iris-co-eyebrow">Analyst preview</div>
+                <div id="iris-attr-preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-right mt-2 mb-3">
+        <a href="#" class="iris-co-legacy-link" id="iris-attr-legacy-toggle"
+           onclick="$('#iris-attr-legacy').toggle(); return false;">Show legacy view</a>
+    </div>
+
+    <div id="iris-attr-legacy" style="display: none;">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col">
+                            <div class="card-title">Objects Attributes</div>
+                        </div>
+                        <div class="col">
+                            <button type="button" class="btn btn-sm btn-dark float-right ml-2" onclick="refresh_attribute_table();">
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+
+                    <div class="table-responsive" id="hooks_table_wrapper">
+                        <div class="selectgroup">
+                            <span id="table_buttons"></span>
+                        </div>
+                        <table class="table display table table-striped table-hover" width="100%"
+                            cellspacing="0" id="attributes_table">
+                            <thead>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>{# /iris-attr-legacy #}
+</div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>
+    <div class="modal" tabindex="-1"  id="modal_add_attribute" data-backdrop="true">
+        <div class="modal-xxl modal-dialog" role="document">
+            <div class="modal-content" id="modal_add_attribute_content">
+
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div>
+    <div class="modal bg-primary-gradient" tabindex="-1"  id="modal_preview_attribute" data-backdrop="true">
+        <div class="modal-lg modal-dialog" role="document">
+            <div class="modal-content" id="modal_preview_attribute_content">
+
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div>
+    {% endif %}
+
+    {% endblock content %}
+
+    {% block javascripts %}
+    <script src="/static/assets/js/plugin/ace/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/assets/js/plugin/ace/src-noconflict/ext-language_tools.js" type="text/javascript"
+        charset="utf-8"></script>
+
+    <script src="/static/assets/js/iris/manage.attributes.js"></script>
+    <script src="/static/assets/js/iris/manage.attributes.v3.js"></script>
+    {% endblock javascripts %}

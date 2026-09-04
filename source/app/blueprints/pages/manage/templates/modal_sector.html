@@ -1,0 +1,53 @@
+<div class="modal-header">
+    <h4>Sector</h4>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+            aria-hidden="true">&times;</span></button>
+</div>
+<div class="modal-body">
+
+        <div class="container col-md-12">
+        <form method="post" action="" id="form_new_sector" enctype="multipart/form-data">
+            <div class="col-md-12 col-lg-12 col-sm-12">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    <label for="name" class="mr-4">Display name</label>
+                    {{ form.name(class='form-control', autocomplete="off", placeholder="Water Systems") }}
+                </div>
+                <div class="form-group mt-3">
+                    <label for="slug" class="placeholder">Slug — stable key, never change it once customers use it</label>
+                    {{ form.slug(class='form-control', autocomplete="off", placeholder="water") }}
+                    <small class="text-muted">Lowercase letters, digits, dots, dashes, underscores. Customers store
+                    this value, so renaming a slug orphans their sector selection.</small>
+                </div>
+                <div class="form-group mt-3">
+                    <label for="tag" class="placeholder">MISP machine-tag the picker emits</label>
+                    {{ form.tag(class='form-control', autocomplete="off", placeholder='dhs-ciip-sectors:DHS-critical-sectors=&quot;water&quot;') }}
+                    <small class="text-muted">Form: <code>namespace:predicate="value"</code>. Metrics recognize sector
+                    tags by the prefix up to the <code>=</code>, derived from every catalog row.</small>
+                </div>
+                <div class="form-group mt-3">
+                    <div class="form-check">
+                        <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="sector_enabled"
+                                   {% if sector is none or sector.enabled %}checked{% endif %}>
+                            <span class="form-check-sign">Enabled — offered in the case and customer sector pickers</span>
+                        </label>
+                    </div>
+                    <small class="text-muted">Disabling removes a sector from the pickers but keeps it recognized in
+                    metrics and history. Deleting also removes recognition for its namespace (unless another row or the
+                    built-in DHS/threatmatch namespaces cover it) — prefer disable to retire a sector.</small>
+                </div>
+
+            {% if sector and sector.id %}
+                <button type="button" class="btn btn-outline-danger mt-5"
+                onclick="delete_sector('{{ sector.id }}');">Delete</button>
+                <button type="button" class="btn btn-outline-success ml-4 mt-5 float-right"
+                id="submit_new_sector">Update</button>
+            {% else %}
+                <button type="button" class="btn btn-outline-success ml-4 mt-5 float-right"
+                id="submit_new_sector">Save</button>
+            {% endif %}
+            </div>
+        </form>
+    </div>
+</div>

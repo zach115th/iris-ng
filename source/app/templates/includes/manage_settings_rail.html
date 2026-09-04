@@ -1,0 +1,138 @@
+{#  v3-style "MANAGE IRIS" settings rail (2026-08-31, maintainer-directed
+    replacement of the sidebar's Advanced submenu).
+
+    Usage, from a settings-family page template, INSIDE .page-inner:
+
+        {% set settings_active = 'modules' %}
+        <div class="iris-msr-wrap">
+            {% include 'includes/manage_settings_rail.html' %}
+            <div class="iris-msr-content">
+                ... the page's existing content, unchanged ...
+            </div>
+        </div>
+
+    Per-item permission gates mirror the sidebar gates the Advanced submenu
+    carried (customers_read / case_templates_read / server_administrator).
+    Deliberate v3 differences: no MCP Server / Chatbot entries (no such
+    features here — an entry with nothing behind it is a dead control), and
+    Server settings keeps everything v3 has no page for (AI backend, proxy,
+    security, storage...). Teams is NOT in this rail — it is visible to every
+    analyst by design and lives as a top-level MANAGE sidebar entry.
+
+    Icons are inline Lucide SVGs (ISC) - flaticon classes must be verified in
+    fonts.css before use, and several needed glyphs have no flaticon at all. #}
+
+<style>
+    .iris-msr-wrap { display: flex; align-items: flex-start; gap: 18px; }
+    .iris-msr-rail {
+        flex: 0 0 218px; width: 218px; position: sticky; top: 70px;
+        background: #15151a; border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px; padding: 10px 8px 12px 8px;
+    }
+    .iris-msr-content { flex: 1 1 auto; min-width: 0; }
+    .iris-msr-head {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+        color: #9b9baa; text-transform: uppercase;
+        padding: 6px 10px 10px 10px;
+    }
+    .iris-msr-rail a.iris-msr-item {
+        display: flex; align-items: center; gap: 9px;
+        padding: 7px 10px; border-radius: 6px; margin-bottom: 1px;
+        color: #b8b8c4; font-size: 13px; text-decoration: none;
+    }
+    .iris-msr-rail a.iris-msr-item:hover { background: rgba(139,92,246,0.10); color: #e6e6ee; }
+    .iris-msr-rail a.iris-msr-item.active {
+        background: rgba(139,92,246,0.16); color: #efeaff;
+    }
+    .iris-msr-rail a.iris-msr-item svg { flex: 0 0 auto; opacity: 0.85; }
+    @media (max-width: 991px) {
+        .iris-msr-wrap { display: block; }
+        .iris-msr-rail { position: static; width: auto; margin-bottom: 14px; }
+    }
+</style>
+
+{% set _cid = session['current_case'].case_id %}
+<div class="iris-msr-rail" id="iris-msr-rail">
+    <div class="iris-msr-head">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Manage IRIS</span>
+    </div>
+
+    {% if user_has_perm(std_permissions.server_administrator) %}
+    <a class="iris-msr-item {{ 'active' if settings_active == 'modules' }}" href="/manage/modules?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+        <span>Modules</span>
+    </a>
+    {% endif %}
+    {% if user_has_perm(std_permissions.customers_read) %}
+    <a class="iris-msr-item {{ 'active' if settings_active == 'customers' }}" href="/manage/customers?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Customers</span>
+    </a>
+    {% endif %}
+    {% if user_has_perm(std_permissions.server_administrator) %}
+    <a class="iris-msr-item {{ 'active' if settings_active == 'objects' }}" href="/manage/objects?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+        <span>Case Objects</span>
+    </a>
+    <a class="iris-msr-item {{ 'active' if settings_active == 'attributes' }}" href="/manage/attributes?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
+        <span>Custom Attributes</span>
+    </a>
+    {% endif %}
+    {% if user_has_perm(std_permissions.case_templates_read) %}
+    <a class="iris-msr-item {{ 'active' if settings_active == 'case_templates' }}" href="/manage/case-templates?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="7" x="3" y="3" rx="1"/><rect width="9" height="7" x="3" y="14" rx="1"/><rect width="5" height="7" x="16" y="14" rx="1"/></svg>
+        <span>Case Templates</span>
+    </a>
+    {% endif %}
+    {% if user_has_perm(std_permissions.server_administrator) %}
+    <a class="iris-msr-item {{ 'active' if settings_active == 'report_templates' }}" href="/manage/templates?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+        <span>Report Templates</span>
+    </a>
+    <a class="iris-msr-item {{ 'active' if settings_active == 'access_control' }}" href="/manage/access-control?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Access Control</span>
+    </a>
+    <a class="iris-msr-item {{ 'active' if settings_active == 'notifications' }}" href="/manage/notifications?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <span>Notifications</span>
+    </a>
+    <a class="iris-msr-item {{ 'active' if settings_active == 'mail_rules' }}" href="/manage/mail-rules?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        <span>Mail rules</span>
+    </a>
+    <a class="iris-msr-item {{ 'active' if settings_active == 'clustering_rules' }}" href="/manage/clustering-rules?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span>Clustering Rules</span>
+    </a>
+    <a class="iris-msr-item {{ 'active' if settings_active == 'investigation_flows' }}" href="/manage/investigation-flows?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span>Investigation flows</span>
+    </a>
+    <a class="iris-msr-item {{ 'active' if settings_active == 'banners' }}" href="/manage/banners?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+        <span>Banners</span>
+    </a>
+    <a class="iris-msr-item {{ 'active' if settings_active == 'server_settings' }}" href="/manage/settings?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></svg>
+        <span>Server settings</span>
+    </a>
+    {% endif %}
+    {# Activities + DIM Tasks relocated here from the sidebar's Investigation
+       section (maintainer direction, 2026-09-01). Gates mirror the routes:
+       Activities = activities_read|all_activities_read, DIM Tasks =
+       standard_user (its sidebar entry was ungated). #}
+    {% if user_has_perm(std_permissions.activities_read) or user_has_perm(std_permissions.all_activities_read) %}
+    <a class="iris-msr-item {{ 'active' if settings_active == 'activities' }}" href="/activities?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
+        <span>Activities</span>
+    </a>
+    {% endif %}
+    <a class="iris-msr-item {{ 'active' if settings_active == 'dim_tasks' }}" href="/dim/tasks?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+        <span>DIM Tasks</span>
+    </a>
+</div>

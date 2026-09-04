@@ -1,0 +1,197 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Banners {% endblock title %}
+
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'banners' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+<form style="display:none;">{{ form.hidden_tag() }}</form>
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div>
+                    <div class="card-title">Banners</div>
+                    <div class="text-muted"><small>Publish top-of-app messages to every authenticated
+                        user (maintenance notices, outages, announcements).</small></div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="iris_bn_load();">Refresh</button>
+                    <button type="button" class="btn btn-sm btn-dark ml-2" onclick="iris_bn_new();">+ Add banner</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+
+            <div id="iris-bn-editor" style="display:none; border:1px solid rgba(139,92,246,0.35); border-radius:6px; padding:14px;" class="mb-3">
+                <h4 id="iris-bn-editor-title">New banner</h4>
+                <input type="hidden" id="bn-edit-id" value="">
+                <div class="form-group">
+                    <label for="bn-message">Message</label>
+                    <textarea class="form-control" id="bn-message" rows="2" placeholder="e.g. Maintenance window Saturday 02:00-04:00 UTC"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label for="bn-level">Level</label>
+                        <select class="form-control" id="bn-level">
+                            <option value="info">Info</option>
+                            <option value="warning">Warning</option>
+                            <option value="danger">Danger</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3 d-flex align-items-end">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="bn-active" checked>
+                            <label class="form-check-label" for="bn-active">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="iris_bn_save();">Save banner</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="iris_bn_cancel();">Cancel</button>
+                </div>
+            </div>
+
+            <table class="table table-sm table-striped" id="iris-bn-table">
+                <thead><tr><th>Message</th><th style="width:90px;">Level</th><th style="width:80px;">Active</th><th style="width:120px;">Created</th><th style="width:130px;"></th></tr></thead>
+                <tbody id="iris-bn-body"><tr><td colspan="5" class="text-muted">Loading&hellip;</td></tr></tbody>
+            </table>
+            <div id="iris-bn-empty" class="text-muted text-center py-4" style="display:none;">
+                No banners yet. Create one to alert users about maintenance windows or announcements.
+            </div>
+
+        </div>
+    </div>
+</div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+/* Banners management. Legacy envelope ({status,data}) on /manage/banners/*;
+   POSTs carry csrf_token in the BODY (project rule - the header is never
+   read). Levels map to badge classes through a fixed map: the value selects
+   presentation and must never be interpolated raw. */
+var IRIS_BN = { rows: [], loaded: false, failed: false };
+var IRIS_BN_LEVELS = { info: 'badge-info', warning: 'badge-warning', danger: 'badge-danger' };
+
+function iris_bn_csrf() { return document.getElementById('csrf_token').value; }
+
+function iris_bn_load() {
+    fetch('/manage/banners/list?cid=' + new URLSearchParams(location.search).get('cid'),
+          { credentials: 'same-origin' })
+        .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+        .then(function (j) {
+            IRIS_BN.rows = j.data || [];
+            IRIS_BN.loaded = true; IRIS_BN.failed = false;
+            iris_bn_render();
+        })
+        .catch(function () {
+            IRIS_BN.failed = true;
+            document.getElementById('iris-bn-body').innerHTML =
+                '<tr><td colspan="5" class="text-warning">Could not load banners.</td></tr>';
+        });
+}
+
+function iris_bn_render() {
+    var body = document.getElementById('iris-bn-body');
+    var empty = document.getElementById('iris-bn-empty');
+    body.innerHTML = '';
+    if (!IRIS_BN.rows.length) {
+        empty.style.display = '';
+        document.getElementById('iris-bn-table').style.display = 'none';
+        return;
+    }
+    empty.style.display = 'none';
+    document.getElementById('iris-bn-table').style.display = '';
+    IRIS_BN.rows.forEach(function (b) {
+        var tr = document.createElement('tr');
+        var tdMsg = document.createElement('td'); tdMsg.textContent = b.message;
+        var tdLvl = document.createElement('td');
+        var badge = document.createElement('span');
+        badge.className = 'badge ' + (IRIS_BN_LEVELS[b.level] || 'badge-secondary');
+        badge.textContent = b.level;
+        tdLvl.appendChild(badge);
+        var tdAct = document.createElement('td');
+        tdAct.textContent = b.is_active ? 'Yes' : 'No';
+        var tdCr = document.createElement('td');
+        tdCr.textContent = (b.created_at || '').slice(0, 10);
+        var tdBtn = document.createElement('td');
+        tdBtn.className = 'text-right';
+        var be = document.createElement('button');
+        be.className = 'btn btn-xs btn-outline-secondary'; be.textContent = 'Edit';
+        be.addEventListener('click', function () { iris_bn_edit(b.id); });
+        var bd = document.createElement('button');
+        bd.className = 'btn btn-xs btn-outline-danger ml-1'; bd.textContent = 'Delete';
+        bd.addEventListener('click', function () { iris_bn_delete(b.id); });
+        tdBtn.appendChild(be); tdBtn.appendChild(bd);
+        [tdMsg, tdLvl, tdAct, tdCr, tdBtn].forEach(function (td) { tr.appendChild(td); });
+        body.appendChild(tr);
+    });
+}
+
+function iris_bn_new() {
+    document.getElementById('bn-edit-id').value = '';
+    document.getElementById('bn-message').value = '';
+    document.getElementById('bn-level').value = 'info';
+    document.getElementById('bn-active').checked = true;
+    document.getElementById('iris-bn-editor-title').textContent = 'New banner';
+    document.getElementById('iris-bn-editor').style.display = '';
+}
+
+function iris_bn_edit(id) {
+    var b = IRIS_BN.rows.find(function (r) { return r.id === id; });
+    if (!b) { return; }
+    document.getElementById('bn-edit-id').value = b.id;
+    document.getElementById('bn-message').value = b.message;
+    document.getElementById('bn-level').value = b.level;
+    document.getElementById('bn-active').checked = !!b.is_active;
+    document.getElementById('iris-bn-editor-title').textContent = 'Edit banner #' + b.id;
+    document.getElementById('iris-bn-editor').style.display = '';
+}
+
+function iris_bn_cancel() {
+    document.getElementById('iris-bn-editor').style.display = 'none';
+}
+
+function iris_bn_save() {
+    var id = document.getElementById('bn-edit-id').value;
+    var cid = new URLSearchParams(location.search).get('cid');
+    var url = id ? '/manage/banners/update/' + id + '?cid=' + cid
+                 : '/manage/banners/add?cid=' + cid;
+    fetch(url, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            message: document.getElementById('bn-message').value,
+            level: document.getElementById('bn-level').value,
+            is_active: document.getElementById('bn-active').checked,
+            csrf_token: iris_bn_csrf()
+        })
+    }).then(function (r) {
+        if (r.ok) { iris_bn_cancel(); iris_bn_load(); }
+        else { r.json().then(function (j) { alert(j.message || ('Save failed (HTTP ' + r.status + ')')); })
+                      .catch(function () { alert('Save failed (HTTP ' + r.status + ')'); }); }
+    });
+}
+
+function iris_bn_delete(id) {
+    if (!confirm('Delete banner #' + id + '?')) { return; }
+    fetch('/manage/banners/delete/' + id + '?cid=' + new URLSearchParams(location.search).get('cid'), {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csrf_token: iris_bn_csrf() })
+    }).then(function () { iris_bn_load(); });
+}
+
+document.addEventListener('DOMContentLoaded', iris_bn_load);
+</script>
+{% endblock javascripts %}

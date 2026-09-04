@@ -1,0 +1,339 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Manage Case Templates {% endblock title %}
+
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'case_templates' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+
+    {# iris-ng v3-parity Case Templates shell (maintainer direction, 2026-09-02).
+       Overlay, not rebuild: the template list renders from the SAME
+       /manage/case-templates/list the legacy DataTable calls, the editor
+       loads via the additive GET /manage/case-templates/<id> (same builder
+       as the legacy modal — case_template_to_dict), and Save/Add/Delete/
+       Import drive the SAME endpoints and payload keys as
+       manage.case.templates.js. The Form tab and the Raw JSON tab edit ONE
+       model; the legacy table stays hidden-but-alive below. #}
+    <style>
+        .iris-co-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+        .iris-co-head-icon { flex: 0 0 auto; margin-top: 3px; opacity: 0.85; }
+        .iris-co-title { font-size: 19px; font-weight: 700; color: #e6e6ee; line-height: 1.2; }
+        .iris-co-sub { font-size: 12.5px; color: #9b9baa; margin-top: 2px; }
+        .iris-co-head-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+        .iris-co-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+                           color: #9b9baa; text-transform: uppercase; margin-bottom: 8px; }
+        .iris-co-empty { color: #9b9baa; font-size: 13px; padding: 14px 6px; }
+        .iris-co-legacy-link { font-size: 11.5px; color: #6f6f7e; }
+        .iris-ct-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr);
+                        gap: 14px; align-items: start; }
+        @media (max-width: 1100px) { .iris-ct-grid { grid-template-columns: 1fr; } }
+        .iris-ct-panel { background: #15151a; border: 1px solid rgba(255,255,255,0.06);
+                         border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+        .iris-ct-row { display: flex; align-items: center; gap: 8px; padding: 9px 10px;
+                       border-radius: 7px; cursor: pointer; border: 1px solid transparent; }
+        .iris-ct-row:hover { background: rgba(139,92,246,0.07); }
+        .iris-ct-row.active { background: rgba(139,92,246,0.12);
+                              border-color: rgba(139,92,246,0.35); }
+        .iris-ct-row-name { font-size: 13px; font-weight: 600; color: #e2e2ea; }
+        .iris-ct-row-sub { font-size: 11.5px; color: #8a8a98; overflow: hidden;
+                           text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+        .iris-ct-row-id { margin-left: auto; font-family: monospace; font-size: 11px;
+                          color: #6f6f7e; }
+        .iris-ct-ed-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+                           flex-wrap: wrap; }
+        .iris-ct-sel-label { font-size: 12px; color: #9b9baa; }
+        .iris-ct-ed-actions { margin-left: auto; display: flex; gap: 8px; }
+        .iris-ct-tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.08);
+                        margin-bottom: 12px; }
+        .iris-ct-tab { font-size: 12.5px; font-weight: 600; color: #9b9baa; padding: 7px 12px;
+                       border-radius: 6px 6px 0 0; cursor: pointer; user-select: none;
+                       border-bottom: 2px solid transparent; }
+        .iris-ct-tab:hover { color: #e2e2ea; }
+        .iris-ct-tab.active { color: #efeaff; border-bottom-color: #8b5cf6; }
+        .iris-ct-field-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em;
+                               color: #8a8a98; text-transform: uppercase; margin-bottom: 4px; }
+        .iris-ct-hint { font-size: 11px; color: #6f6f7e; margin-top: 3px; }
+        .iris-ct-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 900px) { .iris-ct-form-grid { grid-template-columns: 1fr; } }
+        .iris-ct-form-grid .full { grid-column: 1 / -1; }
+        .iris-ct-chip { display: inline-flex; align-items: center; gap: 5px;
+                        background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.35);
+                        color: #d4c4ff; border-radius: 10px; padding: 2px 9px; font-size: 11.5px;
+                        margin: 3px 4px 0 0; }
+        .iris-ct-chip span { cursor: pointer; color: #b8a3f0; font-weight: 700; }
+        .iris-ct-section { background: #101014; border: 1px solid rgba(255,255,255,0.07);
+                           border-radius: 8px; padding: 10px 12px; margin-top: 14px; }
+        .iris-ct-section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .iris-ct-section-count { font-family: monospace; font-size: 11px; color: #6f6f7e; }
+        .iris-ct-item { border: 1px solid rgba(255,255,255,0.08); border-radius: 7px;
+                        padding: 10px; margin-top: 10px; }
+        .iris-ct-item-head { display: flex; gap: 8px; align-items: center; }
+        .iris-ct-item-head .form-control { flex: 1 1 auto; }
+        .iris-ct-x { cursor: pointer; color: #f08a96; font-weight: 700; padding: 2px 7px;
+                     border-radius: 5px; user-select: none; }
+        .iris-ct-x:hover { background: rgba(242,89,97,0.15); }
+        .iris-ct-note { border-left: 2px solid rgba(139,92,246,0.35); margin: 8px 0 0 10px;
+                        padding: 6px 0 0 10px; }
+        .iris-ct-valid { margin-left: auto; font-size: 11.5px; font-weight: 600; }
+        .iris-ct-valid.ok { color: #6fdc74; }
+        .iris-ct-valid.bad { color: #f08a96; }
+        #iris-ct-raw-editor { border: 1px solid rgba(255,255,255,0.10); border-radius: 6px; }
+        .iris-ct-schema { font-size: 12.5px; color: #b8b8c4; }
+        .iris-ct-schema pre { background: #101014; border: 1px solid rgba(255,255,255,0.08);
+                              border-radius: 6px; padding: 10px; font-size: 11.5px;
+                              color: #b8b8c4; overflow-x: auto; }
+        .iris-ct-schema ul { margin: 8px 0 0 0; padding-left: 18px; }
+        .iris-ct-schema li { margin-bottom: 2px; }
+        .iris-ct-search { margin-bottom: 8px; }
+    </style>
+
+    <div class="iris-co-head">
+        <span class="iris-co-head-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg></span>
+        <div>
+            <div class="iris-co-title">Case Templates</div>
+            <div class="iris-co-sub">Reusable case skeletons &mdash; title prefix, classification, tags, tasks and notes.</div>
+            {{ form.hidden_tag() }}
+        </div>
+        <div class="iris-co-head-actions">
+            <button type="button" class="btn btn-sm btn-dark" id="iris-ct-refresh">Refresh</button>
+            <button type="button" class="btn btn-sm btn-dark" onclick="fire_upload_case_template();">Import</button>
+            <button type="button" class="btn btn-sm btn-primary" id="iris-ct-add">+ Add template</button>
+        </div>
+    </div>
+
+    <div class="iris-ct-grid">
+        <div class="iris-ct-panel">
+            <div class="iris-co-eyebrow">Templates <span id="iris-ct-count"></span></div>
+            <input type="text" class="form-control form-control-sm iris-ct-search" id="iris-ct-search"
+                   placeholder="Search by name, description, author..." autocomplete="off">
+            <div id="iris-ct-rows"></div>
+        </div>
+
+        <div class="iris-ct-panel">
+            <div class="iris-ct-ed-head">
+                <span class="iris-co-eyebrow" style="margin-bottom: 0;">Editor</span>
+                <span class="iris-ct-sel-label" id="iris-ct-sel-label"></span>
+                <div class="iris-ct-ed-actions">
+                    <button type="button" class="btn btn-sm btn-dark" id="iris-ct-export">Export</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="iris-ct-delete">Delete</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="iris-ct-save">Save</button>
+                </div>
+            </div>
+            <div id="iris-ct-editor-empty" class="iris-co-empty">Select a template &mdash; or click + Add template to create one.</div>
+            <div id="iris-ct-editor-wrap" style="display: none;">
+                <div class="iris-ct-tabs">
+                    <span class="iris-ct-tab active" data-tab="form" id="iris-ct-tab-form">Form</span>
+                    <span class="iris-ct-tab" data-tab="raw" id="iris-ct-tab-raw">Raw JSON</span>
+                    <span class="iris-ct-tab" data-tab="schema" id="iris-ct-tab-schema">Schema</span>
+                </div>
+
+                <div id="iris-ct-pane-form">
+                    <div class="iris-ct-form-grid">
+                        <div>
+                            <div class="iris-ct-field-label">Name *</div>
+                            <input type="text" class="form-control form-control-sm" id="iris-ct-f-name" autocomplete="off">
+                            <div class="iris-ct-hint">Short, unique slug. Required.</div>
+                        </div>
+                        <div>
+                            <div class="iris-ct-field-label">Display name</div>
+                            <input type="text" class="form-control form-control-sm" id="iris-ct-f-display" autocomplete="off">
+                            <div class="iris-ct-hint">Shown in the picker; falls back to name.</div>
+                        </div>
+                        <div class="full">
+                            <div class="iris-ct-field-label">Description</div>
+                            <textarea class="form-control form-control-sm" id="iris-ct-f-description" rows="2"></textarea>
+                            <div class="iris-ct-hint">Admin-side description, not visible on cases.</div>
+                        </div>
+                        <div>
+                            <div class="iris-ct-field-label">Author <small>max 128 chars</small></div>
+                            <input type="text" class="form-control form-control-sm" id="iris-ct-f-author" maxlength="128" autocomplete="off">
+                        </div>
+                        <div>
+                            <div class="iris-ct-field-label">Case title prefix <small>max 32 chars</small></div>
+                            <input type="text" class="form-control form-control-sm" id="iris-ct-f-prefix" maxlength="32" autocomplete="off">
+                            <div class="iris-ct-hint">Prepended to the case name on apply.</div>
+                        </div>
+                        <div class="full">
+                            <div class="iris-ct-field-label">Summary</div>
+                            <textarea class="form-control form-control-sm" id="iris-ct-f-summary" rows="3"></textarea>
+                            <div class="iris-ct-hint">Appended to the case description on apply.</div>
+                        </div>
+                        <div class="full">
+                            <div class="iris-ct-field-label">Tags</div>
+                            <input type="text" class="form-control form-control-sm" id="iris-ct-f-tag-input"
+                                   placeholder="Type and press Enter..." autocomplete="off">
+                            <div id="iris-ct-tags-chips"></div>
+                            <div class="iris-ct-hint">Appended to the case tags on apply.</div>
+                        </div>
+                        <div class="full">
+                            <div class="iris-ct-field-label">Classification</div>
+                            <input type="text" class="form-control form-control-sm" id="iris-ct-f-classification"
+                                   list="iris-ct-classifications" placeholder="malware, phishing, ..." autocomplete="off">
+                            <datalist id="iris-ct-classifications"></datalist>
+                            <div class="iris-ct-hint">Must match the name of an existing case classification.</div>
+                        </div>
+                    </div>
+
+                    <div class="iris-ct-section">
+                        <div class="iris-ct-section-head">
+                            <span class="iris-co-eyebrow" style="margin-bottom: 0;">Note directories</span>
+                            <span class="iris-ct-section-count" id="iris-ct-notedirs-count"></span>
+                            <button type="button" class="btn btn-sm btn-dark ml-auto" id="iris-ct-notedir-add">+ Add</button>
+                        </div>
+                        <div class="iris-ct-hint">Created on the case on apply.</div>
+                        <div id="iris-ct-notedirs"></div>
+                    </div>
+
+                    <div class="iris-ct-section">
+                        <div class="iris-ct-section-head">
+                            <span class="iris-co-eyebrow" style="margin-bottom: 0;">Tasks</span>
+                            <span class="iris-ct-section-count" id="iris-ct-tasks-count"></span>
+                            <button type="button" class="btn btn-sm btn-dark ml-auto" id="iris-ct-task-add">+ Add</button>
+                        </div>
+                        <div class="iris-ct-hint">Created on the case on apply, with status &quot;To Do&quot;.</div>
+                        <div id="iris-ct-tasks"></div>
+                    </div>
+                </div>
+
+                <div id="iris-ct-pane-raw" style="display: none;">
+                    <div style="display: flex; margin-bottom: 4px;">
+                        <span class="iris-ct-field-label" style="margin-bottom: 0;">Template JSON</span>
+                        <span class="iris-ct-valid" id="iris-ct-valid"></span>
+                    </div>
+                    <div id="iris-ct-raw-editor"></div>
+                </div>
+
+                <div id="iris-ct-pane-schema" style="display: none;" class="iris-ct-schema">
+                    <p>A case template is a JSON document. Applying it to a new case prepends the
+                        title prefix, sets the classification, appends the summary and tags, and
+                        creates the tasks and note directories.</p>
+<pre>{
+    "name": "tmpl-slug",                &lt;- required, short unique slug
+    "display_name": "Template name",
+    "description": "Admin-side description",
+    "author": "Your name",              &lt;- max 128 chars
+    "title_prefix": "[PREFIX]",         &lt;- max 32 chars
+    "summary": "Appended to the case description",
+    "tags": ["ransomware", "malware"],
+    "classification": "malware",        &lt;- name of an existing classification
+    "tasks": [
+        { "title": "Identify hosts", "description": "...", "tags": ["identify"] }
+    ],
+    "note_directories": [
+        { "title": "Initial summary", "notes": [ { "title": "Note", "content": "..." } ] }
+    ]
+}</pre>
+                        <ul>
+                            <li><b>name</b> is the only required field.</li>
+                            <li><b>tasks[].title</b> and <b>note_directories[].title</b> are required on each entry.</li>
+                            <li><b>note_groups</b> is the retired pre-2.4 key &mdash; the server refuses it and asks for note_directories.</li>
+                        </ul>
+                </div>
+
+                <div class="alert alert-warning mt-3" style="display: none;" role="alert" id="iris-ct-errors">
+                    <span id="iris-ct-errors-msg"></span>
+                    <ul id="iris-ct-errors-list" class="mb-0"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-right mt-2 mb-3">
+        <a href="#" class="iris-co-legacy-link" id="iris-ct-legacy-toggle"
+           onclick="$('#iris-ct-legacy').toggle(); return false;">Show legacy view</a>
+    </div>
+
+    <div id="iris-ct-legacy" style="display: none;">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col">
+                            <div class="card-title">Case Templates</div>
+                        </div>
+                        <div class="col">
+                            <button type="button" class="btn btn-sm btn-dark float-right ml-2" onclick="refresh_case_template_table();">
+                                Refresh
+                            </button>
+                            <button class="btn btn-sm btn-dark float-right ml-2" onclick="add_case_template();">
+                                Add case template
+                            </button>
+                            <button class="btn btn-sm btn-dark float-right ml-2" onclick="fire_upload_case_template();">
+                                Upload case template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+
+                    <div class="table-responsive" id="hooks_table_wrapper">
+                        <div class="selectgroup">
+                            <span id="table_buttons"></span>
+                        </div>
+                        <table aria-describedby="Case template list"
+                               class="table display table table-striped table-hover"
+                               style="width: 100%; border-spacing: 0;" id="case_templates_table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#ID</th>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Added by</th>
+                                    <th scope="col">Created at</th>
+                                    <th scope="col">Updated at</th>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <th scope="col">#ID</th>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Added by</th>
+                                    <th scope="col">Created at</th>
+                                    <th scope="col">Updated at</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>{# /iris-ct-legacy #}
+</div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>
+    <div class="modal" tabindex="-1"  id="modal_case_template" data-backdrop="true">
+        <div class="modal-xxl modal-dialog" role="document">
+            <div class="modal-content" id="modal_case_template_json">
+
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div>
+    <div class="modal" tabindex="-1" role="dialog" id="modal_upload_case_template" data-backdrop="true">
+      <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content" id="modal_upload_case_template_json">
+
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div>
+    {% endif %}
+
+    {% endblock content %}
+
+    {% block javascripts %}
+    <script src="/static/assets/js/plugin/ace/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/assets/js/plugin/ace/src-noconflict/ext-language_tools.js" type="text/javascript"
+        charset="utf-8"></script>
+    <script src="/static/assets/js/iris/manage.case.templates.js"></script>
+    <script src="/static/assets/js/iris/manage.case.templates.v3.js"></script>
+    {% endblock javascripts %}

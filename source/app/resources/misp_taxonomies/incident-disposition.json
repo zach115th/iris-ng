@@ -1,0 +1,118 @@
+{
+  "namespace": "incident-disposition",
+  "description": "How an incident is classified in its process to be resolved. The taxonomy is inspired from NASA Incident Response and Management Handbook. https://www.nasa.gov/pdf/589502main_ITS-HBK-2810.09-02%20%5bNASA%20Information%20Security%20Incident%20Management%5d.pdf#page=9",
+  "version": 2,
+  "predicates": [
+    {
+      "value": "incident",
+      "expanded": "Incident",
+      "uuid": "335eb2c9-2f89-541f-89ce-0564e916b11e"
+    },
+    {
+      "value": "not-an-incident",
+      "expanded": "Not an incident",
+      "uuid": "19966306-ab52-5518-a232-10ad07dcad3b"
+    },
+    {
+      "value": "duplicate",
+      "expanded": "Duplicate",
+      "uuid": "29f6577f-a227-5042-9705-70895ad7a858"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "incident",
+      "entry": [
+        {
+          "value": "confirmed",
+          "expanded": "Confirmed",
+          "description": "The incident is confirmed and response is underway following incident response procedure of the organisation.",
+          "uuid": "a77f141f-a71a-557e-b68f-e6f80fbb7a1f"
+        },
+        {
+          "value": "deferred",
+          "expanded": "Deferred",
+          "description": "The incident is deferred due to resource constraints, information type or external reasons.",
+          "uuid": "08d8774c-5f7d-5df8-bef1-ea2354e89ba8"
+        },
+        {
+          "value": "unidentified",
+          "expanded": "Unidentified",
+          "description": "The incident is unidentified because some assets, ressources or context is missing to go a state which can be handled following the incident response response procedure.",
+          "uuid": "579f11e1-7bca-57f3-8f82-64a7c0493d78"
+        },
+        {
+          "value": "transferred",
+          "expanded": "Transferred",
+          "description": "The incident is transferred to another organisations for further processing or incident handling.",
+          "uuid": "e88934cc-a984-5dc4-bf4f-f99ba8e133d1"
+        },
+        {
+          "value": "discarded",
+          "expanded": "Discarded",
+          "description": "The incident is discarded due to resource constraints, information type or external reasons.",
+          "uuid": "f43c468d-c6f0-57bc-8fb4-75facee2971b"
+        },
+        {
+          "value": "silently-discarded",
+          "expanded": "Silently discarded",
+          "description": "The incident is silently discarded due to resource constraints, information type or external reasons.",
+          "uuid": "9bb8a469-7ce2-54dd-b2ee-22114d932f4f"
+        }
+      ]
+    },
+    {
+      "predicate": "not-an-incident",
+      "entry": [
+        {
+          "value": "insufficient-data",
+          "expanded": "Insufficient data",
+          "description": "When insufficient data is available to explain an ambiguous (i.e., not definitively hostile or benign) indicator, the incident may be dispositioned as Insufficient Data.",
+          "uuid": "774629ed-a419-5837-8c1f-3f923ad7a8f1"
+        },
+        {
+          "value": "faulty-indicator",
+          "expanded": "Faulty indicator",
+          "description": "A false positive where an investigation reveals that the source indicator used as the basis for incident detection was a Faulty Indicator.",
+          "uuid": "6cf35e37-b8f4-54a2-89df-8a3a7bae5724"
+        },
+        {
+          "value": "misconfiguration",
+          "expanded": "Misconfiguration",
+          "description": "A false positive where an event that appeared to be malicious activity was subsequently disproven and determined to be a Misconfiguration (malfunction) of a system.",
+          "uuid": "a229712f-c77d-5779-b171-c30f7a85f9df"
+        },
+        {
+          "value": "scan-probe",
+          "expanded": "Scan or Probe",
+          "description": "Reconnaissance activity which Scanned or Probed for the presence of a vulnerability which may be later exploited to gain unauthorized access.",
+          "uuid": "5cae7264-8961-58dc-b861-77df6ff74f4c"
+        },
+        {
+          "value": "failed",
+          "expanded": "Failed",
+          "description": "A Failed attempt to gain unauthorized access, conduct a denial of service, install malicious code, or misuse an IT resource, typically because a security control prevented it from succeeding.",
+          "uuid": "d67773b6-afb3-552e-92da-a946edfe3d86"
+        },
+        {
+          "value": "refuted",
+          "expanded": "Refuted",
+          "description": "Any other circumstance where a suspected incident was determined to not be an incident and was Refuted.",
+          "uuid": "e1070dc7-1761-5cd7-b528-ad4d0882ee02"
+        }
+      ]
+    },
+    {
+      "predicate": "duplicate",
+      "entry": [
+        {
+          "value": "duplicate",
+          "expanded": "Duplicate",
+          "description": "An incident may be a Duplicate of another record in the Incident Management System, and should be merged with the existing workflow.",
+          "uuid": "b8575e2a-dd29-5399-893c-90349b495b47"
+        }
+      ]
+    }
+  ],
+  "uuid": "f4157b45-1c27-57f8-b747-9a38a259e0c5"
+}

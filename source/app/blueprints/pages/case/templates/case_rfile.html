@@ -1,0 +1,309 @@
+{% extends "layouts/default_ext.html" %} {% block title %} Case Evidence {% endblock title %} {% block stylesheets %}
+{% include 'includes/header_case.html' %}
+{% endblock stylesheets %}
+{% block content %}
+
+{% include 'includes/navigation_ext.html' %}
+
+{% include 'includes/sidenav.html' %}
+<div class="main-panel">
+
+    <div class="content">
+        {# v3 case shell (shared chrome; content below untouched). The
+           Evidence tab promotes its primary action into the header, like
+           Assets/IOC/Timeline. #}
+        <div class="page-inner pt-2 pb-0">
+            {% set cshell_primary_label = 'Add Evidence' %}
+            {% set cshell_primary_onclick = 'add_modal_rfile();' %}
+            {% set cshell_primary_icon = 'hard-drive' %}
+            {% set cshell_tab_label = 'Evidence' %}
+            {% set cshell_tab_menu %}
+                <a href="#" id="iris-ce-legacy-toggle">Show legacy table</a>
+            {% endset %}
+            {% include 'includes/case_shell.html' %}
+        </div>
+
+
+
+        {% if current_user.is_authenticated %}
+        {{ form.hidden_tag() }}
+            {# Legacy toolbar + DataTable stay in the DOM (hidden) so their
+               machinery — DataTables init, filters, module quick actions,
+               the last-refresh state poll — keeps working untouched; the
+               v3 master/detail below renders from the same
+               /case/evidences/list payload. #}
+            <nav id="iris-ce-legacy-toolbar" style="display:none;" class="navbar navbar-header navbar-expand-lg pt-2 pb-2 bg-case-gradient nav-sticky">
+                <div class="container-fluid">
+                    <div class="collapse" id="search-nav">
+                        <div id="tables_button"></div>
+                     </div>
+					<ul class="navbar-nav topbar-nav ml-md-auto align-items-center page-navigation page-navigation-style-2 page-navigation-secondary">
+                        <li class="nav-item ml-2">
+                            <span class="text-white text-sm mr-2" id="last_resfresh">Loading</span>
+                        </li>
+                        <li class="nav-item">
+                            <button class="btn btn-primary btn-sm" onclick="reload_rfiles(true);">
+                                <span class="menu-title">Refresh</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button onclick="add_modal_rfile()" class="btn btn-dark btn-sm">
+                                 <span class="menu-title">Register Evidence</span>
+                            </button>
+                        </li>
+					</ul>
+                </div>
+
+
+			</nav>
+
+        {# v3 Evidence master/detail #}
+        <div class="page-inner pt-2">
+            <div class="iris-ce-head">
+                <h4 style="color:#e8e8ee; font-weight:600; margin:0;">Evidence <span class="text-muted" id="iris-ce-count" style="font-size:0.85rem;"></span></h4>
+                <span style="margin-left:auto; display:inline-flex; gap:8px; align-items:center;">
+                    <button type="button" class="iris-cshell-iconbtn" id="iris-ce-refresh" title="Refresh">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                    </button>
+                </span>
+            </div>
+            <div class="iris-ce-wrap">
+                <div class="iris-ce-left">
+                    <input type="text" class="form-control form-control-sm mb-2" id="iris-ce-search" placeholder="Search evidence..." autocomplete="off">
+                    <div id="iris-ce-list"></div>
+                    <div class="text-muted" id="iris-ce-loading">Loading&hellip;</div>
+                    <div class="text-muted" id="iris-ce-none" style="display:none;"></div>
+                </div>
+                <div class="iris-ce-right">
+                    <div class="text-muted" id="iris-ce-placeholder" style="text-align:center; padding-top:60px;">Select an evidence item to see its details.</div>
+                    <div id="iris-ce-detail" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+        <style>
+            .iris-ce-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+            .iris-ce-wrap { display: flex; gap: 14px; align-items: flex-start; }
+            .iris-ce-left { flex: 1 1 55%; min-width: 0; }
+            .iris-ce-right {
+                flex: 1 1 45%; min-width: 320px; background: #15151a;
+                border: 1px solid rgba(255,255,255,0.07); border-radius: 12px;
+                padding: 14px 16px; position: sticky; top: 70px;
+                /* FALLBACK ONLY. The real height is measured in JS
+                   (iris_ce_fit_card): this card is sticky, so its top is
+                   only `top:70px` once pinned — at rest it sits lower and
+                   any fixed-offset calc overshoots the AI chat bar by
+                   exactly that difference. */
+                height: calc(100vh - 160px);
+                display: flex; flex-direction: column; overflow: hidden;
+            }
+            #iris-ce-detail {
+                display: flex; flex-direction: column;
+                flex: 1 1 auto; min-height: 0;
+            }
+            .iris-ce-dbody {
+                flex: 1 1 auto; min-height: 0; overflow-y: auto;
+                scrollbar-width: none; -ms-overflow-style: none;
+            }
+            .iris-ce-dbody::-webkit-scrollbar { display: none; }
+            .iris-ce-dbody-split {
+                overflow: hidden; display: flex; flex-direction: column;
+            }
+            .iris-ce-clist {
+                flex: 1 1 auto; min-height: 0; overflow-y: auto;
+                scrollbar-width: none; -ms-overflow-style: none;
+            }
+            .iris-ce-clist::-webkit-scrollbar { display: none; }
+            .iris-ce-cfoot {
+                flex-shrink: 0; display: flex; gap: 6px;
+                padding-top: 10px; margin-top: 4px;
+                border-top: 1px solid rgba(255,255,255,0.07);
+            }
+            .iris-ce-row {
+                border: 1px solid rgba(255,255,255,0.07); border-left-width: 3px;
+                border-radius: 10px; padding: 9px 12px; margin-bottom: 8px;
+                cursor: pointer; background: rgba(255,255,255,0.015);
+            }
+            .iris-ce-row:hover { border-color: rgba(139,92,246,0.4); }
+            .iris-ce-row.active { background: rgba(94,114,228,0.12); }
+            .iris-ce-row .iris-ce-name code {
+                color: #e8e8ee; font-weight: 600; background: transparent;
+                font-size: 0.85rem;
+            }
+            .iris-ce-meta {
+                color: #9a9aa5; font-size: 0.73rem; margin-top: 2px;
+                display: flex; gap: 10px; flex-wrap: wrap;
+            }
+            .iris-ce-chip {
+                display: inline-block; padding: 0 8px; border-radius: 9px;
+                font-size: 0.68rem; color: #9a9aa5;
+                border: 1px solid rgba(255,255,255,0.12);
+            }
+            .iris-ce-nohash {
+                display: inline-block; padding: 0 8px; border-radius: 9px;
+                font-size: 0.68rem; color: #f4c430;
+                border: 1px solid rgba(244,196,48,0.45);
+            }
+            /* linked-asset cards — same shape as the IOC page's Assets tab */
+            .iris-ce-acard {
+                display: block; position: relative;
+                border: 1px solid rgba(255,255,255,0.07); border-left-width: 3px;
+                border-radius: 10px; padding: 9px 12px; margin-bottom: 8px;
+                background: rgba(255,255,255,0.015); text-decoration: none;
+            }
+            .iris-ce-acard:hover { border-color: rgba(139,92,246,0.4); }
+            .iris-ce-aname { color: #e8e8ee; font-weight: 600; }
+            .iris-ce-ameta {
+                color: #9a9aa5; font-size: 0.75rem; margin-top: 2px;
+                display: flex; gap: 10px; flex-wrap: wrap;
+            }
+            .iris-ce-ameta code {
+                color: #8fa3ef; background: transparent; font-size: 0.75rem;
+            }
+            .iris-ce-atag {
+                display: inline-block; padding: 0 8px; border-radius: 9px;
+                font-size: 0.68rem; color: #9a9aa5; margin-top: 4px;
+                border: 1px solid rgba(255,255,255,0.12); margin-right: 4px;
+            }
+            .iris-ce-aid {
+                position: absolute; right: 12px; bottom: 7px;
+                color: #55555e; font-size: 0.68rem;
+            }
+            .iris-ce-comp-chip {
+                display: inline-flex; align-items: center; gap: 5px;
+                padding: 1px 10px; border-radius: 10px; font-size: 0.74rem;
+                border: 1px solid rgba(255,255,255,0.18); color: #c8c8d0;
+            }
+            .iris-ce-viachip {
+                display: inline-block; padding: 0 8px; border-radius: 8px;
+                font-size: 0.66rem; color: #d4c4ff; white-space: nowrap;
+                border: 1px solid rgba(139,92,246,0.35);
+                background: rgba(139,92,246,0.12);
+            }
+            .iris-ce-dtabs {
+                display: flex; gap: 4px; margin: 10px 0;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+            }
+            .iris-ce-dtab {
+                background: transparent; border: 0; color: #9a9aa5;
+                font-size: 0.8rem; padding: 5px 10px; cursor: pointer;
+                border-bottom: 2px solid transparent;
+            }
+            .iris-ce-dtab.active { color: #e8e8ee; border-bottom-color: #8B5CF6; }
+            .iris-ce-field { margin-right: 16px; display: inline-block; font-size: 0.78rem; color: #c8c8d0; }
+            .iris-ce-field .lbl {
+                color: #7a7a85; font-size: 0.62rem; letter-spacing: 0.08em;
+                text-transform: uppercase; margin-right: 5px;
+            }
+            .iris-ce-field code { color: #8fa3ef; background: transparent; word-break: break-all; }
+            .iris-ce-eyebrow {
+                color: #7a7a85; font-size: 0.62rem; letter-spacing: 0.08em;
+                text-transform: uppercase; margin-right: 5px;
+            }
+            .iris-ce-desc { color: #c8c8d0; font-size: 0.85rem; margin-top: 12px; }
+            .iris-ce-md table { border-collapse: collapse; margin: 6px 0; }
+            .iris-ce-md th, .iris-ce-md td {
+                border: 1px solid rgba(139,92,246,0.3); padding: 3px 8px;
+                font-size: 0.78rem;
+            }
+            .iris-ce-foot {
+                color: #7a7a85; font-size: 0.7rem; margin-top: 14px;
+                display: flex; gap: 16px; flex-wrap: wrap;
+            }
+            .iris-ce-linkbtn {
+                background: transparent;
+                border: 1px solid rgba(255,255,255,0.14);
+                color: #b9b9c4; border-radius: 999px;
+                font-size: 12px; line-height: 1; padding: 5px 9px;
+                cursor: pointer; margin-right: 6px;
+            }
+            .iris-ce-linkbtn:hover {
+                color: #e8e8ee; border-color: rgba(255,255,255,0.3);
+            }
+        </style>
+        <script src="/static/assets/js/iris/case_evidences_v3.js"></script>
+
+        <div class="page-inner" id="iris-ce-legacy" style="display:none;">
+            <div class="row">
+                <div class="loader1 text-center ml-mr-auto" id="loading_msg">Loading...</div>
+                <div class="col-md-12">
+                    <div class="card" id="card_main_load" style="display:none;">
+                        <div class="card-body">
+                            <div class="table-responsive" id="rfiles_table_wrapper">
+                                <div class="selectgroup">
+                                    <span id="table_buttons"></span>
+                                </div>
+                                <table class="table display wrap col-border table-striped table-hover dataTable" width="100%"
+                                    cellspacing="0" id="rfiles_table">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Hash</th>
+                                            <th>Size (bytes)</th>
+                                            <th>Description</th>
+                                            <th>Added by</th>
+                                            <th>Created by</th>
+                                            <th>Bar code</th>
+                                            <th>Physical location</th>
+                                        </tr>
+                                    </thead>
+                                    <tfoot>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Hash</th>
+                                            <th>Size(bytes)</th>
+                                            <th>Description</th>
+                                            <th>Added by</th>
+                                            <th>Created by</th>
+                                            <th>Bar code</th>
+                                            <th>Physical location</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" tabindex="-1" role="dialog" id="modal_add_rfiles" data-backdrop="true">
+            <div class="modal-lg modal-dialog" role="document">
+                <div class="modal-content" id="modal_add_rfiles_content">
+
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+
+        {% endif %}
+    </div>
+
+    {% include 'includes/footer.html' %}
+</div>
+
+{% set chat_variant = 'evidence' %}
+{% set chat_eyebrow = '✨ Evidence Assistant' %}
+{% set chat_placeholder = 'Ask about this evidence…  (e.g. which artifacts have no hash recorded?)' %}
+{% set chat_blurb = 'Focused on this case\'s evidence registry. Flags missing hashes, orphan artifacts, and collection gaps.' %}
+{% set chat_suggestions = [
+    "Which evidence records are missing a hash?",
+    "What artifacts are missing given the timeline?",
+    "Which evidence isn't linked to an asset?",
+    "Which evidence should drive new IOCs?"
+] %}
+{% include 'case_ai_chat_bar.html' %}
+
+{% endblock content %}
+{% block javascripts %}
+{% include 'includes/footer_case.html' %}
+<script src="/static/assets/js/core/moments.min.js"></script>
+<script src="/static/assets/js/core/bootstrap-datetimepicker.min.js"></script>
+<script src="/static/assets/js/iris/case.rfiles.js"></script>
+<script>
+</script>
+
+{% endblock javascripts %}

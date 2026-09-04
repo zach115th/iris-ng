@@ -1,0 +1,87 @@
+
+		<div class="main-header">
+			
+			<!-- Logo Header -->
+			<div class="logo-header" data-background-color="blue">
+				
+				<a href="/" class="logo ml-2" style="text-decoration: none;">
+					<span style="color: #ffffff; font-weight: 700; font-size: 22px; letter-spacing: 1px;">IRIS-NG</span>
+				</a>
+				<button class="navbar-toggler sidenav-toggler ml-auto" type="button" data-toggle="collapse" data-target="collapse" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon">
+						<i class="icon-menu"></i>
+					</span>
+				</button>
+				<button class="topbar-toggler more"><i class="icon-options-vertical"></i></button>
+				<div class="nav-toggle">
+					<button class="btn btn-toggle toggle-sidebar">
+						<i class="icon-menu"></i>
+					</button>
+				</div>
+			</div>
+			<!-- End Logo Header -->
+
+			<!-- Navbar Header -->
+			<nav class="navbar navbar-header navbar-expand-lg  bg-primary-gradient" >
+				
+				{% if current_user.is_authenticated %}
+				<div class="container-fluid">
+					{# The case name lived here as a switcher link. The v3 shell header
+					   below shows the case on every page this nav serves, so the name was
+					   redundant; switching cases is unaffected - the "Switch case" icon in
+					   the button row below calls the same load_context_switcher(). The
+					   read-only access badge that rode with it moved into case_shell.html
+					   rather than being dropped. Kept as-is in navigation.html: those pages
+					   have no shell header and would otherwise show no case at all. #}
+					{% include 'case-nav.html' %}
+					<ul class="navbar-nav topbar-nav align-items-center">
+						{# The search-toggle collapsed #search-nav, which no longer exists here,
+						   so it would have been a control that visibly does nothing. #}
+						{% include 'includes/case_notifications_bell.html' %}
+						{% include 'includes/global_notifications_bell.html' %}
+						<li class="nav-item hidden-caret">
+							<a class="nav-link" title="Switch case" onclick="load_context_switcher();return false;" href="#" role="button">
+								<i class="flaticon-repeat"></i>
+							</a>
+						</li>
+						<li class="nav-item hidden-caret">
+							<a class="nav-link" data-toggle="modal" title="Add task log" data-target="#modal_add_tasklog" href="#">
+								<i class="flaticon-interface-1"></i>
+							</a>
+						</li>
+						<li class="nav-item hidden-caret">
+							<a class="nav-link" title="Log time" href="#" onclick="open_time_log_modal();return false;">
+								<i class="fa-regular fa-clock"></i>
+							</a>
+						</li>
+						{# Datastore lives in the v3 case-shell header on every page this nav
+						   serves - all 8 case tabs include case_shell.html - so the topbar copy
+						   is removed here rather than shown twice. It is deliberately KEPT in
+						   navigation.html: those pages have no shell header, and removing it
+						   there would leave the datastore unreachable. #}
+						<li class="nav-item hidden-caret">
+							<a class="nav-link" data-toggle="modal" title="Create case" onclick="load_add_case();">
+								<i class="flaticon-add"></i>
+							</a>
+						</li>
+						<li class="nav-item hidden-caret">
+							<a href="#" title="Quick actions" class="nav-link quick-sidebar-toggler">
+								<i class="flaticon-shapes-1"></i>
+							</a>
+						</li>
+					</ul>
+				</div>
+
+				{% endif %}
+
+			</nav>
+
+			<!-- End Navbar -->
+
+		</div>
+
+		
+
+{% include 'includes/case_notifications_assets.html' %}
+{% include 'includes/global_notifications_assets.html' %}
+{% include 'includes/announcement_banners.html' %}

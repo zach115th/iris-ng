@@ -1,0 +1,78 @@
+
+		<div class="main-header">
+			
+			<!-- Logo Header -->
+			<div class="logo-header" data-background-color="blue">
+				<a href="/dashboard?cid={{ session['current_case'].case_id }}" class="logo ml-2" style="text-decoration: none;">
+					<span style="color: #ffffff; font-weight: 700; font-size: 22px; letter-spacing: 1px;">IRIS-NG</span>
+				</a>
+				<button class="navbar-toggler sidenav-toggler ml-auto" type="button" data-toggle="collapse" data-target="collapse" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon">
+						<i class="icon-menu"></i>
+					</span>
+				</button>
+				<button class="topbar-toggler more"><i class="icon-options-vertical"></i></button>
+				<div class="nav-toggle">
+					<button class="btn btn-toggle toggle-sidebar">
+						<i class="icon-menu"></i>
+					</button>
+				</div>
+			</div>
+			<!-- End Logo Header -->
+
+			<!-- Navbar Header -->
+			<nav class="navbar navbar-header navbar-expand-lg  bg-primary-gradient">
+				
+				{% if current_user.is_authenticated %}
+				<div class="container-fluid">
+					{# Topbar case-name block removed (maintainer direction, 2026-09-02,
+					   mirroring 7b37881 on the case nav): the "Switch case" icon in the
+					   row below calls the same load_context_switcher(), and atlantis's
+					   `#search-nav { display: block !important; }` painted this collapse
+					   permanently anyway. Removed with it, as on the case nav: the
+					   goto-case-number leaf dropdown, the "No context" state, and the
+					   session access badge — on non-case pages there is no case content
+					   for the badge to qualify; case pages carry it in the shell header.
+					   ml-auto is load-bearing: the removed block was the flex sibling
+					   that pushed this icon row to the right edge. #}
+					<ul class="navbar-nav topbar-nav align-items-center ml-auto">
+						{% include 'includes/case_notifications_bell.html' %}
+						{% include 'includes/global_notifications_bell.html' %}
+						<li class="nav-item hidden-caret">
+							<a class="nav-link" title="Switch case" onclick="load_context_switcher();return false;" href="#" role="button">
+								<i class="flaticon-repeat"></i>
+							</a>
+						</li>
+						<li class="nav-item hidden-caret">
+							<a class="nav-link" data-toggle="modal" title="Add task log" data-target="#modal_add_tasklog" href="#">
+								<i class="flaticon-interface-1"></i>
+							</a>
+						</li>
+						<li class="nav-item hidden-caret">
+							<a href="#" title="Datastore" class="nav-link ds-sidebar-toggler" onclick="load_datastore();">
+								<i class="flaticon-database"></i>
+							</a>
+						</li>
+						<li class="nav-item hidden-caret">
+							<a class="nav-link" data-toggle="modal" title="Create case" onclick="load_add_case();">
+								<i class="flaticon-add"></i>
+							</a>
+						</li>
+						<li class="nav-item hidden-caret">
+							<a href="#" title="Quick actions" class="nav-link quick-sidebar-toggler">
+								<i class="flaticon-shapes-1"></i>
+							</a>
+						</li>
+					</ul>
+				</div>
+				{% endif %}
+				
+			</nav>
+			<!-- End Navbar -->
+
+		</div>
+		
+
+{% include 'includes/case_notifications_assets.html' %}
+{% include 'includes/global_notifications_assets.html' %}
+{% include 'includes/announcement_banners.html' %}

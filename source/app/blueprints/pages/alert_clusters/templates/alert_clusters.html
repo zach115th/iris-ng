@@ -1,0 +1,110 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Alert Clusters {% endblock title %}
+
+{% block stylesheets %}
+<style>
+    /* Page-local styling only (project rule: page-level CSS overlays).
+       v3-parity list: filter bar + table with severity/status chips. */
+    .iris-ac-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .iris-ac-toolbar .form-control { background: #15151a; border-color: rgba(255,255,255,0.12); }
+    .iris-ac-search { min-width: 220px; }
+    .iris-ac-subtle { color: #9a9aa5; font-size: 0.85rem; }
+    #iris-ac-table th { color: #9a9aa5; font-size: 0.72rem; text-transform: uppercase;
+        letter-spacing: 0.04em; border-top: 0; }
+    .iris-ac-row { cursor: pointer; }
+    .iris-ac-row td { vertical-align: middle; }
+    .iris-ac-title { font-weight: 600; color: #e8e8ee; }
+    .iris-ac-owner-unassigned { color: #9a9aa5; font-style: italic; }
+    .iris-ac-chip { display: inline-block; border-radius: 10px; padding: 1px 10px;
+        font-size: 0.75rem; white-space: nowrap; }
+    .iris-ac-st-open { background: rgba(255, 158, 39, 0.15);
+        border: 1px solid rgba(255, 158, 39, 0.5); color: #ffc46b; }
+    .iris-ac-st-investigating { background: rgba(94,155,242,0.15);
+        border: 1px solid rgba(94,155,242,0.5); color: #9cc4ff; }
+    .iris-ac-st-escalated { background: rgba(139,92,246,0.15);
+        border: 1px solid rgba(139,92,246,0.5); color: #d4c4ff; }
+    .iris-ac-st-dismissed, .iris-ac-st-closed { background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.15); color: #9a9aa5; }
+    .iris-ac-sev { border: 1px solid transparent; }
+    .iris-ac-sev-critical { background: rgba(242,89,97,0.15); border-color: rgba(242,89,97,0.5); color: #ff8b91; }
+    .iris-ac-sev-high { background: rgba(255,158,39,0.15); border-color: rgba(255,158,39,0.5); color: #ffc46b; }
+    .iris-ac-sev-medium { background: rgba(244,196,48,0.14); border-color: rgba(244,196,48,0.45); color: #f4d570; }
+    .iris-ac-sev-low { background: rgba(94,114,228,0.16); border-color: rgba(94,114,228,0.5); color: #aab6ff; }
+    .iris-ac-sev-none { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #9a9aa5; }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="page-inner">
+    {{ form.csrf_token }}
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
+            <div class="d-flex align-items-baseline">
+                <div class="card-title mb-0 mr-2">Alert Clusters</div>
+                <span class="iris-ac-subtle" id="iris-ac-headline"></span>
+            </div>
+            <div class="iris-ac-toolbar">
+                <select id="iris-ac-status-filter" class="form-control form-control-sm" style="width: 130px;">
+                    <option value="">Any status</option>
+                    <option value="open">Open</option>
+                    <option value="investigating">Investigating</option>
+                    <option value="dismissed">Dismissed</option>
+                    <option value="escalated">Escalated</option>
+                    <option value="closed">Closed</option>
+                </select>
+                <select id="iris-ac-severity-filter" class="form-control form-control-sm" style="width: 130px;">
+                    <option value="">Any severity</option>
+                </select>
+                <select id="iris-ac-customer-filter" class="form-control form-control-sm" style="width: 150px;">
+                    <option value="">Any customer</option>
+                </select>
+                <input type="text" id="iris-ac-search" class="form-control form-control-sm iris-ac-search"
+                       placeholder="Search by title">
+                <select id="iris-ac-perpage" class="form-control form-control-sm" style="width: 150px;">
+                    <option value="10">10 entries per page</option>
+                    <option value="25" selected>25 entries per page</option>
+                    <option value="50">50 entries per page</option>
+                    <option value="100">100 entries per page</option>
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="iris-ac-refresh">Refresh</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover" id="iris-ac-table">
+                        <thead>
+                            <tr>
+                                <th>Alert cluster</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th class="text-right">Alerts</th>
+                                <th>Customer</th>
+                                <th>Owner</th>
+                                <th>Source rule</th>
+                                <th>Opened</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iris-ac-body">
+                            <tr><td colspan="8" class="text-muted">Loading&hellip;</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between align-items-center" id="iris-ac-pager" style="display:none;">
+                    <span class="iris-ac-subtle" id="iris-ac-pager-label"></span>
+                    <div>
+                        <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-ac-prev">&larr; Prev</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-ac-next">Next &rarr;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="/static/assets/js/iris/alert_clusters.js"></script>
+{% endblock javascripts %}

@@ -1,0 +1,58 @@
+{
+  "namespace": "iep2-reference",
+  "description": "Forum of Incident Response and Security Teams (FIRST) Information Exchange Policy (IEP) v2.0 Reference",
+  "version": 1,
+  "predicates": [
+    {
+      "value": "id_ref",
+      "expanded": "POLICY ID REFERENCE",
+      "description": "Refers to a unique IEP Policy ID to identify a specific IEP policy at a remote location.",
+      "uuid": "b26da867-03f3-5d6e-9e01-7e2b0554aec3"
+    },
+    {
+      "value": "url",
+      "expanded": "URL",
+      "description": "This is the remote URL specifying the IEP Policy File that contains the IEP Policy you wish to use.",
+      "uuid": "015611af-92ef-545c-9540-fb0f38bafbcf"
+    },
+    {
+      "value": "iep_version",
+      "expanded": "IEP POLICY VERSION",
+      "description": "States the version of the IEP framework that has been used. Must be set to 2.0.",
+      "uuid": "35373537-b44a-5bb8-a0c2-6004e51582d2"
+    }
+  ],
+  "values": [
+    {
+      "predicate": "id_ref",
+      "entry": [
+        {
+          "value": "$text",
+          "expanded": "An id_ref value is required",
+          "uuid": "9f2fd194-61ed-5a2a-8cb8-3dd747e70c94"
+        }
+      ]
+    },
+    {
+      "predicate": "url",
+      "entry": [
+        {
+          "value": "$text",
+          "expanded": "A URL value is required",
+          "uuid": "7402495a-dabe-5a92-b15f-7bac2d11ecfe"
+        }
+      ]
+    },
+    {
+      "predicate": "iep_version",
+      "entry": [
+        {
+          "value": "2.0",
+          "expanded": "The IEP version value must be 2.0",
+          "uuid": "77d3076f-512c-5215-9647-bfabe559ddba"
+        }
+      ]
+    }
+  ],
+  "uuid": "de1aa9f3-96c4-557e-8487-3f08a63f7f05"
+}

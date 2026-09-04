@@ -1,0 +1,318 @@
+{# Datastore drawer, reshaped to v3's "Case files" panel.
+
+   OVERLAY, not a rebuild: every element id and every onclick below is the
+   one datastore.js already binds to - #ds_file_search is an ACE editor with
+   the filter grammar, #ds-tree-root is where build_ds_tree() appends, the
+   two move-destination banners and the .btn-ds-bulk buttons are the bulk
+   flow, and the per-folder "+" dropdown inside the tree is untouched. Only
+   the chrome around them changed.
+#}
+<style>
+/* --- the drawer ---------------------------------------------------------
+   Upstream ships .ds-sidebar as a 60%-wide white overlay. v3 uses a narrow
+   dark right-hand drawer, so the panel is re-shaped here rather than in
+   atlantis.css (vendor file). Selectors are id-scoped so they outrank the
+   class rules, including the mobile `width: 100%` one, without !important. */
+#ds-sidebar-container {
+    width: min(94vw, 460px);
+    right: calc(-1 * min(94vw, 460px));
+    padding: 0;
+    background: #101017;
+    border-left: 1px solid rgba(255,255,255,0.08);
+    box-shadow: -8px 0 28px rgba(0,0,0,0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: right 0.18s ease-out;
+}
+.ds_sidebar_open #ds-sidebar-container { right: 0; width: min(94vw, 460px); padding: 0; }
+#ds-sidebar-container .ds-sidebar-wrapper {
+    display: flex; flex-direction: column; height: 100%; min-height: 0;
+}
+
+/* --- v3 header ---------------------------------------------------------- */
+.iris-ds-head {
+    padding: 14px 14px 12px 16px; display: flex; align-items: flex-start;
+    gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+}
+.iris-ds-icon { color: #7dd3fc; margin-top: 2px; }
+.iris-ds-titles { flex: 1 1 auto; min-width: 0; }
+.iris-ds-eyebrow {
+    font-size: 9.5px; letter-spacing: .7px; text-transform: uppercase;
+    color: #8b8b9e; font-weight: 600;
+}
+.iris-ds-title { font-size: 15px; font-weight: 600; color: #e8e6f0; }
+.iris-ds-hbtn {
+    background: none; border: 0; color: #8b8b9e; cursor: pointer;
+    padding: 3px 5px; line-height: 1; border-radius: 5px;
+}
+.iris-ds-hbtn:hover { color: #e8e8ee; background: rgba(255,255,255,0.06); }
+.iris-ds-hbtn.is-on { color: #7dd3fc; background: rgba(125,211,252,0.14); }
+
+/* --- search ------------------------------------------------------------- */
+.iris-ds-searchrow {
+    padding: 10px 14px; display: flex; align-items: center; gap: 7px;
+    border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
+}
+/* #ds_file_search is an ACE editor instance - it needs a real box with a
+   height, not a bare input. */
+#ds-sidebar-container #ds_file_search {
+    flex: 1 1 auto; min-width: 0; height: 30px;
+    background: #1b1b22 !important;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 7px; padding: 5px 9px !important;
+    color: #d7d7e4;
+}
+/* datastore.js mounts this editor with ace/theme/tomorrow - a LIGHT theme -
+   so its own layers repaint white inside the dark drawer unless they are
+   overridden here. Restyling in CSS rather than swapping the theme in the
+   module keeps the change to this panel and avoids depending on a dark theme
+   file being present in the bundle. */
+#ds-sidebar-container #ds_file_search .ace_content,
+#ds-sidebar-container #ds_file_search .ace_text-layer,
+#ds-sidebar-container #ds_file_search .ace_line { color: #d7d7e4; }
+#ds-sidebar-container #ds_file_search .ace_gutter,
+#ds-sidebar-container #ds_file_search .ace_scroller,
+#ds-sidebar-container #ds_file_search.ace-tomorrow,
+#ds-sidebar-container #ds_file_search .ace-tomorrow { background: transparent !important; }
+#ds-sidebar-container #ds_file_search .ace_cursor { color: #d4c4ff; }
+#ds-sidebar-container #ds_file_search .ace_placeholder { color: #6f6f83; }
+#ds-sidebar-container #ds_file_search .ace_gutter { display: none; }
+.iris-ds-sbtn {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
+    color: #a9a9bd; font-size: 11px; padding: 4px 10px; border-radius: 7px;
+    cursor: pointer; white-space: nowrap;
+}
+.iris-ds-sbtn:hover { color: #e8e8ee; }
+
+/* --- bulk bar ----------------------------------------------------------- */
+.iris-ds-bulkbar {
+    padding: 8px 14px; display: flex; gap: 7px; align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
+}
+.iris-ds-note {
+    padding: 10px 14px; font-size: 11.5px; color: #d4c4ff;
+    background: rgba(139,92,246,0.10);
+    border-bottom: 1px solid rgba(139,92,246,0.25); flex-shrink: 0;
+}
+.iris-ds-note .btn { margin-left: 6px; }
+
+/* --- tree --------------------------------------------------------------- */
+#ds-tree-container {
+    flex: 1 1 auto; overflow-y: auto; padding: 10px 8px 20px 8px;
+    background: transparent; border: 0; margin: 0;
+}
+#ds-tree-container ul { list-style: none; margin: 0; padding-left: 14px; }
+#ds-tree-container > ul { padding-left: 2px; }
+/* v3 has no connector rules - upstream's .tree draws them with borders. */
+#ds-tree-container li { position: relative; padding: 0; margin: 0; border: 0; }
+#ds-tree-container li::before, #ds-tree-container li::after { display: none !important; }
+#ds-tree-container li > span {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 9px; border-radius: 7px; color: #cfcfe0; font-size: 12.5px;
+    cursor: pointer;
+}
+#ds-tree-container li > span:hover { background: rgba(255,255,255,0.06); color: #fff; }
+#ds-tree-container li > span i { color: #8ab4f8; }
+.ds-folder-menu {
+    color: #6f6f83; margin-left: 4px; padding: 3px; border-radius: 5px;
+}
+.ds-folder-menu:hover { color: #e8e8ee; background: rgba(255,255,255,0.08); }
+/* Chevron + ROOT badge are added by the enhancer below, never by
+   datastore.js - the tree markup it emits is untouched. */
+.iris-ds-chev {
+    display: inline-flex; width: 15px; justify-content: center;
+    color: #6f6f83; cursor: pointer; font-size: 10px; user-select: none;
+}
+.iris-ds-chev:hover { color: #e8e8ee; }
+.iris-ds-root {
+    font-size: 8.5px; letter-spacing: .5px; text-transform: uppercase;
+    padding: 1px 5px; border-radius: 4px; margin-left: 6px;
+    background: rgba(255,255,255,0.07); color: #9a9ab0; font-weight: 600;
+}
+</style>
+
+<div class="ds-sidebar" id="ds-sidebar-container">
+    <div class="ds-sidebar-wrapper">
+
+        <div class="iris-ds-head">
+            <span class="iris-ds-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+            </span>
+            <div class="iris-ds-titles">
+                <div class="iris-ds-eyebrow">Datastore</div>
+                <div class="iris-ds-title">Case files</div>
+            </div>
+            <button type="button" class="iris-ds-hbtn" id="iris-ds-addfolder" title="Add a folder at the root">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+            </button>
+            <button type="button" class="iris-ds-hbtn" id="iris-ds-addfiles" title="Add files at the root">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button type="button" class="iris-ds-hbtn btn-ds-bulk-selector" title="Select files"
+                    id="iris-ds-select" onclick="toggle_select_file();">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button type="button" class="iris-ds-hbtn" title="Refresh" onclick="refresh_ds();">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+            </button>
+            <a href="#" class="iris-ds-hbtn close-ds-sidebar" title="Close" onclick="hide_datastore();return false;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </a>
+        </div>
+
+        {# Move-destination banners: same ids datastore.js toggles. #}
+        <div class="iris-ds-note" id="msg_select_destination_folder" style="display:none;">
+            Select the files and destination folder below.
+            <span id="msg_mv_files" class="text-primary"></span> files selected to be moved to
+            <span id="msg_mv_dst_folder" class="text-primary"></span>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="validate_ds_file_move();">Validate</button>
+            <button type="button" class="btn btn-sm btn-outline-dark" onclick="reset_ds_file_view();load_datastore();">Cancel</button>
+        </div>
+        <div class="iris-ds-note" id="msg_select_destination_folder_folder" style="display:none;">
+            Select a destination folder below.
+            <span id="msg_mv_folder" class="text-primary"></span> selected to be moved to
+            <span id="msg_mv_dst_folder_folder" class="text-primary"></span>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="validate_ds_folder_move();">Validate</button>
+            <button type="button" class="btn btn-sm btn-outline-dark" onclick="reset_ds_file_view();load_datastore();">Cancel</button>
+        </div>
+
+        <div class="iris-ds-searchrow">
+            {# ACE editor mount - keeps the filter grammar and autocomplete. #}
+            <div id="ds_file_search"></div>
+            <button class="iris-ds-sbtn" id="btn_filter_ds_files" onclick="filter_ds_files();">Search</button>
+            <button class="iris-ds-sbtn" onclick="reset_ds_files_filter();">Reset</button>
+            <i class="fa-regular fa-circle-question iris-ds-hbtn" title="Filter help"
+               style="cursor:pointer;" onclick="show_ds_filter_help();"></i>
+        </div>
+
+        {# Bulk actions - revealed by toggle_select_file() via .btn-ds-bulk. #}
+        <div class="iris-ds-bulkbar" id="iris-ds-bulkbar" style="display:none;">
+            <button type="button" class="btn btn-sm btn-outline-dark btn-ds-bulk" style="display:none;" onclick="move_ds_file();">
+                <i class="fa-solid fa-arrow-right-arrow-left mr-1"></i> Move
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-ds-bulk" style="display:none;" onclick="delete_bulk_ds_file();">
+                <i class="fa fa-trash mr-1"></i> Delete
+            </button>
+        </div>
+
+        <div class="tree" id="ds-tree-container">
+            <ul id="ds-tree-root"></ul>
+        </div>
+
+    </div>
+</div>
+<div id="ds-sidebar-container-ctxmenu"></div>
+
+<script>
+/* v3 affordances the upstream tree markup does not emit: a collapse chevron
+   per folder and a ROOT badge on the top node.
+
+   Added by an ENHANCER that runs after build_ds_tree(), not by editing
+   datastore.js: the enhancer only INSERTS new elements, so every handler
+   datastore.js bound to the <span> and to the per-folder "+" dropdown keeps
+   working. Wrapping rather than modifying is the same monkey-patch idiom the
+   timeline page uses on update_event/delete_event. */
+(function () {
+    function enhance() {
+        var rootUl = document.getElementById('ds-tree-root');
+        if (!rootUl) { return; }
+
+        rootUl.querySelectorAll('li').forEach(function (li) {
+            var span = li.querySelector(':scope > span[data-node-id]');
+            if (!span) { return; }
+            var kids = li.querySelector(':scope > ul');
+
+            /* Guard: enhance() runs on every tree render. */
+            if (!span.previousElementSibling ||
+                !span.previousElementSibling.classList.contains('iris-ds-chev')) {
+                var chev = document.createElement('span');
+                chev.className = 'iris-ds-chev';
+                /* A folder with no children gets a blank of the same width so
+                   its label still lines up with its siblings'. */
+                chev.textContent = kids ? '▾' : '';
+                if (kids) {
+                    chev.addEventListener('click', function (ev) {
+                        ev.stopPropagation();
+                        var hidden = kids.style.display === 'none';
+                        kids.style.display = hidden ? '' : 'none';
+                        chev.textContent = hidden ? '▾' : '▸';
+                    });
+                }
+                li.insertBefore(chev, span);
+            }
+
+            /* The root is the only folder directly under #ds-tree-root. */
+            if (li.parentElement === rootUl &&
+                !span.querySelector('.iris-ds-root')) {
+                var badge = document.createElement('span');
+                badge.className = 'iris-ds-root';
+                badge.textContent = 'root';
+                span.appendChild(badge);
+                rootUl.setAttribute('data-root-node-id',
+                                    span.getAttribute('data-node-id'));
+            }
+        });
+    }
+
+    function rootId() {
+        var rootUl = document.getElementById('ds-tree-root');
+        return rootUl ? rootUl.getAttribute('data-root-node-id') : null;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        /* Wrap the global the datastore module declares, so a tree rendered
+           by any caller gets the same treatment. */
+        var orig = window.build_ds_tree;
+        if (typeof orig === 'function') {
+            window.build_ds_tree = function () {
+                var ret = orig.apply(this, arguments);
+                try { enhance(); } catch (e) { /* chrome only - never block the tree */ }
+                return ret;
+            };
+        }
+
+        /* Header add-buttons act on the root folder, whose id only exists
+           once the tree has rendered - so they resolve it at click time and
+           say so rather than doing nothing if it is not there yet. */
+        function rootAction(fn) {
+            return function () {
+                var id = rootId();
+                if (!id) {
+                    if (window.notify_error) {
+                        notify_error('The datastore tree has not loaded yet.');
+                    }
+                    return;
+                }
+                window[fn](id);
+            };
+        }
+        var af = document.getElementById('iris-ds-addfolder');
+        if (af) { af.addEventListener('click', rootAction('add_ds_folder')); }
+        var afl = document.getElementById('iris-ds-addfiles');
+        if (afl) { afl.addEventListener('click', rootAction('add_ds_multi_files')); }
+
+        /* Bulk bar follows the select toggle datastore.js already drives:
+           it shows .btn-ds-bulk buttons, so the bar mirrors their state. */
+        var sel = document.getElementById('iris-ds-select');
+        if (sel) {
+            sel.addEventListener('click', function () {
+                /* Mirror the ACTIVE CLASS, not the buttons' display:
+                   toggle_select_file() reveals them with jQuery .show(250),
+                   which animates, so display is still 'none' on the next
+                   tick and the bar would never open. It sets .active on
+                   .btn-ds-bulk-selector synchronously instead - and this
+                   header button carries that class, so it is told directly.
+                   The inline onclick is registered at parse time and so has
+                   already run by the time this listener does. */
+                window.setTimeout(function () {
+                    var on = sel.classList.contains('active');
+                    var bar = document.getElementById('iris-ds-bulkbar');
+                    if (bar) { bar.style.display = on ? 'flex' : 'none'; }
+                    sel.classList.toggle('is-on', on);
+                }, 0);
+            });
+        }
+    });
+})();
+</script>

@@ -1,0 +1,114 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Investigation Flows {% endblock title %}
+
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'investigation_flows' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+<form style="display:none;">{{ form.hidden_tag() }}</form>
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div>
+                    <div class="card-title">Investigation flows</div>
+                    <div class="text-muted"><small>Guided triage checklists, attached to alerts and/or alert clusters on match.</small></div>
+                </div>
+                <div></div>
+            </div>
+        </div>
+        <div class="card-body">
+
+                                <h2>Investigation Flows</h2>
+                                <p>Checklists auto-attached at ingest to matching <b>alerts</b> and/or to
+                                   <b>clusters</b> (via the alert that creates them). All matching flows attach;
+                                   priority orders display. Required steps show an amber banner — nothing blocks.</p>
+                                <p class="text-muted" style="font-size: 0.85rem;">&#9888; Steps belong to the
+                                   FLOW: editing a deployed flow changes every attached checklist. Progress on
+                                   kept steps survives edits; <b>removing a step removes its recorded progress
+                                   everywhere</b>.</p>
+
+                                <div class="mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="iris_flw_load();">Refresh</button>
+                                    <button type="button" class="btn btn-sm btn-primary ml-2" onclick="iris_flw_new();">New flow</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="iris_flw_deploy();">Deploy to existing</button>
+                                </div>
+                                <table class="table table-sm table-striped" id="iris-flw-table">
+                                    <thead><tr><th>Priority</th><th>Name</th><th>Target</th><th>Steps</th><th>Conditions</th><th>Enabled</th><th class="text-right">Actions</th></tr></thead>
+                                    <tbody id="iris-flw-body"><tr><td colspan="7" class="text-muted">Loading…</td></tr></tbody>
+                                </table>
+
+                                <div id="iris-flw-editor" class="border rounded p-3 mb-3" style="display: none;">
+                                    <h4 id="iris-flw-editor-title">New flow</h4>
+                                    <input type="hidden" id="fw-edit-id">
+                                    <div class="row mb-2">
+                                        <div class="col-md-5">
+                                            <label for="fw-name">Name</label>
+                                            <input type="text" class="form-control" id="fw-name" maxlength="256">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="fw-priority">Priority <small class="text-muted">asc</small></label>
+                                            <input type="number" class="form-control" id="fw-priority" value="100" min="1">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="fw-target">Attach to</label>
+                                            <select class="form-control" id="fw-target">
+                                                <option value="alert">Alerts</option>
+                                                <option value="cluster">Clusters</option>
+                                                <option value="both">Both</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 pt-4">
+                                            <div class="form-check">
+                                                <label class="form-check-label">
+                                                    <input class="form-check-input" type="checkbox" id="fw-enabled" checked>
+                                                    <span class="form-check-sign">Enabled</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="fw-description">Description</label>
+                                        <input type="text" class="form-control" id="fw-description">
+                                    </div>
+                                    <label>Steps <small class="text-muted">— order is display order; * = required (advisory)</small></label>
+                                    <div id="fw-steps" class="mb-1"></div>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary mb-2" onclick="iris_flw_step_add();">+ step</button>
+                                    <label>Match conditions <small class="text-muted">— evaluated on the triggering alert</small></label>
+                                    <div id="fw-conditions" class="mb-2"></div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4">
+                                            <label for="fw-test-lastn">Dry-run against newest N alerts</label>
+                                            <input type="number" class="form-control" id="fw-test-lastn" value="20" min="1" max="200">
+                                        </div>
+                                        <div class="col-md-8 pt-4">
+                                            <button type="button" class="btn btn-sm btn-dark" onclick="iris_flw_test();">Test conditions</button>
+                                            <span id="fw-test-result" class="ml-2"></span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="iris_flw_save();">Save flow</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="iris_flw_cancel();">Cancel</button>
+                                        <span id="fw-save-result" class="ml-2"></span>
+                                    </div>
+                                </div>
+
+        </div>
+    </div>
+</div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/js/iris/condition_builder.js"></script>
+<script src="/static/assets/js/iris/manage.flows.js"></script>
+<script>document.addEventListener('DOMContentLoaded', function () { iris_flw_load(); });</script>
+{% endblock javascripts %}

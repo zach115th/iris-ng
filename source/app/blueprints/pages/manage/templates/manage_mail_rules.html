@@ -1,0 +1,136 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Mail Rules {% endblock title %}
+
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'mail_rules' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+<form style="display:none;">{{ form.hidden_tag() }}</form>
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div>
+                    <div class="card-title">Mail rules</div>
+                    <div class="text-muted"><small>Ordered rules that turn incoming email into alerts. Configure the IMAP mailbox on the <a href="/manage/settings?cid={{ session['current_case'].case_id }}">Server settings</a> page.</small></div>
+                </div>
+                <div><button type="button" class="btn btn-sm btn-dark ml-2" onclick="iris_mail_poll_now();">Poll now</button></div>
+            </div>
+        </div>
+        <div class="card-body">
+                                <h2 class="mt-4">Mail Rules</h2>
+                                <p>Evaluated in priority order (lowest first); the first enabled match wins. A <b>fallback</b> rule matches anything and always runs after every ordinary rule. Rules decide which customer an alert lands under.</p>
+                                <div class="mb-2">
+                                    <button type="button" class="btn btn-sm btn-dark" onclick="iris_mail_rule_new();">Add rule</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="iris_mail_rules_load();">Refresh</button>
+                                </div>
+                                <table class="table table-sm table-striped" id="iris-mail-rules-table">
+                                    <thead><tr><th>Priority</th><th>Name</th><th>Action</th><th>Customer</th><th>Conditions</th><th>Enabled</th><th>Fallback</th><th></th></tr></thead>
+                                    <tbody id="iris-mail-rules-body"><tr><td colspan="8" class="text-muted">Loading…</td></tr></tbody>
+                                </table>
+
+                                <div id="iris-mail-rule-editor" style="display:none; border:1px solid rgba(139,92,246,0.35); border-radius:6px; padding:14px;" class="mb-3">
+                                    <h4 id="iris-mail-rule-editor-title">New rule</h4>
+                                    <input type="hidden" id="mr-edit-id" value="">
+                                    <div class="row mb-2">
+                                        <div class="col-md-4">
+                                            <label for="mr-name">Name</label>
+                                            <input type="text" class="form-control" id="mr-name">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="mr-priority">Priority</label>
+                                            <input type="number" class="form-control" id="mr-priority" value="100">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="mr-action">Action</label>
+                                            <select class="form-control" id="mr-action">
+                                                <option value="create_alert">Create alert</option>
+                                                <option value="ignore">Ignore</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 form-check pt-4">
+                                            <label class="form-check-label"><input class="form-check-input" type="checkbox" id="mr-enabled" checked><span class="form-check-sign">Enabled</span></label>
+                                        </div>
+                                        <div class="col-md-2 form-check pt-4">
+                                            <label class="form-check-label"><input class="form-check-input" type="checkbox" id="mr-fallback"><span class="form-check-sign">Fallback</span></label>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4">
+                                            <label for="mr-customer">Customer</label>
+                                            <select class="form-control" id="mr-customer">
+                                                {% for cust in mail_customers %}<option value="{{ cust.client_id }}">{{ cust.name }}</option>{% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="mr-severity">Default severity</label>
+                                            <select class="form-control" id="mr-severity">
+                                                <option value="">(lowest)</option>
+                                                {% for sev in mail_severities %}<option value="{{ sev.severity_id }}">{{ sev.severity_name }}</option>{% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="mr-classification">Default classification</label>
+                                            <select class="form-control" id="mr-classification">
+                                                <option value="">(none)</option>
+                                                {% for cls in mail_classifications %}<option value="{{ cls.id }}">{{ cls.name }}</option>{% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <label for="mr-title-template">Title template <small class="text-muted">— {subject} {from} {to}</small></label>
+                                            <input type="text" class="form-control" id="mr-title-template" placeholder="[Mail] {subject}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="mr-source">Alert source label</label>
+                                            <input type="text" class="form-control" id="mr-source" value="Mail">
+                                        </div>
+                                    </div>
+                                    <label>Conditions <small class="text-muted">— all must match (AND). Empty list matches everything.</small></label>
+                                    <div id="mr-conditions"></div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mb-2" onclick="iris_mail_cond_add();">+ condition</button>
+                                    <div class="row mb-2">
+                                        <div class="col-md-8">
+                                            <label for="mr-test-sample">Test sample <small class="text-muted">— a subject line to match against</small></label>
+                                            <input type="text" class="form-control" id="mr-test-sample" placeholder="[ALERT] something suspicious">
+                                        </div>
+                                        <div class="col-md-4 pt-4">
+                                            <button type="button" class="btn btn-sm btn-dark" onclick="iris_mail_rule_test();">Test conditions</button>
+                                            <span id="mr-test-result" class="ml-2"></span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="iris_mail_rule_save();">Save rule</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="iris_mail_rule_cancel();">Cancel</button>
+                                        <span id="mr-save-result" class="ml-2"></span>
+                                    </div>
+                                </div>
+
+                                <h2 class="mt-4">Recent Ingest Activity</h2>
+                                <div class="mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="iris_mail_log_load();">Refresh</button>
+                                </div>
+                                <table class="table table-sm table-striped" id="iris-mail-log-table">
+                                    <thead><tr><th>Processed</th><th>From</th><th>Subject</th><th>Outcome</th><th>Rule</th><th>Alert</th><th>Error</th></tr></thead>
+                                    <tbody id="iris-mail-log-body"><tr><td colspan="7" class="text-muted">No messages ingested yet.</td></tr></tbody>
+                                </table>
+
+        </div>
+    </div>
+</div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/js/iris/manage.mail.js"></script>
+<script>document.addEventListener('DOMContentLoaded', function () { iris_mail_rules_load(); iris_mail_log_load(); });</script>
+{% endblock javascripts %}

@@ -1,0 +1,1331 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Correlation {% endblock title %}
+
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+{# iris-next: the cross-case correlation workspace, moved VERBATIM
+   from the dashboard Correlation tab (sidebar section: Intel). The
+   pane wrapper keeps its historical id and gains `show active` so it
+   renders as a normal page region — the script's own visibility
+   test (classList.contains('show')) then draws the D3 graph
+   immediately, and its shown.bs.tab binding matches nothing here (a
+   jQuery no-op). The correlation ENGINE and every
+   /api/v2/correlation/* endpoint are untouched — program
+   invariant. #}
+<div class="page-inner">
+    <form style="display:none;">{{ form.hidden_tag() }}</form>
+    <h4 class="page-title mb-3">Cross-case correlation</h4>
+    {# iris-next: Correlation pane — IOC cross-case overlap table + force-directed graph + campaign tag tool. #}
+    <div class="tab-pane fade show active" id="iris-dash-correlation" role="tabpanel">
+
+      {# v2 Phase 6: the correlation WORKSPACE is migrating into War Rooms.
+         The pointer is non-destructive on purpose: campaign tagging, STIX and
+         MISP push now live on rooms, but the graph + per-IOC drawer views have
+         not migrated yet, so this tab keeps serving them. The ENGINE and every
+         /api/v2/correlation/* endpoint are unchanged. #}
+      <div class="row mb-3">
+        <div class="col-md-12">
+          <div class="d-flex align-items-center p-3"
+               style="border: 1px solid rgba(139,92,246,0.35); border-radius: 8px; background: rgba(139,92,246,0.07);">
+            <div style="flex: 1 1 auto;">
+              <strong>Correlated case groups can now be promoted to War Rooms.</strong>
+              <span class="text-muted">A room carries the cluster's cases, narrative, campaign tag,
+              shared-IOC view, STIX export and MISP publishing — plus chat, members and SitReps.</span>
+            </div>
+            <div style="flex-shrink: 0;">
+              <a class="btn btn-sm btn-primary"
+                 href="/war-rooms?cid={{ session['current_case'].case_id }}">Open War Rooms &rarr; Discovery</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Controls row #}
+      <div class="row mb-3">
+        <div class="col-md-12 d-flex align-items-center flex-wrap" style="gap: 10px;">
+          {# Quick range buttons #}
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="30">30d</button>
+            <button type="button" class="btn btn-dark iris-corr-range-btn active" data-days="60">60d</button>
+            <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="90">90d</button>
+            <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="180">180d</button>
+            <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="0">All time</button>
+          </div>
+          {# Custom date range #}
+          <label class="mb-0 small text-muted">From</label>
+          <input type="date" id="iris-corr-start" class="form-control form-control-sm" style="width:140px;">
+          <label class="mb-0 small text-muted">To</label>
+          <input type="date" id="iris-corr-end" class="form-control form-control-sm" style="width:140px;">
+          {# Min-shared threshold #}
+          <label class="mb-0 small text-muted ml-2" title="How many distinct IOC values two cases must have in common before they are linked. This governs CLUSTERING only - the Shared IOCs table below always lists every IOC appearing in 2 or more cases.">Min shared IOCs <span class="text-muted">per case pair</span></label>
+          <input type="number" id="iris-corr-min-shared" class="form-control form-control-sm" style="width:70px;" value="2" min="1" max="50">
+          <button class="btn btn-primary btn-sm" onclick="iris_correlation_run();">
+            <i class="fas fa-sync-alt mr-1"></i> Refresh
+          </button>
+          <span id="iris-corr-status" class="small text-muted ml-2"></span>
+        </div>
+      </div>
+
+      {# Summary cards #}
+      <div class="row mb-3" id="iris-corr-summary-row" style="display:none;">
+        <div class="col-md-3">
+          <div class="card card-stats card-round">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-5"><div class="icon-big text-center"><i class="fas fa-link text-primary"></i></div></div>
+                <div class="col-7 col-stats">
+                  <div class="numbers">
+                    <p class="card-category">Shared IOCs</p>
+                    <h4 class="card-title" id="iris-corr-stat-iocs">—</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card card-stats card-round">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-5"><div class="icon-big text-center"><i class="fas fa-sitemap text-warning"></i></div></div>
+                <div class="col-7 col-stats">
+                  <div class="numbers">
+                    <p class="card-category">Clusters</p>
+                    <h4 class="card-title" id="iris-corr-stat-clusters">—</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card card-stats card-round">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-5"><div class="icon-big text-center"><i class="fas fa-folder-open text-success"></i></div></div>
+                <div class="col-7 col-stats">
+                  <div class="numbers">
+                    <p class="card-category">Correlated cases</p>
+                    <h4 class="card-title" id="iris-corr-stat-cases">—</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card card-stats card-round">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-5"><div class="icon-big text-center"><i class="fas fa-tag text-danger"></i></div></div>
+                <div class="col-7 col-stats">
+                  <div class="numbers">
+                    <p class="card-category">Untagged clusters</p>
+                    <h4 class="card-title" id="iris-corr-stat-untagged">—</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Cluster cards + campaign tag tool #}
+      <div class="row mb-3" id="iris-corr-clusters-row" style="display:none;">
+        <div class="col-md-12">
+          <section class="card">
+            <div class="card-header">
+              <div class="card-title">Case clusters
+                <small class="text-muted ml-2">Cases are linked when a <em>pair</em> of them shares at least the threshold number of distinct IOCs; linked cases form a cluster. The count shown per cluster is every IOC held by 2 or more of its cases. Apply a campaign tag to all cases in a cluster with one click.</small>
+              </div>
+            </div>
+            <div class="card-body" id="iris-corr-clusters-body">
+              <p class="text-muted">No clusters found.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {# IOC overlap table #}
+      <div class="row mb-3" id="iris-corr-table-row" style="display:none;">
+        <div class="col-md-12">
+          <section class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap">
+              <div class="card-title mb-0">Shared IOCs
+                <small class="text-muted ml-2" id="iris-corr-table-subtitle">The IOCs behind the clusters above &mdash; each one is shared by 2 or more cases of a cluster, and every IOC here is a reason those cases are linked. Raising the threshold requires a case <em>pair</em> to have <em>more indicators in common</em> before it links; it does not require each individual indicator to appear in more cases.</small>
+              </div>
+              <div id="iris-corr-filter-badge" style="display:none;">
+                <span class="badge badge-light border" style="font-size:11px;padding:4px 8px;border-color:rgba(139,92,246,0.5)!important;">
+                  <i class="fas fa-filter mr-1" style="color:rgba(139,92,246,0.8);"></i>
+                  <span id="iris-corr-filter-label">Cluster</span>
+                </span>
+                <button class="btn btn-sm btn-link text-muted ml-1 p-0" id="iris-corr-filter-clear" title="Show all IOCs" style="font-size:11px;">
+                  Clear filter
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover table-sm" id="iris-corr-table">
+                  <thead>
+                    <tr>
+                      <th>IOC value</th>
+                      <th>Type</th>
+                      <th title="Most restrictive TLP this indicator carries across the cases it appears in. Only GREEN and CLEAR are included in a STIX export or a MISP push.">TLP</th>
+                      <th>Cases</th>
+                      <th>Count</th>
+                    </tr>
+                  </thead>
+                  <tbody id="iris-corr-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {# Force-directed graph #}
+      <div class="row mb-3" id="iris-corr-graph-row" style="display:none;">
+        <div class="col-md-12">
+          <section class="card">
+            <div class="card-header">
+              <div class="card-title">Case relationship graph
+                <small class="text-muted ml-2">Nodes = cases, edges = shared IOCs (thicker = more shared). Click a node to open the case.</small>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <div id="iris-corr-graph" style="position:relative; height:480px; width:100%;"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+    </div>
+    {# /Correlation pane #}
+
+    {# the per-IOC drawer, shared with the war-room Correlation tab #}
+    {% include 'includes/ioc_context_drawer.html' %}
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+    (function () {
+        'use strict';
+
+        var CORR = {
+            loaded: false,
+            loading: false,
+            d3Loaded: false,
+            report: null,
+            _narrativeCache: {},   // cluster_id → {suggested_name, narrative, confidence}
+            _narrativeLoading: {}, // cluster_id → true while in-flight
+        };
+
+        // ----------------------------------------------------------------
+        // Entry point — called by the tab nav onclick
+        // ----------------------------------------------------------------
+        window.iris_correlation_on_show = function () {
+            if (!CORR.loaded && !CORR.loading) {
+                iris_correlation_run();
+            }
+        };
+
+        // ----------------------------------------------------------------
+        // Quick-range buttons
+        // ----------------------------------------------------------------
+        $(document).on('click', '.iris-corr-range-btn', function () {
+            $('.iris-corr-range-btn').removeClass('btn-dark active').addClass('btn-outline-dark');
+            $(this).removeClass('btn-outline-dark').addClass('btn-dark active');
+
+            var days = parseInt($(this).data('days'), 10);
+            var end = new Date();
+            var start = new Date();
+            if (days > 0) {
+                start.setDate(start.getDate() - days);
+                $('#iris-corr-start').val(start.toISOString().slice(0, 10));
+                $('#iris-corr-end').val(end.toISOString().slice(0, 10));
+            } else {
+                $('#iris-corr-start').val('');
+                $('#iris-corr-end').val('');
+            }
+        });
+
+        // Pre-fill 60d range on page load
+        (function () {
+            var end = new Date();
+            var start = new Date();
+            start.setDate(start.getDate() - 60);
+            $('#iris-corr-start').val(start.toISOString().slice(0, 10));
+            $('#iris-corr-end').val(end.toISOString().slice(0, 10));
+        })();
+
+        // ----------------------------------------------------------------
+        // Main fetch + render
+        // ----------------------------------------------------------------
+        window.iris_correlation_run = function () {
+            if (CORR.loading) return;
+            CORR.loading = true;
+            CORR.loaded = false;
+
+            var minShared = parseInt($('#iris-corr-min-shared').val(), 10) || 2;
+            var startDate = $('#iris-corr-start').val() || '';
+            var endDate   = $('#iris-corr-end').val() || '';
+
+            var params = { min_shared: minShared };
+            if (startDate) params.start_date = startDate;
+            if (endDate)   params.end_date   = endDate;
+
+            $('#iris-corr-status').text('Loading…');
+            $('#iris-corr-summary-row, #iris-corr-clusters-row, #iris-corr-table-row, #iris-corr-graph-row').hide();
+
+            $.ajax({
+                url: '/api/v2/correlation/report',
+                method: 'GET',
+                data: params,
+                dataType: 'json',
+            }).done(function (resp) {
+                CORR.loading = false;
+                CORR.loaded = true;
+                CORR.report = resp;
+                iris_corr_render(resp);
+                $('#iris-corr-status').text('Updated ' + new Date().toLocaleTimeString());
+            }).fail(function (xhr) {
+                CORR.loading = false;
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Request failed';
+                $('#iris-corr-status').text('Error: ' + msg);
+            });
+        };
+
+        // ----------------------------------------------------------------
+        // Render
+        // ----------------------------------------------------------------
+        function iris_corr_esc(s) {
+            return $('<div>').text(String(s || '')).html();
+        }
+
+        // IOC overlap confidence pill — rendered from server-computed ioc_confidence
+        function iris_corr_confidence_pill(cl) {
+            var conf = typeof cl.ioc_confidence === 'number' ? cl.ioc_confidence : null;
+            if (conf === null) return '';
+            var pct = Math.round(conf * 100);
+            // Colour tiers: ≥80% blue-violet (strong), ≥55% muted blue, <55% grey
+            var style;
+            if (pct >= 80) {
+                style = 'background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.45);color:#a5b4fc;';
+            } else if (pct >= 55) {
+                style = 'background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.38);color:#93c5fd;';
+            } else {
+                style = 'background:rgba(107,114,128,0.12);border:1px solid rgba(107,114,128,0.35);color:#9ca3af;';
+            }
+            var count = cl.shared_ioc_count || 0;
+            /* Confidence is IDF- and credibility-weighted, not a raw count: a
+               rare indicator counts for far more than a ubiquitous one, and
+               noise-flagged IOCs count for little. Surface the derived figures
+               so the number is inspectable rather than opaque. */
+            var parts = [pct + '% cluster confidence'];
+            parts.push(count + ' shared IOC(s)');
+            if (typeof cl.distinctive_evidence === 'number') {
+                parts.push(cl.distinctive_evidence + ' effective distinctive IOC(s) after weighting by rarity and credibility');
+            }
+            if (typeof cl.cohesion === 'number') {
+                parts.push('graph cohesion ' + Math.round(cl.cohesion * 100) + '%'
+                    + (cl.cohesion < 0.999 ? ' — not all case pairs overlap directly' : ' — every case pair overlaps directly'));
+            }
+            if (typeof cl.min_edge_weight === 'number') {
+                parts.push('weakest link ' + cl.min_edge_weight + ' shared IOC(s)');
+            }
+            var tooltip = iris_corr_esc(parts.join(' · '));
+            return '<span class="ml-1" title="' + tooltip + '" style="'
+                + 'display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;'
+                + style
+                + 'cursor:default;vertical-align:middle;">'
+                + '⬡ ' + pct + '% conf'
+                + '</span>';
+        }
+
+        // Decay freshness pill — rendered from server-computed decay_label / decay_score / decay_detail
+        function iris_corr_decay_pill(cl) {
+            var label = cl.decay_label || '';
+            var score = typeof cl.decay_score === 'number' ? cl.decay_score : null;
+            var detail = cl.decay_detail || '';
+            if (!label) return '';
+
+            var cfg = {
+                'Active': { bg: 'rgba(34,197,94,0.15)',  border: 'rgba(34,197,94,0.45)',  color: '#86efac', icon: '●' },
+                'Aging':  { bg: 'rgba(234,179,8,0.12)',  border: 'rgba(234,179,8,0.40)',  color: '#fde047', icon: '◑' },
+                'Stale':  { bg: 'rgba(107,114,128,0.12)', border: 'rgba(107,114,128,0.35)', color: '#9ca3af', icon: '○' },
+            };
+            var c = cfg[label] || cfg['Stale'];
+            var scoreStr = score !== null ? ' · ' + Math.round(score * 100) + '%' : '';
+            var tooltip = iris_corr_esc(label + (scoreStr ? ' (' + Math.round(score * 100) + '%)' : '') + ' — ' + detail);
+            return '<span class="ml-1" title="' + tooltip + '" style="'
+                + 'display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;'
+                + 'background:' + c.bg + ';border:1px solid ' + c.border + ';color:' + c.color + ';'
+                + 'cursor:default;vertical-align:middle;">'
+                + c.icon + ' ' + iris_corr_esc(label) + scoreStr
+                + '</span>';
+        }
+
+        // Short 6-char hex hash of the narrative text — lets analysts tell at a
+        // glance whether a Re-run produced different output without reading word-for-word.
+        function iris_corr_narrative_hash(s) {
+            var h = 5381;
+            for (var i = 0; i < s.length; i++) {
+                h = ((h << 5) + h) ^ s.charCodeAt(i);
+                h = h >>> 0; // keep unsigned 32-bit
+            }
+            return h.toString(16).padStart(8, '0').slice(0, 6);
+        }
+
+        function iris_corr_render(r) {
+            // Reset any active cluster filter so it doesn't bleed into the freshly-rendered table
+            CORR._activeClusterFilter = null;
+            CORR._clusterPairs = {};  // cluster_id → [{ioc_value, ioc_type_id}]
+            $('#iris-corr-filter-badge').hide();
+            $('#iris-corr-table-subtitle').show();
+
+            var pairs    = r.pairs    || [];
+            var clusters = r.clusters || [];
+            var caseMeta = r.case_meta || {};
+
+            /* The Shared IOCs table shows the IOCs actually BEHIND the clusters at
+               the current threshold: an IOC qualifies when 2+ cases of a single
+               surviving cluster carry it. This is the same rule the server uses for
+               a cluster's shared_ioc_count, so the table and the cluster cards can
+               never disagree, and the threshold keeps one meaning throughout the
+               tab — "what is linked right now".
+               `pairs` stays intact for the graph, which has its own cluster filter. */
+            var clusterSets = clusters.map(function (cl) { return new Set(cl.case_ids); });
+            var visiblePairs = pairs.filter(function (p) {
+                return clusterSets.some(function (s) {
+                    var hits = 0;
+                    for (var i = 0; i < p.case_ids.length; i++) {
+                        if (s.has(p.case_ids[i])) { hits++; }
+                    }
+                    return hits >= 2;
+                });
+            });
+
+            // Summary cards — counted over the same set the table shows, so the
+            // stat above the table can never contradict the rows beneath it.
+            var allCaseIds = new Set();
+            clusters.forEach(function (cl) { cl.case_ids.forEach(function (c) { allCaseIds.add(c); }); });
+            var untagged = clusters.filter(function (cl) {
+                return !cl.case_ids.every(function (cid) {
+                    var tags = (caseMeta[cid] || {}).tags || [];
+                    return tags.indexOf(cl.suggested_campaign_tag) !== -1;
+                });
+            }).length;
+
+            $('#iris-corr-stat-iocs').text(visiblePairs.length);
+            $('#iris-corr-stat-clusters').text(clusters.length);
+            $('#iris-corr-stat-cases').text(allCaseIds.size);
+            $('#iris-corr-stat-untagged').text(untagged);
+            $('#iris-corr-summary-row').show();
+
+            // Cluster cards
+            var clusterHtml = '';
+            if (clusters.length === 0) {
+                clusterHtml = '<p class="text-muted">No clusters meeting the threshold. Try reducing "Min shared IOCs" or widening the date range.</p>';
+            } else {
+                clusters.forEach(function (cl) {
+                    // Pairs whose case_ids are a subset of this cluster (= shared within cluster).
+                    // Stored on CORR._clusterPairs to avoid JSON-in-HTML-attribute encoding issues.
+                    var memberSet = new Set(cl.case_ids);
+                    var clusterPairs = pairs.filter(function (p) {
+                        return p.case_ids.every(function (cid) { return memberSet.has(cid); });
+                    }).map(function (p) {
+                        return { ioc_value: p.ioc_value, ioc_type_id: p.ioc_type_id };
+                    });
+                    CORR._clusterPairs[cl.cluster_id] = clusterPairs;
+
+                    var caseChips = cl.case_ids.map(function (cid) {
+                        var meta = caseMeta[cid] || {};
+                        var label = '#' + cid + (meta.name ? ' – ' + iris_corr_esc(meta.name) : '');
+                        var client = meta.client ? ' <span class="text-muted small">(' + iris_corr_esc(meta.client) + ')</span>' : '';
+                        return '<a href="/case?cid=' + cid + '" class="badge badge-light border mr-1" target="_blank">' + label + client + '</a>';
+                    }).join('');
+
+                    var iocChips = cl.shared_iocs.slice(0, 8).map(function (v) {
+                        return '<code class="mr-1 small">' + iris_corr_esc(v) + '</code>';
+                    }).join('') + (cl.shared_iocs.length > 8 ? '<span class="text-muted small">+' + (cl.shared_iocs.length - 8) + ' more</span>' : '');
+
+                    // Safe cluster_id for DOM id (already a short hex string, but be defensive)
+                    var safeId = cl.cluster_id.replace(/[^a-zA-Z0-9-]/g, '');
+
+                    clusterHtml += '<div class="card card-body mb-2 p-3 iris-corr-cluster-card"'
+                        + ' style="border-left: 3px solid rgba(139,92,246,0.6); cursor:pointer;"'
+                        + ' data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '"'
+                        + ' data-case-ids="' + iris_corr_esc(JSON.stringify(cl.case_ids)) + '"'
+                        + ' title="Click to filter Shared IOCs to this cluster">'
+                        + '<div class="d-flex align-items-start justify-content-between">'
+                        + '<div style="min-width:0;flex:1 1 auto;">'
+                        + '<strong>Cluster ' + iris_corr_esc(cl.cluster_id) + '</strong>'
+                        + ' <span class="badge badge-secondary ml-1">' + cl.case_ids.length + ' cases</span>'
+                        + ' <span class="badge badge-info ml-1" title="Distinct IOC values shared across cases in this cluster">' + cl.shared_ioc_count + ' shared IOC(s)</span>'
+                        + iris_corr_decay_pill(cl)
+                        + iris_corr_confidence_pill(cl)
+                        + '<div class="mt-1">' + caseChips + '</div>'
+                        + '<div class="mt-1 text-muted small">Shared values: ' + iocChips + '</div>'
+                        + '</div>'
+                        + '<div class="ml-3 mt-1 text-right" style="min-width:220px;flex-shrink:0;">'
+                        + '<code class="small d-block mb-1" title="Suggested campaign tag">' + iris_corr_esc(cl.suggested_campaign_tag) + '</code>'
+                        + '<div class="d-flex flex-column align-items-end" style="gap:6px;">'
+                        + (cl.case_ids.every(function (cid) {
+                            var tags = (caseMeta[cid] || {}).tags || [];
+                            return tags.indexOf(cl.suggested_campaign_tag) !== -1;
+                          })
+                          ? '<span class="badge badge-success" style="font-size:12px;padding:6px 10px;"><i class="fas fa-check mr-1"></i>Tagged</span>'
+                          : '<button class="btn btn-sm btn-outline-primary iris-corr-apply-tag-btn"'
+                            + ' data-case-ids="' + iris_corr_esc(JSON.stringify(cl.case_ids)) + '"'
+                            + ' data-tag="' + iris_corr_esc(cl.suggested_campaign_tag) + '"'
+                            + ' data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '">'
+                            + '<i class="fas fa-tag mr-1"></i> Apply to ' + cl.case_ids.length + ' case(s)'
+                            + '</button>'
+                        )
+                        + '<button class="btn btn-sm btn-outline-secondary iris-corr-filter-btn"'
+                        + ' data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '"'
+                        + ' data-case-ids="' + iris_corr_esc(JSON.stringify(cl.case_ids)) + '"'
+                        + ' title="Filter Shared IOCs table to this cluster">'
+                        + '<i class="fas fa-filter mr-1"></i> Filter IOCs'
+                        + '</button>'
+                        + '<button class="btn btn-sm btn-outline-secondary iris-corr-narrative-btn" data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '">'
+                        + '<i class="fas fa-magic mr-1" style="color:rgba(139,92,246,0.9);"></i> Analyze cluster'
+                        + '</button>'
+                        + '<button class="btn btn-sm btn-outline-secondary iris-corr-stix-btn"'
+                        + ' data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '"'
+                        + ' title="Download STIX 2.1 bundle for this cluster">'
+                        + '<i class="fas fa-download mr-1"></i> Export STIX'
+                        + '</button>'
+                        + '<button class="btn btn-sm btn-outline-secondary iris-corr-misp-btn"'
+                        + ' data-cluster-id="' + iris_corr_esc(cl.cluster_id) + '"'
+                        + ' title="Publish this cluster to MISP as a campaign event">'
+                        + '<i class="fas fa-share-nodes mr-1"></i> Push to MISP'
+                        + '</button>'
+                        + '</div>'
+                        + '</div>'
+                        + '</div>'
+                        // Narrative slot — hidden until the AI response arrives
+                        + '<div class="iris-corr-narrative-slot mt-3" id="iris-corr-narrative-' + safeId + '" style="display:none;">'
+                        + '</div>'
+                        + '</div>';
+                });
+            }
+            $('#iris-corr-clusters-body').html(clusterHtml);
+            $('#iris-corr-clusters-row').show();
+
+            // IOC overlap table — rows are clickable (open IOC detail drawer)
+            var tbody = '';
+            visiblePairs.forEach(function (p) {
+                var caseLinks = p.case_ids.map(function (cid) {
+                    var meta = caseMeta[cid] || {};
+                    var nm = meta.name ? iris_corr_esc(meta.name) : '';
+                    return '<a href="/case/ioc?cid=' + cid + '" target="_blank" title="' + nm + '" onclick="event.stopPropagation();">#' + cid + '</a>';
+                }).join(' ');
+                tbody += '<tr class="iris-corr-ioc-row" style="cursor:pointer;"'
+                    + ' data-ioc-value="' + iris_corr_esc(p.ioc_value) + '"'
+                    + ' data-ioc-type-id="' + iris_corr_esc(p.ioc_type_id) + '"'
+                    + ' data-ioc-type-name="' + iris_corr_esc(p.ioc_type_name) + '"'
+                    + ' data-case-ids="' + iris_corr_esc(JSON.stringify(p.case_ids)) + '"'
+                    + ' title="Click to see full cross-case details">'
+                    + '<td><code>' + iris_corr_esc(p.ioc_value) + '</code>'
+                    + ' <span class="text-muted" style="font-size:10px;opacity:0.5;">▸ details</span></td>'
+                    + '<td><span class="badge badge-light">' + iris_corr_esc(p.ioc_type_name) + '</span></td>'
+                    + '<td>' + iris_corr_tlp_badge(p.tlp_name, p.tlp_shareable) + '</td>'
+                    + '<td>' + caseLinks + '</td>'
+                    + '<td><strong>' + p.case_count + '</strong></td>'
+                    + '</tr>';
+            });
+            $('#iris-corr-table-body').html(tbody || '<tr><td colspan="5" class="text-center text-muted">' + (pairs.length ? 'No cases are linked at this threshold, so no IOCs are shown. ' + pairs.length + ' IOC(s) are shared across cases — lower &ldquo;Min shared IOCs&rdquo; to see them.' : 'No shared IOCs found.') + '</td></tr>');
+            $('#iris-corr-table-row').show();
+
+            // Force-directed graph — show the row now, but defer the actual
+            // D3 draw until the tab pane is visible so offsetWidth is real.
+            // If the tab is already visible (re-run from within the tab), draw immediately.
+            if (pairs.length > 0) {
+                $('#iris-corr-graph-row').show();
+                CORR._pendingGraphArgs = [pairs, clusters, caseMeta];
+                CORR._lastGraphArgs   = [pairs, clusters, caseMeta];
+                var pane = document.getElementById('iris-dash-correlation');
+                var isVisible = pane && pane.classList.contains('show');
+                if (isVisible) {
+                    iris_corr_load_d3(function () {
+                        iris_corr_draw_graph(CORR._pendingGraphArgs[0], CORR._pendingGraphArgs[1], CORR._pendingGraphArgs[2], null);
+                        CORR._pendingGraphArgs = null;
+                    });
+                }
+                // Otherwise drawn by the shown.bs.tab handler below
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // Campaign tag application
+        // ----------------------------------------------------------------
+
+        // ----------------------------------------------------------------
+        // AI cluster narrative — delegated click handler + renderer
+        // ----------------------------------------------------------------
+        $(document).on('click', '.iris-corr-narrative-btn', function () {
+            var clusterId = $(this).attr('data-cluster-id');  // .data() auto-casts numeric strings to int → breaks === comparison
+            if (!clusterId) return;
+            iris_corr_analyze_cluster(clusterId);
+        });
+
+        $(document).on('click', '.iris-corr-stix-btn', function () {
+            var clusterId = $(this).attr('data-cluster-id');
+            if (!clusterId) return;
+            // Read current filter state from the same DOM inputs iris_correlation_run uses
+            var minShared = parseInt($('#iris-corr-min-shared').val(), 10) || 2;
+            var startDate = $('#iris-corr-start').val() || '';
+            var endDate   = $('#iris-corr-end').val() || '';
+            var url = '/api/v2/correlation/clusters/' + encodeURIComponent(clusterId) + '/stix'
+                    + '?min_shared=' + minShared;
+            if (startDate) url += '&start_date=' + encodeURIComponent(startDate);
+            if (endDate)   url += '&end_date='   + encodeURIComponent(endDate);
+            // Trigger browser download without navigation
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'iris-ng-cluster-' + clusterId + '-stix21.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        // Publish a cluster to MISP as a campaign event (one-directional).
+        // `force` re-publishes a cluster that was already pushed, creating a
+        // NEW MISP event — hence the confirm rather than a silent retry.
+        function iris_corr_misp_push(clusterId, force, btn) {
+            var minShared = parseInt($('#iris-corr-min-shared').val(), 10) || 2;
+            var body = {
+                min_shared: minShared,
+                start_date: $('#iris-corr-start').val() || '',
+                end_date: $('#iris-corr-end').val() || '',
+                force: !!force,
+                csrf_token: $('#csrf_token').val(),
+            };
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Pushing…');
+
+            $.ajax({
+                url: '/api/v2/correlation/clusters/' + encodeURIComponent(clusterId) + '/misp-push',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(body),
+                dataType: 'json',
+            }).done(function (resp) {
+                btn.prop('disabled', false)
+                   .html('<i class="fas fa-check mr-1" style="color:#2dce89;"></i> Pushed to MISP');
+                var msg = 'Published to MISP event #' + resp.misp_event_id
+                        + ' — ' + resp.attributes_created + ' indicator(s), '
+                        + resp.notes_attached + ' note(s).';
+                if (resp.failures && resp.failures.length) {
+                    msg += ' ' + resp.failures.length + ' item(s) failed — see server log.';
+                }
+                notify_success(msg);
+                if (resp.misp_event_url) {
+                    btn.attr('title', resp.misp_event_url);
+                }
+            }).fail(function (xhr) {
+                btn.prop('disabled', false)
+                   .html('<i class="fas fa-share-nodes mr-1"></i> Push to MISP');
+                if (xhr.status === 409) {
+                    var d = (xhr.responseJSON && xhr.responseJSON.data) || {};
+                    if (window.confirm(
+                        'This cluster was already published to MISP as event #'
+                        + d.misp_event_id + '.\n\nRe-publishing creates a NEW event.\n\nContinue?'
+                    )) {
+                        iris_corr_misp_push(clusterId, true, btn);
+                    }
+                    return;
+                }
+                var m = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'MISP push failed';
+                notify_error(m);
+            });
+        }
+
+        $(document).on('click', '.iris-corr-misp-btn', function () {
+            var clusterId = $(this).attr('data-cluster-id');
+            if (!clusterId) return;
+            iris_corr_misp_push(clusterId, false, $(this));
+        });
+
+        $(document).on('click', '.iris-corr-apply-tag-btn', function () {
+            var $btn    = $(this);
+            var caseIds        = JSON.parse($btn.attr('data-case-ids') || '[]');
+            var tag            = $btn.attr('data-tag') || '';
+            var clusterId      = $btn.attr('data-cluster-id') || '';
+            var sharedIocPairs = CORR._clusterPairs[clusterId] || [];
+            if (!caseIds.length || !tag) return;
+            if (!confirm('Apply tag "' + tag + '" to ' + caseIds.length + ' case(s) and their ' + sharedIocPairs.length + ' shared IOC(s)?')) return;
+
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Applying…');
+
+            $.ajax({
+                url: '/api/v2/correlation/apply-campaign-tag',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ case_ids: caseIds, tag: tag, shared_ioc_pairs: sharedIocPairs, csrf_token: $('#csrf_token').val() }),
+                dataType: 'json',
+            }).done(function (resp) {
+                var applied = (resp.applied || []).length;
+                var skipped = (resp.already_tagged || []).length;
+                notify_success('Tag applied to ' + applied + ' case(s)' + (skipped ? ', ' + skipped + ' already tagged.' : '.'));
+                $btn.replaceWith(
+                    '<span class="badge badge-success" style="font-size:12px;padding:6px 10px;">'
+                    + '<i class="fas fa-check mr-1"></i>Tagged</span>'
+                );
+            }).fail(function () {
+                notify_error('Failed to apply campaign tag. Check console.');
+                $btn.prop('disabled', false).html('<i class="fas fa-tag mr-1"></i> Apply to ' + caseIds.length + ' case(s)');
+            });
+        });
+
+        // ----------------------------------------------------------------
+        // Cluster IOC filter
+        // ----------------------------------------------------------------
+        CORR._activeClusterFilter = null; // cluster_id string or null
+
+        function iris_corr_filter_by_cluster(clusterId, caseIds, clusterLabel) {
+            var activating = (CORR._activeClusterFilter !== clusterId);
+            CORR._activeClusterFilter = activating ? clusterId : null;
+
+            // Update cluster card highlight states
+            $('.iris-corr-cluster-card').each(function () {
+                var $card = $(this);
+                var isActive = activating && $card.attr('data-cluster-id') === clusterId;
+                $card.css('border-left-color', isActive
+                    ? 'rgba(139,92,246,1)'
+                    : 'rgba(139,92,246,0.6)');
+                $card.css('background-color', isActive
+                    ? 'rgba(139,92,246,0.07)'
+                    : '');
+                // Swap filter button label
+                var $btn = $card.find('.iris-corr-filter-btn');
+                if (isActive) {
+                    $btn.html('<i class="fas fa-filter mr-1"></i> Showing');
+                    $btn.removeClass('btn-outline-secondary').addClass('btn-secondary');
+                } else {
+                    $btn.html('<i class="fas fa-filter mr-1"></i> Filter IOCs');
+                    $btn.removeClass('btn-secondary').addClass('btn-outline-secondary');
+                }
+            });
+
+            // Filter IOC table rows
+            var memberSet = activating ? new Set(caseIds) : null;
+            $('#iris-corr-table-body tr.iris-corr-ioc-row').each(function () {
+                if (!memberSet) {
+                    $(this).show();
+                    return;
+                }
+                var rowCaseIds = JSON.parse($(this).attr('data-case-ids') || '[]');
+                // Show row only if ALL its case_ids fall within this cluster's members
+                var subset = rowCaseIds.every(function (cid) { return memberSet.has(cid); });
+                $(this).toggle(subset);
+            });
+
+            // Update table header badge
+            if (activating) {
+                $('#iris-corr-filter-label').text('Cluster ' + clusterLabel);
+                $('#iris-corr-filter-badge').show();
+                $('#iris-corr-table-subtitle').hide();
+            } else {
+                $('#iris-corr-filter-badge').hide();
+                $('#iris-corr-table-subtitle').show();
+            }
+
+            // Scroll to the table
+            if (activating) {
+                var $table = $('#iris-corr-table-row');
+                if ($table.length) {
+                    $('html,body').animate({ scrollTop: $table.offset().top - 80 }, 250);
+                }
+            }
+
+            // Redraw the graph to match the active filter
+            iris_corr_refresh_graph();
+        }
+
+        // Click on cluster card body (not a button/link inside it) — same as Filter IOCs button
+        $(document).on('click', '.iris-corr-cluster-card', function (e) {
+            if ($(e.target).closest('button, a').length) return; // let buttons/links handle themselves
+            var $card = $(this);
+            var clusterId = $card.attr('data-cluster-id');
+            var caseIds   = JSON.parse($card.attr('data-case-ids') || '[]');
+            iris_corr_filter_by_cluster(clusterId, caseIds, clusterId);
+        });
+
+        $(document).on('click', '.iris-corr-filter-btn', function (e) {
+            e.stopPropagation(); // don't also fire the card click
+            var clusterId = $(this).attr('data-cluster-id');
+            var caseIds   = JSON.parse($(this).attr('data-case-ids') || '[]');
+            iris_corr_filter_by_cluster(clusterId, caseIds, clusterId);
+        });
+
+        $('#iris-corr-filter-clear').on('click', function () {
+            iris_corr_filter_by_cluster(CORR._activeClusterFilter, [], '');
+        });
+
+        function iris_corr_narrative_slot(clusterId) {
+            var safeId = String(clusterId).replace(/[^a-zA-Z0-9-]/g, '');
+            return document.getElementById('iris-corr-narrative-' + safeId);
+        }
+
+        // Look a cluster up in the last loaded report. Shared by the analyze
+        // call and the manual-override handlers so they can't drift apart.
+        function iris_corr_find_cluster(clusterId) {
+            var report = CORR.report;
+            if (!report || !report.clusters) return null;
+            for (var i = 0; i < report.clusters.length; i++) {
+                if (report.clusters[i].cluster_id === clusterId) return report.clusters[i];
+            }
+            return null;
+        }
+
+        window.iris_corr_analyze_cluster = function (clusterId, forceRegen, discardEdit) {
+            if (CORR._narrativeLoading[clusterId]) return;
+
+            // If already cached, toggle visibility — but a forced re-run must
+            // fall through to the API. Keeping the cache intact here means a
+            // declined "discard your edits?" confirm can restore the panel.
+            if (CORR._narrativeCache[clusterId] && !forceRegen) {
+                var slot = iris_corr_narrative_slot(clusterId);
+                if (slot) {
+                    $(slot).toggle();
+                }
+                return;
+            }
+
+            // Find the cluster + full case_meta from the last report
+            var report = CORR.report;
+            if (!report || !report.clusters) {
+                notify_error('Correlation data not loaded. Click Refresh first.');
+                return;
+            }
+            var cluster = iris_corr_find_cluster(clusterId);
+            if (!cluster) {
+                notify_error('Cluster not found in current report.');
+                return;
+            }
+
+            var slot = iris_corr_narrative_slot(clusterId);
+            if (!slot) return;
+
+            CORR._narrativeLoading[clusterId] = true;
+
+            // Show spinner inside the slot
+            $(slot).html(
+                '<div class="d-flex align-items-center text-muted small py-2">'
+                + '<span class="spinner-border spinner-border-sm mr-2" role="status"></span>'
+                + 'Analyzing cluster with AI…'
+                + '</div>'
+            ).show();
+
+            // Update the button label while loading
+            $('.iris-corr-narrative-btn[data-cluster-id="' + clusterId + '"]')
+                .prop('disabled', true)
+                .html('<i class="fas fa-spinner fa-spin mr-1"></i> Analyzing…');
+
+            $.ajax({
+                url: '/api/v2/correlation/cluster-narrative',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    cluster: cluster,
+                    case_meta: report.case_meta || {},
+                    force: forceRegen ? true : false,
+                    discard_edit: discardEdit ? true : false,
+                    csrf_token: $('#csrf_token').val(),
+                }),
+                dataType: 'json',
+            }).done(function (resp) {
+                CORR._narrativeLoading[clusterId] = false;
+                CORR._narrativeCache[clusterId] = resp;
+
+                iris_corr_render_narrative(clusterId, resp);
+
+                // Restore button
+                $('.iris-corr-narrative-btn[data-cluster-id="' + clusterId + '"]')
+                    .prop('disabled', false)
+                    .html('<i class="fas fa-magic mr-1" style="color:rgba(139,92,246,0.9);"></i> Hide analysis');
+
+            }).fail(function (xhr) {
+                CORR._narrativeLoading[clusterId] = false;
+                $('.iris-corr-narrative-btn[data-cluster-id="' + clusterId + '"]')
+                    .prop('disabled', false)
+                    .html('<i class="fas fa-magic mr-1" style="color:rgba(139,92,246,0.9);"></i> Analyze cluster');
+
+                // 409 = the stored narrative carries manual edits. Confirm before
+                // the server will discard them. The guard itself is server-side;
+                // this dialog is only its UX.
+                if (xhr.status === 409) {
+                    var who = (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.edited_by)
+                        ? ' by ' + xhr.responseJSON.data.edited_by : '';
+                    if (window.confirm(
+                        'This narrative was manually edited' + who + '.\n\n'
+                        + 'Re-running will permanently discard those edits.\n\nContinue?'
+                    )) {
+                        iris_corr_analyze_cluster(clusterId, forceRegen, true);
+                    } else if (CORR._narrativeCache[clusterId]) {
+                        iris_corr_render_narrative(clusterId, CORR._narrativeCache[clusterId]);
+                    }
+                    return;
+                }
+
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'AI call failed';
+                $(slot).html(
+                    '<div class="text-danger small py-1"><i class="fas fa-exclamation-circle mr-1"></i>' + iris_corr_esc(msg) + '</div>'
+                ).show();
+            });
+        };
+
+        // ----------------------------------------------------------------
+        // Narrative rendering + analyst manual override
+        // ----------------------------------------------------------------
+        // `showingOriginal` is per-cluster so "View AI original" can toggle
+        // without another round-trip — the AI text ships alongside the edit.
+        CORR._narrativeShowingOriginal = CORR._narrativeShowingOriginal || {};
+
+        function iris_corr_render_narrative(clusterId, resp) {
+            var slot = iris_corr_narrative_slot(clusterId);
+            if (!slot) return;
+
+            var edited = !!resp.is_edited;
+            var showOrig = !!CORR._narrativeShowingOriginal[clusterId];
+            var title = showOrig ? (resp.ai_suggested_name || '') : (resp.suggested_name || 'Cluster analysis');
+            var body  = showOrig ? (resp.ai_narrative || '')      : (resp.narrative || '');
+
+            var confColor = { high: '#4caf50', medium: '#ff9800', low: '#9e9e9e' }[resp.confidence] || '#9e9e9e';
+            var confLabel = (resp.confidence || 'low').charAt(0).toUpperCase() + (resp.confidence || 'low').slice(1) + ' confidence';
+
+            // Provenance marker: a corrected narrative must not read as pure
+            // model output, especially since it now flows into STIX exports.
+            var titleIcon = edited && !showOrig
+                ? '<i class="fas fa-pen mr-1" title="Manually edited"></i>'
+                : '<i class="fas fa-magic mr-1"></i>';
+
+            var editedNote = (edited && !showOrig)
+                ? '<span class="text-muted ml-2" style="font-size:11px;font-style:italic;">edited'
+                    + (resp.edited_by ? ' by ' + iris_corr_esc(resp.edited_by) : '')
+                    + '</span>'
+                : '';
+            if (showOrig) {
+                editedNote = '<span class="ml-2" style="font-size:11px;font-style:italic;color:#9e9e9e;">showing AI original</span>';
+            }
+
+            // Edit affordances live in the header as real buttons, not as muted
+            // footer links — at 11px grey next to the prompt id they read as
+            // metadata rather than actions.
+            var btnStyle = 'background:transparent;border:1px solid rgba(139,92,246,0.35);'
+                + 'color:#c4b5fd;border-radius:5px;font-size:11px;padding:2px 9px;'
+                + 'line-height:1.6;cursor:pointer;white-space:nowrap;';
+            var actions = '<button type="button" class="iris-corr-narrative-edit" data-cluster-id="'
+                + iris_corr_esc(clusterId) + '" style="' + btnStyle + '">&#9998; Edit</button>';
+            if (edited) {
+                actions = '<button type="button" class="iris-corr-narrative-toggle-orig" data-cluster-id="'
+                        + iris_corr_esc(clusterId) + '" style="' + btnStyle + '">'
+                        + (showOrig ? 'View my edit' : 'View AI original') + '</button>'
+                        + '<button type="button" class="iris-corr-narrative-revert" data-cluster-id="'
+                        + iris_corr_esc(clusterId) + '" style="' + btnStyle + '">Revert to AI</button>'
+                        + actions;
+            }
+
+            var html = '<div style="'
+                + 'background: rgba(139,92,246,0.07);'
+                + 'border: 1px solid rgba(139,92,246,0.2);'
+                + 'border-radius: 6px;'
+                + 'padding: 14px 16px;'
+                + '">'
+                + '<div class="d-flex align-items-center justify-content-between mb-2" style="flex-wrap:wrap;gap:6px;">'
+                + '<span style="font-weight:600;font-size:13px;color:#c4b5fd;">'
+                + titleIcon
+                + iris_corr_esc(title)
+                + editedNote
+                + '</span>'
+                + '<span class="d-flex align-items-center" style="gap:8px;">'
+                + '<span style="font-size:11px;color:' + confColor + ';font-weight:500;">'
+                + '● ' + confLabel
+                + '</span>'
+                + actions
+                + '</span>'
+                + '</div>'
+                + '<div style="font-size:13px;line-height:1.6;white-space:pre-wrap;color:inherit;">'
+                + iris_corr_esc(body)
+                + '</div>'
+                + '<div class="text-muted mt-2" style="font-size:11px;">'
+                + iris_corr_esc(resp.prompt_id || '')
+                + (resp.model ? ' · ' + iris_corr_esc(resp.model) : '')
+                + (resp.cached ? ' · <span title="Served from cache">cached</span>' : '')
+                + ' · ' + (resp.generated_at ? new Date(resp.generated_at).toLocaleString() : new Date().toLocaleString())
+                + ' · #' + iris_corr_narrative_hash(body)
+                + ' · <a href="javascript:void(0);" class="text-muted iris-corr-narrative-rerun" data-cluster-id="' + iris_corr_esc(clusterId) + '">Re-run</a>'
+                + (edited && resp.edited_at ? ' · edited ' + new Date(resp.edited_at).toLocaleString() : '')
+                + '</div>'
+                + '</div>';
+
+            $(slot).html(html).show();
+
+            // Mirror the (possibly corrected) campaign name into the card header.
+            var card = $(slot).closest('.iris-corr-cluster-card');
+            if (title && card.length) {
+                var nameSpan = card.find('.iris-corr-ai-name');
+                if (nameSpan.length) {
+                    nameSpan.text('— ' + title);
+                } else {
+                    card.find('strong').first().after(
+                        '<span class="iris-corr-ai-name text-muted small ml-2" style="font-style:italic;">'
+                        + '— ' + iris_corr_esc(title)
+                        + '</span>'
+                    );
+                }
+            }
+        }
+
+        // Open the inline editor (title + prose).
+        $(document).on('click', '.iris-corr-narrative-edit', function () {
+            var clusterId = $(this).attr('data-cluster-id');
+            var resp = CORR._narrativeCache[clusterId];
+            var slot = iris_corr_narrative_slot(clusterId);
+            if (!resp || !slot) return;
+
+            var html = '<div style="background:rgba(139,92,246,0.07);border:1px solid rgba(139,92,246,0.2);border-radius:6px;padding:14px 16px;">'
+                + '<label class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;">Campaign title</label>'
+                + '<input type="text" class="form-control form-control-sm mb-3 iris-corr-narrative-title-input" style="background:#0e0e13;border:1px solid rgba(139,92,246,0.25);color:#e6e6ea;">'
+                + '<label class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;">Narrative</label>'
+                + '<textarea class="form-control form-control-sm iris-corr-narrative-body-input" rows="14" style="background:#0e0e13;border:1px solid rgba(139,92,246,0.25);color:#e6e6ea;font-size:12.5px;line-height:1.6;"></textarea>'
+                + '<div class="d-flex align-items-center mt-2" style="gap:8px;">'
+                + '<span class="text-muted" style="font-size:11px;margin-right:auto;">Plain text. Blank lines separate paragraphs. This text is also used in the STIX export.</span>'
+                + '<button type="button" class="btn btn-sm btn-outline-secondary iris-corr-narrative-cancel" data-cluster-id="' + iris_corr_esc(clusterId) + '">Cancel</button>'
+                + '<button type="button" class="btn btn-sm btn-primary iris-corr-narrative-save" data-cluster-id="' + iris_corr_esc(clusterId) + '">Save</button>'
+                + '</div>'
+                + '</div>';
+            $(slot).html(html).show();
+            // Set values via .val(), never interpolated into the HTML — narrative
+            // text contains quotes and angle brackets that would break out.
+            $(slot).find('.iris-corr-narrative-title-input').val(resp.suggested_name || '');
+            $(slot).find('.iris-corr-narrative-body-input').val(resp.narrative || '').focus();
+        });
+
+        $(document).on('click', '.iris-corr-narrative-cancel', function () {
+            var clusterId = $(this).attr('data-cluster-id');
+            var resp = CORR._narrativeCache[clusterId];
+            if (resp) iris_corr_render_narrative(clusterId, resp);
+        });
+
+        $(document).on('click', '.iris-corr-narrative-save', function () {
+            var clusterId = $(this).attr('data-cluster-id');
+            var slot = iris_corr_narrative_slot(clusterId);
+            var cluster = iris_corr_find_cluster(clusterId);
+            if (!slot || !cluster) return;
+            var btn = $(this).prop('disabled', true).text('Saving…');
+
+            $.ajax({
+                url: '/api/v2/correlation/cluster-narrative/edit',
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    cluster_id: clusterId,
+                    case_ids: cluster.case_ids,
+                    suggested_name: $(slot).find('.iris-corr-narrative-title-input').val(),
+                    narrative: $(slot).find('.iris-corr-narrative-body-input').val(),
+                    csrf_token: $('#csrf_token').val(),
+                }),
+                dataType: 'json',
+            }).done(function (resp) {
+                CORR._narrativeCache[clusterId] = resp;
+                CORR._narrativeShowingOriginal[clusterId] = false;
+                iris_corr_render_narrative(clusterId, resp);
+            }).fail(function (xhr) {
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Save failed';
+                btn.prop('disabled', false).text('Save');
+                $(slot).prepend('<div class="text-danger small pb-2">' + iris_corr_esc(msg) + '</div>');
+            });
+        });
+
+        $(document).on('click', '.iris-corr-narrative-toggle-orig', function () {
+            var clusterId = $(this).attr('data-cluster-id');
+            var resp = CORR._narrativeCache[clusterId];
+            if (!resp) return;
+            CORR._narrativeShowingOriginal[clusterId] = !CORR._narrativeShowingOriginal[clusterId];
+            iris_corr_render_narrative(clusterId, resp);
+        });
+
+        $(document).on('click', '.iris-corr-narrative-revert', function () {
+            var clusterId = $(this).attr('data-cluster-id');
+            var cluster = iris_corr_find_cluster(clusterId);
+            if (!cluster) return;
+            if (!window.confirm('Discard your manual edits and restore the original AI narrative?')) return;
+
+            $.ajax({
+                url: '/api/v2/correlation/cluster-narrative/edit',
+                method: 'DELETE',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    cluster_id: clusterId,
+                    case_ids: cluster.case_ids,
+                    csrf_token: $('#csrf_token').val(),
+                }),
+                dataType: 'json',
+            }).done(function (resp) {
+                CORR._narrativeCache[clusterId] = resp;
+                CORR._narrativeShowingOriginal[clusterId] = false;
+                iris_corr_render_narrative(clusterId, resp);
+            }).fail(function (xhr) {
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Revert failed';
+                window.alert(msg);
+            });
+        });
+
+        // Re-run link — forces a fresh AI call (bypasses server cache) then updates JS cache
+        $(document).on('click', '.iris-corr-narrative-rerun', function () {
+            var clusterId = $(this).attr('data-cluster-id');  // .data() auto-casts to int → use .attr()
+            if (!clusterId) return;
+            // Cache is deliberately NOT cleared here — forceRegen bypasses the
+            // toggle path, and keeping it lets a cancelled 409 confirm restore
+            // the panel. The done handler overwrites it on success.
+            iris_corr_analyze_cluster(clusterId, true);
+        });
+
+        // ----------------------------------------------------------------
+        // D3 lazy loader — local copy, no CDN dependency
+        // ----------------------------------------------------------------
+        function iris_corr_load_d3(cb) {
+            if (CORR.d3Loaded) { cb(); return; }
+            if (window.d3) { CORR.d3Loaded = true; cb(); return; }
+            var s = document.createElement('script');
+            s.src = '/static/assets/js/plugin/d3.v7.min.js';
+            s.onload = function () { CORR.d3Loaded = true; cb(); };
+            s.onerror = function () { console.error('iris-corr: failed to load D3 from /static/assets/js/plugin/d3.v7.min.js'); };
+            document.head.appendChild(s);
+        }
+
+        // ----------------------------------------------------------------
+        // Force-directed graph (D3 v7)
+        // filterCaseIds: optional Set of case IDs to include (null = all)
+        // ----------------------------------------------------------------
+        function iris_corr_draw_graph(pairs, clusters, caseMeta, filterCaseIds) {
+            var container = document.getElementById('iris-corr-graph');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // offsetWidth is 0 when the tab pane is hidden (display:none).
+            // Walk up to the nearest visible ancestor to get a real width,
+            // falling back to the window width minus a margin.
+            var W = container.offsetWidth;
+            if (!W) {
+                var parent = container.parentElement;
+                while (parent && !parent.offsetWidth) { parent = parent.parentElement; }
+                W = (parent && parent.offsetWidth) ? parent.offsetWidth - 40 : (window.innerWidth - 80);
+            }
+            var H = 480;
+
+            // Apply cluster filter if active
+            var activePairs = pairs;
+            if (filterCaseIds && filterCaseIds.size > 0) {
+                activePairs = pairs.filter(function (p) {
+                    return p.case_ids.every(function (cid) { return filterCaseIds.has(cid); });
+                });
+            }
+
+            // Build nodes + links from (filtered) pairs
+            var nodeMap = {};
+            var links = [];
+
+            // edge_weights: { "cid1-cid2": count }
+            var edgeWeights = {};
+            activePairs.forEach(function (p) {
+                var cids = p.case_ids;
+                for (var i = 0; i < cids.length; i++) {
+                    for (var j = i + 1; j < cids.length; j++) {
+                        var key = Math.min(cids[i], cids[j]) + '-' + Math.max(cids[i], cids[j]);
+                        edgeWeights[key] = (edgeWeights[key] || 0) + 1;
+                        nodeMap[cids[i]] = true;
+                        nodeMap[cids[j]] = true;
+                    }
+                }
+            });
+
+            // Also include isolated cluster nodes with no shared-IOC edges
+            // when a filter is active (so single-node clusters aren't invisible)
+            if (filterCaseIds && filterCaseIds.size > 0) {
+                filterCaseIds.forEach(function (cid) { nodeMap[cid] = true; });
+            }
+
+            // Cluster colour map
+            var clusterColors = ['#7c3aed','#2563eb','#059669','#d97706','#dc2626','#7e22ce'];
+            var caseCluster = {};
+            clusters.forEach(function (cl, idx) {
+                cl.case_ids.forEach(function (cid) {
+                    caseCluster[cid] = idx;
+                });
+            });
+
+            var nodes = Object.keys(nodeMap).map(function (cid) {
+                cid = parseInt(cid, 10);
+                var meta = caseMeta[cid] || {};
+                return { id: cid, name: meta.name || ('#' + cid), client: meta.client || '', clusterIdx: caseCluster[cid] };
+            });
+
+            Object.entries(edgeWeights).forEach(function (kv) {
+                var parts = kv[0].split('-');
+                links.push({ source: parseInt(parts[0], 10), target: parseInt(parts[1], 10), weight: kv[1] });
+            });
+
+            var svg = d3.select('#iris-corr-graph')
+                .append('svg')
+                .attr('width', W)
+                .attr('height', H)
+                .style('background', '#0f0f13')
+                .style('cursor', 'grab');
+
+            // Arrow marker
+            svg.append('defs').append('marker')
+                .attr('id', 'iris-corr-arrow')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 20).attr('refY', 0)
+                .attr('markerWidth', 6).attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#555');
+
+            // Pan + zoom: all graph content lives inside this group;
+            // the zoom transform is applied to the group, not the SVG itself,
+            // so the SVG viewport stays fixed.
+            var g = svg.append('g').attr('class', 'iris-corr-graph-root');
+
+            var zoomBehavior = d3.zoom()
+                .scaleExtent([0.2, 4])
+                .on('zoom', function (event) {
+                    g.attr('transform', event.transform);
+                    svg.style('cursor', event.sourceEvent && event.sourceEvent.buttons ? 'grabbing' : 'grab');
+                });
+
+            svg.call(zoomBehavior)
+               .on('dblclick.zoom', null); // disable double-click zoom (it's surprising UX)
+
+            // Hint label
+            svg.append('text')
+                .attr('x', 8).attr('y', H - 8)
+                .attr('fill', 'rgba(255,255,255,0.2)')
+                .attr('font-size', '10px')
+                .attr('pointer-events', 'none')
+                .text('Drag to pan · Scroll to zoom');
+
+            var simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(function (d) { return d.id; }).distance(120).strength(0.6))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(W / 2, H / 2))
+                .force('collision', d3.forceCollide(30));
+
+            var linkSel = g.append('g').selectAll('line')
+                .data(links).join('line')
+                .attr('stroke', 'rgba(139,92,246,0.4)')
+                .attr('stroke-width', function (d) { return Math.min(d.weight * 1.5 + 1, 8); });
+
+            var nodeSel = g.append('g').selectAll('g')
+                .data(nodes).join('g')
+                .attr('cursor', 'pointer')
+                .call(d3.drag()
+                    .on('start', function (event, d) {
+                        if (!event.active) simulation.alphaTarget(0.3).restart();
+                        d.fx = d.x; d.fy = d.y;
+                        event.sourceEvent.stopPropagation(); // don't start a pan on node drag
+                    })
+                    .on('drag', function (event, d) { d.fx = event.x; d.fy = event.y; })
+                    .on('end', function (event, d) {
+                        if (!event.active) simulation.alphaTarget(0);
+                        d.fx = null; d.fy = null;
+                    })
+                )
+                .on('click', function (event, d) {
+                    window.open('/case?cid=' + d.id, '_blank');
+                });
+
+            nodeSel.append('circle')
+                .attr('r', 18)
+                .attr('fill', function (d) {
+                    return d.clusterIdx !== undefined ? clusterColors[d.clusterIdx % clusterColors.length] : '#374151';
+                })
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 1.5);
+
+            nodeSel.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('fill', '#fff')
+                .attr('font-size', '10px')
+                .attr('font-weight', 'bold')
+                .text(function (d) { return '#' + d.id; });
+
+            nodeSel.append('title')
+                .text(function (d) { return '#' + d.id + ' – ' + d.name + (d.client ? ' (' + d.client + ')' : ''); });
+
+            // Edge weight labels — keep a named selection so the tick handler
+            // can update positions without relying on fragile :last-of-type.
+            var edgeLabelSel = g.append('g').selectAll('text')
+                .data(links.filter(function (l) { return l.weight > 1; }))
+                .join('text')
+                .attr('font-size', '9px')
+                .attr('fill', 'rgba(255,255,255,0.5)')
+                .attr('text-anchor', 'middle')
+                .attr('pointer-events', 'none')
+                .text(function (d) { return d.weight + ' IOCs'; });
+
+            simulation.on('tick', function () {
+                linkSel
+                    .attr('x1', function (d) { return d.source.x; })
+                    .attr('y1', function (d) { return d.source.y; })
+                    .attr('x2', function (d) { return d.target.x; })
+                    .attr('y2', function (d) { return d.target.y; });
+                nodeSel.attr('transform', function (d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+                edgeLabelSel
+                    .attr('x', function (d) { return (d.source.x + d.target.x) / 2; })
+                    .attr('y', function (d) { return (d.source.y + d.target.y) / 2; });
+            });
+        }
+
+        // Redraw the graph respecting the current cluster filter state.
+        function iris_corr_refresh_graph() {
+            var args = CORR._pendingGraphArgs || CORR._lastGraphArgs;
+            if (!args) return;
+            if (!window.d3) return;
+            var filterSet = null;
+            if (CORR._activeClusterFilter) {
+                // Find the cluster's case_ids from the stored report
+                var report = CORR.report;
+                if (report && report.clusters) {
+                    for (var i = 0; i < report.clusters.length; i++) {
+                        if (report.clusters[i].cluster_id === CORR._activeClusterFilter) {
+                            filterSet = new Set(report.clusters[i].case_ids);
+                            break;
+                        }
+                    }
+                }
+            }
+            iris_corr_draw_graph(args[0], args[1], args[2], filterSet);
+        }
+
+        // Draw the graph when the Correlation tab becomes fully visible.
+        // Bootstrap fires 'shown.bs.tab' AFTER the CSS transition completes,
+        // so offsetWidth is real at that point.
+        $('a[href="#iris-dash-correlation"]').on('shown.bs.tab', function () {
+            if (CORR._pendingGraphArgs) {
+                iris_corr_load_d3(function () {
+                    CORR._lastGraphArgs = CORR._pendingGraphArgs;
+                    iris_corr_draw_graph(CORR._pendingGraphArgs[0], CORR._pendingGraphArgs[1], CORR._pendingGraphArgs[2], null);
+                    CORR._pendingGraphArgs = null;
+                });
+            }
+        });
+
+    })();
+    </script>
+    <script>
+    /* On the dashboard the tab onclick was the entry point; here the
+     * page IS the workspace, so load on ready. */
+    document.addEventListener('DOMContentLoaded', function () {
+        window.iris_correlation_on_show();
+    });
+    </script>
+{% endblock javascripts %}
