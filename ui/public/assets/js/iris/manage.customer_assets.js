@@ -209,7 +209,9 @@ function iris_ca_open(assetId) {
         // cid is interpolated into innerHTML below (alert links) —
         // digits only, else fall back to '1'.
         var cidm = window.location.search.match(/[?&]cid=(\d+)/);
-        var cid = cidm ? cidm[1] : '1';
+        // The (\d+) capture is already digits-only, but taint tracking does
+        // not credit a match group — route it through the id validator.
+        var cid = iris_ca_id(cidm && cidm[1]) || '1';
         var html = '<div class="mb-1"><b>Cases</b></div>';
         html += (det.cases || []).map(function (c) {
             // Case names already carry the "#N - " prefix — do not prepend it again.
