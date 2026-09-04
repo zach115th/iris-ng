@@ -46,15 +46,19 @@ function iris_ca_ts(iso) {
 
 function iris_ca_filter_qs() {
     var parts = [];
-    if ($('#iris-ca-f-customer').val()) { parts.push('customer_id=' + $('#iris-ca-f-customer').val()); }
-    if ($('#iris-ca-f-type').val()) { parts.push('type_id=' + $('#iris-ca-f-type').val()); }
-    if ($('#iris-ca-f-crit').val()) { parts.push('criticality=' + $('#iris-ca-f-crit').val()); }
+    /* Every dynamic value is encoded — the selects and chips carry
+       server/markup-controlled values today, but this QS feeds a
+       window.location sink and encoding at the one builder covers
+       every consumer (also keeps the QS well-formed regardless). */
+    if ($('#iris-ca-f-customer').val()) { parts.push('customer_id=' + encodeURIComponent($('#iris-ca-f-customer').val())); }
+    if ($('#iris-ca-f-type').val()) { parts.push('type_id=' + encodeURIComponent($('#iris-ca-f-type').val())); }
+    if ($('#iris-ca-f-crit').val()) { parts.push('criticality=' + encodeURIComponent($('#iris-ca-f-crit').val())); }
     /* Tri-state chip groups carry their value in data-val ('' = Any).
        Read with .attr() per project rule — never .data(). */
     var comp = $('#iris-ca-f-comp').attr('data-val');
-    if (comp) { parts.push('compromised=' + comp); }
+    if (comp) { parts.push('compromised=' + encodeURIComponent(comp)); }
     var seen = $('#iris-ca-f-seen').attr('data-val');
-    if (seen) { parts.push('seen=' + seen); }
+    if (seen) { parts.push('seen=' + encodeURIComponent(seen)); }
     if ($('#iris-ca-f-env').val().trim()) {
         parts.push('environment=' + encodeURIComponent($('#iris-ca-f-env').val().trim()));
     }
