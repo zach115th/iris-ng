@@ -64,6 +64,13 @@ log = logging.getLogger(__name__)
 
 _MAX_MATCH_LEN = 4096
 
+# Cap on the PATTERN, not just the subject: rule regexes are admin-authored,
+# but they arrive through ordinary request paths (rule CRUD and the /test
+# endpoints), and _MAX_MATCH_LEN bounds only the text being searched — a
+# catastrophic-backtracking pattern is expensive at any subject length.
+# Public: the mail-rule evaluator and schema validator enforce the same cap.
+MAX_PATTERN_LEN = 512
+
 # Sentinel distinguishing "path not present" from a stored None/null.
 MISSING = object()
 
@@ -176,6 +183,10 @@ def _leaf_matches_scalar(op: str, actual, expected) -> bool:
     if op == 'regex':
         if not isinstance(actual, str) or not isinstance(expected, str):
             return False
+        if len(expected) > MAX_PATTERN_LEN:
+            log.warning("condition_eval: regex longer than %d chars — leaf fails closed",
+                        MAX_PATTERN_LEN)
+            return False
         try:
             return re.search(expected, actual[:_MAX_MATCH_LEN],
                              re.IGNORECASE) is not None
@@ -283,6 +294,8 @@ def validate_tree(tree, _depth: int = 0):
         pattern = tree.get('value')
         if not isinstance(pattern, str):
             problems.append('regex operator needs a string value')
+        elif len(pattern) > MAX_PATTERN_LEN:
+            problems.append(f'regex is longer than {MAX_PATTERN_LEN} characters')
         else:
             try:
                 re.compile(pattern)

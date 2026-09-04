@@ -2717,9 +2717,10 @@ _MAIL_RULE_CONDITION_FIELDS = ('subject', 'from', 'to', 'body')
 def _validate_mail_rule_conditions(value):
     """iris-ng v2: conditions is a list of {field, regex}. Validated at save
     time so a broken rule cannot reach the poller (which additionally fails
-    closed at match time): known field, non-empty regex, and the regex must
-    compile."""
+    closed at match time): known field, non-empty regex no longer than the
+    shared pattern cap, and the regex must compile."""
     import re as _re
+    from app.business.condition_eval import MAX_PATTERN_LEN
     if value is None:
         return
     if not isinstance(value, list):
@@ -2734,6 +2735,9 @@ def _validate_mail_rule_conditions(value):
                 f'condition #{i + 1}: field must be one of {", ".join(_MAIL_RULE_CONDITION_FIELDS)}')
         if not isinstance(regex, str) or not regex.strip():
             raise ValidationError(f'condition #{i + 1}: regex is required')
+        if len(regex) > MAX_PATTERN_LEN:
+            raise ValidationError(
+                f'condition #{i + 1}: regex is longer than {MAX_PATTERN_LEN} characters')
         try:
             _re.compile(regex)
         except _re.error as e:

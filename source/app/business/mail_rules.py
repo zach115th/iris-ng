@@ -27,6 +27,7 @@ payload building) so both callers can construct one without touching IMAP.
 import re
 
 from app import db
+from app.business.condition_eval import MAX_PATTERN_LEN
 from app.models.alerts import MailRule
 from app.models.alerts import AlertStatus
 from app.models.alerts import Severity
@@ -49,6 +50,8 @@ def evaluate_conditions(conditions: list, parsed: dict) -> bool:
         field = cond.get('field')
         pattern = cond.get('regex') or ''
         if field not in _CONDITION_FIELDS:
+            return False
+        if len(pattern) > MAX_PATTERN_LEN:
             return False
         value = (parsed.get(field) or '')[:_MATCH_TRUNCATE]
         try:
