@@ -288,8 +288,13 @@ function iris_ca_ev_rows_html(r) {
     }
     return rows.map(function (e) {
         var m = iris_ca_ev_meta(e.evidence_id);
-        var href = '/case/evidences?cid=' + iris_ca_cid() +
-            '&shared=' + e.evidence_id;
+        /* evidence_id lands in an href inside an html build — digits only
+           (server-assigned); an invalid id renders a dead link. */
+        var evid = String(e.evidence_id == null ? '' : e.evidence_id);
+        if (!/^\d+$/.test(evid)) { evid = ''; }
+        var href = evid
+            ? '/case/evidences?cid=' + iris_ca_cid() + '&shared=' + evid
+            : '#';
         var head =
             '<div style="display:flex; align-items:center; gap:8px;">' +
             '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7a7a85" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/></svg>' +
