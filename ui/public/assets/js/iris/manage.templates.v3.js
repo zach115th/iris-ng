@@ -161,7 +161,12 @@ $(function () {
     }
 
     $('#iris-rt-rows').on('click', '.iris-rt-row', function () {
-        IRIS_RT.selected = $(this).attr('data-id');
+        /* Template ids are digits only (server-assigned) — validate at the
+           one read point; downstream the download URL and delete both
+           interpolate this value, and their existing null guards handle a
+           rejected read (broken markup selects nothing). */
+        var id = $(this).attr('data-id') || '';
+        IRIS_RT.selected = /^\d+$/.test(id) ? id : null;
         iris_rt_render_rows();
         iris_rt_render_detail();
     });
