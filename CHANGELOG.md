@@ -11,14 +11,110 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
-## [IRIS-NG-v2.0.0] — in development, not yet released
+## [IRIS-NG-v2.0.0] — 2026-09-04
 
-The v3-feature-integration program (this tree, branch `dev`): mail rules +
-AI triage, alert clusters + clustering rules, investigation flows, the
-customer-asset registry, notifications + home + following, war rooms +
-AI SitReps, the correlation-workspace migration, and the v3 UI-parity
-campaign. The full entry is written at the release pass; no image carries
-this version yet.
+The first release of the v2 line, and the largest since the fork. Six feature
+areas land together — mail ingestion, alert clustering, investigation flows, a
+customer-asset registry, notifications, and war rooms — alongside a redesigned
+analyst UI across every case tab and the whole settings family, and a set of
+long-standing inherited defects fixed along the way. This is the preview that
+ran on the `dev` branch through September, now the mainline.
+
+### Upgrading — read this before you pull
+
+- **The migration is one-way.** 24 schema migrations apply on first boot (new
+  Alembic head `f8b3c62d94a7`); once they have run, the database can no longer
+  boot a 1.4.x image. Take a `pg_dump` first — it is the only road back. The
+  jump from v1.4.1 was rehearsed against a copy of a production database:
+  everything applies in one boot and every pre-existing row survives.
+- **An image rebuild is mandatory** (`up -d --build --force-recreate`). Python
+  and UI dependencies changed (gunicorn 26.2.0, Flask-Caching 2.5.0, marked
+  18.0.11, eslint 10.9.1, svelte 5.57.0, cryptography ≥ 50.0.1) and the static
+  assets baked into the image changed substantially.
+- The API remains compatible with v2.5.0-beta.1 clients; every schema change is
+  additive.
+
+### Added
+
+- **Mail rules with AI triage.** IMAP polling (standard library only, a fixed
+  60-second self-gating tick), a regex/field rule engine that fails closed, a
+  full ingest log, and advisory AI triage that refines severity and
+  classification against the live catalogs. Mail passwords are write-only end
+  to end — the API never returns them.
+- **Alert clusters and clustering rules.** Rule-driven fingerprinting groups
+  related alerts into clusters (one open cluster per fingerprint, enforced in
+  the database), with an AI-drafted narrative, derived severity with an analyst
+  override, and a full triage workspace: summary doc, member management,
+  assets, IOCs, correlation graph, timeline and an activity feed. Escalation
+  drives the existing case-creation and merge paths.
+- **Investigation flows.** Condition-matched checklists attach to alerts and
+  clusters at ingest; step states are analyst-owned, required steps are
+  computed server-side, and flow edits merge by step so completed work
+  survives a rename or reorder.
+- **Customer-asset registry.** An org-wide, automatically-maintained registry
+  of every asset seen per customer — synced from case work and alert ingest,
+  never blocking either — with sightings, compromise curation that sync can
+  never overwrite, CSV import, and per-asset detail live-derived from the
+  newest case observation.
+- **Notifications, home and following.** In-app + optional email notifications
+  across a 12-event catalog with per-user and org-default channel matrices, a
+  notification bell in both navs, @-mentions in every comment surface, follow
+  buttons on cases and alerts, and a new `/home` landing page with your open
+  work at a glance.
+- **War rooms.** Cross-case coordination spaces: a chat stream with threads,
+  topics, pins, polls, slash commands and @-mention autocomplete; a task board
+  with subtasks; room-level timelines beside read-only case timelines; notes
+  with folders; SitReps with revisions, publishing, exports and AI-drafted
+  skeletons; attached-case peeks bounded by each viewer's case access; members
+  and mention-teams. Room membership never grants case access, and outbound
+  STIX/MISP publishing applies the same TLP gates as everywhere else.
+- **The correlation workspace moved to `/correlation`** (sidebar: Intel), with
+  the per-IOC context drawer shared into war rooms. The correlation engine and
+  every `/api/v2/correlation/*` endpoint are unchanged.
+- **A settings shell.** The Advanced submenu became a Manage IRIS rail;
+  Modules, Custom Attributes, Case Templates, Report Templates, Case Objects
+  and Customers were rebuilt as two-pane pages over their existing endpoints;
+  a sector catalog now drives the sector pickers and metrics; and admins can
+  post dismissible announcement banners.
+- **A redesigned case UI.** An in-page case header on all eight tabs with
+  interactive state/severity chips and quick actions; master/detail views on
+  the Assets, IOCs, Tasks and Evidence tabs with inline editing, linked-object
+  tabs, comments and CSV round-trips; four task views including a kanban
+  board; cached AI profiles for assets and IOCs; and the datastore reshaped
+  into a compact drawer. Every rebuild overlays the existing endpoints and
+  modals — the legacy views stay reachable behind a toggle.
+- **In-tree VirusTotal and MISP modules** (VirusTotal API v3; lean report
+  defaults), so a fresh install carries working enrichment without hunting for
+  module wheels.
+
+### Fixed
+
+All of these were present in released 1.4.x images; several are worth an
+upgrade on their own:
+
+- **A zero-access account could read the whole organisation's correlation data**
+  — an empty case-access list was treated as "no restriction" on the
+  correlation endpoints, and the same hole allowed tagging arbitrary cases.
+  Empty now means nothing is visible.
+- **A crafted `cid` URL parameter executed script** (DOM XSS) on two pages
+  that interpolated it into markup unvalidated. It is now validated
+  digits-only at the single place each page reads it.
+- **No customer created through the UI was ever deletable** — creation granted
+  the creator an access row, and deletion misread the resulting foreign-key
+  violation as "customer is referenced". Access rows are now cleared in the
+  same transaction; genuine references still block deletion.
+- **Escalating alerts without a case template crashed**; escalating an
+  untagged alert minted an empty tag row; and **a case escalated from an alert
+  with imported IOCs could not be deleted** while the alert existed.
+- **The Backup database button did nothing** — a form control's id shadowed
+  the global function its inline handler named. Its error path was also broken
+  since the original import.
+- **Object-valued table columns (IOC Type/TLP/linked cases, asset analysis
+  status) were unfilterable and unsortable.**
+- **The timeline's analysis and working-timeline panels now reclaim the space
+  the case banner frees as you scroll**, instead of floating at a fixed offset.
+- Page loads got faster: HTTP/2 + gzip at nginx, a minimal ACE build, lazy
+  html2canvas, and de-duplicated fetches on the case pages.
 
 ---
 
