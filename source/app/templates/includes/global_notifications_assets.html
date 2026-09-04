@@ -142,6 +142,25 @@
 		}).then(function () { if (cb) { cb(); } }).catch(function () { if (cb) { cb(); } });
 	}
 
+	/* Notification urls are server-built relative paths, but they ride a
+	   free-form stored column into a bare location.href sink — allowlist
+	   same-origin http(s) so a poisoned row can never become javascript:
+	   navigation. Returns null (fall back to re-rendering the list) for
+	   anything else. */
+	function safeSameOriginUrl(raw) {
+		/* '' must stay "no url" — new URL('', origin) resolves to the
+		   origin ROOT, which would navigate instead of refreshing. */
+		if (!raw) { return null; }
+		try {
+			var u = new URL(raw, window.location.origin);
+			if ((u.protocol === 'http:' || u.protocol === 'https:')
+					&& u.origin === window.location.origin) {
+				return u.href;
+			}
+		} catch (e) { /* malformed — fall through */ }
+		return null;
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		if (!el('iris-gnotif-item')) { return; }
 		pollCount();
@@ -153,7 +172,7 @@
 			var row = ev.target.closest ? ev.target.closest('.iris-gnotif-row') : null;
 			if (!row) { return; }
 			ev.preventDefault();
-			var url = row.getAttribute('data-url');
+			var url = safeSameOriginUrl(row.getAttribute('data-url'));
 			markRead(row.getAttribute('data-id'), function () {
 				if (url) { window.location.href = url; } else { loadList(); }
 			});
