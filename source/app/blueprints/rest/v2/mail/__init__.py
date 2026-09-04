@@ -45,6 +45,7 @@ from app.models.alerts import MailIngestLog
 from app.models.alerts import MailRule
 from app.models.authorization import Permissions
 from app.models.models import ServerSettings
+from app.schema.marshables import _validate_mail_rule_conditions
 from app.schema.marshables import MailIngestLogSchema
 from app.schema.marshables import MailRuleSchema
 
@@ -152,6 +153,16 @@ def test_mail_rule():
         conditions = body.get('conditions')
         if conditions is None:
             return response_api_error('provide conditions or rule_id')
+        # Ad-hoc conditions get the SAME validation a save gets (field
+        # names, pattern cap, compilability, the ReDoS gate) — a rejected
+        # regex is a named 400 here, not a silent no-match, and a test
+        # that passes cannot behave differently once saved. NOT re.escape:
+        # escaping would make the dry-run match literally while the saved
+        # rule matches as a regex.
+        try:
+            _validate_mail_rule_conditions(conditions)
+        except marshmallow.ValidationError as e:
+            return response_api_error(str(e.messages))
     parsed = {k: str(sample.get(k) or '') for k in ('subject', 'from', 'to', 'body')}
     return response_api_success({'matches': evaluate_conditions(conditions, parsed)})
 
