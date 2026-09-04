@@ -11,6 +11,47 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.0.1] — 2026-09-04
+
+A security-hardening release: the full triage of the CodeQL scan that ran against
+the v2.0.0 promotion — thirteen alerts assessed, fixed and verified, none of them
+exploitable as shipped but every flagged flow now closed by construction. No
+schema change; the database head is unchanged from v2.0.0 and no migration runs
+on upgrade. An image rebuild is required (several fixes are in baked static JS).
+
+### Security
+
+- **Rule condition regexes are gated against catastrophic backtracking.** The
+  512-character pattern cap bounded size, not the engine: a short compilable
+  pattern like `(a+)+b` could still stall the synchronous alert-ingest pipeline
+  or the mail poller. A shared `is_safe_regex()` gate now rejects the classic
+  ReDoS primitives (backreferences, lookarounds, and repeated groups whose body
+  carries alternation or a quantifier) while passing every legitimate rule
+  shape, enforced at save time (named validation errors for clustering rules,
+  investigation flows and mail rules), at evaluation time (fail closed), and on
+  the mail-rules dry-run endpoint, whose ad-hoc conditions previously skipped
+  validation entirely.
+- **The war-room Discovery panel builds its cluster cards as DOM, not an
+  innerHTML template.** Values from the correlation report (shared-IOC counts,
+  room ids, case ids in links) were interpolated with only partial escaping;
+  the cards are now constructed with `createElement`/`textContent` and every id
+  that lands in a link is validated.
+- **The notification bell allowlists row URLs before navigating.** The stored
+  notification URL rides a free-form column into `location.href`; only
+  same-origin http(s) URLs are followed now, so a poisoned row can never become
+  `javascript:` navigation.
+- **Every id read from the DOM or a fetched payload is validated and re-derived
+  before reaching a URL or HTML sink** across the war-room pages, alert
+  clusters, the case shell header, the report-templates view, the customer-asset
+  registry (list, sightings, filters and CSV export) and the case
+  asset/IOC/evidence detail pages.
+
+### Fixed
+
+- The mail-rules dry-run endpoint now rejects an invalid or dangerous regex
+  with a named error instead of silently reporting "no match" — a test that
+  passes can no longer behave differently once the rule is saved.
+
 ## [IRIS-NG-v2.0.0] — 2026-09-04
 
 The first release of the v2 line, and the largest since the fork. Six feature
