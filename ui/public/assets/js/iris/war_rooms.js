@@ -112,32 +112,65 @@ function iris_wr_load_discovery() {
             clusters.length ? 'none' : '';
         box.innerHTML = '';
         clusters.forEach(function (cl) {
-            var caseBits = cl.case_ids.map(function (cid) {
+            /* Built as DOM, not an HTML string: every value here arrives in
+             * the fetched JSON, and textContent/setAttribute are safe by
+             * construction where an innerHTML template needs per-value
+             * escaping to be. Ids that land in hrefs are digits-validated. */
+            var mutedEl = document.createElement('div');
+            mutedEl.className = 'text-muted';
+            mutedEl.style.fontSize = '0.8rem';
+            cl.case_ids.forEach(function (cid, idx) {
                 var m = meta[cid] || meta[String(cid)] || {};
-                return '<a href="/case?cid=' + cid + '">#' + cid + '</a> ' +
-                    iris_wr_esc(m.name || '');
-            }).join(' · ');
-            var roomId = promoted[cl.cluster_id];
-            var action = roomId
-                ? '<a class="btn btn-sm btn-secondary" href="/war-rooms/' +
-                  roomId + '?cid=' + IRIS_WR._cid + '">Open room #' + roomId + '</a>'
-                : '<button class="btn btn-sm btn-primary iris-wr-promote" ' +
-                  'data-cluster-id="' + iris_wr_esc(cl.cluster_id) + '">' +
-                  'Promote to war room</button>';
+                if (idx) { mutedEl.appendChild(document.createTextNode(' · ')); }
+                var cidStr = String(cid);
+                if (/^\d+$/.test(cidStr)) {
+                    var caseA = document.createElement('a');
+                    caseA.href = '/case?cid=' + cidStr;
+                    caseA.textContent = '#' + cidStr;
+                    mutedEl.appendChild(caseA);
+                } else {
+                    mutedEl.appendChild(document.createTextNode('#' + cidStr));
+                }
+                mutedEl.appendChild(document.createTextNode(' ' + (m.name || '')));
+            });
+            var roomId = String(promoted[cl.cluster_id] || '');
+            var actionEl;
+            if (/^\d+$/.test(roomId)) {
+                actionEl = document.createElement('a');
+                actionEl.className = 'btn btn-sm btn-secondary';
+                actionEl.href = '/war-rooms/' + roomId + '?cid=' + IRIS_WR._cid;
+                actionEl.textContent = 'Open room #' + roomId;
+            } else {
+                actionEl = document.createElement('button');
+                actionEl.className = 'btn btn-sm btn-primary iris-wr-promote';
+                actionEl.setAttribute('data-cluster-id', String(cl.cluster_id));
+                actionEl.textContent = 'Promote to war room';
+            }
             var div = document.createElement('div');
             div.className = 'mb-3 p-2';
             div.style.cssText = 'border: 1px solid rgba(139,92,246,0.25);' +
                 'border-radius: 8px; background: rgba(139,92,246,0.05);';
-            div.innerHTML =
-                '<div style="display:flex; align-items:center;">' +
-                '<div style="flex:1 1 auto; min-width:0;">' +
-                '<span class="iris-wr-campaign-chip">' +
-                iris_wr_esc(cl.cluster_id) + '</span> ' +
-                '<strong>' + cl.case_ids.length + ' cases</strong> · ' +
-                cl.shared_ioc_count + ' shared IOC(s)' +
-                '<div class="text-muted" style="font-size:0.8rem;">' +
-                caseBits + '</div></div>' +
-                '<div style="flex-shrink:0;">' + action + '</div></div>';
+            var rowEl = document.createElement('div');
+            rowEl.style.cssText = 'display:flex; align-items:center;';
+            var leftEl = document.createElement('div');
+            leftEl.style.cssText = 'flex:1 1 auto; min-width:0;';
+            var chip = document.createElement('span');
+            chip.className = 'iris-wr-campaign-chip';
+            chip.textContent = String(cl.cluster_id);
+            leftEl.appendChild(chip);
+            leftEl.appendChild(document.createTextNode(' '));
+            var strongEl = document.createElement('strong');
+            strongEl.textContent = cl.case_ids.length + ' cases';
+            leftEl.appendChild(strongEl);
+            leftEl.appendChild(document.createTextNode(
+                ' · ' + cl.shared_ioc_count + ' shared IOC(s)'));
+            leftEl.appendChild(mutedEl);
+            var rightEl = document.createElement('div');
+            rightEl.style.flexShrink = '0';
+            rightEl.appendChild(actionEl);
+            rowEl.appendChild(leftEl);
+            rowEl.appendChild(rightEl);
+            div.appendChild(rowEl);
             box.appendChild(div);
         });
     });
