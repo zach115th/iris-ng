@@ -168,8 +168,13 @@ document.addEventListener('DOMContentLoaded', function () {
         .addEventListener('click', function (e) {
             var card = e.target.closest('.iris-wr-card');
             if (!card) return;
+            /* Room ids are digits only (server-assigned) — validate before
+               interpolating into the navigation URL, like _cid above; a
+               non-numeric value means broken markup, so do nothing. */
+            var roomId = card.getAttribute('data-room-id') || '';
+            if (!/^\d+$/.test(roomId)) return;
             window.location.href = '/war-rooms/' +
-                card.getAttribute('data-room-id') + '?cid=' + IRIS_WR._cid;
+                roomId + '?cid=' + IRIS_WR._cid;
         });
 
     document.getElementById('iris-wr-new-btn')
