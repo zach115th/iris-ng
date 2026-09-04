@@ -2721,6 +2721,7 @@ def _validate_mail_rule_conditions(value):
     shared pattern cap, and the regex must compile."""
     import re as _re
     from app.business.condition_eval import MAX_PATTERN_LEN
+    from app.business.condition_eval import is_safe_regex
     if value is None:
         return
     if not isinstance(value, list):
@@ -2742,6 +2743,12 @@ def _validate_mail_rule_conditions(value):
             _re.compile(regex)
         except _re.error as e:
             raise ValidationError(f'condition #{i + 1}: invalid regex ({e})')
+        if not is_safe_regex(regex):
+            raise ValidationError(
+                f'condition #{i + 1}: regex uses constructs prone to '
+                f'catastrophic backtracking (a backreference, lookaround, or '
+                f'a repeated group containing "|", "+", "*", "?" or an '
+                f'open-ended repeat)')
 
 
 class MailRuleSchema(ma.SQLAlchemyAutoSchema):

@@ -76,6 +76,99 @@ MISSING = object()
 
 _VALID_OPS = ('eq', 'not', 'in', 'not_in', 'like', 'regex', 'exists')
 
+# {m} / {m,} / {m,n} — group 2 is the comma, group 3 the (possibly empty)
+# upper bound; {m,} (comma present, empty upper) is an UNBOUNDED repeat.
+_BRACE_QUANT = re.compile(r'\{(\d+)(?:(,)(\d*))?\}')
+
+
+def is_safe_regex(pattern: str) -> bool:
+    """Conservative ReDoS gate over an admin-authored pattern (public: the
+    mail-rule evaluator and schema validator share it, like MAX_PATTERN_LEN).
+
+    Rejects the classic catastrophic-backtracking primitives — a REPEATED
+    group (+, * or {…}) whose body carries alternation or an unbounded
+    quantifier ((a+)+, (.*)*, (a|a)+, (a|ab)*c, (a+){3}) — plus
+    backreferences and lookarounds, which the grammar's and/or/not
+    composition already expresses. Everything observed in real rule sets
+    passes: literal alternation (phish|trojan), optional atoms (e-?mail),
+    unquantified groups (mfa (fatigue|bombing)), character classes, and
+    bounded repeats incl. on groups ((\\.\\d{1,3}){3}).
+
+    Deliberately incomplete — full ReDoS detection is undecidable in
+    practice. The residual (e.g. nested BOUNDED repeats with huge bounds)
+    requires a privileged author deliberately attacking their own instance,
+    and MAX_PATTERN_LEN bounds the pattern while _MAX_MATCH_LEN bounds the
+    subject. Fail closed on anything this scanner cannot place.
+    """
+    # One frame per open group: [contains_alternation, contains_unbounded].
+    root = [False, False]
+    stack = [root]
+    i, n = 0, len(pattern)
+    while i < n:
+        c = pattern[i]
+        if c == '\\':
+            nxt = pattern[i + 1] if i + 1 < n else ''
+            if nxt.isdigit() and nxt != '0':
+                return False                      # numeric backreference
+            i += 2
+            continue
+        if c == '[':
+            # Character-class contents are literal — skip to the closing ].
+            i += 1
+            while i < n and pattern[i] != ']':
+                i += 2 if pattern[i] == '\\' else 1
+            i += 1
+            continue
+        if c == '(':
+            head = pattern[i + 1:i + 4]
+            if head.startswith('?=') or head.startswith('?!') \
+                    or head == '?<=' or head == '?<!':
+                return False                      # lookaround
+            if head == '?P=':
+                return False                      # named backreference
+            stack.append([False, False])
+            # Consume the '?' of extension groups ((?:, (?P<, (?i, (?>) so
+            # it is not misread as a quantifier inside the new frame.
+            i += 2 if pattern[i + 1:i + 2] == '?' else 1
+            continue
+        if c == ')':
+            # Unbalanced ')' compiles to re.error downstream — treat inertly.
+            frame = stack.pop() if len(stack) > 1 else [False, False]
+            q = pattern[i + 1] if i + 1 < n else ''
+            repeated = q in ('+', '*')   # NOT `q in '+*'` — '' is in every str
+            if q == '{':
+                m = _BRACE_QUANT.match(pattern, i + 1)
+                repeated = m is not None
+            if repeated and (frame[0] or frame[1]):
+                return False    # repeated group with '|' or unbounded body
+            # The group's body is still text inside the PARENT's body —
+            # propagate so ((a|b)c)+ is judged at the outer group too.
+            stack[-1][0] = stack[-1][0] or frame[0]
+            stack[-1][1] = stack[-1][1] or frame[1]
+            i += 1
+            continue
+        if c == '|':
+            stack[-1][0] = True
+            i += 1
+            continue
+        if c in '+*?':
+            # '?' counts too: an empty-matchable repeated body ((a?)+ and
+            # the classic (a?){k}) backtracks combinatorially.
+            stack[-1][1] = True
+            i += 1
+            continue
+        if c == '{':
+            m = _BRACE_QUANT.match(pattern, i)
+            if m:
+                if m.group(2) is not None and m.group(3) == '':
+                    stack[-1][1] = True           # {m,} is unbounded
+                i = m.end()
+                continue
+            i += 1                                # literal brace
+            continue
+        i += 1
+    return True
+
 
 class _LazyView(dict):
     """Dict whose expensive keys materialize on first access. The resolved-
@@ -186,6 +279,10 @@ def _leaf_matches_scalar(op: str, actual, expected) -> bool:
         if len(expected) > MAX_PATTERN_LEN:
             log.warning("condition_eval: regex longer than %d chars — leaf fails closed",
                         MAX_PATTERN_LEN)
+            return False
+        if not is_safe_regex(expected):
+            log.warning("condition_eval: regex %r rejected by the ReDoS gate — "
+                        "leaf fails closed", expected)
             return False
         try:
             return re.search(expected, actual[:_MAX_MATCH_LEN],
@@ -301,4 +398,11 @@ def validate_tree(tree, _depth: int = 0):
                 re.compile(pattern)
             except re.error as e:
                 problems.append(f'regex does not compile: {e}')
+            else:
+                if not is_safe_regex(pattern):
+                    problems.append(
+                        'regex uses constructs prone to catastrophic '
+                        'backtracking (a backreference, lookaround, or a '
+                        'repeated group containing "|", "+", "*", "?" or an '
+                        'open-ended repeat)')
     return problems
