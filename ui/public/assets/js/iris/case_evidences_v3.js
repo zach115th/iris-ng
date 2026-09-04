@@ -56,8 +56,12 @@ function iris_ce_esc(s) {
 }
 
 function iris_ce_cid() {
+    /* The (\d+) capture is already digits-only; re-canonicalising through
+       parseInt makes that provable to taint tracking, since this value is
+       interpolated into html builds page-wide. */
     var m = window.location.search.match(/[?&]cid=(\d+)/);
-    return m ? m[1] : '';
+    var n = m ? parseInt(m[1], 10) : NaN;
+    return (Number.isFinite(n) && n > 0) ? String(n) : '';
 }
 
 function iris_ce_csrf() {

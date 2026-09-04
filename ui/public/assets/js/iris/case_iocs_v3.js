@@ -37,8 +37,12 @@ function iris_ci_esc(s) {
 }
 
 function iris_ci_cid() {
+    /* The (\d+) capture is already digits-only; re-canonicalising through
+       parseInt makes that provable to taint tracking, since this value is
+       interpolated into html builds page-wide. */
     var m = window.location.search.match(/[?&]cid=(\d+)/);
-    return m ? m[1] : '1';
+    var n = m ? parseInt(m[1], 10) : 1;
+    return (Number.isFinite(n) && n > 0) ? String(n) : '1';
 }
 
 function iris_ci_csrf() {
@@ -1545,7 +1549,7 @@ function iris_ci_render_detail() {
         '<div style="color:#e8e8ee; font-weight:600; font-size:1.02rem; word-break:break-all;">' +
         iris_ci_esc(r.ioc_value) + '</div>' +
         '<div class="text-muted" style="font-size:0.74rem;">' +
-        iris_ci_esc(iris_ci_type(r)) + ' &middot; #' + r.ioc_id + '</div>' +
+        iris_ci_esc(iris_ci_type(r)) + ' &middot; #' + iris_ci_esc(r.ioc_id) + '</div>' +
         '</div>' +
         (IRIS_CI.editing
             ? '<button type="button" class="btn btn-sm btn-light iris-ci-edit-cancel">&times; Cancel</button>' +
@@ -1676,7 +1680,7 @@ function iris_ci_render_detail() {
                   iris_ci_esc(r.ioc_description) + '</div>'
                 : '<div class="iris-ci-desc text-muted">(no description)</div>') +
             '<div class="iris-ci-foot">' +
-            '<span>ID #' + r.ioc_id + '</span>' +
+            '<span>ID #' + iris_ci_esc(r.ioc_id) + '</span>' +
             (r.ioc_uuid ? '<span>UUID ' + iris_ci_esc(r.ioc_uuid) + '</span>'
                         : '') +
             '<span>Case #' + iris_ci_esc(r.case_id || iris_ci_cid()) +
