@@ -1041,10 +1041,11 @@
                 <span class="text-muted ml-1" id="iris-wr-corr-status" style="font-size:0.78rem;"></span>
             </div>
             <div class="text-muted mb-2" id="iris-wr-corr-note" style="font-size:0.78rem;"></div>
-            <table class="table table-sm">
-                <thead><tr><th>IOC</th><th>Type</th><th>TLP</th><th>Cases</th></tr></thead>
-                <tbody id="iris-wr-corr-tbody"></tbody>
-            </table>
+            {# Shared-IOC cards — rendered by war_room.js through the shared
+               window.iris_corr_ioc_card builder (includes/corr_ioc_shared.html),
+               the same card the /correlation workspace shows. Clicking a card
+               opens the cross-case drawer via its delegated listener. #}
+            <div id="iris-wr-corr-cards"></div>
             <div id="iris-wr-corr-empty" class="text-muted" style="display:none;"></div>
         </div></div>
     </div>
@@ -1333,10 +1334,16 @@
 {% include 'includes/case_peek_modal.html' %}
 {% endwith %}
 
-{# iris-next: the per-IOC cross-case drawer, shared with the dashboard
-   Correlation tab (extracted there, ids unchanged). Correlation-tab rows
-   opt in via the iris-corr-ioc-row class + data-ioc-* attributes set in
-   war_room.js; the include's own delegated listener does the rest. #}
+{# iris-next: shared cross-case IOC renderers (card builder + context
+   renderer) MUST load before the drawer include, which now renders through
+   them — that ordering is what keeps this tab's cards and drawer identical
+   to the /correlation workspace's. #}
+{% include 'includes/corr_ioc_shared.html' %}
+{# iris-next: the per-IOC cross-case drawer, shared with the /correlation
+   workspace historically (that page now uses an inline detail panel; the
+   room keeps the drawer). Correlation-tab cards opt in via the
+   iris-corr-ioc-row class + data-ioc-* attributes set by the shared card
+   builder; the include's own delegated listener does the rest. #}
 {% include 'includes/ioc_context_drawer.html' %}
 
 <div class="modal fade" id="iris-wr-srnew-modal" tabindex="-1" role="dialog">

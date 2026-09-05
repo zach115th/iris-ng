@@ -916,6 +916,13 @@ function build_timeline(data) {
         $('#no_events_msg').remove('h3');
     }
 
+    /* Collapsible day groups (issue #105). The fold engine lives in the
+       page template (window.irisDayFold) and is re-applied after every
+       rebuild. It MUST run before the deep-link scroll below: a shared
+       target inside a collapsed day is expanded by the engine's guard, and
+       reading offsets of a display:none element would scroll to nowhere. */
+    if (window.irisDayFold) { window.irisDayFold.applyMaster(); }
+
     set_last_state(data.data.state);
     hide_loader();
 

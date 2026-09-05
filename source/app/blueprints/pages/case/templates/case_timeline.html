@@ -872,6 +872,9 @@
                 <div class="iris-cshell-mh">Duplicates</div>
                 <a href="#" onclick="irisDedupOpen('master', {{ session['current_case'].case_id }});return false;">Find duplicates (master timeline)</a>
                 <a href="#" onclick="irisDedupOpen('working', {{ session['current_case'].case_id }});return false;">Find duplicates (working timeline)</a>
+                <div class="iris-cshell-mh">Days</div>
+                <a href="#" onclick="irisDayFold.collapseAll();return false;">Collapse all days</a>
+                <a href="#" onclick="irisDayFold.expandAll();return false;">Expand all days</a>
             {% endset %}
             {% include 'includes/case_shell.html' %}
         </div>
@@ -1488,6 +1491,11 @@ window.irisWorkingTimeline = (function () {
                  * fits inside the max-height. Without this every card shows
                  * "Show more" even when nothing is actually clipped. */
                 _hideExpandHintWhenFlush(listEl);
+                /* Collapsible day groups (issue #105) — re-applied after
+                 * every rebuild, AFTER the expand-hint pass: the hint
+                 * measurement needs the cards visible (a display:none card
+                 * measures 0/0 and every hint would vanish). */
+                if (window.irisDayFold) { window.irisDayFold.applyWorking(); }
             });
     }
 
@@ -2171,5 +2179,276 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <script src="/static/assets/js/core/socket.io.js"></script>
 <script src="/static/assets/js/timeline.js"></script>
+
+{# Collapsible day groups — issue #105. One fold engine for BOTH timeline
+   surfaces on this page: the master timeline (badges re-rendered by
+   build_timeline in case.timeline.js, which calls applyMaster at its tail)
+   and the working-timeline panel (date rows re-rendered by the panel's
+   refresh, which calls applyWorking). Collapsed days are remembered per
+   case in localStorage; everything starts expanded. #}
+<style>
+.iris-fold-caret {
+  display: inline-block; margin-left: 6px; font-size: 9px; opacity: 0.8;
+}
+.iris-fold-count {
+  display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 8px;
+  font-size: 9.5px; font-weight: 600;
+  background: rgba(139,92,246,0.18); border: 1px solid rgba(139,92,246,0.40);
+  color: #d4c4ff; vertical-align: middle;
+}
+[data-fold-key] { cursor: pointer; user-select: none; }
+/* Folded members are hidden via THIS rule, not an inline style: the page's
+   own compaction styles set `display: flex !important` on every event li
+   (ul.timeline > li.timeline / -inverted, above), and an !important
+   stylesheet rule beats a normal inline `display:none`. Id-scoped so it
+   outranks those class rules by specificity. */
+#timeline_list .iris-fold-hidden,
+#iris-wt-list .iris-fold-hidden {
+  display: none !important;
+}
+/* A date badge that FOLLOWS a collapsed day: the block-level event lis
+   that normally separate the inline-block pills are all hidden, so two
+   pills would flow onto one line. Block + fit-content forces the break
+   while keeping the pill compact instead of stretching the dark chip
+   across the page. Never applied to the first badge, so the sort pill
+   beside it keeps its line. */
+#timeline_list li.iris-fold-newline {
+  display: block;
+  width: fit-content;
+  margin-top: 8px;
+  /* Atlantis's own `.badge { margin-left: auto }` is INERT on the default
+     inline-block pill (auto resolves to 0) but resolves to ALL remaining
+     width once the badge is block-level — it shoved the pill to the right
+     edge of the column, which on the page read as the pill vanishing.
+     Proven with a headless-Chrome layout probe (scripts/_tl_dayfold_layout_probe.py). */
+  margin-left: 0;
+}
+</style>
+<script>
+/* IRIS-DAYFOLD-BEGIN */
+(function () {
+    'use strict';
+    var CID = {{ session['current_case'].case_id }};
+    var KEY = 'iris-tl-fold-' + CID;
+
+    function loadState() {
+        /* localStorage can throw (private mode, cleared site data) — an
+           unreadable store means "start fully expanded", never a crash. */
+        try {
+            var raw = window.localStorage.getItem(KEY);
+            var s = raw ? JSON.parse(raw) : null;
+            if (s && typeof s === 'object') {
+                return {
+                    master: Array.isArray(s.master) ? s.master : [],
+                    working: Array.isArray(s.working) ? s.working : []
+                };
+            }
+        } catch (e) { /* fall through to the default */ }
+        return { master: [], working: [] };
+    }
+    var state = loadState();
+
+    function saveState() {
+        try { window.localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* best effort */ }
+    }
+
+    /* Walk a flat container: a "start" element begins a day group and
+       everything after it belongs to that day until the next start.
+       Skipped elements (the sort pill sits between the first badge and the
+       first event) belong to no group and are never hidden. */
+    function groups(container, isStart, isSkip, keyOf, isEvent) {
+        var out = [];
+        var cur = null;
+        var kids = container ? container.children : [];
+        for (var i = 0; i < kids.length; i++) {
+            var el = kids[i];
+            if (isSkip(el)) { continue; }
+            if (isStart(el)) {
+                cur = { key: keyOf(el), start: el, members: [], eventCount: 0 };
+                out.push(cur);
+            } else if (cur) {
+                cur.members.push(el);
+                if (isEvent(el)) { cur.eventCount++; }
+            }
+        }
+        return out;
+    }
+
+    function masterGroups() {
+        return groups(
+            document.getElementById('timeline_list'),
+            /* id-based, NOT .time-badge: the badge class carries a view
+               suffix in compact/tree mode (time-badge-compact / -t). */
+            function (el) { return el.tagName === 'LI' && /^time_\d+$/.test(el.id || ''); },
+            function (el) { return el.id === 'iris-tm-sort-btn'; },
+            function (el) {
+                var k = el.getAttribute('data-fold-key');
+                if (k !== null) { return k; }
+                var s = el.querySelector('small');
+                return (s ? s.textContent : el.textContent).trim();
+            },
+            function (el) { return el.tagName === 'LI'; }
+        );
+    }
+
+    function workingGroups() {
+        return groups(
+            document.getElementById('iris-wt-list'),
+            function (el) { return !!(el.classList && el.classList.contains('iris-wt-date-row')); },
+            function () { return false; },
+            function (el) {
+                var p = el.querySelector('.iris-wt-date-pill');
+                if (p && p.getAttribute('data-fold-key') !== null) { return p.getAttribute('data-fold-key'); }
+                return (p ? p.textContent : '').trim();
+            },
+            function (el) { return !!(el.classList && el.classList.contains('iris-wt-card')); }
+        );
+    }
+
+    /* The clickable element: the badge li itself on the master timeline,
+       the date pill (not the whole row — the first row also carries the
+       sort button) on the working panel. */
+    function clickTarget(g, surface) {
+        if (surface === 'master') { return g.start; }
+        return g.start.querySelector('.iris-wt-date-pill');
+    }
+
+    function decorate(g, surface, collapsed) {
+        var t = clickTarget(g, surface);
+        if (!t) { return; }
+        t.setAttribute('data-fold-key', g.key);
+        t.setAttribute('data-fold-surface', surface);
+        t.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        t.setAttribute('title', collapsed ? 'Click to show this day' : 'Click to hide this day');
+        /* On the master badge the visible line is the <small> — a caret
+           appended after its trailing <br> would wrap to a second line. */
+        var host = (surface === 'master' && t.querySelector('small')) || t;
+        var caret = t.querySelector('.iris-fold-caret');
+        if (!caret) {
+            caret = document.createElement('span');
+            caret.className = 'iris-fold-caret';
+            host.appendChild(caret);
+        }
+        caret.textContent = collapsed ? '▸' : '▾';
+        var count = t.querySelector('.iris-fold-count');
+        if (collapsed) {
+            /* The count is the explicit claim that events exist under a
+               folded day — a bare collapsed badge would be ambiguous with
+               an empty day. */
+            if (!count) {
+                count = document.createElement('span');
+                count.className = 'iris-fold-count';
+                host.appendChild(count);
+            }
+            count.textContent = g.eventCount + ' hidden';
+        } else if (count) {
+            count.parentNode.removeChild(count);
+        }
+    }
+
+    /* Deep-link guard (master only — shared links target master events):
+       the day holding the ?shared= / #hash target must not LOAD folded,
+       or the scroll-and-highlight lands on a hidden element. */
+    /* Captured ONCE at page load and CONSUMED on first sight: the hash
+       lingers in the URL long after arrival, and a guard consulted on
+       every apply would pin that day permanently open — clicking its pill
+       would silently undo itself. An explicit analyst fold outranks a
+       stale deep link. */
+    var pendingShared = (function () {
+        var id = null;
+        try { id = new URLSearchParams(window.location.search).get('shared'); } catch (e) { /* no-op */ }
+        if (!id && window.location.hash.length > 1) { id = window.location.hash.slice(1); }
+        if (!id || !/^\d+$/.test(String(id))) { return null; }
+        return String(parseInt(id, 10));
+    })();
+
+    function sharedEventLi() {
+        if (pendingShared === null) { return null; }
+        var ev = document.getElementById('event_' + pendingShared);
+        if (!ev) { return null; } /* not in this render — stays pending */
+        pendingShared = null; /* consumed */
+        while (ev && ev.tagName !== 'LI') { ev = ev.parentElement; }
+        return ev || null;
+    }
+
+    function apply(surface) {
+        var gs = surface === 'master' ? masterGroups() : workingGroups();
+        var folded = {};
+        state[surface].forEach(function (k) { folded[k] = true; });
+        var target = surface === 'master' ? sharedEventLi() : null;
+        var changed = false;
+        var prevCollapsed = false;
+        gs.forEach(function (g) {
+            var collapsed = !!folded[g.key];
+            if (collapsed && target && g.members.indexOf(target) !== -1) {
+                collapsed = false;
+                var i = state[surface].indexOf(g.key);
+                if (i !== -1) { state[surface].splice(i, 1); changed = true; }
+            }
+            /* A badge after a collapsed day shares its line (see the
+               iris-fold-newline rule) — mark it so CSS breaks the line. */
+            if (surface === 'master') {
+                if (prevCollapsed) { g.start.classList.add('iris-fold-newline'); }
+                else { g.start.classList.remove('iris-fold-newline'); }
+            }
+            prevCollapsed = collapsed;
+            g.members.forEach(function (m) {
+                /* Class, not inline style — the event lis carry
+                   `display: flex !important` from the compaction styles,
+                   which beats any inline display. The class is backed by an
+                   id-scoped !important rule in the fold style block. */
+                if (!m.classList) { return; }
+                if (collapsed) { m.classList.add('iris-fold-hidden'); }
+                else { m.classList.remove('iris-fold-hidden'); }
+            });
+            decorate(g, surface, collapsed);
+        });
+        if (changed) { saveState(); }
+    }
+
+    function toggle(surface, key) {
+        var arr = state[surface];
+        var i = arr.indexOf(key);
+        if (i === -1) { arr.push(key); } else { arr.splice(i, 1); }
+        saveState();
+        apply(surface);
+    }
+
+    function collapseAll() {
+        state.master = masterGroups().map(function (g) { return g.key; });
+        state.working = workingGroups().map(function (g) { return g.key; });
+        saveState();
+        apply('master');
+        apply('working');
+    }
+
+    function expandAll() {
+        state.master = [];
+        state.working = [];
+        saveState();
+        apply('master');
+        apply('working');
+    }
+
+    document.addEventListener('click', function (e) {
+        var t = e.target.closest('[data-fold-key]');
+        if (!t) { return; }
+        /* Real controls inside a fold target keep their own behaviour. */
+        if (e.target.closest('a, button') && !e.target.closest('a, button').hasAttribute('data-fold-key')) { return; }
+        var surface = t.getAttribute('data-fold-surface');
+        if (surface !== 'master' && surface !== 'working') { return; }
+        toggle(surface, t.getAttribute('data-fold-key'));
+    });
+
+    window.irisDayFold = {
+        applyMaster: function () { apply('master'); },
+        applyWorking: function () { apply('working'); },
+        toggle: toggle,
+        collapseAll: collapseAll,
+        expandAll: expandAll
+    };
+})();
+/* IRIS-DAYFOLD-END */
+</script>
 
 {% endblock javascripts %}

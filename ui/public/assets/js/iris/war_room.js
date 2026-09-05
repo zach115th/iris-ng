@@ -2280,23 +2280,9 @@ function iris_wroom_sr_export(fmt) {
 
 /* ---------------------------------------------------------- correlation */
 
-var IRIS_WROOM_TLP = {
-    red: '#F25961', amber: '#f4c430', 'amber+strict': '#f4c430',
-    green: '#2dce89', clear: '#c8c8d0'
-};
-
-function iris_wroom_tlp_badge(name, shareable) {
-    /* Validate against a known map rather than escaping — no server string
-     * is interpolated into markup (dashboard rule). */
-    var key = (name || '').toLowerCase();
-    if (!IRIS_WROOM_TLP[key]) {
-        return '<span class="text-muted" title="No TLP set on at least one appearance">unset</span>';
-    }
-    var lock = shareable ? '' :
-        ' <span title="TLP does not permit redistribution">&#128274;</span>';
-    return '<span style="color:' + IRIS_WROOM_TLP[key] + '; font-size:0.75rem;">' +
-        key.toUpperCase() + '</span>' + lock;
-}
+/* The room's own TLP badge was retired with the shared-IOC card
+ * unification: cards render through window.iris_corr_ioc_card
+ * (includes/corr_ioc_shared.html), which carries the platform badge. */
 
 function iris_wroom_corr_status(txt) {
     document.getElementById('iris-wr-corr-status').textContent = txt || '';
@@ -2308,16 +2294,17 @@ function iris_wroom_load_correlation() {
         IRIS_WROOM._corr = res.j;
         var pairs = res.j.pairs || [];
         var stats = res.j.stats || {};
-        var tb = document.getElementById('iris-wr-corr-tbody');
+        var caseMeta = res.j.case_meta || {};
+        var list = document.getElementById('iris-wr-corr-cards');
         var empty = document.getElementById('iris-wr-corr-empty');
         var note = document.getElementById('iris-wr-corr-note');
         note.textContent = stats.inaccessible_cases
             ? (stats.inaccessible_cases + ' linked case(s) are outside your ' +
                'access — indicators from them are not shown.')
             : '';
-        tb.innerHTML = '';
+        list.innerHTML = '';
         if (!pairs.length) {
-            /* An empty table must say WHY (none-vs-broken rule). */
+            /* An empty list must say WHY (none-vs-broken rule). */
             empty.textContent = stats.linked_cases < 2
                 ? 'Correlation needs at least two attached cases.'
                 : 'No IOC is shared by two or more of the attached cases' +
@@ -2327,27 +2314,25 @@ function iris_wroom_load_correlation() {
             empty.style.display = 'none';
         }
         pairs.forEach(function (p) {
-            var tr = document.createElement('tr');
-            /* Opt the row into the shared cross-case drawer (the include on
-             * this page carries a delegated document-level listener on
-             * .iris-corr-ioc-row). setAttribute, never string-concat: an IOC
-             * value can contain quotes, and setAttribute is attribute-safe
-             * by construction. Clicks on the case anchors still navigate —
-             * the drawer's listener ignores clicks inside <a>. */
-            tr.className = 'iris-corr-ioc-row';
-            tr.style.cursor = 'pointer';
-            tr.setAttribute('data-ioc-value', p.ioc_value);
-            tr.setAttribute('data-ioc-type-id', p.ioc_type_id);
-            tr.setAttribute('data-ioc-type-name', p.ioc_type_name || '');
-            tr.innerHTML =
-                '<td style="font-family:monospace; font-size:0.8rem; word-break:break-all;">' +
-                iris_wroom_esc(p.ioc_value) + '</td>' +
-                '<td>' + iris_wroom_esc(p.ioc_type_name) + '</td>' +
-                '<td>' + iris_wroom_tlp_badge(p.tlp_name, p.tlp_shareable) + '</td>' +
-                '<td>' + p.case_ids.map(function (cid) {
-                    return '<a href="/case?cid=' + cid + '">#' + cid + '</a>';
-                }).join(' ') + '</td>';
-            tb.appendChild(tr);
+            /* The SHARED card builder (includes/corr_ioc_shared.html) — the
+             * same card the /correlation workspace renders, so the two
+             * surfaces are identical by construction. The card carries the
+             * iris-corr-ioc-row class + data-ioc-* attributes, which is what
+             * opts it into this page's cross-case drawer (delegated listener
+             * in the drawer include). Case-chip clicks still navigate — the
+             * listener ignores clicks inside anchors. */
+            if (window.iris_corr_ioc_card) {
+                list.appendChild(window.iris_corr_ioc_card(p, caseMeta,
+                    {caseLinkBase: '/case?cid='}));
+            } else {
+                /* Fail loud, not blank: a missing include must not render as
+                 * "no shared IOCs". */
+                var d = document.createElement('div');
+                d.className = 'text-muted';
+                d.textContent = p.ioc_value + ' (' + (p.ioc_type_name || '') +
+                    ') — shared card renderer not loaded';
+                list.appendChild(d);
+            }
         });
         document.getElementById('iris-wr-corr-tag').style.display =
             (pairs.length && iris_wroom_can('responder') && iris_wroom_active())

@@ -3,6 +3,53 @@
 {% block title %} Correlation {% endblock title %}
 
 {% block stylesheets %}
+<style>
+/* Shared IOCs two-pane master/detail — unified card UI. Cards + the
+   per-case context styles come from includes/corr_ioc_shared.html; this
+   block only lays out the split, which is page-specific. */
+.iris-cioc-split { display: flex; gap: 14px; align-items: flex-start; }
+.iris-cioc-master { flex: 1 1 auto; min-width: 0; }
+.iris-cioc-detailwrap { flex: 0 0 400px; min-width: 0; max-width: 100%; }
+.iris-cioc-detail {
+  /* Sticky against the viewport: unlike the case pages there is no fixed
+     chat bar below, so the viewport bottom IS the floor and a calc() is
+     the mechanism here, not a fallback. 76px clears the fixed topbar. */
+  position: sticky;
+  top: 76px;
+  max-height: calc(100vh - 96px);
+  display: flex; flex-direction: column;
+  background: #15151a;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.iris-cioc-detail-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.015);
+  flex-shrink: 0;
+}
+.iris-cioc-detail-eyebrow {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(250,250,250,0.62);
+  margin-bottom: 6px;
+}
+.iris-cioc-detail-val {
+  font-family: ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  font-size: 13px; font-weight: 600; color: #fafafa; word-break: break-all;
+}
+.iris-cioc-detail-type {
+  font-size: 11px; color: rgba(250,250,250,0.55); margin-top: 2px;
+}
+.iris-cioc-detail-body {
+  flex: 1 1 auto; overflow-y: auto; padding: 14px 16px; min-height: 120px;
+}
+@media (max-width: 1100px) {
+  .iris-cioc-split { flex-direction: column; }
+  .iris-cioc-detailwrap { flex: 1 1 auto; width: 100%; }
+  .iris-cioc-detail { position: static; max-height: none; }
+}
+</style>
 {% endblock stylesheets %}
 
 {% block content %}
@@ -157,30 +204,52 @@
               <div class="card-title mb-0">Shared IOCs
                 <small class="text-muted ml-2" id="iris-corr-table-subtitle">The IOCs behind the clusters above &mdash; each one is shared by 2 or more cases of a cluster, and every IOC here is a reason those cases are linked. Raising the threshold requires a case <em>pair</em> to have <em>more indicators in common</em> before it links; it does not require each individual indicator to appear in more cases.</small>
               </div>
-              <div id="iris-corr-filter-badge" style="display:none;">
-                <span class="badge badge-light border" style="font-size:11px;padding:4px 8px;border-color:rgba(139,92,246,0.5)!important;">
-                  <i class="fas fa-filter mr-1" style="color:rgba(139,92,246,0.8);"></i>
-                  <span id="iris-corr-filter-label">Cluster</span>
-                </span>
-                <button class="btn btn-sm btn-link text-muted ml-1 p-0" id="iris-corr-filter-clear" title="Show all IOCs" style="font-size:11px;">
-                  Clear filter
-                </button>
+              <div class="d-flex align-items-center" style="gap:8px;">
+                <div id="iris-corr-filter-badge" style="display:none;">
+                  <span class="badge badge-light border" style="font-size:11px;padding:4px 8px;border-color:rgba(139,92,246,0.5)!important;">
+                    <i class="fas fa-filter mr-1" style="color:rgba(139,92,246,0.8);"></i>
+                    <span id="iris-corr-filter-label">Cluster</span>
+                  </span>
+                  <button class="btn btn-sm btn-link text-muted ml-1 p-0" id="iris-corr-filter-clear" title="Show all IOCs" style="font-size:11px;">
+                    Clear filter
+                  </button>
+                </div>
+                {# Safety valve: the legacy table stays in the DOM hidden-but-alive,
+                   the platform's standard escape hatch for a card overlay. #}
+                <button class="btn btn-sm btn-link text-muted p-0" id="iris-corr-legacy-toggle" style="font-size:11px;">Table view</button>
               </div>
             </div>
             <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-hover table-sm" id="iris-corr-table">
-                  <thead>
-                    <tr>
-                      <th>IOC value</th>
-                      <th>Type</th>
-                      <th title="Most restrictive TLP this indicator carries across the cases it appears in. Only GREEN and CLEAR are included in a STIX export or a MISP push.">TLP</th>
-                      <th>Cases</th>
-                      <th>Count</th>
-                    </tr>
-                  </thead>
-                  <tbody id="iris-corr-table-body"></tbody>
-                </table>
+              <div class="iris-cioc-split">
+                <div class="iris-cioc-master">
+                  <div id="iris-corr-cardlist"></div>
+                  <div class="table-responsive" id="iris-corr-legacy-table" style="display:none;">
+                    <table class="table table-hover table-sm" id="iris-corr-table">
+                      <thead>
+                        <tr>
+                          <th>IOC value</th>
+                          <th>Type</th>
+                          <th title="Most restrictive TLP this indicator carries across the cases it appears in. Only GREEN and CLEAR are included in a STIX export or a MISP push.">TLP</th>
+                          <th>Cases</th>
+                          <th>Count</th>
+                        </tr>
+                      </thead>
+                      <tbody id="iris-corr-table-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="iris-cioc-detailwrap">
+                  <div class="iris-cioc-detail">
+                    <div class="iris-cioc-detail-head">
+                      <div class="iris-cioc-detail-eyebrow">IOC &mdash; Cross-case details</div>
+                      <div class="iris-cioc-detail-val" id="iris-corr-detail-val"></div>
+                      <div class="iris-cioc-detail-type" id="iris-corr-detail-type"></div>
+                    </div>
+                    <div class="iris-cioc-detail-body" id="iris-corr-detail-body">
+                      <div class="iris-cioc-placeholder">Select an IOC to see its cross-case details.</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -206,8 +275,12 @@
     </div>
     {# /Correlation pane #}
 
-    {# the per-IOC drawer, shared with the war-room Correlation tab #}
-    {% include 'includes/ioc_context_drawer.html' %}
+    {# Shared card + cross-case context renderers. The slide-in drawer is
+       RETIRED on this page — the detail panel beside the card list shows the
+       same per-case cards via the same shared renderer. The war room keeps
+       its drawer (includes/ioc_context_drawer.html), which now also renders
+       through these shared functions, so the two cannot drift. #}
+    {% include 'includes/corr_ioc_shared.html' %}
 </div>
 {% endblock content %}
 
@@ -306,6 +379,47 @@
         function iris_corr_esc(s) {
             return $('<div>').text(String(s || '')).html();
         }
+
+        // ----------------------------------------------------------------
+        // Shared-IOC detail panel (master/detail — replaces the drawer here)
+        // ----------------------------------------------------------------
+        function iris_corr_detail_reset() {
+            $('.iris-corr-ioc-row').removeClass('iris-cioc-selected');
+            $('#iris-corr-detail-val').text('');
+            $('#iris-corr-detail-type').text('');
+            var body = document.getElementById('iris-corr-detail-body');
+            if (body) {
+                // Invalidate any in-flight context fetch so a late response
+                // cannot overwrite the placeholder (shared sequence guard).
+                body._irisCorrSeq = (body._irisCorrSeq || 0) + 1;
+                body.innerHTML = '<div class="iris-cioc-placeholder">Select an IOC to see its cross-case details.</div>';
+            }
+        }
+
+        // Delegated: covers both the cards and the legacy table rows (both
+        // carry the historical iris-corr-ioc-row class + data-ioc-* attrs).
+        $(document).on('click', '.iris-corr-ioc-row', function (e) {
+            if ($(e.target).closest('a').length) return; // case links navigate
+            var el = this;
+            var iocValue  = el.getAttribute('data-ioc-value');
+            var iocTypeId = parseInt(el.getAttribute('data-ioc-type-id'), 10);
+            if (!iocValue || isNaN(iocTypeId)) return;
+            $('.iris-corr-ioc-row').removeClass('iris-cioc-selected');
+            $(el).addClass('iris-cioc-selected');
+            $('#iris-corr-detail-val').text(iocValue);
+            $('#iris-corr-detail-type').text(el.getAttribute('data-ioc-type-name') || '');
+            if (window.iris_corr_load_ioc_context) {
+                window.iris_corr_load_ioc_context(document.getElementById('iris-corr-detail-body'), iocValue, iocTypeId);
+            }
+        });
+
+        // Safety valve: flip between the card list and the legacy table.
+        $(document).on('click', '#iris-corr-legacy-toggle', function () {
+            var showTable = $('#iris-corr-legacy-table').is(':hidden');
+            $('#iris-corr-legacy-table').toggle(showTable);
+            $('#iris-corr-cardlist').toggle(!showTable);
+            $(this).text(showTable ? 'Card view' : 'Table view');
+        });
 
         // IOC overlap confidence pill — rendered from server-computed ioc_confidence
         function iris_corr_confidence_pill(cl) {
@@ -541,6 +655,35 @@
                     + '</tr>';
             });
             $('#iris-corr-table-body').html(tbody || '<tr><td colspan="5" class="text-center text-muted">' + (pairs.length ? 'No cases are linked at this threshold, so no IOCs are shown. ' + pairs.length + ' IOC(s) are shared across cases — lower &ldquo;Min shared IOCs&rdquo; to see them.' : 'No shared IOCs found.') + '</td></tr>');
+
+            // Card list — the visible view. Rendered through the SAME shared
+            // builder the war-room Correlation tab uses
+            // (window.iris_corr_ioc_card), so the two surfaces stay identical
+            // by construction. The hidden legacy table above renders the same
+            // pairs and stays reachable via the "Table view" toggle.
+            var cardList = document.getElementById('iris-corr-cardlist');
+            if (cardList && window.iris_corr_ioc_card) {
+                cardList.innerHTML = '';
+                if (visiblePairs.length) {
+                    visiblePairs.forEach(function (p) {
+                        cardList.appendChild(window.iris_corr_ioc_card(p, caseMeta, { caseLinkBase: '/case/ioc?cid=' }));
+                    });
+                } else {
+                    // Same claim as the table's empty row — the empty state
+                    // names WHY (threshold vs genuinely nothing shared).
+                    var emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'iris-cioc-placeholder';
+                    emptyDiv.textContent = pairs.length
+                        ? 'No cases are linked at this threshold, so no IOCs are shown. '
+                          + pairs.length + ' IOC(s) are shared across cases — lower “Min shared IOCs” to see them.'
+                        : 'No shared IOCs found.';
+                    cardList.appendChild(emptyDiv);
+                }
+            }
+            // A fresh report invalidates the selection: the selected IOC may
+            // no longer be listed, and a detail panel about a row that is not
+            // on screen is a stale claim.
+            iris_corr_detail_reset();
             $('#iris-corr-table-row').show();
 
             // Force-directed graph — show the row now, but defer the actual
@@ -713,9 +856,11 @@
                 }
             });
 
-            // Filter IOC table rows
+            // Filter the shared-IOC listing — the selector covers both the
+            // cards and the legacy table rows (same class, same data attrs),
+            // so one pass drives whichever view is visible.
             var memberSet = activating ? new Set(caseIds) : null;
-            $('#iris-corr-table-body tr.iris-corr-ioc-row').each(function () {
+            $('#iris-corr-table-row .iris-corr-ioc-row').each(function () {
                 if (!memberSet) {
                     $(this).show();
                     return;

@@ -1,0 +1,436 @@
+{# iris-next: shared cross-case IOC UI — card renderer + context renderer.
+   ONE source for both correlation surfaces (the /correlation workspace and
+   the war-room Correlation tab), so their cards cannot drift apart: both
+   call window.iris_corr_ioc_card for the list card and
+   window.iris_corr_render_ioc_context for the per-case detail. The
+   window.iris_corr_tlp_badge renderer moved HERE from
+   includes/ioc_context_drawer.html (single definition — the drawer include
+   must load AFTER this one on pages that carry both).
+   Vanilla JS, no jQuery — safe on pages where jQuery loads later. #}
+<style>
+/* ---- shared IOC list card (both correlation surfaces) ---- */
+.iris-cioc-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-left: 3px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.iris-cioc-card:hover {
+  background: rgba(139,92,246,0.06);
+  border-color: rgba(139,92,246,0.35);
+}
+.iris-cioc-card.iris-cioc-selected {
+  background: rgba(139,92,246,0.09);
+  border-color: rgba(139,92,246,0.45);
+  border-left-color: rgba(139,92,246,1);
+}
+.iris-cioc-top {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+}
+.iris-cioc-val {
+  font-family: ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  font-size: 12.5px; font-weight: 600; color: #fafafa; word-break: break-all;
+  background: transparent; padding: 0;
+}
+.iris-cioc-count {
+  margin-left: auto;
+  font-size: 10.5px; font-weight: 600;
+  padding: 2px 8px; border-radius: 9999px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(250,250,250,0.75);
+  white-space: nowrap;
+}
+.iris-cioc-meta {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  margin-top: 6px;
+}
+.iris-cioc-type {
+  font-size: 10.5px; font-weight: 500;
+  padding: 2px 8px; border-radius: 9999px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(250,250,250,0.70);
+}
+.iris-cioc-case-chip {
+  font-size: 10.5px; font-weight: 500;
+  padding: 2px 8px; border-radius: 9999px;
+  background: rgba(139,92,246,0.10);
+  border: 1px solid rgba(139,92,246,0.30);
+  color: #d4c4ff;
+  text-decoration: none;
+  max-width: 260px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; display: inline-block; vertical-align: middle;
+}
+.iris-cioc-case-chip:hover { text-decoration: underline; color: #e4d9ff; }
+.iris-cioc-placeholder {
+  color: rgba(250,250,250,0.42); font-size: 12.5px; font-style: italic;
+  text-align: center; padding: 34px 14px;
+}
+
+/* ---- per-case cross-case context (detail panel AND drawer body) ----
+   Moved from includes/ioc_context_drawer.html so the /correlation detail
+   panel gets them without carrying the drawer. */
+.iris-corr-ioc-case-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.iris-corr-ioc-case-title {
+  font-size: 13px; font-weight: 600; color: #fafafa; margin-bottom: 4px;
+}
+.iris-corr-ioc-case-title a { color: #a78bfa; text-decoration: none; }
+.iris-corr-ioc-case-title a:hover { text-decoration: underline; }
+.iris-corr-ioc-case-meta {
+  font-size: 11px; color: rgba(250,250,250,0.55);
+  display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 6px;
+}
+.iris-corr-ioc-chip {
+  display: inline-block; padding: 2px 8px; border-radius: 9999px;
+  font-size: 10.5px; font-weight: 500;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(250,250,250,0.75);
+}
+.iris-corr-ioc-chip-violet {
+  background: rgba(139,92,246,0.12);
+  border-color: rgba(139,92,246,0.35);
+  color: #d4c4ff;
+}
+.iris-corr-ioc-section-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.10em;
+  text-transform: uppercase; color: rgba(250,250,250,0.40);
+  margin: 8px 0 4px 0;
+}
+.iris-corr-ioc-desc {
+  font-size: 12.5px; color: rgba(250,250,250,0.80); margin-bottom: 4px;
+}
+/* Deliberately muted and un-chipped: this is an absence, not a finding.
+   It must read as "nothing here" at a glance while still being present,
+   so a blank space is never mistaken for a broken lookup. */
+.iris-corr-ioc-nonotes {
+  font-size: 12px; font-style: italic;
+  color: rgba(250,250,250,0.42);
+  margin-bottom: 4px;
+}
+.iris-corr-ioc-note {
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.20);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.iris-corr-ioc-note-title {
+  font-weight: 600; color: #c4b5fd; margin-bottom: 4px; font-size: 12px;
+}
+.iris-corr-ioc-note-body {
+  color: rgba(250,250,250,0.72); word-break: break-word;
+  max-height: 200px; overflow-y: auto;
+}
+.iris-md-rendered p { margin: 0 0 4px; }
+.iris-md-rendered p:last-child { margin-bottom: 0; }
+.iris-md-rendered table {
+  width: 100%; border-collapse: collapse; font-size: 11px; margin: 4px 0;
+}
+.iris-md-rendered th, .iris-md-rendered td {
+  border: 1px solid rgba(139,92,246,0.30);
+  padding: 3px 6px; text-align: left; vertical-align: top;
+}
+.iris-md-rendered th {
+  background: rgba(139,92,246,0.18); color: #c4b5fd; font-weight: 600;
+}
+.iris-md-rendered tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+.iris-md-rendered code {
+  background: rgba(0,0,0,0.30); border-radius: 3px; padding: 1px 4px; font-size: 11px;
+}
+.iris-md-rendered pre {
+  background: rgba(0,0,0,0.30); border-radius: 4px; padding: 6px 8px;
+  overflow-x: auto; font-size: 11px;
+}
+.iris-md-rendered ul, .iris-md-rendered ol { margin: 2px 0 4px 16px; padding: 0; }
+.iris-md-rendered li { margin-bottom: 2px; }
+.iris-corr-ioc-row:hover td { background: rgba(139,92,246,0.06); }
+
+/* TLP badge. Colour comes from an inline style set by
+   window.iris_corr_tlp_badge so the five levels stay in one place in JS
+   rather than being split across five CSS classes. */
+.iris-corr-tlp {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+</style>
+
+<script>
+/* iris-next: shared TLP badge renderer for the correlation surfaces.
+ *
+ * Assigned to `window` deliberately: the callers run in different scopes
+ * (a DOMContentLoaded callback in the drawer, a page-scope IIFE on
+ * /correlation, war_room.js on the room page), so a plain declaration in
+ * any one of them would be invisible to the others.
+ *
+ * Correlation shows every TLP (an analyst only ever sees indicators from
+ * cases they can already open). The badge exists because the handling rule
+ * still applies: TLP governs REDISTRIBUTION, and only GREEN/CLEAR reach a
+ * STIX export or a MISP push.
+ */
+window.iris_corr_tlp_badge = function (tlpName, shareable) {
+    var styles = {
+        'red':          'background:rgba(239,68,68,0.16);border-color:rgba(239,68,68,0.50);color:#fda4af;',
+        'amber+strict': 'background:rgba(245,158,11,0.16);border-color:rgba(245,158,11,0.50);color:#fcd34d;',
+        'amber':        'background:rgba(245,158,11,0.14);border-color:rgba(245,158,11,0.45);color:#fcd34d;',
+        'green':        'background:rgba(45,206,137,0.14);border-color:rgba(45,206,137,0.45);color:#6ee7b7;',
+        'clear':        'background:rgba(255,255,255,0.10);border-color:rgba(255,255,255,0.30);color:#e5e7eb;',
+        'unset':        'background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.35);color:#fbbf24;'
+    };
+    /* Validate against the known set rather than escaping. Everything
+     * rendered below is then built only from these literals, so no
+     * server-supplied string is ever interpolated into markup — which is
+     * the failure mode that produced the stored XSS in the drawer. */
+    var name = Object.prototype.hasOwnProperty.call(styles, tlpName) ? tlpName : 'unset';
+    var label = (name === 'unset') ? 'not set' : name.toUpperCase();
+
+    var title;
+    if (shareable) {
+        title = 'TLP:' + label + ' — included in STIX exports and MISP pushes.';
+    } else if (name === 'unset') {
+        title = 'No TLP set. Treated as not shareable, so it is withheld from '
+              + 'STIX exports and MISP pushes.';
+    } else {
+        title = 'TLP:' + label + ' — visible here, but withheld from STIX exports '
+              + 'and MISP pushes.';
+    }
+    /* A padlock marks "will not leave the instance" so the distinction is
+     * visible at a glance without decoding five colours. */
+    var lock = shareable ? '' : ' <i class="fas fa-lock" style="font-size:8px;opacity:0.75;"></i>';
+    return '<span class="iris-corr-tlp" style="' + styles[name] + '" title="' + title + '">'
+         + label + lock + '</span>';
+};
+
+/* Shared IOC list card. Both correlation surfaces render their shared-IOC
+ * rows through this ONE builder, so the card is identical by construction.
+ *
+ * pair:     {ioc_value, ioc_type_id, ioc_type_name, tlp_name,
+ *            tlp_shareable, case_ids, case_count?}
+ * caseMeta: {case_id: {name, client, ...}} — optional, chips fall back to #id
+ * opts:     {caseLinkBase: '/case?cid=' | '/case/ioc?cid=' (default '/case?cid=')}
+ *
+ * Returns a DOM element. Built with createElement/textContent/setAttribute —
+ * analyst text never passes through innerHTML (CodeQL rule), and the card
+ * carries the historical iris-corr-ioc-row class + data-ioc-* attributes so
+ * the existing delegated listeners (the drawer's, the /correlation panel's,
+ * the cluster filter) keep working unchanged.
+ */
+window.iris_corr_ioc_card = function (pair, caseMeta, opts) {
+    caseMeta = caseMeta || {};
+    opts = opts || {};
+    var linkBase = opts.caseLinkBase || '/case?cid=';
+    var caseIds = pair.case_ids || [];
+
+    var card = document.createElement('div');
+    card.className = 'iris-cioc-card iris-corr-ioc-row';
+    /* setAttribute, never string-concat: an IOC value can contain quotes,
+     * and setAttribute is attribute-safe by construction. */
+    card.setAttribute('data-ioc-value', pair.ioc_value == null ? '' : pair.ioc_value);
+    card.setAttribute('data-ioc-type-id', pair.ioc_type_id == null ? '' : pair.ioc_type_id);
+    card.setAttribute('data-ioc-type-name', pair.ioc_type_name || '');
+    card.setAttribute('data-case-ids', JSON.stringify(caseIds));
+    card.setAttribute('title', 'Click to see full cross-case details');
+
+    var top = document.createElement('div');
+    top.className = 'iris-cioc-top';
+
+    var val = document.createElement('code');
+    val.className = 'iris-cioc-val';
+    val.textContent = pair.ioc_value == null ? '' : String(pair.ioc_value);
+    top.appendChild(val);
+
+    /* The badge string is built exclusively from literals validated against
+     * a known map (see iris_corr_tlp_badge) — no server string reaches this
+     * innerHTML. */
+    var tlp = document.createElement('span');
+    tlp.innerHTML = window.iris_corr_tlp_badge(pair.tlp_name, pair.tlp_shareable);
+    top.appendChild(tlp);
+
+    var count = document.createElement('span');
+    count.className = 'iris-cioc-count';
+    var n = (typeof pair.case_count === 'number') ? pair.case_count : caseIds.length;
+    count.textContent = n + ' case' + (n === 1 ? '' : 's');
+    top.appendChild(count);
+
+    card.appendChild(top);
+
+    var meta = document.createElement('div');
+    meta.className = 'iris-cioc-meta';
+
+    var type = document.createElement('span');
+    type.className = 'iris-cioc-type';
+    type.textContent = pair.ioc_type_name || 'unknown type';
+    meta.appendChild(type);
+
+    caseIds.forEach(function (cid) {
+        /* Validate AND re-derive the id before it reaches an href — a raw
+         * payload value is never credited as safe (CodeQL rule). */
+        var idNum = parseInt(cid, 10);
+        if (!isFinite(idNum)) { return; }
+        var idStr = String(idNum);
+        var m = caseMeta[idNum] || caseMeta[idStr] || {};
+        var a = document.createElement('a');
+        a.className = 'iris-cioc-case-chip';
+        a.href = linkBase + idStr;
+        a.target = '_blank';
+        a.textContent = '#' + idStr + (m.name ? ' – ' + m.name : '');
+        if (m.client) { a.setAttribute('title', m.client); }
+        meta.appendChild(a);
+    });
+
+    card.appendChild(meta);
+    return card;
+};
+
+/* Per-case cross-case context renderer — extracted from the drawer include
+ * so the /correlation detail panel and the war-room drawer render the SAME
+ * cards from the same /api/v2/correlation/ioc-context payload. */
+window.iris_corr_render_ioc_context = function (bodyEl, ctx) {
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = String(s == null ? '' : s);
+        return d.innerHTML;
+    }
+    function chipHtml(text, violet) {
+        return '<span class="iris-corr-ioc-chip' + (violet ? ' iris-corr-ioc-chip-violet' : '') + '">' + esc(text) + '</span> ';
+    }
+
+    var appearances = ctx.appearances || [];
+    if (!appearances.length) {
+        bodyEl.innerHTML = '<div style="color:rgba(250,250,250,0.45);font-size:12.5px;padding:20px 0;">No appearances found.</div>';
+        return;
+    }
+    var html = '';
+    appearances.forEach(function (a) {
+        var statusBadge = a.close_date
+            ? '<span style="font-size:10px;color:#9ca3af;margin-left:6px;">closed</span>'
+            : '<span style="font-size:10px;color:#34d399;margin-left:6px;">open</span>';
+
+        html += '<div class="iris-corr-ioc-case-card">';
+
+        /* Per-case TLP, not the rolled-up one: the same indicator is
+           routinely labelled differently in each case, and this view shows
+           one card per case, so each card states its own handling rule. */
+        var tlpBadge = window.iris_corr_tlp_badge
+            ? ' ' + window.iris_corr_tlp_badge(a.tlp_name, a.tlp_shareable)
+            : '';
+
+        html += '<div class="iris-corr-ioc-case-title">'
+            + '<a href="/case?cid=' + esc(a.case_id) + '" target="_blank">#' + esc(a.case_id) + ' — ' + esc(a.case_name) + '</a>'
+            + statusBadge + tlpBadge + '</div>';
+
+        html += '<div class="iris-corr-ioc-case-meta">';
+        if (a.client)         html += '<span>Client: <strong>' + esc(a.client) + '</strong></span>';
+        if (a.classification) html += '<span>Classification: <strong>' + esc(a.classification) + '</strong></span>';
+        if (a.severity)       html += '<span>Severity: <strong>' + esc(a.severity) + '</strong></span>';
+        if (a.open_date)      html += '<span>Opened: ' + esc(a.open_date.slice(0,10)) + '</span>';
+        html += '</div>';
+
+        if (a.ioc_tags) {
+            var iocTags = a.ioc_tags.split(/[,|]/).map(function(t){return t.trim();}).filter(Boolean);
+            if (iocTags.length) {
+                html += '<div class="iris-corr-ioc-section-label">IOC tags</div>';
+                html += '<div style="margin-bottom:6px;">';
+                iocTags.forEach(function(t){ html += chipHtml(t, false); });
+                html += '</div>';
+            }
+        }
+
+        if (a.case_tags && a.case_tags.length) {
+            html += '<div class="iris-corr-ioc-section-label">Case tags</div>';
+            html += '<div style="margin-bottom:6px;">';
+            a.case_tags.forEach(function(t){ html += chipHtml(t, true); });
+            html += '</div>';
+        }
+
+        if (a.ioc_description) {
+            html += '<div class="iris-corr-ioc-section-label">Analyst note on this IOC</div>';
+            html += '<div class="iris-corr-ioc-desc">' + esc(a.ioc_description) + '</div>';
+        }
+
+        /* Always render this section, even when empty. An omitted section is
+           ambiguous - the analyst cannot tell "no note mentions this indicator"
+           from "the note lookup is broken", and both look like a blank space.
+           It is also a real signal in its own right: an indicator nobody has
+           written about is one nobody has explained. */
+        if (!a.linked_notes || !a.linked_notes.length) {
+            html += '<div class="iris-corr-ioc-section-label">Linked notes</div>';
+            html += '<div class="iris-corr-ioc-nonotes">No note in this case references '
+                + 'this indicator, and none is linked as its source.</div>';
+        } else {
+            html += '<div class="iris-corr-ioc-section-label">Linked notes (' + a.linked_notes.length + ')</div>';
+            a.linked_notes.forEach(function (n) {
+                var sourceLabel = n.source === 'linked' ? 'sourced from' : 'mentioned in';
+                html += '<div class="iris-corr-ioc-note">';
+                html += '<div class="iris-corr-ioc-note-title">'
+                    + esc(n.note_title || 'Untitled note')
+                    + ' <span style="font-size:10px;font-weight:400;color:rgba(196,181,253,0.6);">(' + sourceLabel + ')</span></div>';
+                if (n.snippet) {
+                    /* Server-rendered safe markdown — injected as HTML on
+                       purpose, styled via .iris-md-rendered (never esc()
+                       server-rendered HTML). */
+                    html += '<div class="iris-corr-ioc-note-body iris-md-rendered">' + n.snippet + '</div>';
+                }
+                html += '</div>';
+            });
+        }
+
+        html += '</div>';
+    });
+
+    bodyEl.innerHTML = html;
+};
+
+/* Fetch + render the cross-case context into a container with distinct
+ * loading / failed / loaded states. A per-element sequence counter drops
+ * stale responses: clicking a second IOC while the first is in flight must
+ * never let the slower response overwrite the newer selection. */
+window.iris_corr_load_ioc_context = function (bodyEl, iocValue, iocTypeId) {
+    if (!bodyEl) { return; }
+    var seq = (bodyEl._irisCorrSeq || 0) + 1;
+    bodyEl._irisCorrSeq = seq;
+
+    bodyEl.innerHTML = '<div style="padding:30px 0;text-align:center;color:rgba(250,250,250,0.45);font-size:12.5px;">'
+        + '<span class="spinner-border spinner-border-sm mr-2" role="status"></span>Loading cross-case context…</div>';
+
+    /* Re-derive the type id — a raw attribute value never reaches the URL. */
+    var typeIdStr = String(parseInt(iocTypeId, 10));
+    var url = '/api/v2/correlation/ioc-context?ioc_value=' + encodeURIComponent(iocValue)
+            + '&ioc_type_id=' + encodeURIComponent(typeIdStr);
+    fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function (resp) {
+            if (bodyEl._irisCorrSeq !== seq) { return; }
+            window.iris_corr_render_ioc_context(bodyEl, resp);
+        })
+        .catch(function (e) {
+            if (bodyEl._irisCorrSeq !== seq) { return; }
+            var d = document.createElement('div');
+            d.textContent = String((e && e.message) || e);
+            bodyEl.innerHTML = '<div style="color:#fda4af;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);'
+                + 'padding:12px 14px;border-radius:8px;font-size:12.5px;"><b>Error loading IOC context.</b><br>' + d.innerHTML + '</div>';
+        });
+};
+</script>
