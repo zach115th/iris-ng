@@ -79,6 +79,48 @@ def get_drive(drive_id):
     return EvidenceDrive.query.filter(EvidenceDrive.id == drive_id).first()
 
 
+def search_drives_by_case(q, limit=25):
+    """Drives related to a case matching q — by case id ('19' or '#19'),
+    SOC id or case-name substring, all case-insensitive (issue #97).
+
+    Two relations are searched: the drive's ASSIGNED case, and cases whose
+    evidence items are STORED on the drive. The second is what answers
+    "which drive holds case X's evidence" for drives registered before the
+    one-case-per-drive rule — their own case link can be NULL or point at
+    a different case while they still hold the items.
+
+    Returns (drives, truncated): newest first, capped at `limit` with an
+    explicit truncation flag — a capped result must never read as a
+    complete one.
+    """
+    if not q or not q.strip():
+        return [], False
+    term = q.strip().lower()
+    filters = [
+        db.func.lower(Cases.name).like(f'%{term}%'),
+        db.func.lower(Cases.soc_id).like(f'%{term}%'),
+    ]
+    num = term[1:] if term.startswith('#') else term
+    if num.isdigit():
+        filters.append(Cases.case_id == int(num))
+    match = db.or_(*filters)
+
+    assigned = db.session.query(EvidenceDrive.id) \
+        .join(Cases, EvidenceDrive.case_id == Cases.case_id) \
+        .filter(match).all()
+    holding = db.session.query(CaseReceivedFile.drive_id) \
+        .join(Cases, CaseReceivedFile.case_id == Cases.case_id) \
+        .filter(CaseReceivedFile.drive_id.isnot(None)) \
+        .filter(match).distinct().all()
+    ids = {r[0] for r in assigned} | {r[0] for r in holding}
+    if not ids:
+        return [], False
+    drives = EvidenceDrive.query.filter(EvidenceDrive.id.in_(ids)) \
+        .order_by(EvidenceDrive.date_added.desc()).all()
+    truncated = len(drives) > limit
+    return drives[:limit], truncated
+
+
 def lookup_drive_payload(drive):
     """Full lookup result for a drive: drive + location + case + evidence items."""
     if drive is None:

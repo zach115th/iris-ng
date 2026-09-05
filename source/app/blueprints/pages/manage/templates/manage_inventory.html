@@ -67,11 +67,11 @@
         <div class="col-md-12">
           <div class="card card-round">
             <div class="card-body">
-              <h4 class="card-title">Scan or enter a bar code</h4>
-              <p class="text-muted small mb-2">Look up a physical evidence drive by its bar code to see its location, associated case, and the evidence items it holds.</p>
+              <h4 class="card-title">Scan a bar code or search by case</h4>
+              <p class="text-muted small mb-2">Look up a physical evidence drive by its bar code &mdash; or by the name, number or SOC id of a case &mdash; to see its location, associated case, and the evidence items it holds. Case search covers the drive a case is assigned to and any drive still holding that case's evidence items.</p>
               <div class="input-group input-group-lg" style="max-width: 640px;">
                 <input type="text" class="form-control" id="iris-inv-scan" autocomplete="off"
-                       placeholder="Scan barcode or type and press Enter">
+                       placeholder="Scan barcode, or type a case name / number and press Enter">
                 <div class="input-group-append">
                   <button class="btn btn-primary" type="button" onclick="iris_inventory_lookup();">
                     <i class="fas fa-search mr-1"></i> Look up
@@ -326,21 +326,28 @@
         }
 
         function iris_inventory_lookup() {
-            var bc = ($('#iris-inv-scan').val() || '').trim();
+            var q = ($('#iris-inv-scan').val() || '').trim();
             var msg = $('#iris-inv-lookup-msg');
             var res = $('#iris-inv-lookup-result');
             msg.text('').removeClass('text-danger text-success');
-            if (!bc) { msg.addClass('text-danger').text('Enter or scan a bar code.'); return; }
+            if (!q) { msg.addClass('text-danger').text('Enter a bar code, case name or case number.'); return; }
             msg.text('Looking up…');
             $.ajax({
-                url: '/api/v2/dashboard/inventory/lookup?barcode=' + encodeURIComponent(bc),
+                // q= is the search mode (issue #97): the response carries a
+                // barcode match AND case matches as separate fields, because
+                // a bar code and a case number can share digits — neither may
+                // silently shadow the other. barcode= keeps its historical
+                // exact contract for the other consumers of this endpoint.
+                url: '/api/v2/dashboard/inventory/lookup?q=' + encodeURIComponent(q),
                 method: 'GET', dataType: 'json'
             }).done(function (resp) {
                 msg.text('');
                 // v2 API returns the payload directly (no {status,data} envelope).
                 var d = (resp && resp.data) ? resp.data : resp;
-                if (!d || !d.barcode) { res.hide(); msg.addClass('text-danger').text('No result.'); return; }
-                iris_inventory_render_result(d);
+                if (!d || typeof d.barcode_match === 'undefined') {
+                    res.hide(); msg.addClass('text-danger').text('No result.'); return;
+                }
+                iris_inventory_render_lookup(d);
             }).fail(function (xhr) {
                 res.hide();
                 var m = 'Lookup failed.';
@@ -349,8 +356,65 @@
             });
         }
 
-        function iris_inventory_render_result(d) {
+        // Search-mode result. The empty state names BOTH facts — a bare
+        // "no result" would leave the analyst guessing which lookup failed.
+        function iris_inventory_render_lookup(d) {
             var res = $('#iris-inv-lookup-result');
+            var msg = $('#iris-inv-lookup-msg');
+            var bm = d.barcode_match;
+            var cms = d.case_matches || [];
+            IRIS_INV._lookupCaseMatches = {};
+            cms.forEach(function (m) { IRIS_INV._lookupCaseMatches[m.id] = m; });
+
+            if (!bm && !cms.length) {
+                res.hide();
+                msg.addClass('text-danger').text('No drive has bar code "' + d.query
+                    + '", and no assigned or stored case matches it.');
+                return;
+            }
+            if (bm && !cms.length) { iris_inventory_render_result(bm); return; }
+            if (!bm && cms.length === 1) {
+                iris_inventory_render_result(cms[0]);
+                msg.addClass('text-success').text('Matched on the drive\'s case, not its bar code.');
+                return;
+            }
+            // Ambiguous term or several drives: labeled sections, both shown.
+            var html = '';
+            if (bm) {
+                html += '<div class="iris-inv-lu-label text-muted small mb-1" style="text-transform:uppercase;letter-spacing:0.08em;">Bar code match</div>'
+                     + iris_inventory_result_html(bm);
+            }
+            var capNote = d.case_matches_truncated
+                ? ' — list capped, refine the search' : '';
+            html += '<div class="iris-inv-lu-label text-muted small mb-1' + (bm ? ' mt-3' : '') + '" style="text-transform:uppercase;letter-spacing:0.08em;">Case matches (' + cms.length + capNote + ')</div>'
+                 + '<div class="list-group">' + cms.map(iris_inv_lookup_match_row).join('') + '</div>'
+                 + '<div id="iris-inv-lu-detail" class="mt-2"></div>';
+            res.html(html).show();
+        }
+
+        function iris_inv_lookup_match_row(m) {
+            var caseTxt = m.case
+                ? '#' + m.case.case_id + ' - ' + iris_inv_esc(m.case.case_name)
+                : '<span class="text-muted">no assigned case</span>';
+            var evCount = m.evidences ? m.evidences.length : 0;
+            return '<a href="javascript:void(0);" class="list-group-item list-group-item-action iris-inv-lu-pick" data-drive-id="' + parseInt(m.id, 10) + '">'
+                + '<code>' + iris_inv_esc(m.barcode) + '</code> '
+                + '<strong class="ml-1">' + iris_inv_esc(m.label || '') + '</strong> '
+                + iris_inv_status_badge(m.status)
+                + ' <span class="text-muted small ml-2">'
+                + (m.physical_location ? iris_inv_esc(m.physical_location) + ' · ' : '')
+                + caseTxt + '</span>'
+                + ' <span class="text-muted small float-right">' + evCount + ' evidence item(s)</span>'
+                + '</a>';
+        }
+
+        function iris_inventory_render_result(d) {
+            // Kept as the single-drive entry point; the html builder is
+            // extracted so the multi-match view can compose labeled sections.
+            $('#iris-inv-lookup-result').html(iris_inventory_result_html(d)).show();
+        }
+
+        function iris_inventory_result_html(d) {
             var caseHtml = d.case
                 ? '<a href="/case?cid=' + d.case.case_id + '">#' + d.case.case_id + ' - ' + iris_inv_esc(d.case.case_name) + '</a>'
                 : '<span class="text-muted">— none —</span>';
@@ -390,7 +454,7 @@
                 + '    </table></div>'
                 + '  </div>'
                 + '</div>';
-            res.html(html).show();
+            return html;
         }
 
         function iris_inv_capacity_bytes(s) {
@@ -777,6 +841,18 @@
         // Enter-to-scan on the lookup box.
         $(document).on('keydown', '#iris-inv-scan', function (e) {
             if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); iris_inventory_lookup(); }
+        });
+
+        // Case-match rows expand the picked drive's full detail in place —
+        // the payload is already in hand, so no second round-trip.
+        $(document).on('click', '.iris-inv-lu-pick', function () {
+            var id = parseInt($(this).attr('data-drive-id'), 10);
+            var m = (IRIS_INV._lookupCaseMatches || {})[id];
+            var det = document.getElementById('iris-inv-lu-detail');
+            if (!m || !det) { return; }
+            det.innerHTML = iris_inventory_result_html(m);
+            $('.iris-inv-lu-pick').removeClass('active');
+            $(this).addClass('active');
         });
 
         // Column sort on Drive inventory table headers.

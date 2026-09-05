@@ -28,6 +28,7 @@ from app.datamgmt.dashboard.inventory_db import create_drive
 from app.datamgmt.dashboard.inventory_db import delete_drive
 from app.datamgmt.dashboard.inventory_db import get_drive
 from app.datamgmt.dashboard.inventory_db import get_drive_by_barcode
+from app.datamgmt.dashboard.inventory_db import search_drives_by_case
 from app.datamgmt.dashboard.inventory_db import list_drives
 from app.datamgmt.dashboard.inventory_db import lookup_drive_payload
 from app.datamgmt.dashboard.inventory_db import update_drive
@@ -154,13 +155,39 @@ def inventory_capacity():
 @dashboard_blueprint.get('/inventory/lookup')
 @ac_api_requires()
 def inventory_lookup():
+    """Resolve a drive by barcode, or search drives by case (issue #97).
+
+    Two modes. `barcode=` keeps its historical exact contract byte-for-byte
+    (the evidence modal's blur auto-link and the card view's per-drive
+    evidence fetch both consume it): the single drive payload, 400 on miss.
+
+    `q=` is the scan bar's search mode: the response carries BOTH a
+    `barcode_match` and `case_matches` as separate fields — a barcode and a
+    case number can share digits, so an ambiguous term returns both results
+    labeled rather than one silently shadowing the other. The barcode-matched
+    drive is deduplicated out of `case_matches` (it is one drive, not two
+    results); `case_matches_truncated` says the case list was capped.
+    """
     barcode = request.args.get('barcode', None, type=str)
-    if not barcode or not barcode.strip():
-        return response_api_error('A barcode is required')
-    drive = get_drive_by_barcode(barcode)
-    if drive is None:
-        return response_api_error(f'No drive found for barcode "{barcode.strip()}"')
-    return response_api_success(data=lookup_drive_payload(drive))
+    if barcode and barcode.strip():
+        drive = get_drive_by_barcode(barcode)
+        if drive is None:
+            return response_api_error(f'No drive found for barcode "{barcode.strip()}"')
+        return response_api_success(data=lookup_drive_payload(drive))
+
+    q = request.args.get('q', None, type=str)
+    if not q or not q.strip():
+        return response_api_error('A barcode or a search term (q) is required')
+    q = q.strip()
+    drive = get_drive_by_barcode(q)
+    matches, truncated = search_drives_by_case(q)
+    return response_api_success(data={
+        'query': q,
+        'barcode_match': lookup_drive_payload(drive) if drive else None,
+        'case_matches': [lookup_drive_payload(m) for m in matches
+                         if not (drive and m.id == drive.id)],
+        'case_matches_truncated': truncated,
+    })
 
 
 @dashboard_blueprint.get('/inventory/drives')
