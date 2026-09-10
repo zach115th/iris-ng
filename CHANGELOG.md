@@ -11,6 +11,52 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.0.2] — 2026-09-10
+
+Three analyst-facing improvements, a repair to a modal that had never worked,
+and a dependency refresh. No schema change: the database head is unchanged
+from v2.0.0 and no migration runs on upgrade. An image rebuild is required —
+the UI work ships in baked static JS and three Python packages moved.
+
+### Added
+
+- **Drive inventory searches by case, not just bar code.** The scan bar's
+  lookup now also matches a case name, case number (`19` or `#19`) or SOC id,
+  covering both the drive's assigned case and any case whose evidence items
+  are stored on the drive. A term that is both a bar code and a case number
+  returns both results, labelled apart, rather than one silently shadowing the
+  other; a capped case list says so. The historical `barcode=` lookup is
+  untouched for its existing consumers. (#97)
+- **Collapsible days on both timelines.** Every date pill on the master
+  timeline and the working panel toggles its day's events, with an explicit
+  "N hidden" count, Collapse all / Expand all in the header menu, and the
+  folded state remembered per case. A deep link into a folded day still opens
+  it on first sight. (#105)
+- **Shared IOCs on the correlation workspace are cards.** The `/correlation`
+  Shared IOCs table became a two-pane master/detail view matching the rest of
+  the platform, and the war-room Correlation tab renders the same cards from
+  one shared renderer; the legacy table stays reachable behind a toggle.
+
+### Fixed
+
+- **The Processing pipelines modal's upload zone now loads.** The modal has
+  always referenced `plugin/dropzone/dropzone.js` while the build only ever
+  emitted `dropzone.min.js`, so its script tag returned 404 and the upload
+  zone never initialised. The build now ships the file under both names.
+- Timeline day folding survived three layout traps found after the first
+  cut: a page-level `!important` rule that defeated the inline hide, a stale
+  deep-link hash that pinned a day open, and a framework badge rule that
+  pushed the folded pill to the right edge of the page.
+
+### Dependencies
+
+- UI build: dropzone 6.2.0 (major — its browser build moved, and the copy
+  target moved with it), vite 8.2.2, eslint 10.10.0, globals 17.12.0,
+  autoprefixer 10.5.5; e2e: @playwright/test 1.63.0, joi 18.2.8.
+- Python: Flask-Caching 2.5.1, alembic 1.19.2, pymisp 2.5.34.2 (drops its
+  `jsonschema` and `publicsuffixlist` dependencies; the bundled MISP module's
+  call surface is unchanged).
+
 ## [IRIS-NG-v2.0.1] — 2026-09-04
 
 A security-hardening release: the full triage of the CodeQL scan that ran against
