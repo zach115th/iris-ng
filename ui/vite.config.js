@@ -116,8 +116,20 @@ export default defineConfig(({ mode }) => {
                         dest: 'assets/js/plugin/bootstrap-slider/',
                     },
                     {
-                        src: 'node_modules/dropzone/dist/min/dropzone.min.js',
+                        // dropzone 6 dropped dist/min/; its browser build is
+                        // dist/dropzone-min.js. Shipped under the name the
+                        // pipelines modal actually loads (dropzone.js) - the
+                        // old dropzone.min.js copy was never referenced by any
+                        // template, so the modal's script tag 404'd since
+                        // upstream. Both names ship so nothing external breaks.
+                        src: 'node_modules/dropzone/dist/dropzone-min.js',
                         dest: 'assets/js/plugin/dropzone/',
+                        rename: 'dropzone.js',
+                    },
+                    {
+                        src: 'node_modules/dropzone/dist/dropzone-min.js',
+                        dest: 'assets/js/plugin/dropzone/',
+                        rename: 'dropzone.min.js',
                     },
                     {
                         src: 'node_modules/html2canvas/dist/html2canvas.min.js',
