@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 
 from app import db
 from app.models.models import CaseReceivedFile
+from app.models.models import Client
 from app.models.models import EvidenceDrive
 from app.models.models import EvidenceTypes
 from app.models.models import ServerSettings
@@ -34,14 +35,19 @@ def list_drives():
             EvidenceDrive,
             Cases.name.label('case_name'),
             Cases.close_date.label('case_close_date'),
+            Client.name.label('client_name'),
         ) \
         .outerjoin(Cases, EvidenceDrive.case_id == Cases.case_id) \
+        .outerjoin(Client, Cases.client_id == Client.client_id) \
         .order_by(EvidenceDrive.date_added.desc()) \
         .all()
     out = []
-    for drive, case_name, case_close_date in rows:
+    for drive, case_name, case_close_date, client_name in rows:
         d = _serialize_drive(drive)
         d['case_name'] = case_name
+        # Customer of the assigned case (issue #106) — additive; None when
+        # the drive has no case.
+        d['client_name'] = client_name
         d['overdue'] = _is_overdue(drive, retention_months, case_close_date)
         out.append(d)
     return out
@@ -81,13 +87,16 @@ def get_drive(drive_id):
 
 def search_drives_by_case(q, limit=25):
     """Drives related to a case matching q — by case id ('19' or '#19'),
-    SOC id or case-name substring, all case-insensitive (issue #97).
+    SOC id, case-name substring (issue #97) or the case's CUSTOMER name
+    substring (issue #106), all case-insensitive.
 
     Two relations are searched: the drive's ASSIGNED case, and cases whose
     evidence items are STORED on the drive. The second is what answers
     "which drive holds case X's evidence" for drives registered before the
     one-case-per-drive rule — their own case link can be NULL or point at
-    a different case while they still hold the items.
+    a different case while they still hold the items. The customer match
+    rides the same two relations one join further out (case -> client),
+    so "every drive holding anything of customer X" is one query.
 
     Returns (drives, truncated): newest first, capped at `limit` with an
     explicit truncation flag — a capped result must never read as a
@@ -99,6 +108,7 @@ def search_drives_by_case(q, limit=25):
     filters = [
         db.func.lower(Cases.name).like(f'%{term}%'),
         db.func.lower(Cases.soc_id).like(f'%{term}%'),
+        db.func.lower(Client.name).like(f'%{term}%'),
     ]
     num = term[1:] if term.startswith('#') else term
     if num.isdigit():
@@ -107,9 +117,11 @@ def search_drives_by_case(q, limit=25):
 
     assigned = db.session.query(EvidenceDrive.id) \
         .join(Cases, EvidenceDrive.case_id == Cases.case_id) \
+        .outerjoin(Client, Cases.client_id == Client.client_id) \
         .filter(match).all()
     holding = db.session.query(CaseReceivedFile.drive_id) \
         .join(Cases, CaseReceivedFile.case_id == Cases.case_id) \
+        .outerjoin(Client, Cases.client_id == Client.client_id) \
         .filter(CaseReceivedFile.drive_id.isnot(None)) \
         .filter(match).distinct().all()
     ids = {r[0] for r in assigned} | {r[0] for r in holding}
@@ -128,9 +140,14 @@ def lookup_drive_payload(drive):
     payload = _serialize_drive(drive)
 
     case = Cases.query.filter(Cases.case_id == drive.case_id).first() if drive.case_id else None
+    client = Client.query.filter(Client.client_id == case.client_id).first() if case and case.client_id else None
     payload['case'] = {
         'case_id': case.case_id,
         'case_name': case.name,
+        # Customer of the case (issue #106): additive fields, None when the
+        # client row is gone.
+        'client_id': client.client_id if client else None,
+        'client_name': client.name if client else None,
     } if case else None
 
     items = db.session.query(CaseReceivedFile, EvidenceTypes.name.label('type_name')) \

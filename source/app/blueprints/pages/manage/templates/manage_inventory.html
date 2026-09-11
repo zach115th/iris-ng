@@ -67,11 +67,11 @@
         <div class="col-md-12">
           <div class="card card-round">
             <div class="card-body">
-              <h4 class="card-title">Scan a bar code or search by case</h4>
-              <p class="text-muted small mb-2">Look up a physical evidence drive by its bar code &mdash; or by the name, number or SOC id of a case &mdash; to see its location, associated case, and the evidence items it holds. Case search covers the drive a case is assigned to and any drive still holding that case's evidence items.</p>
+              <h4 class="card-title">Scan a bar code or search by case or customer</h4>
+              <p class="text-muted small mb-2">Look up a physical evidence drive by its bar code &mdash; or by the name, number or SOC id of a case, or by a customer name &mdash; to see its location, associated case, and the evidence items it holds. Case and customer search cover the drive a case is assigned to and any drive still holding that case's evidence items.</p>
               <div class="input-group input-group-lg" style="max-width: 640px;">
                 <input type="text" class="form-control" id="iris-inv-scan" autocomplete="off"
-                       placeholder="Scan barcode, or type a case name / number and press Enter">
+                       placeholder="Scan barcode, or type a case name / number / customer and press Enter">
                 <div class="input-group-append">
                   <button class="btn btn-primary" type="button" onclick="iris_inventory_lookup();">
                     <i class="fas fa-search mr-1"></i> Look up
@@ -179,7 +179,7 @@
               <div class="iris-di-wrap" id="iris-di-wrap">
                 <div class="iris-di-left">
                   <input type="text" class="form-control form-control-sm mb-2" id="iris-di-search"
-                         placeholder="Search drives (bar code, label, location, case)..." autocomplete="off">
+                         placeholder="Search drives (bar code, label, location, case, customer)..." autocomplete="off">
                   <div id="iris-di-list"></div>
                   <div class="iris-di-statemsg" id="iris-di-state" style="display:none;"></div>
                 </div>
@@ -330,7 +330,7 @@
             var msg = $('#iris-inv-lookup-msg');
             var res = $('#iris-inv-lookup-result');
             msg.text('').removeClass('text-danger text-success');
-            if (!q) { msg.addClass('text-danger').text('Enter a bar code, case name or case number.'); return; }
+            if (!q) { msg.addClass('text-danger').text('Enter a bar code, case name, case number or customer.'); return; }
             msg.text('Looking up…');
             $.ajax({
                 // q= is the search mode (issue #97): the response carries a
@@ -369,13 +369,13 @@
             if (!bm && !cms.length) {
                 res.hide();
                 msg.addClass('text-danger').text('No drive has bar code "' + d.query
-                    + '", and no assigned or stored case matches it.');
+                    + '", and no assigned or stored case or customer matches it.');
                 return;
             }
             if (bm && !cms.length) { iris_inventory_render_result(bm); return; }
             if (!bm && cms.length === 1) {
                 iris_inventory_render_result(cms[0]);
-                msg.addClass('text-success').text('Matched on the drive\'s case, not its bar code.');
+                msg.addClass('text-success').text('Matched on the drive\'s case or customer, not its bar code.');
                 return;
             }
             // Ambiguous term or several drives: labeled sections, both shown.
@@ -386,15 +386,19 @@
             }
             var capNote = d.case_matches_truncated
                 ? ' — list capped, refine the search' : '';
-            html += '<div class="iris-inv-lu-label text-muted small mb-1' + (bm ? ' mt-3' : '') + '" style="text-transform:uppercase;letter-spacing:0.08em;">Case matches (' + cms.length + capNote + ')</div>'
+            html += '<div class="iris-inv-lu-label text-muted small mb-1' + (bm ? ' mt-3' : '') + '" style="text-transform:uppercase;letter-spacing:0.08em;">Case / customer matches (' + cms.length + capNote + ')</div>'
                  + '<div class="list-group">' + cms.map(iris_inv_lookup_match_row).join('') + '</div>'
                  + '<div id="iris-inv-lu-detail" class="mt-2"></div>';
             res.html(html).show();
         }
 
         function iris_inv_lookup_match_row(m) {
+            // Customer first (issue #106): a customer search returns drives
+            // across several cases, and the case line alone would not say
+            // why a row is here.
             var caseTxt = m.case
-                ? '#' + m.case.case_id + ' - ' + iris_inv_esc(m.case.case_name)
+                ? (m.case.client_name ? '<span class="iris-inv-customer">' + iris_inv_esc(m.case.client_name) + '</span> · ' : '')
+                  + '#' + m.case.case_id + ' - ' + iris_inv_esc(m.case.case_name)
                 : '<span class="text-muted">no assigned case</span>';
             var evCount = m.evidences ? m.evidences.length : 0;
             return '<a href="javascript:void(0);" class="list-group-item list-group-item-action iris-inv-lu-pick" data-drive-id="' + parseInt(m.id, 10) + '">'
@@ -417,6 +421,7 @@
         function iris_inventory_result_html(d) {
             var caseHtml = d.case
                 ? '<a href="/case?cid=' + d.case.case_id + '">#' + d.case.case_id + ' - ' + iris_inv_esc(d.case.case_name) + '</a>'
+                  + (d.case.client_name ? ' <span class="text-muted">· <span class="iris-inv-customer">' + iris_inv_esc(d.case.client_name) + '</span></span>' : '')
                 : '<span class="text-muted">— none —</span>';
             var rows = (d.evidences || []).map(function (e) {
                 return '<tr>'
@@ -914,7 +919,7 @@
         if (!IRIS_DI.q) { return true; }
         var q = IRIS_DI.q.toLowerCase();
         return [d.barcode, d.label, d.serial_number, d.physical_location,
-                d.capacity, d.case_name,
+                d.capacity, d.case_name, d.client_name,
                 d.case_id != null ? ('#' + d.case_id) : '']
             .some(function (v) {
                 return String(v == null ? '' : v).toLowerCase().indexOf(q) !== -1;
@@ -927,6 +932,9 @@
         var caseTxt = d.case_id
             ? ('#' + d.case_id + (d.case_name ? ' - ' + iris_inv_esc(d.case_name) : ''))
             : '—';
+        var customerTxt = d.client_name
+            ? '<span><i class="fas fa-building mr-1"></i>' + iris_inv_esc(d.client_name) + '</span>'
+            : '';
         return '<div class="' + cls + '" data-id="' + d.id + '">'
             + '<div class="d-flex align-items-center" style="gap:8px; flex-wrap:wrap;">'
             + '<span class="iris-di-bc">' + iris_inv_esc(d.barcode) + '</span>'
@@ -938,6 +946,7 @@
             + (d.physical_location ? '<span><i class="fas fa-map-marker-alt mr-1"></i>' + iris_inv_esc(d.physical_location) + '</span>' : '')
             + (d.capacity ? '<span>' + iris_inv_esc(d.capacity) + '</span>' : '')
             + '<span>Case: ' + caseTxt + '</span>'
+            + customerTxt
             + (d.date_added ? '<span>Added ' + iris_inv_esc(d.date_added.substring(0, 10)) + '</span>' : '')
             + '</div></div>';
     }
@@ -977,6 +986,7 @@
         var caseHtml = d.case_id
             ? '<a href="/case?cid=' + d.case_id + '">#' + d.case_id
               + (d.case_name ? ' - ' + iris_inv_esc(d.case_name) : '') + '</a>'
+              + (d.client_name ? ' <span class="text-muted">· ' + iris_inv_esc(d.client_name) + '</span>' : '')
             : '<span class="text-muted">— none —</span>';
         return '<div class="iris-di-detailcard">'
             + '<div class="iris-di-dh">'

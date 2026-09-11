@@ -11,6 +11,30 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Update banner (#111).** When a newer release exists on GitHub, a strip at the top of
+  every page except Home says so (Home's strip stays reserved for admin announcements).
+  Everyone sees the notice and can hide it for their browser until the next release;
+  server administrators also get the release link and a "How to upgrade" panel with the
+  clone-based commands and the release notes. The sidebar version line gains a small
+  update icon. Backed by `GET /api/v2/updates/latest` (cached in-process for 6 hours,
+  honours the configured proxies, never raises).
+- **Settings → System → Updates:** "Check for new releases" toggle (on by default; turn
+  it off for air-gapped deployments) and a "Check now" button.
+- **Inventory search by customer (#106).** The scan bar's search mode also matches the
+  case's customer name, over the same two relations as the case search (the drive's
+  assigned case, and cases whose evidence is stored on the drive), so a customer search
+  lists every drive holding anything of that customer. Matches, the result card, the
+  drive-inventory cards and the drive detail now name the customer beside the case, and
+  the drive list's own search box matches it too. Additive `case.client_name` /
+  `case.client_id` on lookup matches and `client_name` on `GET /inventory/drives`.
+
+### Changed
+- `RELEASE_URL` now defaults to this project's releases feed; the inherited default
+  compared the running version against another project's releases.
+
 ## [IRIS-NG-v2.0.2] — 2026-09-10
 
 Three analyst-facing improvements, a repair to a modal that had never worked,

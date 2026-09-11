@@ -101,10 +101,20 @@ def iris_version():
 
 # TODO should move this method somewhere else, it is not a REST route
 @app.context_processor
-@cache.cached(timeout=3600, key_prefix='iris_has_updates')
 def has_updates():
+    """Sidebar "updates available" icon (issue #111).
 
-    return dict(has_updates=False)
+    Reads what THIS worker already learned from the banner's fetch — never an
+    outbound call on a render path. Upstream hardcoded False here, so the
+    icon could never show. Until the first banner request on a worker this
+    reports False, which is honest ("not known"), not a claim of none.
+    """
+    from app.iris_engine.update_check import peek_update_state
+    state = peek_update_state()
+    latest = state.get('latest') or {}
+    return dict(has_updates=state.get('update_available', False),
+                iris_update_version=latest.get('tag'),
+                iris_update_url=latest.get('url'))
 
 
 def _update_user_case_ctx():

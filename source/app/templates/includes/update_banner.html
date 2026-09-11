@@ -1,0 +1,183 @@
+{#  "A newer release is available" strip (issue #111).
+    Included from BOTH navs right after announcement_banners.html (the header
+    exists twice - project rule). Vanilla JS: the navs render before jQuery.
+
+    Rules, all maintainer decisions:
+    * NOT on /home - that strip is reserved for admin-authored announcements.
+      Decided server-side on request.endpoint so the served page carries the
+      script only where it may render.
+    * Everyone sees the notice and may hide it for THEIR browser until the
+      next release (localStorage keyed by the release tag). Only server
+      administrators get the affordances - release link + "How to upgrade" -
+      because only they can act; the endpoint says so via viewer_can_act.
+    * Everything analyst-visible is textContent. The release-notes block is
+      the ONE innerHTML sink and it receives notes_html, which the server
+      rendered through render_markdown_safe (raw HTML escaped, unsafe URLs
+      stripped). The release URL is used only when it is a GitHub URL.
+    * Sits ABOVE the announcement strip: announcement_banners.html inserts
+      after #iris-upd-banner when it is already there, and this script inserts
+      before #iris-ann-banners when that came first - the order is fixed
+      whichever fetch wins. #}
+{% if request.endpoint != 'home.home' %}
+<style>
+    .iris-upd-banner {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        padding: 8px 18px; font-size: 13px; color: #efeaff;
+        background: #2e2452; border-bottom: 1px solid rgba(0,0,0,0.25);
+    }
+    .iris-upd-banner svg { width: 15px; height: 15px; flex-shrink: 0; color: #b9a6f0; }
+    .iris-upd-banner b { color: #d4c4ff; }
+    .iris-upd-banner .iris-upd-cur { color: #a9a3c2; }
+    .iris-upd-banner a, .iris-upd-banner .iris-upd-link {
+        color: #d4c4ff; text-decoration: underline; cursor: pointer;
+        background: none; border: none; padding: 0; font: inherit;
+    }
+    .iris-upd-banner .iris-upd-sep { color: #7e7b8c; }
+    .iris-upd-banner .iris-upd-dismiss {
+        margin-left: auto; cursor: pointer; opacity: 0.7;
+        background: none; border: none; color: inherit; font-size: 15px;
+    }
+    .iris-upd-banner .iris-upd-dismiss:hover { opacity: 1; }
+    .iris-upd-detail {
+        padding: 10px 18px 12px 43px; font-size: 12.5px; color: #cfcbe0;
+        background: #241c40; border-bottom: 1px solid rgba(0,0,0,0.25);
+    }
+    .iris-upd-detail pre {
+        margin: 6px 0 8px; padding: 8px 10px; font-size: 12px; color: #e8e6f0;
+        background: #15151a; border: 1px solid rgba(139,92,246,0.35); border-radius: 4px;
+        white-space: pre; overflow-x: auto;
+    }
+    .iris-upd-detail .iris-upd-warn { color: #f4c430; }
+    .iris-upd-detail .iris-upd-notes { margin-top: 8px; padding-top: 8px;
+        border-top: 1px solid rgba(255,255,255,0.08); max-width: 900px; }
+    .iris-upd-detail .iris-upd-notes h1, .iris-upd-detail .iris-upd-notes h2,
+    .iris-upd-detail .iris-upd-notes h3 { font-size: 13px; margin: 6px 0 4px; color: #e8e6f0; }
+    .iris-upd-detail .iris-upd-notes p { margin: 0 0 4px; }
+    .iris-upd-detail .iris-upd-notes img { max-height: 22px; vertical-align: middle; }
+    .iris-upd-detail .iris-upd-notes a { color: #b9a6f0; }
+</style>
+<script>
+(function () {
+    var STORAGE_KEY = 'iris_upd_dismissed_tag';
+    var ENDPOINT = '/api/v2/updates/latest';
+
+    function el(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) { e.className = cls; }
+        if (text != null) { e.textContent = text; }
+        return e;
+    }
+
+    function dismissedTag() {
+        try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+    }
+
+    function upgradeCommands(tag) {
+        return 'git fetch --all --tags\n' +
+               'git reset --hard ' + tag + '\n' +
+               'docker compose -f docker-compose.dev.yml up -d --build --force-recreate';
+    }
+
+    function buildDetail(latest) {
+        var d = el('div', 'iris-upd-detail');
+        d.id = 'iris-upd-detail';
+        d.hidden = true;
+        d.appendChild(el('div', 'iris-upd-warn',
+            'Back up the database first (pg_dump) - iris-ng migrations are one-way.'));
+        d.appendChild(el('div', null, 'Clone-based install, from the checkout directory:'));
+        d.appendChild(el('pre', null, upgradeCommands(latest.tag)));
+        d.appendChild(el('div', null,
+            'Helm: set the chart appVersion / image tags to ' + latest.tag + ' and upgrade the release. ' +
+            'Rebuild is mandatory - a restart alone keeps the old image.'));
+        if (latest.notes_html) {
+            var notes = el('div', 'iris-upd-notes');
+            /* The one innerHTML sink: server-rendered through render_markdown_safe. */
+            notes.innerHTML = latest.notes_html;
+            d.appendChild(notes);
+            if (latest.notes_truncated) {
+                d.appendChild(el('div', 'iris-upd-cur', 'Release notes truncated - see the release page for the rest.'));
+            }
+        }
+        return d;
+    }
+
+    function render(host, state) {
+        var latest = state.latest;
+        var wrap = el('div');
+        wrap.id = 'iris-upd-banner';
+
+        var bar = el('div', 'iris-upd-banner');
+        bar.setAttribute('role', 'status');
+        bar.setAttribute('data-tag', latest.tag);
+        bar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>';
+
+        var text = el('span');
+        text.appendChild(document.createTextNode('A newer IRIS-NG release is available: '));
+        text.appendChild(el('b', null, latest.tag));
+        text.appendChild(el('span', 'iris-upd-cur', ' (this server runs ' + state.current_version + ')'));
+        bar.appendChild(text);
+
+        var detail = null;
+        if (state.viewer_can_act) {
+            var url = typeof latest.url === 'string' && latest.url.indexOf('https://github.com/') === 0 ? latest.url : null;
+            if (url) {
+                var a = el('a', null, 'Release notes');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.id = 'iris-upd-release-link';
+                bar.appendChild(el('span', 'iris-upd-sep', '·'));
+                bar.appendChild(a);
+            }
+            var how = el('button', 'iris-upd-link', 'How to upgrade');
+            how.type = 'button';
+            how.id = 'iris-upd-how';
+            how.setAttribute('aria-expanded', 'false');
+            bar.appendChild(el('span', 'iris-upd-sep', '·'));
+            bar.appendChild(how);
+            detail = buildDetail(latest);
+            how.addEventListener('click', function () {
+                detail.hidden = !detail.hidden;
+                how.setAttribute('aria-expanded', detail.hidden ? 'false' : 'true');
+            });
+        }
+
+        var x = el('button', 'iris-upd-dismiss');
+        x.type = 'button';
+        x.id = 'iris-upd-dismiss';
+        x.setAttribute('title', 'Hide until the next release');
+        x.setAttribute('aria-label', 'Hide until the next release');
+        x.innerHTML = '&times;';
+        x.addEventListener('click', function () {
+            wrap.remove();
+            try { localStorage.setItem(STORAGE_KEY, latest.tag); } catch (e) { /* convenience only */ }
+        });
+        bar.appendChild(x);
+
+        wrap.appendChild(bar);
+        if (detail) { wrap.appendChild(detail); }
+
+        var ann = document.getElementById('iris-ann-banners');
+        host.insertBefore(wrap, ann && ann.parentNode === host ? ann : host.firstChild);
+    }
+
+    function init(fetchImpl) {
+        var host = document.querySelector('.main-panel');
+        if (!host) { return Promise.resolve(); }
+        var doFetch = fetchImpl || window.fetch.bind(window);
+        return doFetch(ENDPOINT, { credentials: 'same-origin' })
+            .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+            .then(function (state) {
+                if (!state || !state.enabled || !state.update_available || !state.latest) { return; }
+                if (typeof state.latest.tag !== 'string' || !state.latest.tag) { return; }
+                if (dismissedTag() === state.latest.tag) { return; }
+                render(host, state);
+            })
+            .catch(function () { /* check unavailable - never block the page */ });
+    }
+
+    window.irisUpdateBanner = { init: init, STORAGE_KEY: STORAGE_KEY };
+    document.addEventListener('DOMContentLoaded', function () { init(); });
+})();
+</script>
+{% endif %}

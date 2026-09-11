@@ -416,8 +416,11 @@ class Config:
     BACKUP_PATH = config.load('IRIS', 'BACKUP_PATH', fallback="/home/iris/server_data/backup")
     UPDATES_PATH = os.path.join(BACKUP_PATH, 'updates')
 
+    # iris-ng: the release feed the update check reads (issue #111). Points at
+    # this fork — the upstream default compared our version against another
+    # project's releases.
     RELEASE_URL = config.load('IRIS', 'RELEASE_URL',
-                              fallback="https://api.github.com/repos/dfir-iris/iris-web/releases")
+                              fallback="https://api.github.com/repos/zach115th/iris-ng/releases")
 
     RELEASE_SIGNATURE_KEY = config.load('IRIS', 'RELEASE_SIGNATURE_KEY', fallback="dependencies/DFIR-IRIS_pkey.asc")
 

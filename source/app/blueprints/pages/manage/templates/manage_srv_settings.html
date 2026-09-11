@@ -597,6 +597,31 @@
                                     </dl>
                                 </div>
 
+                                {# iris-ng: update check (issue #111). The toggle column
+                                   (enable_updates_check) predates this UI - NULL rows mean ON,
+                                   hence the "is sameas false" tests. The check itself is
+                                   GET /api/v2/updates/latest, which every page's banner strip
+                                   also calls; "Check now" forces past its 6h cache. #}
+                                <h2 class="mt-4">Updates</h2>
+                                <p>When enabled, IRIS-NG reads the newest release from the project's GitHub releases feed (through the proxy configured on the General tab, if any) and shows a banner at the top of every page - except Home, which is reserved for your own announcements - when a newer version exists. Only server administrators see the upgrade instructions. Turn it off for air-gapped deployments.</p>
+                                <div class="row mb-2">
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <label class="form-check-label">
+                                                <input class="form-check-input" type="checkbox" id="enable_updates_check" {% if settings.enable_updates_check is not sameas false %}checked{% endif %}>
+                                                <span class="form-check-sign">Check for new releases</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="enable_updates_check_hidden" name="enable_updates_check" value="{% if settings.enable_updates_check is sameas false %}false{% else %}true{% endif %}">
+                                <div class="mb-4">
+                                    {# window. + an id that differs from the function name: this button
+                                       sits inside form_srv_settings (see the backup button below). #}
+                                    <button class="btn btn-outline-primary" id="iris_upd_check_now_btn" type="button" onclick="window.iris_upd_check_now();">Check now</button>
+                                    <span id="iris-upd-check-result" class="ml-2" style="font-size:13px;"></span>
+                                </div>
+
                                 <h2 class="mt-4">Database</h2>
                                 <p>Initiate a database backup. The backup file is stored on the configured path <code>BACKUP_PATH</code>.</p>
                                 <div class="mt-3 mb-4">
@@ -703,6 +728,7 @@
         ['ai_backend_enabled',          'ai_backend_enabled_hidden'],
         ['pinecone_enabled',            'pinecone_enabled_hidden'],
         ['time_tracking_nudge_enabled', 'time_tracking_nudge_enabled_hidden'],
+        ['enable_updates_check',        'enable_updates_check_hidden'],
     ];
     var saveBtn = document.getElementById('save_srv_settings');
     pairs.forEach(function (pair) {
@@ -714,6 +740,50 @@
         if (saveBtn) saveBtn.addEventListener('click', sync);
     });
 })();
+</script>
+<script>
+/* iris-ng: Settings > System > Updates "Check now" (issue #111). Forces past the
+   endpoint's cache (admin-only refresh) and reports the answer inline. The
+   endpoint always returns 200 with an error field, so the three states are
+   distinct: newer available / up to date / could not check. */
+window.iris_upd_check_now = function () {
+    var out = document.getElementById('iris-upd-check-result');
+    var btn = document.getElementById('iris_upd_check_now_btn');
+    if (!out) { return; }
+    out.textContent = 'Checking...';
+    out.className = 'ml-2 text-muted';
+    if (btn) { btn.disabled = true; }
+    fetch('/api/v2/updates/latest?refresh=true', { credentials: 'same-origin' })
+        .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+        .then(function (s) {
+            out.textContent = '';
+            if (!s.enabled) {
+                out.className = 'ml-2 text-muted';
+                out.textContent = 'The check is turned off - enable it above and save first.';
+            } else if (!s.latest) {
+                out.className = 'ml-2 text-warning';
+                out.textContent = s.error || 'Could not determine the latest release.';
+            } else if (s.update_available) {
+                out.className = 'ml-2 text-warning';
+                out.appendChild(document.createTextNode(s.latest.tag + ' is available (this server runs ' + s.current_version + '). '));
+                if (typeof s.latest.url === 'string' && s.latest.url.indexOf('https://github.com/') === 0) {
+                    var a = document.createElement('a');
+                    a.href = s.latest.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+                    a.textContent = 'Release notes';
+                    out.appendChild(a);
+                }
+            } else {
+                out.className = 'ml-2 text-success';
+                out.textContent = 'Up to date - ' + s.latest.tag + ' is the newest release.' +
+                    (s.stale ? ' (Last known value; GitHub could not be reached just now.)' : '');
+            }
+        })
+        .catch(function () {
+            out.className = 'ml-2 text-warning';
+            out.textContent = 'Could not run the check.';
+        })
+        .then(function () { if (btn) { btn.disabled = false; } });
+};
 </script>
 <script>
 /* iris-ng: Sponsor tab. Fetches the parsed FUNDING.yml from /api/v2/sponsor the

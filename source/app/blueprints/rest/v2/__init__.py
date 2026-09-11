@@ -18,6 +18,7 @@ from app.blueprints.rest.v2.customer_assets import customer_assets_blueprint
 from app.blueprints.rest.v2.notifications import notifications_blueprint
 from app.blueprints.rest.v2.war_rooms import war_rooms_blueprint
 from app.blueprints.rest.v2.sponsor import sponsor_blueprint
+from app.blueprints.rest.v2.updates import updates_blueprint
 
 
 # Create root /api/v2 blueprint
@@ -34,6 +35,7 @@ rest_v2_blueprint.register_blueprint(alerts_blueprint)
 rest_v2_blueprint.register_blueprint(dashboard_blueprint)
 rest_v2_blueprint.register_blueprint(misp_tags_blueprint)
 rest_v2_blueprint.register_blueprint(sponsor_blueprint)
+rest_v2_blueprint.register_blueprint(updates_blueprint)
 rest_v2_blueprint.register_blueprint(ai_jobs_blueprint)
 rest_v2_blueprint.register_blueprint(teams_blueprint)
 rest_v2_blueprint.register_blueprint(correlation_blueprint)

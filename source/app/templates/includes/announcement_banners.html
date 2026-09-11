@@ -58,7 +58,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 el.appendChild(x);
                 wrap.appendChild(el);
             });
-            host.insertBefore(wrap, host.firstChild);
+            /* The update-available strip (update_banner.html) always sits
+               ABOVE the announcements, whichever fetch resolves first. */
+            var upd = document.getElementById('iris-upd-banner');
+            host.insertBefore(wrap, upd && upd.parentNode === host ? upd.nextSibling : host.firstChild);
         })
         .catch(function () { /* banner feed unavailable - never block the page */ });
 });
