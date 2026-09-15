@@ -11,7 +11,38 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
-## [Unreleased]
+## [IRIS-NG-v2.1.0] — 2026-09-15
+
+A release-availability banner, customer search on the drive inventory, two
+access-control repairs that together retire the "give everyone case #1"
+workaround, and the removal of light mode. No schema change: the database
+head is unchanged from v2.0.0 and no migration runs on upgrade. An image
+rebuild is required — the banner, the switcher fix and the theme removal
+ship in baked static JS.
+
+### Removed
+- **Light mode (#92).** Dark is now the only theme. The IRIS Theme toggle is gone from the
+  profile page, every layout loads the dark stylesheet unconditionally (including the
+  access-denied and other centered pages, which previously rendered light for anonymous
+  sessions), editors and graph labels no longer switch on the per-user flag, and the
+  theme endpoint refuses `light`. Also removed on the way: a script tag for a
+  `dark-mode.js` that never existed, and a stray debug print of the theme flag in the
+  note editor modal.
+
+### Fixed
+- **New users landed on an access-denied page for a case they were never given.** The
+  session's starting case was the lowest id in the database (usually #1), chosen with no
+  access check, so anyone without that case hit the access-denied page on their first
+  case-scoped click. The context is now seeded with the lowest case the user can actually
+  access; a user with no case access lands on Home instead. This removes the need to grant
+  everyone access to case #1.
+- **Case switcher failed with a CSRF error on pages that render no form.** A user
+  whose context was a case they cannot read (most often the default #1) landed on the
+  access-denied page, where the case switcher — the only way out — returned "Invalid
+  CSRF token". The switch modal now carries its own session token, so switching works
+  on the access-denied page, `/manage/cases` and `/manage/metrics` as well as everywhere
+  else. The CSRF guard and case-access check are unchanged (a bad token still 400s,
+  switching into an inaccessible case still 404s).
 
 ### Added
 - **Update banner (#111).** When a newer release exists on GitHub, a strip at the top of

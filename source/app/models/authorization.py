@@ -212,7 +212,7 @@ class User(UserMixin, db.Model):
     active = Column(Boolean())
     api_key = Column(Text(), unique=True)
     external_id = Column(Text, unique=True)
-    in_dark_mode = Column(Boolean())
+    in_dark_mode = Column(Boolean(), default=True)  # issue #92: dark is the only theme; light removed
     has_mini_sidebar = Column(Boolean(), default=False)
     has_deletion_confirmation = Column(Boolean(), default=False)
     is_service_account = Column(Boolean(), default=False)

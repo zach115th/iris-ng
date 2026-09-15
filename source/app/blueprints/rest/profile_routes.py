@@ -114,14 +114,17 @@ def update_user_view():
 @profile_rest_blueprint.route('/user/theme/set/<string:theme>', methods=['GET'])
 @ac_api_requires()
 def profile_set_theme(theme):
-    if theme not in ['dark', 'light']:
-        return response_error('Invalid data')
+    # iris-ng: light mode was removed (issue #92). The endpoint is kept so any
+    # cached client or API caller does not 404, but it can only ever set dark —
+    # a request for 'light' is refused rather than silently honoured.
+    if theme != 'dark':
+        return response_error('Light mode has been removed; dark is the only theme.')
 
     user = get_user(current_user.id)
     if not user:
         return response_error("Invalid user ID")
 
-    user.in_dark_mode = (theme == 'dark')
+    user.in_dark_mode = True
     db.session.commit()
 
     return response_success('Theme changed')

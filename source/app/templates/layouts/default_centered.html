@@ -35,9 +35,10 @@
 
     <!-- Specific CSS goes HERE -->
     {% block stylesheets %}{% endblock stylesheets %}
-	{% if current_user.in_dark_mode %}
-		<link rel="stylesheet" href="/static/assets/css/dark-theme.css">
-	{% endif %}
+	{# iris-ng: dark is the only theme (issue #92). Unconditional — this layout
+	   also serves anonymous pages (login, errors, MFA) where current_user has
+	   no in_dark_mode, so the old gate left those rendering light. #}
+	<link rel="stylesheet" href="/static/assets/css/dark-theme.css">
 </head>
 <body>
 	<div class="wrapper {% block layout %}{% endblock layout %} {% include 'includes/sidebar_handler.html' %}">
@@ -84,6 +85,11 @@
 	<script src="/static/assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js"></script>
 	<script src="/static/assets/js/plugin/sweetalert/sweetalert.min.js"></script>
 	<script src="/static/assets/js/plugin/select/bootstrap-select.min.js"></script>
+	{# Parity with default.html: the case switcher (footer.html) calls
+	   ajaxSelectPicker, which this plugin defines. Without it, switching cases
+	   from the access-denied page — the one place a trapped user needs it —
+	   throws instead of opening the picker. #}
+	<script src="/static/assets/js/plugin/select/ajax-bootstrap-picker.js"></script>
 
 	<!-- HTML 2 Canvas -->
 

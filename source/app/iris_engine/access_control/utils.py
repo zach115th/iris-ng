@@ -622,6 +622,25 @@ def ac_get_fast_user_cases_access(user_id):
     return [e.case_id for e in ucea]
 
 
+def ac_get_default_case_for_user(user_id):
+    """A case the user can actually access, for seeding their session context.
+
+    Returns the lowest case id the user has non-deny access to, or None when
+    they can access no case at all. Login and the "no context yet" fallbacks
+    used to seed the context with the lowest case id in the DATABASE (usually
+    #1) with no access check, so any user lacking that case was dropped onto
+    the access-denied page on their first case-scoped click. deny_all rows are
+    already excluded by ac_get_fast_user_cases_access, and read_only/full_access
+    both satisfy the case landing page, so the lowest such id is always a
+    context the user can open. Admins hold effective rows for every case, so
+    this returns their lowest id unchanged.
+    """
+    accessible = ac_get_fast_user_cases_access(user_id)
+    if not accessible:
+        return None
+    return min(accessible)
+
+
 def ac_get_user_case_counts(user_id):
     query = UserCaseEffectiveAccess.query.filter(
         UserCaseEffectiveAccess.user_id == user_id,

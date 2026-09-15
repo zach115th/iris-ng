@@ -1880,7 +1880,10 @@ $(document).ready(function(){
     // /context/set is now behind @ac_api_requires, which validates CSRF.
     // post_request_api only injects csrf_token when `data` is omitted, so a
     // hand-built body must carry it or every case switch returns 400.
-    data_sent.csrf_token = $('#csrf_token').val();
+    // Prefer the page form's token; fall back to the switcher's own token
+    // (footer.html) so switching works on pages that render no form — the
+    // access-denied page in particular, where a trapped user needs it most.
+    data_sent.csrf_token = $('#csrf_token').val() || $('#switch_context_csrf').val();
     // Must be JSON.stringify'd: post_request_api sends contentType
     // application/json, but jQuery $.param()s a plain object into
     // form-urlencoded text. Flask then reads the body with get_json(), fails to

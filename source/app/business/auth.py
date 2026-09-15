@@ -7,7 +7,9 @@ from app import bc, app, db
 from app.datamgmt.manage.manage_srv_settings_db import get_server_settings_as_dict
 from app.datamgmt.manage.manage_users_db import get_active_user_by_login
 from app.iris_engine.access_control.ldap_handler import ldap_authenticate
+from app.iris_engine.access_control.utils import ac_get_default_case_for_user
 from app.iris_engine.access_control.utils import ac_get_effective_permissions_of_user
+from app.datamgmt.case.case_db import get_case
 from app.iris_engine.utils.tracker import track_activity
 from app.models.cases import Cases
 from app.schema.marshables import UserSchema
@@ -156,10 +158,16 @@ def wrap_login_user(user, is_oidc=False):
     session['permissions'] = ac_get_effective_permissions_of_user(user)
 
     if caseid is None:
-        case = Cases.query.order_by(Cases.case_id).first()
-        user.ctx_case = case.case_id
-        user.ctx_human_case = case.name
-        db.session.commit()
+        # Seed the first context with a case the user can access, not the
+        # lowest id in the database (usually #1) — a user without #1 would
+        # otherwise land on the access-denied page. None = no accessible case;
+        # leave the context empty and let /home (no cid required) handle it.
+        default_cid = ac_get_default_case_for_user(user.id)
+        if default_cid is not None:
+            case = get_case(default_cid)
+            user.ctx_case = case.case_id
+            user.ctx_human_case = case.name
+            db.session.commit()
 
     session['current_case'] = {
         'case_name': user.ctx_human_case,

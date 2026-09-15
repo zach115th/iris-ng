@@ -6,6 +6,10 @@
       <div class="modal-lg modal-dialog" role="document">
           <div class="modal-content">
             <form method="post" action="" id="form_set_context">
+                  {# The switcher validates CSRF but appears on pages that render no
+                     form (the access-denied page, manage/cases, metrics); this token
+                     makes the switch work everywhere the modal does. #}
+                  <input type="hidden" id="switch_context_csrf" value="{{ switch_context_csrf_token }}">
                   <div class="modal-header">
                   <h5>Switch context</h5>
                   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span

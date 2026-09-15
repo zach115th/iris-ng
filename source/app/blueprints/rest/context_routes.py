@@ -101,6 +101,29 @@ def iris_version():
 
 # TODO should move this method somewhere else, it is not a REST route
 @app.context_processor
+def switch_context_csrf():
+    """CSRF token for the case switcher, available on EVERY page.
+
+    The switch-context modal lives in includes/footer.html, which both layouts
+    include, but only pages that render a WTForms form emit a `#csrf_token`
+    input. The switch endpoint validates CSRF, so on pages without that input
+    (the access-denied page, /manage/cases, /manage/metrics) a case switch
+    POSTed 400 "Invalid CSRF token" — trapping a user who landed on the
+    access-denied page for a case they cannot read (e.g. the default context
+    #1) with no working way out. The modal now carries its own token from
+    here, independent of any page form. `csrf_token()` is not a Jinja global
+    in this app, so generate it explicitly (it is session-bound and idempotent,
+    so it matches any form-rendered token on the same page)."""
+    try:
+        from flask_wtf.csrf import generate_csrf
+        token = generate_csrf()
+    except Exception:
+        token = ''
+    return dict(switch_context_csrf_token=token)
+
+
+# TODO should move this method somewhere else, it is not a REST route
+@app.context_processor
 def has_updates():
     """Sidebar "updates available" icon (issue #111).
 

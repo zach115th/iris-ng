@@ -1252,7 +1252,7 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
                 'color': alert_color,
                 'weight': "bold"
             },
-            'font': "12px verdana white" if current_user.in_dark_mode else ''
+            'font': "12px verdana white"  # iris-ng: dark is the only theme (issue #92)
         })
 
         for asset_info in alert_info['assets']:
@@ -1265,7 +1265,7 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
                     'group': 'asset',
                     'shape': 'image',
                     'image': '/static/assets/img/graph/' + asset_info['icon'],
-                    'font': "12px verdana white" if current_user.in_dark_mode else ''
+                    'font': "12px verdana white"  # iris-ng: dark is the only theme (issue #92)
                 })
                 added_assets.add(asset_id)
 
@@ -1284,10 +1284,10 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
                     'icon': {
                         'face': 'FontAwesome',
                         'code': '\ue4a8',
-                        'color': 'white' if current_user.in_dark_mode else '',
+                        'color': 'white',  # iris-ng: dark is the only theme (issue #92)
                         'weight': "bold"
                     },
-                    'font': "12px verdana white" if current_user.in_dark_mode else ''
+                    'font': "12px verdana white"  # iris-ng: dark is the only theme (issue #92)
                 })
                 added_iocs.add(ioc_value)
 
@@ -1367,7 +1367,7 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
                         'code': '\uf0b1',
                         'color': '#c95029' if cases_data[case_id].get('close_date') else '#4cba4f'
                     },
-                    'font': "12px verdana white" if current_user.in_dark_mode else ''
+                    'font': "12px verdana white"  # iris-ng: dark is the only theme (issue #92)
                 })
                 added_cases.add(case_id)
 

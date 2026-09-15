@@ -46,6 +46,7 @@ from app.datamgmt.case.case_db import get_case
 from app.datamgmt.manage.manage_access_control_db import user_has_client_access
 from app.datamgmt.manage.manage_users_db import get_user
 from app.iris_engine.access_control.utils import ac_fast_check_user_has_case_access
+from app.iris_engine.access_control.utils import ac_get_default_case_for_user
 from app.iris_engine.access_control.utils import ac_get_effective_permissions_of_user
 from app.iris_engine.utils.tracker import track_activity
 from app.models.cases import Cases
@@ -72,7 +73,11 @@ def _set_caseid_from_current_user():
     redir = False
     if current_user.ctx_case is None:
         redir = True
-        current_user.ctx_case = 1
+        # Seed the context with a case the user can actually access, not the
+        # hardcoded #1 — otherwise a user without #1 lands on the access-denied
+        # page. Falls back to 1 only when they can access no case at all (where
+        # every id denies anyway).
+        current_user.ctx_case = ac_get_default_case_for_user(current_user.id) or 1
     caseid = current_user.ctx_case
     return redir, caseid
 
@@ -191,7 +196,7 @@ def _get_case_access(request_data, access_level, no_cid_required=False):
 
     if caseid is not None and not get_case(caseid):
         log.warning('No case found. Using default case')
-        return True, 1, True
+        return True, (ac_get_default_case_for_user(current_user.id) or 1), True
 
     return redir, caseid, True
 
@@ -261,7 +266,7 @@ def get_case_access_from_api(request_data, access_level):
 
     if caseid is not None and not get_case(caseid):
         log.warning('No case found. Using default case')
-        return True, 1, True
+        return True, (ac_get_default_case_for_user(current_user.id) or 1), True
 
     return redir, caseid, True
 
@@ -413,10 +418,15 @@ def _authenticate_with_email(user_email):
     session['permissions'] = ac_get_effective_permissions_of_user(user)
 
     if caseid is None:
-        case = Cases.query.order_by(Cases.case_id).first()
-        user.ctx_case = case.case_id
-        user.ctx_human_case = case.name
-        db.session.commit()
+        # Seed with a case the user can access rather than the lowest id in the
+        # database (usually #1), so a user without #1 does not land on the
+        # access-denied page. None = no accessible case; leave it empty.
+        default_cid = ac_get_default_case_for_user(user.id)
+        if default_cid is not None:
+            case = get_case(default_cid)
+            user.ctx_case = case.case_id
+            user.ctx_human_case = case.name
+            db.session.commit()
 
     session['current_case'] = {
         'case_name': user.ctx_human_case,

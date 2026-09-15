@@ -92,8 +92,8 @@ def case_graph_get_data(caseid):
             'layer': node_type
         }
 
-        if current_user.in_dark_mode:
-            new_node['font'] = "12px verdana white"
+        # iris-ng: dark is the only theme (issue #92) — labels are always white.
+        new_node['font'] = "12px verdana white"
 
         if not any(node['id'] == idx for node in nodes):
             nodes.append(new_node)
@@ -151,7 +151,7 @@ def case_graph_get_data(caseid):
             existing_ids.add(node['id'])
             nodes.append(node)
 
-    font_colour = 'white' if current_user.in_dark_mode else 'black'
+    font_colour = 'white'  # iris-ng: dark is the only theme (issue #92)
 
     # --- Notes (violet) linked to the IOCs they sourced ---
     for note_id, note_title, ioc_id, ioc_value in get_case_note_ioc_links(caseid):

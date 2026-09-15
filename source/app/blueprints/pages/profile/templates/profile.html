@@ -110,22 +110,9 @@
                         </div>
                     </div>
                     {% endif %}
+                    {# iris-ng: the IRIS Theme (light/dark) toggle was removed here —
+                       dark is the only theme now (issue #92). #}
                     <div class="row">
-                        <div class="col">
-                            <div class="form-group">
-                                <label class="form-label d-block">IRIS Theme</label>
-                                <div class="selectgroup selectgroup-primary selectgroup-pills">
-                                    <label class="selectgroup-item" title="Light mode">
-                                        <input type="radio" name="iris-theme" value="false" class="selectgroup-input" {% if not current_user.in_dark_mode %}checked{% endif %}>
-                                        <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-sun"></i></span>
-                                    </label>
-                                    <label class="selectgroup-item" title="Dark mode">
-                                        <input type="radio" name="iris-theme" value="true" class="selectgroup-input" {% if current_user.in_dark_mode %}checked{% endif %}>
-                                        <span class="selectgroup-button selectgroup-button-icon"><i class="fa fa-moon"></i></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
                         <div class="col">
                             <div class="form-group">
                                 <label class="form-label d-block">Prompt a confirmation box before deleting objects</label>

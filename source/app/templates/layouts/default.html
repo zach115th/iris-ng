@@ -34,9 +34,9 @@
 
     <!-- Specific CSS goes HERE -->
     {% block stylesheets %}{% endblock stylesheets %}
-	{% if current_user.in_dark_mode %}
-		<link rel="stylesheet" href="/static/assets/css/dark-theme.css">
-	{% endif %}
+	{# iris-ng: dark is the only theme (issue #92, light mode removed). Loaded
+	   unconditionally — the per-user toggle and its endpoint are gone. #}
+	<link rel="stylesheet" href="/static/assets/css/dark-theme.css">
 </head>
 <body>
 	<div class="wrapper {% block layout %}{% endblock layout %} {% include 'includes/sidebar_handler.html' %}">

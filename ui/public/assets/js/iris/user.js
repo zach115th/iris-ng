@@ -68,23 +68,8 @@ function refresh_user_permissions() {
     });
 }
 
-$('input[type=radio][name=iris-theme]').change(function() {
-    if (this.value == 'false') {
-        theme = 'light'
-    }
-    else if (this.value == 'true') {
-        theme = 'dark';
-    } else {
-        return;
-    }
-    get_request_api(`/user/theme/set/${theme}`)
-    .done((data) => {
-        if (api_request_failed(data)) {
-            return;
-        }
-        location.reload(true);
-    });
-});
+// iris-ng: the IRIS Theme toggle was removed (issue #92, dark is the only
+// theme). Its change handler is gone with it.
 
 $('input[type=radio][name=user-has-deletion-prompt]').change(function() {
     if (this.value == 'false') {
