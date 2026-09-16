@@ -1110,6 +1110,7 @@ function iris_wroom_run_command(line) {
             .then(function (res) {
                 iris_wroom_cmd_status(res.ok ? 'Case #' + cid + ' attached'
                     : (res.j.message || 'Attach failed'));
+                iris_wroom_ics_ai_kick(res);
                 if (res.ok) {
                     document.getElementById('iris-wr-msg-input').value = '';
                     iris_wroom_load_room().then(iris_wroom_load_stream);
@@ -1891,6 +1892,10 @@ function iris_wroom_nt_render_rail() {
         canEdit ? '' : 'none';
     document.getElementById('iris-wr-nt-newnote').style.display =
         canEdit ? '' : 'none';
+    var seedBtn = document.getElementById('iris-wr-nt-seedics');
+    if (seedBtn) { seedBtn.style.display = canEdit ? '' : 'none'; }
+    var aiBtn = document.getElementById('iris-wr-nt-aiics');
+    if (aiBtn) { aiBtn.style.display = canEdit ? '' : 'none'; }
 
     var match = function (title) {
         return !s.q || (title || '').toLowerCase().indexOf(s.q) !== -1;
@@ -1992,7 +1997,7 @@ function iris_wroom_nt_show_doc(doc, readOnly) {
 
 function iris_wroom_nt_open_room(id) {
     iris_wroom_nt_flush_save();
-    iris_wroom_api('GET', '/notes/room/' + id).then(function (res) {
+    return iris_wroom_api('GET', '/notes/room/' + id).then(function (res) {
         if (!res.ok) return;
         IRIS_WROOM_NT.sel = {type: 'room', id: id};
         res.j.meta = 'Room note · updated ' + iris_wroom_rel(res.j.updated_at)
@@ -2014,6 +2019,60 @@ function iris_wroom_nt_open_case(caseId, noteId) {
             iris_wroom_nt_show_doc(res.j, true);
             iris_wroom_nt_render_rail();
         });
+}
+
+/* ICS forms — AI pass. The server fills ONLY fields still at their seeded
+   dash and marks every fill; the pass runs as an AI job (202 + poll). It is
+   queued automatically after a seed (the attach/seed responses carry the
+   task id) and on demand from the rail button. */
+
+function iris_wroom_ics_ai_kick(res) {
+    var tid = res && res.ok && res.j && (res.j.ics_ai_task_id || res.j.ai_task_id);
+    if (tid) { iris_wroom_nt_ai_poll(tid, 0); }
+}
+
+function iris_wroom_nt_ai_poll(taskId, tries) {
+    if (tries > 240) { iris_wroom_nt_status('AI pass timed out.'); return; }
+    fetch('/api/v2/ai/jobs/' + taskId, {headers: {'Accept': 'application/json'}})
+        .then(function (r) { return r.json(); })
+        .then(function (job) {
+            if (job.state === 'done') {
+                iris_wroom_nt_ai_done(job.result || {});
+            } else if (job.state === 'error' || job.state === 'cancelled') {
+                iris_wroom_nt_status('AI pass failed: ' + (job.error || job.state));
+            } else {
+                iris_wroom_nt_status('AI pass running… (' + job.state + ')');
+                setTimeout(function () { iris_wroom_nt_ai_poll(taskId, tries + 1); }, 2500);
+            }
+        });
+}
+
+function iris_wroom_nt_ai_done(result) {
+    var filled = result.filled || {};
+    var titles = Object.keys(filled).filter(function (t) { return filled[t].length; });
+    iris_wroom_load_notes();
+    if (!titles.length) {
+        /* Nothing filled is a claim about the FORMS (every field already has
+           content), not about the model — say which. */
+        iris_wroom_nt_status('AI pass: nothing to fill — every field already has content.');
+        return;
+    }
+    var msg = 'AI filled ' + titles.map(function (t) {
+        return t.split(' - ')[0] + ' (' + filled[t].join(', ') + ')';
+    }).join('; ') + ' — review the marked fields.';
+    /* Re-open the current note when it is one of the filled forms and the
+       editor is CLOSED. An open editor holds the analyst's text; replacing
+       it under them would lose their edits, and their next autosave would
+       overwrite the fill anyway — so the view refreshes on their next open. */
+    var s = IRIS_WROOM_NT;
+    var ed = document.getElementById('iris-wr-nt-edit');
+    var ids = titles.map(function (t) { return (result.note_ids || {})[t]; });
+    if (s.sel && s.sel.type === 'room' && ed.style.display === 'none'
+            && ids.indexOf(s.sel.id) !== -1) {
+        iris_wroom_nt_open_room(s.sel.id).then(function () { iris_wroom_nt_status(msg); });
+    } else {
+        iris_wroom_nt_status(msg);
+    }
 }
 
 /* Debounced autosave for the markdown editor. flush() saves immediately —
@@ -3231,6 +3290,44 @@ document.addEventListener('DOMContentLoaded', function () {
                 iris_wroom_nt_open_room(res.j.id);
             });
         });
+    // ICS forms: the seed endpoint adds only the forms that are missing and
+    // never touches an existing one, so this is safe to click repeatedly.
+    // The result names what happened rather than a bare "done".
+    var seedIcs = document.getElementById('iris-wr-nt-seedics');
+    if (seedIcs) {
+        seedIcs.addEventListener('click', function (e) {
+            e.preventDefault();
+            iris_wroom_api('POST', '/notes/ics/seed', {}).then(function (res) {
+                if (!res.ok) return;
+                var created = (res.j && res.j.created) || [];
+                iris_wroom_load_notes();
+                if (created.length) {
+                    iris_wroom_nt_status('Seeded ' + created.length + ' ICS form(s): ' + created.join(', '));
+                    var first = res.j.note_ids && res.j.note_ids[created[0]];
+                    if (first) { iris_wroom_nt_open_room(first); }
+                    iris_wroom_ics_ai_kick(res);
+                } else {
+                    iris_wroom_nt_status('All ICS forms are already present in this room.');
+                }
+            });
+        });
+    }
+    var aiIcs = document.getElementById('iris-wr-nt-aiics');
+    if (aiIcs) {
+        aiIcs.addEventListener('click', function (e) {
+            e.preventDefault();
+            iris_wroom_nt_status('AI pass queued…');
+            iris_wroom_api('POST', '/notes/ics/ai-draft', {}).then(function (res) {
+                if (!res.ok) {
+                    iris_wroom_nt_status('AI pass refused: ' + ((res.j && res.j.message) || res.status));
+                    return;
+                }
+                if (res.j && res.j.seeded && res.j.seeded.length) { iris_wroom_load_notes(); }
+                if (res.j && res.j.task_id) { iris_wroom_nt_ai_poll(res.j.task_id, 0); }
+                else if (res.j && res.j.filled) { iris_wroom_nt_ai_done(res.j); }
+            });
+        });
+    }
     document.getElementById('iris-wr-nt-roomlist')
         .addEventListener('click', function (e) {
             if (e.target.closest('.iris-wr-nt-inline')) return;
@@ -3825,7 +3922,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
                 iris_wroom_api('POST', '/cases', {case_id: ids.shift()})
-                    .then(next);
+                    .then(function (res) { iris_wroom_ics_ai_kick(res); next(); });
             };
             next();
         });

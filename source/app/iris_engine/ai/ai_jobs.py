@@ -72,6 +72,14 @@ def _run_sitrep_draft(case_id: int, params: dict[str, Any]):
                                  force=bool(params.get('force', False)))
 
 
+def _run_ics_draft(case_id: int, params: dict[str, Any]):
+    # case_id is None — the anchor is the war-room id carried in params.
+    from app.iris_engine.ai.ics_draft import run_ics_draft
+    return run_ics_draft(int(params['room_id']),
+                         int(params['actor_id']) if params.get('actor_id') else None,
+                         force=bool(params.get('force', False)))
+
+
 # Error classes are imported lazily inside run_ai_job so this module stays
 # import-cheap and never fails to load if one orchestrator has a heavy import.
 FEATURES: dict[str, dict[str, Any]] = {
@@ -86,6 +94,9 @@ FEATURES: dict[str, dict[str, Any]] = {
     # (title + markdown content) the editor pre-fills; artifact row is a
     # pure cache managed by the orchestrator.
     'sitrep_draft': {'runner': _run_sitrep_draft, 'kind': 'dict', 'priority': 5},
+    # War-room ICS forms AI pass — result_json carries what was filled per
+    # form; the merge itself is written into the room notes by the runner.
+    'ics_draft': {'runner': _run_ics_draft, 'kind': 'dict', 'priority': 5},
 }
 
 

@@ -11,6 +11,30 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [Unreleased]
+
+### Added
+- **ICS forms seeded into war rooms.** When the first case is attached to a room, three
+  room notes are created in an "ICS" folder from bundled Incident Command System
+  templates — ICS 201 Incident Briefing, ICS 202 Incident Objectives and ICS 203
+  Organization Assignment List — prefilled with what the room already knows: incident
+  name, date/time, the attached cases (customer, severity, state, opened, owner), the
+  lead as Incident Commander, and the members with their room roles. One set per room;
+  a later attach adds nothing and never edits a seeded note. A "Seed ICS forms" button
+  on the Notes tab adds any form that is missing (deleted, or a room that predates this)
+  and leaves existing ones alone. `GET/POST /api/v2/war-rooms/<id>/notes/ics[/seed]`.
+- **AI pass over the ICS forms.** After the seed, a second pass proposes text for the
+  fields still marked `—` from the attached cases' material (descriptions, cached
+  executive summaries, tasks, recent activity): the ICS 201 situation summary, objectives,
+  actions and resources; the ICS 202 objectives, command emphasis and site-safety answer;
+  and ICS 203 positions, which may only name room members or case owners (the lead is
+  already Incident Commander; one person, one position). It fills only empty fields, never
+  rewrites anything the seed or an analyst wrote, and marks every fill — a header line on
+  the note lists what the AI filled and each filled field carries an "AI draft" line to
+  delete once reviewed. Runs automatically after the seed when an AI backend is
+  configured and on demand from the Notes rail; a failed call changes nothing.
+  `POST /api/v2/war-rooms/<id>/notes/ics/ai-draft` (202 + job id, `?sync=true` inline).
+
 ## [IRIS-NG-v2.1.0] — 2026-09-15
 
 A release-availability banner, customer search on the drive inventory, two

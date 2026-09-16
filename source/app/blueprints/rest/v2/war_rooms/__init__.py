@@ -514,7 +514,21 @@ def attach_war_room_case(room_id):
         attach_case(room, case_id, current_user.id)
     except BusinessProcessingError as e:
         return response_api_error(str(e))
-    return response_api_success({'cases': _case_rows(room)})
+    # ICS room-note templates (201/202/203) are seeded on the FIRST case
+    # attach, one set per room, idempotent by title, fail-soft — a seeding
+    # problem never fails the attach (business/war_room_ics.py).
+    from app.business.war_room_ics import seed_ics_notes_soft
+    ics = seed_ics_notes_soft(room, current_user.id)
+    # Second pass: when the seed created forms, queue the AI pass that fills
+    # the fields still at `—` from the case material (iris_engine/ai/
+    # ics_draft.py). Fail-soft too; None when no backend/broker.
+    ai_task_id = None
+    if ics.get('created'):
+        from app.iris_engine.ai.ics_draft import enqueue_ics_draft_soft
+        ai_task_id = enqueue_ics_draft_soft(room, current_user.id)
+    return response_api_success({'cases': _case_rows(room),
+                                 'ics_seeded': ics.get('created', []),
+                                 'ics_ai_task_id': ai_task_id})
 
 
 @war_rooms_blueprint.route(
@@ -1413,6 +1427,87 @@ def delete_war_room_note_folder(room_id, folder_id):
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success({'deleted': folder_id})
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/ics',
+                           methods=['GET'])
+@ac_api_requires()
+def war_room_ics_state(room_id):
+    """Which ICS forms (201/202/203) exist in this room, by title."""
+    from app.business.war_room_ics import ics_state
+    room, _, err = _resolve(room_id, 'observer')
+    if err:
+        return err
+    st = ics_state(room)
+    return response_api_success({'present': st['present'], 'missing': st['missing'],
+                                 'note_ids': st['note_ids']})
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/ics/seed',
+                           methods=['POST'])
+@ac_api_requires()
+def seed_war_room_ics(room_id):
+    """Create the missing ICS forms for this room (idempotent by title — an
+    existing form is never touched). The same seeding runs automatically on
+    the first case attach; this is the manual path for rooms that predate
+    it or where a form was deleted."""
+    from app.business.war_room_ics import seed_ics_notes
+    room, _, err = _resolve(room_id, 'responder')
+    if err:
+        return err
+    try:
+        out = seed_ics_notes(room, current_user.id)
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    out['ai_task_id'] = None
+    if out.get('created'):
+        from app.iris_engine.ai.ics_draft import enqueue_ics_draft_soft
+        out['ai_task_id'] = enqueue_ics_draft_soft(room, current_user.id)
+    return response_api_success(out)
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/ics/ai-draft',
+                           methods=['POST'])
+@ac_api_requires()
+def ai_draft_war_room_ics(room_id):
+    """AI pass over the ICS forms: fills ONLY the fields still at their
+    seeded `—` from the attached cases' material and marks every fill;
+    anything the seed or an analyst wrote is never touched. Seeds any
+    missing form first (the deterministic pass always precedes the AI
+    pass). Async by default (202 + task_id, poll /api/v2/ai/jobs/<task_id>);
+    ?sync=true runs inline for scripts. body.force=true bypasses the
+    proposal cache."""
+    from app.business.war_room_ics import seed_ics_notes
+    from app.iris_engine.ai.ics_draft import IcsDraftError
+    from app.iris_engine.ai.ics_draft import run_ics_draft
+    room, _, err = _resolve(room_id, 'responder')
+    if err:
+        return err
+    if room.status == 'closed':
+        return response_api_error('Room is closed')
+    try:
+        seeded = seed_ics_notes(room, current_user.id)
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+
+    data = request.get_json(silent=True) or {}
+    force = bool(data.get('force', False))
+
+    if request.args.get('sync') == 'true':
+        try:
+            out = run_ics_draft(room.id, current_user.id, force=force)
+        except IcsDraftError as e:
+            return response_api_error(str(e))
+        out['seeded'] = seeded.get('created', [])
+        return response_api_success(out)
+
+    from app.iris_engine.ai.ai_jobs import enqueue_ai_job
+    job = enqueue_ai_job(feature='ics_draft', case_id=None,
+                         user_id=current_user.id,
+                         params={'room_id': room.id, 'actor_id': current_user.id,
+                                 'force': force})
+    return response(202, data={'task_id': job.task_id, 'state': 'queued',
+                               'seeded': seeded.get('created', [])})
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/room',
