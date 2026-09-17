@@ -48,6 +48,19 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
   every fill marked. The 205A contact list and the 214 activity log are records and are
   never drafted.
 
+### Dependencies
+
+- Python: pypdf 6.10.2 → 6.16.1. Twelve pypdf security advisories close along the
+  way, all of the crafted-PDF denial-of-service class (unbounded loops or memory on
+  malformed outlines, inline images, cross-reference tables, font tables and XForm
+  objects). IRIS opens pypdf only on its own bundled FEMA forms, never on an uploaded
+  file, so none of them was reachable here. What does change for the ICS export: the
+  filled forms are smaller (the 214 by up to 14%) because appending pages no longer
+  clones whole field hierarchies, and the em-dashes in the 202's attachment list no
+  longer trigger the library's "characters not supported by font encoding" warning.
+  Field values, page counts and every field read back were verified identical across
+  all seven forms.
+
 ## [IRIS-NG-v2.1.1] — 2026-09-17
 
 Incident Command System forms in war rooms, and a PyJWT security update. No
