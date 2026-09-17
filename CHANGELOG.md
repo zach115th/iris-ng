@@ -44,6 +44,16 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
   and email autolinks no longer truncate an address whose domain ends in `_` or `-`;
   the structured-note format renders unchanged), vite 8.3.0, autoprefixer 10.6.0,
   postcss 8.5.28; e2e: @types/node 24.13.4.
+- Python: PyJWT 2.14.0 — a security release closing thirteen advisories against 2.13.0
+  (HMAC-key validation against public-key material in every encoding, JWKS fetches no
+  longer follow redirects, JWKS refreshes throttled on unknown key ids, malformed or
+  deeply nested JWS/JWK input handled without aborting, compact-encoding rules enforced).
+  IRIS reaches this code only in the `oidc_proxy` authentication mode with signature
+  verification, where the incoming token is parsed before the user is authenticated;
+  local, LDAP and OIDC sessions never touch it. Also alembic 1.20.0 (SQLAlchemy 2.0 now
+  the minimum, which this tree already pins; its other changes concern batch mode and
+  autogenerate, neither used at boot) and psycopg2-binary 2.9.13 (malformed bytea and
+  int64-array input parsing, Python 3.15 wheels).
 
 ## [IRIS-NG-v2.1.0] — 2026-09-15
 
