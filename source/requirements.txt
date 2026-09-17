@@ -12,7 +12,7 @@ flask-cors==6.0.5
 marshmallow==3.26.2
 marshmallow-sqlalchemy==1.5.0
 gunicorn==26.2.0
-psycopg2-binary==2.9.12
+psycopg2-binary==2.9.13
 pyunpack==0.3
 packaging==26.3
 requests==2.34.2
@@ -23,12 +23,12 @@ urllib3==2.7.0
 Werkzeug==3.1.8
 WTForms==3.2.2
 Flask-SocketIO==5.6.1
-alembic==1.19.2
+alembic==1.20.0
 setuptools>=84.0.0
 python-dateutil==2.9.0.post0
 python-gnupg==0.5.6
 pyminizip~=0.2.6
-PyJWT==2.13.0
+PyJWT==2.14.0
 cryptography>=50.0.1
 ldap3==2.9.1
 pyintelowl>=5.1.0
