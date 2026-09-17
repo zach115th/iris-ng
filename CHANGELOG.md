@@ -54,6 +54,9 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
   the minimum, which this tree already pins; its other changes concern batch mode and
   autogenerate, neither used at boot) and psycopg2-binary 2.9.13 (malformed bytea and
   int64-array input parsing, Python 3.15 wheels).
+- Python: pymisp 2.5.34.3 — several feed-cache and server-sync client calls switched from
+  GET to POST to match MISP; the bundled MISP module only searches attributes, so its
+  behaviour is unchanged. Dependency floors identical to 2.5.34.2.
 
 ## [IRIS-NG-v2.1.0] — 2026-09-15
 
