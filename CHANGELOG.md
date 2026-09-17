@@ -35,6 +35,16 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
   configured and on demand from the Notes rail; a failed call changes nothing.
   `POST /api/v2/war-rooms/<id>/notes/ics/ai-draft` (202 + job id, `?sync=true` inline).
 
+### Dependencies
+
+- UI build: dropzone 6.3.1 (the pipelines upload modal behaves identically —
+  same options, queue, preview and multipart fields), marked 18.0.13 (CommonMark
+  conformance fixes: empty fenced code blocks, leading whitespace after a hard line
+  break, a tab before a closing `#`, character references in autolink destinations,
+  and email autolinks no longer truncate an address whose domain ends in `_` or `-`;
+  the structured-note format renders unchanged), vite 8.3.0, autoprefixer 10.6.0,
+  postcss 8.5.28; e2e: @types/node 24.13.4.
+
 ## [IRIS-NG-v2.1.0] — 2026-09-15
 
 A release-availability banner, customer search on the drive inventory, two
