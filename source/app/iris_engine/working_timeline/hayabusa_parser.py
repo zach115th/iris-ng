@@ -39,39 +39,82 @@ _SEVERITY_RANK = {
 
 _TIMESTAMP_RE = re.compile(r'^\s*(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2}(?:\.\d+)?)')
 
-# Hayabusa uses 4-letter shortcodes for the EVTX channel. Map back to the
-# canonical Windows log name so the promoted event's Event Source field
-# reads like a Windows analyst would write it (e.g., "Windows Security 4688")
-# rather than Hayabusa's terse "Sec/4688".
+# Hayabusa abbreviates the EVTX channel. Map back to the canonical Windows
+# log name so the promoted event's Event Source field reads like a Windows
+# analyst would write it (e.g., "Windows Security 4688") rather than
+# Hayabusa's terse "Sec/4688".
+#
+# The table mirrors hayabusa-rules/config/channel_abbreviations.txt (the
+# file Hayabusa itself reads). Older spellings this parser accepted before
+# it was aligned with that table (TermSrv-*, Bits-Cli, Smb-*-Sec, Dns-Cli)
+# are kept so a CSV produced under either naming resolves the same way.
 HAYABUSA_CHANNEL_LONG: dict[str, str] = {
     'Sec':           'Security',
     'Sys':           'System',
     'App':           'Application',
+    'Setup':         'Setup',
     'Defender':      'Microsoft-Windows-Windows Defender/Operational',
     'PwSh':          'Microsoft-Windows-PowerShell/Operational',
     'PwShClassic':   'Windows PowerShell',
+    'PwShCore':      'PowerShellCore',
     'Sysmon':        'Microsoft-Windows-Sysmon/Operational',
-    'Setup':         'Setup',
     'TaskSch':       'Microsoft-Windows-TaskScheduler/Operational',
+    'WMI':           'Microsoft-Windows-WMI-Activity/Operational',
+    'WinRM':         'Microsoft-Windows-WinRM/Operational',
+    'NTLM':          'Microsoft-Windows-NTLM/Operational',
+    'CodeInteg':     'Microsoft-Windows-CodeIntegrity/Operational',
+    'AppLocker':     'Microsoft-Windows-AppLocker/EXE and DLL',
+    'Firewall':      'Microsoft-Windows-Windows Firewall With Advanced Security/Firewall',
+    'BitsCli':       'Microsoft-Windows-Bits-Client/Operational',
+    'Bits-Cli':      'Microsoft-Windows-Bits-Client/Operational',
+    'SmbCliSec':     'Microsoft-Windows-SmbClient/Security',
+    'Smb-Cli-Sec':   'Microsoft-Windows-SmbClient/Security',
+    'Smb-Srv-Sec':   'Microsoft-Windows-SMBServer/Security',
+    'Dns-Cli':       'Microsoft-Windows-DNS-Client/Operational',
+    'DNS-Svr':       'DNS Server',
+    'DHCP-Svr':      'Microsoft-Windows-DHCP-Server/Operational',
+    'LDAP-Cli':      'Microsoft-Windows-LDAP-Client/Debug',
+    'KeyMgtSvc':     'Key Management Service',
+    'SvcBusCli':     'Microsoft-ServiceBus-Client',
+    'DvrFmwk':       'Microsoft-Windows-DriverFrameworks-UserMode/Operational',
+    'SecMitig':      'Microsoft-Windows-Security-Mitigations/KernelMode',
+    'PrintAdm':      'Microsoft-Windows-PrintService/Admin',
+    'PrintOp':       'Microsoft-Windows-PrintService/Operational',
+    'Exchange':      'MSExchange Management',
+    'OpenSSH':       'OpenSSH/Operational',
+    'RDS-LSM':       'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational',
+    'RDS-RCM':       'Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational',
+    'RDS-GTW':       'Microsoft-Windows-TerminalServices-Gateway/Operational',
+    'RDP-Cli':       'Microsoft-Windows-TerminalServices-RDPClient/Operational',
+    'RDP-CoreTS':    'Microsoft-Windows-RemoteDesktopServices-RdpCoreTS/Operational',
     'TermSrv-LSM':   'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational',
     'TermSrv-RCM':   'Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational',
     'TermSrv-RDPCli':'Microsoft-Windows-TerminalServices-RDPClient/Operational',
-    'WMI':           'Microsoft-Windows-WMI-Activity/Operational',
-    'Bits-Cli':      'Microsoft-Windows-Bits-Client/Operational',
-    'CodeInteg':     'Microsoft-Windows-CodeIntegrity/Operational',
-    'Dns-Cli':       'Microsoft-Windows-DNS-Client/Operational',
-    'AppLocker':     'Microsoft-Windows-AppLocker/EXE and DLL',
-    'Smb-Cli-Sec':   'Microsoft-Windows-SmbClient/Security',
-    'Smb-Srv-Sec':   'Microsoft-Windows-SMBServer/Security',
+    'GroupPolicy':   'Microsoft-Windows-GroupPolicy/Operational',
+    'UserProfileSvc':'Microsoft-Windows-User Profile Service/Operational',
+    'Forwarding':    'Microsoft-Windows-Forwarding/Operational',
 }
+
+# Channels without a table entry are shortened generically by Hayabusa
+# ("Microsoft-Windows-Ntfs/Operational" -> "MS-Win-Ntfs/Op"); the two
+# generic pieces are reversed in channel_to_long_name().
 
 
 def channel_to_long_name(short: str | None) -> str:
     """Return the human-readable Windows log name for a Hayabusa channel
-    shortcode. Falls back to the shortcode itself if unmapped."""
+    abbreviation. Table entries win; generic abbreviations are reversed;
+    anything else falls back to the value itself."""
     if not short:
         return ''
-    return HAYABUSA_CHANNEL_LONG.get(short.strip(), short.strip())
+    s = short.strip()
+    if s in HAYABUSA_CHANNEL_LONG:
+        return HAYABUSA_CHANNEL_LONG[s]
+    out = s
+    if out.startswith('MS-Win-'):
+        out = 'Microsoft-Windows-' + out[len('MS-Win-'):]
+    if out.endswith('/Op'):
+        out = out[:-len('/Op')] + '/Operational'
+    return out
 
 
 def format_event_source(channel: str | None, event_id: str | None) -> str:
@@ -223,13 +266,16 @@ def _collapse_whitespace(value: str | None) -> str:
 
 
 def _group_key(row: dict[str, str]) -> tuple:
-    """Natural key for collapsing fan-out rows."""
+    """Natural key for collapsing fan-out rows.
+
+    ``or ''`` because csv.DictReader fills the cells a SHORT row lacks with
+    None — a truncated last line must group as best it can, not raise."""
     return (
-        row.get('Timestamp', '').strip(),
-        row.get('Computer', '').strip(),
-        row.get('Channel', '').strip(),
-        row.get('EventID', '').strip(),
-        row.get('RecordID', '').strip(),
+        (row.get('Timestamp') or '').strip(),
+        (row.get('Computer') or '').strip(),
+        (row.get('Channel') or '').strip(),
+        (row.get('EventID') or '').strip(),
+        (row.get('RecordID') or '').strip(),
     )
 
 
@@ -380,115 +426,268 @@ def _pick_headline(grouped_rows: list[dict[str, str]]) -> str:
     )
 
 
-def parse_hayabusa_csv(csv_bytes: bytes | str, case_id: int) -> tuple[uuid.UUID, list[dict[str, Any]]]:
-    """Parse a Hayabusa CSV into CaseWorkingEvent-shaped dicts.
+# Canonical level names (what Hayabusa writes in `Level`) plus the aliases a
+# caller may reasonably send. Filtering works on the canonical name.
+LEVELS: tuple[str, ...] = ('info', 'low', 'med', 'high', 'crit')
+_LEVEL_ALIASES = {'medium': 'med', 'critical': 'crit', 'informational': 'info'}
+
+# A Hayabusa run over a full host yields hundreds of thousands of events
+# (1.5 M on a 900 MB CSV, 99.9 % of them info); the working timeline is an
+# analyst-review surface, not an archive. Same ceiling as the EZ Tools
+# import. Narrow the date window or the levels to get under it.
+MAX_EVENTS_PER_IMPORT = 25_000
+
+_REQUIRED_COLUMNS = {'Timestamp', 'RuleTitle', 'Level', 'Computer', 'Channel', 'EventID'}
+
+
+def normalize_levels(levels: Iterable[str] | None) -> set[str] | None:
+    """Turn a caller-supplied level list into canonical names.
+
+    ``None`` (or an empty iterable) means "no level filter". Unknown names
+    raise ``ValueError`` naming the offender — a typo must not silently
+    import everything or nothing.
+    """
+    if levels is None:
+        return None
+    out: set[str] = set()
+    for raw in levels:
+        if raw is None:
+            continue
+        name = str(raw).strip().lower()
+        if not name:
+            continue
+        name = _LEVEL_ALIASES.get(name, name)
+        if name not in LEVELS:
+            raise ValueError(
+                f"Unknown Hayabusa level {raw!r}. Expected one of: {', '.join(LEVELS)}."
+            )
+        out.add(name)
+    return out or None
+
+
+def _open_text(source: Any) -> io.TextIOBase:
+    """Wrap whatever the caller handed us (bytes, str, binary or text
+    stream) as a text stream the csv module can iterate lazily.
+
+    A 900 MB upload must never be decoded into one Python string: with the
+    upload spooled to disk by the form parser, streaming keeps peak memory
+    at roughly the rows of a single timestamp plus the accepted events.
+    """
+    if isinstance(source, bytes):
+        source = io.BytesIO(source)
+    if isinstance(source, str):
+        return io.StringIO(source, newline='')
+    if isinstance(source, io.TextIOBase):
+        return source
+    # Binary file-like (werkzeug FileStorage.stream, BytesIO, open(..., 'rb')).
+    # Hayabusa writes a UTF-8 BOM by default; utf-8-sig strips it when present.
+    return io.TextIOWrapper(source, encoding='utf-8-sig', errors='replace', newline='')
+
+
+def _group_to_event(rows: list[dict[str, str]], ts: datetime, case_id: int,
+                    batch_id: uuid.UUID) -> dict[str, Any]:
+    head = rows[0]
+    external_id = (
+        f"{(head.get('Channel') or '?').strip()}/"
+        f"{(head.get('EventID') or '?').strip()}"
+        f"/RID:{(head.get('RecordID') or '').strip()}"
+    )
+    best_lvl = _group_level(rows)
+    channel = (head.get('Channel') or '').strip()
+    eid = (head.get('EventID') or '').strip()
+    subjects = _extract_subjects(head)
+    return {
+        'case_id': case_id,
+        'source': 'hayabusa',
+        'event_date': ts,
+        'event_title': _pick_headline(rows),
+        'event_description': _build_description(rows),
+        'event_source_host': _collapse_whitespace(head.get('Computer')),
+        'severity': _normalize_severity(best_lvl),
+        'event_tags': _build_tags(rows),
+        'mitre_techniques': _build_mitre_techniques(rows),
+        'external_id': external_id,
+        'event_raw': {
+            'matched_rules': [
+                {
+                    'title': r.get('RuleTitle'),
+                    'level': r.get('Level'),
+                    'rule_id': r.get('RuleID'),
+                    'rule_file': r.get('RuleFile'),
+                    'rule_author': r.get('RuleAuthor'),
+                }
+                for r in rows
+            ],
+            'evtx_file': head.get('EvtxFile'),
+            'provider': head.get('Provider'),
+            # Channel + EventID kept verbatim in case downstream needs
+            # them separately from the formatted Event Source string
+            # (e.g. Sigma cross-check, IDS feed lookups).
+            'channel': channel,
+            'event_id_evtx': eid,
+            # Pre-formatted Event Source string ready for the promoted
+            # cases_event row's event_source field.
+            'windows_event_source': format_event_source(channel, eid),
+            # Structured subjects so the promote endpoint can ensure
+            # CaseAssets rows for the host + users involved.
+            'subjects': subjects,
+        },
+        'import_batch_id': batch_id,
+        'status': 'pending',
+    }
+
+
+def _group_level(rows: list[dict[str, str]]) -> str:
+    """Highest Level across the rules that fired on one event ('' if none)."""
+    return max(
+        (r.get('Level', '').strip().lower() for r in rows),
+        key=lambda l: _SEVERITY_RANK.get(l, -1),
+        default='',
+    )
+
+
+def parse_hayabusa_csv_ex(
+    source: Any,
+    case_id: int,
+    *,
+    levels: Iterable[str] | None = None,
+    begin_dt: datetime | None = None,
+    end_dt: datetime | None = None,
+    max_events: int | None = -1,
+) -> tuple[uuid.UUID, list[dict[str, Any]], dict[str, Any]]:
+    """Stream a Hayabusa CSV into CaseWorkingEvent-shaped dicts.
 
     Args:
-        csv_bytes: Raw CSV (bytes from upload, or already-decoded str).
+        source: Raw CSV as bytes, str, a binary stream (the upload's
+            ``.stream``) or a text stream. Streams are read lazily.
         case_id: Target case for FK.
+        levels: Keep only events whose highest rule level is in this set
+            (canonical or alias names; see ``normalize_levels``). ``None``
+            keeps every level. The filter is per EVENT, not per rule: a card
+            keeps every rule that fired on it, and is dropped only when its
+            highest level is excluded.
+        begin_dt / end_dt: Inclusive timestamp window. Applied before the
+            cap so out-of-window rows never consume it.
+        max_events: Stop once this many events have been accepted (``None``
+            = no cap; the default ``-1`` = ``MAX_EVENTS_PER_IMPORT`` as it
+            is at call time). The remainder of the file is NOT scanned, so
+            ``stats['truncated']`` says that the cap was hit, not how much
+            was left.
 
     Returns:
-        ``(import_batch_id, [event_dict, …])``. The batch id lets the UI
-        show "Last import: 23 events from foo.csv" and lets us delete a
-        bad import in one shot.
+        ``(import_batch_id, [event_dict, …], stats)`` with stats keys
+        ``rows`` (data rows read), ``events`` (accepted), ``skipped_by_level``,
+        ``skipped_out_of_range`` (events, not rows), ``skipped_no_timestamp``
+        (rows), ``truncated`` (bool), ``cap``.
+
+    Grouping: Hayabusa emits one row per sigma rule that matched an EVTX
+    event, and writes its CSV sorted by Timestamp, so every row of one
+    event is adjacent to its siblings. Groups are therefore flushed when
+    the Timestamp changes — bounded memory regardless of file size. A CSV
+    that is NOT sorted still parses; an event whose rows are separated by
+    a different timestamp simply becomes two cards.
 
     Raises:
         HayabusaParseError: malformed CSV, empty CSV, or no usable rows.
+        ValueError: an unknown level name.
     """
-    if isinstance(csv_bytes, bytes):
-        # Hayabusa writes UTF-8 BOM by default.
-        text = csv_bytes.decode('utf-8-sig', errors='replace')
-    else:
-        text = csv_bytes
-
-    reader = csv.DictReader(io.StringIO(text))
+    level_set = normalize_levels(levels)
+    if max_events == -1:
+        max_events = MAX_EVENTS_PER_IMPORT
+    text_stream = _open_text(source)
+    reader = csv.DictReader(text_stream)
     fieldnames = reader.fieldnames or []
-    required = {'Timestamp', 'RuleTitle', 'Level', 'Computer', 'Channel', 'EventID'}
-    missing = required - set(fieldnames)
+    missing = _REQUIRED_COLUMNS - set(fieldnames)
     if missing:
         raise HayabusaParseError(
             f"CSV is missing expected Hayabusa columns: {sorted(missing)}. "
             f"Got columns: {fieldnames}"
         )
 
-    # Group fan-out rows by natural key.
-    groups: dict[tuple, list[dict[str, str]]] = {}
-    skipped = 0
-    for row in reader:
-        # Skip the empty-row padding Hayabusa frequently emits at EOF.
-        if not any(v and v.strip() for v in row.values()):
-            continue
-        if not row.get('Timestamp'):
-            skipped += 1
-            continue
-        key = _group_key(row)
-        groups.setdefault(key, []).append(row)
-
-    if not groups:
-        raise HayabusaParseError(
-            f"No usable rows found in CSV (skipped {skipped} blank/headerless rows)."
-        )
-
     batch_id = uuid.uuid4()
     out: list[dict[str, Any]] = []
-    for key, rows in groups.items():
-        ts = _parse_timestamp(key[0])
-        if ts is None:
-            continue
-        head = rows[0]
-        external_id = (
-            f"{(head.get('Channel') or '?').strip()}/"
-            f"{(head.get('EventID') or '?').strip()}"
-            f"/RID:{(head.get('RecordID') or '').strip()}"
-        )
-        # Pick the highest-severity Level for the group.
-        best_lvl = max(
-            (r.get('Level', '').strip().lower() for r in rows),
-            key=lambda l: _SEVERITY_RANK.get(l, -1),
-            default=''
-        )
-        channel = (head.get('Channel') or '').strip()
-        eid = (head.get('EventID') or '').strip()
-        subjects = _extract_subjects(head)
-        out.append({
-            'case_id': case_id,
-            'source': 'hayabusa',
-            'event_date': ts,
-            'event_title': _pick_headline(rows),
-            'event_description': _build_description(rows),
-            'event_source_host': _collapse_whitespace(head.get('Computer')),
-            'severity': _normalize_severity(best_lvl),
-            'event_tags': _build_tags(rows),
-            'mitre_techniques': _build_mitre_techniques(rows),
-            'external_id': external_id,
-            'event_raw': {
-                'matched_rules': [
-                    {
-                        'title': r.get('RuleTitle'),
-                        'level': r.get('Level'),
-                        'rule_id': r.get('RuleID'),
-                        'rule_file': r.get('RuleFile'),
-                        'rule_author': r.get('RuleAuthor'),
-                    }
-                    for r in rows
-                ],
-                'evtx_file': head.get('EvtxFile'),
-                'provider': head.get('Provider'),
-                # Channel + EventID kept verbatim in case downstream needs
-                # them separately from the formatted Event Source string
-                # (e.g. Sigma cross-check, IDS feed lookups).
-                'channel': channel,
-                'event_id_evtx': eid,
-                # Pre-formatted Event Source string ready for the promoted
-                # cases_event row's event_source field.
-                'windows_event_source': format_event_source(channel, eid),
-                # Structured subjects so the promote endpoint can ensure
-                # CaseAssets rows for the host + users involved.
-                'subjects': subjects,
-            },
-            'import_batch_id': batch_id,
-            'status': 'pending',
-        })
+    stats: dict[str, Any] = {
+        'rows': 0,
+        'events': 0,
+        'skipped_by_level': 0,
+        'skipped_out_of_range': 0,
+        'skipped_no_timestamp': 0,
+        'truncated': False,
+        'cap': max_events,
+    }
 
+    # Pending groups for the CURRENT timestamp only, keyed by natural key.
+    pending: dict[tuple, list[dict[str, str]]] = {}
+    pending_ts: str | None = None
+
+    def _flush() -> bool:
+        """Emit every pending group. Returns False once the cap is hit."""
+        for key, rows in pending.items():
+            ts = _parse_timestamp(key[0])
+            if ts is None:
+                stats['skipped_no_timestamp'] += len(rows)
+                continue
+            if (begin_dt and ts < begin_dt) or (end_dt and ts > end_dt):
+                stats['skipped_out_of_range'] += 1
+                continue
+            if level_set is not None and _group_level(rows) not in level_set:
+                stats['skipped_by_level'] += 1
+                continue
+            if max_events is not None and len(out) >= max_events:
+                stats['truncated'] = True
+                return False
+            out.append(_group_to_event(rows, ts, case_id, batch_id))
+        pending.clear()
+        return True
+
+    stopped = False
+    for row in reader:
+        # Skip the empty-row padding Hayabusa frequently emits at EOF.
+        if not any(v and v.strip() for v in row.values() if isinstance(v, str)):
+            continue
+        stats['rows'] += 1
+        # Hayabusa 3.x wrote multi-line cells (Details, ExtraFieldInfo,
+        # multi-author RuleAuthor) with LF; 4.x keeps the raw CR/LF. Normalise
+        # here so a card built from either version is byte-identical and no
+        # bare CR reaches the stored description.
+        # A SHORT row (fewer cells than the header) gets None for the cells
+        # it lacks; every field reader below does `.get(k, '')`, which
+        # returns that None, so blank them here once.
+        for k, v in row.items():
+            if v is None:
+                row[k] = ''
+            elif isinstance(v, str) and '\r' in v:
+                row[k] = v.replace('\r\n', '\n').replace('\r', '\n')
+        ts_raw = (row.get('Timestamp') or '').strip()
+        if not ts_raw:
+            stats['skipped_no_timestamp'] += 1
+            continue
+        if pending_ts is not None and ts_raw != pending_ts:
+            if not _flush():
+                stopped = True
+                break
+        pending_ts = ts_raw
+        pending.setdefault(_group_key(row), []).append(row)
+
+    if not stopped and pending:
+        _flush()
+
+    if stats['rows'] == 0:
+        raise HayabusaParseError(
+            f"No usable rows found in CSV (skipped {stats['skipped_no_timestamp']} blank/headerless rows)."
+        )
+
+    stats['events'] = len(out)
     out.sort(key=lambda e: e['event_date'])
+    return batch_id, out, stats
+
+
+def parse_hayabusa_csv(csv_bytes: bytes | str, case_id: int) -> tuple[uuid.UUID, list[dict[str, Any]]]:
+    """Parse a Hayabusa CSV into CaseWorkingEvent-shaped dicts.
+
+    Compatibility wrapper around ``parse_hayabusa_csv_ex`` with no level
+    filter, no date window and the default event cap. Returns
+    ``(import_batch_id, [event_dict, …])``.
+    """
+    batch_id, out, _stats = parse_hayabusa_csv_ex(csv_bytes, case_id)
     return batch_id, out

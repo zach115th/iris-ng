@@ -1129,6 +1129,17 @@ event_date,event_tz,event_title,event_category,event_content,event_raw,event_sou
                     </div>
                     <small style="font-size: 11px; color: #94a3b8;">Only events whose timestamp falls within this window are imported; the rest are skipped. Rows with no parseable timestamp are always kept.</small>
                 </div>
+                <div class="form-group" id="iris-wt-import-levels" style="display: none;">
+                    <label class="placeholder" style="font-size: 12.5px;">Severity filter <span style="color: #94a3b8; font-weight: 400;">(Hayabusa rule level — an event is kept when its highest-level rule is ticked)</span></label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 2px 0;">
+                        <label style="font-size: 12.5px; margin: 0; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" class="iris-wt-import-level" value="crit" checked> <span style="color: #f87171;">critical</span></label>
+                        <label style="font-size: 12.5px; margin: 0; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" class="iris-wt-import-level" value="high" checked> <span style="color: #fb923c;">high</span></label>
+                        <label style="font-size: 12.5px; margin: 0; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" class="iris-wt-import-level" value="med" checked> <span style="color: #fbbf24;">medium</span></label>
+                        <label style="font-size: 12.5px; margin: 0; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" class="iris-wt-import-level" value="low" checked> <span style="color: #60a5fa;">low</span></label>
+                        <label style="font-size: 12.5px; margin: 0; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" class="iris-wt-import-level" value="info"> <span style="color: #94a3b8;">info</span></label>
+                    </div>
+                    <small style="font-size: 11px; color: #94a3b8;">Info-level rules are the bulk of a full-host run (typically over 99% of the rows) and are off by default; tick it to import everything. Imports stop at 25,000 events — narrow the window or the levels if that cap is reached.</small>
+                </div>
                 <div id="iris-wt-import-status" style="font-size: 12px; color: #94a3b8;"></div>
             </div>
             <div class="modal-footer">
@@ -1542,9 +1553,10 @@ window.irisWorkingTimeline = (function () {
     var IMPORT_SOURCES = {
         'hayabusa': {
             title:    'Import Hayabusa CSV',
-            blurb:    'Upload a Hayabusa <code>csv-timeline</code> output. Sigma rules that fired on the same underlying EVTX event (same Channel/EID/RID) are collapsed into one card; the highest-severity rule\'s title becomes the headline.',
+            blurb:    'Upload a Hayabusa CSV timeline — <code>dfir-timeline -t csv</code> on Hayabusa 4.x, <code>csv-timeline</code> on 3.x, any profile (run with <code>--utc</code> / <code>--UTC</code>). Sigma rules that fired on the same underlying EVTX event (same Channel/EID/RID) are collapsed into one card; the highest-severity rule\'s title becomes the headline.',
             label:    'Hayabusa CSV file',
             endpoint: '/import/hayabusa',
+            levels:   true,
         },
         'eztools': {
             title:    'Import EZ Tools / KAPE CSV',
@@ -1566,7 +1578,23 @@ window.irisWorkingTimeline = (function () {
         document.getElementById('iris-wt-import-file').value = '';
         document.getElementById('iris-wt-import-begin').value = '';
         document.getElementById('iris-wt-import-end').value = '';
+        // Severity checkboxes exist for Hayabusa only (its rows carry a rule
+        // level); reset to the defaults on every open so a previous import's
+        // choice does not leak into the next one. Default: everything but info.
+        var levelsBox = document.getElementById('iris-wt-import-levels');
+        levelsBox.style.display = src.levels ? '' : 'none';
+        document.querySelectorAll('.iris-wt-import-level').forEach(function (cb) {
+            cb.checked = cb.value !== 'info';
+        });
         if (window.jQuery) jQuery('#iris-wt-import-modal').modal('show');
+    }
+
+    /* Ticked Hayabusa levels, in the order the server names them. */
+    function selectedImportLevels() {
+        return Array.prototype.map.call(
+            document.querySelectorAll('.iris-wt-import-level:checked'),
+            function (cb) { return cb.value; }
+        );
     }
 
     function submitImport() {
@@ -1590,6 +1618,15 @@ window.irisWorkingTimeline = (function () {
         fd.append('file', input.files[0]);
         if (beginVal) fd.append('begin_date', beginVal);
         if (endVal) fd.append('end_date', endVal);
+        if (src.levels) {
+            var levels = selectedImportLevels();
+            if (!levels.length) {
+                statusEl.style.color = '#fca5a5';
+                statusEl.textContent = 'Tick at least one severity level — nothing would be imported.';
+                return;
+            }
+            fd.append('levels', levels.join(','));
+        }
         btn.disabled = true;
         statusEl.style.color = '#a78bfa';
         statusEl.textContent = 'Uploading + parsing…';
@@ -1606,6 +1643,14 @@ window.irisWorkingTimeline = (function () {
                 var skippedLabel = data.skipped_out_of_range
                     ? ' · ' + data.skipped_out_of_range + ' skipped outside date filter'
                     : '';
+                if (data.skipped_by_level) {
+                    skippedLabel += ' · ' + data.skipped_by_level + ' skipped by level';
+                }
+                if (data.truncated) {
+                    // The cap is a hard stop, not a sample: say so, and say what to do.
+                    skippedLabel += ' · stopped at the ' + data.cap + '-event cap — narrow the date window or the levels for the rest';
+                    statusEl.style.color = '#fbbf24';
+                }
                 statusEl.textContent = 'Imported ' + data.imported + ' event(s)' + kindLabel +
                                        ' (batch ' + (data.import_batch_id || '?').slice(0, 8) + '…)' +
                                        skippedLabel + '.';

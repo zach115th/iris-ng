@@ -49,7 +49,8 @@ from app.iris_engine.working_timeline.ioc_resolver import ensure_iocs_for_workin
 from app.iris_engine.working_timeline.eztools_parser import EztoolsParseError
 from app.iris_engine.working_timeline.eztools_parser import parse_eztools_csv
 from app.iris_engine.working_timeline.hayabusa_parser import HayabusaParseError
-from app.iris_engine.working_timeline.hayabusa_parser import parse_hayabusa_csv
+from app.iris_engine.working_timeline.hayabusa_parser import normalize_levels
+from app.iris_engine.working_timeline.hayabusa_parser import parse_hayabusa_csv_ex
 from app.iris_engine.working_timeline.iris_master_csv_parser import MasterCsvParseError
 from app.iris_engine.working_timeline.iris_master_csv_parser import parse_master_csv
 from app.models.authorization import CaseAccessLevel
@@ -218,20 +219,34 @@ def import_hayabusa(case_identifier):
 
     Accepts either ``multipart/form-data`` with a ``file`` field, or a
     JSON body with a ``csv`` string field (handy for scripted imports).
+
+    Optional filters (form fields, or JSON keys on the JSON path):
+      ``begin_date`` / ``end_date``  inclusive UTC day bounds;
+      ``levels``  comma-separated Hayabusa levels to keep (info, low, med,
+      high, crit — medium/critical accepted); omitted = every level. The
+      level filter is per event: a card keeps every rule that fired on it
+      and is dropped only when its highest level is not selected.
+
+    The upload is STREAMED to the parser (never decoded into one string)
+    and the import stops at MAX_EVENTS_PER_IMPORT accepted events, so a
+    multi-hundred-MB run from a full host imports in bounded memory; the
+    response says when the cap was hit (``truncated``) so the analyst can
+    narrow the window or the levels rather than wonder where the rest went.
     """
     denied = _require_full_access(case_identifier)
     if denied is not None:
         return denied
 
-    csv_bytes: bytes | str | None = None
+    source = None
+    body = {}
     if 'file' in request.files:
-        csv_bytes = request.files['file'].read()
+        source = request.files['file'].stream
     else:
         body = request.get_json(silent=True) or {}
-        if 'csv' in body:
-            csv_bytes = body['csv']
+        if body.get('csv'):
+            source = body['csv']
 
-    if not csv_bytes:
+    if source is None:
         return response_api_error('No CSV provided. POST a "file" multipart field or JSON {"csv": "..."}.')
 
     try:
@@ -239,12 +254,30 @@ def import_hayabusa(case_identifier):
     except _DateWindowError as exc:
         return response_api_error(str(exc))
 
+    levels_raw = request.form.get('levels')
+    if levels_raw is None:
+        levels_raw = body.get('levels')
+    if isinstance(levels_raw, str):
+        levels_raw = [p for p in levels_raw.split(',') if p.strip()]
     try:
-        batch_id, parsed = parse_hayabusa_csv(csv_bytes, case_identifier)
+        levels = normalize_levels(levels_raw) if levels_raw else None
+    except ValueError as exc:
+        return response_api_error(str(exc))
+
+    try:
+        batch_id, parsed, stats = parse_hayabusa_csv_ex(
+            source, case_identifier,
+            levels=levels, begin_dt=begin_dt, end_dt=end_dt,
+        )
     except HayabusaParseError as exc:
         return response_api_error(str(exc))
 
-    parsed, skipped_out_of_range = _filter_rows_by_window(parsed, begin_dt, end_dt)
+    if not parsed:
+        return response_api_error(
+            'No events matched the selected levels and date window '
+            f'({stats["skipped_by_level"]} skipped by level, '
+            f'{stats["skipped_out_of_range"]} outside the date filter).'
+        )
 
     inserted = 0
     for row in parsed:
@@ -266,21 +299,32 @@ def import_hayabusa(case_identifier):
         )
         db.session.add(ev)
         inserted += 1
+        if inserted % 2000 == 0:
+            db.session.flush()
     db.session.commit()
 
-    window_note = ''
-    if skipped_out_of_range:
-        window_note = f'; {skipped_out_of_range} skipped outside the date filter'
+    notes = []
+    if stats['skipped_out_of_range']:
+        notes.append(f"{stats['skipped_out_of_range']} skipped outside the date filter")
+    if stats['skipped_by_level']:
+        notes.append(f"{stats['skipped_by_level']} skipped by level")
+    if stats['truncated']:
+        notes.append(f"stopped at the {stats['cap']}-event cap")
     track_activity(
         f'imported {inserted} Hayabusa event(s) into the working timeline '
-        f'(batch {batch_id}){window_note}',
+        f'(batch {batch_id})' + ('; ' + '; '.join(notes) if notes else ''),
         caseid=case_identifier,
     )
 
     return response_api_created({
         'import_batch_id': str(batch_id),
         'imported': inserted,
-        'skipped_out_of_range': skipped_out_of_range,
+        'skipped_out_of_range': stats['skipped_out_of_range'],
+        'skipped_by_level': stats['skipped_by_level'],
+        'truncated': stats['truncated'],
+        'cap': stats['cap'],
+        'levels': sorted(levels) if levels else None,
+        'rows_read': stats['rows'],
         'source': 'hayabusa',
     })
 

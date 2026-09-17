@@ -11,7 +11,12 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
-## [Unreleased]
+## [IRIS-NG-v2.1.1] — 2026-09-17
+
+Incident Command System forms in war rooms, and a PyJWT security update. No
+schema change: the database head is unchanged from v2.0.0 and no migration
+runs on upgrade. An image rebuild is required — the dependency updates and
+the ICS notes rail live in the built image.
 
 ### Added
 - **ICS forms seeded into war rooms.** When the first case is attached to a room, three
@@ -34,6 +39,27 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
   delete once reviewed. Runs automatically after the seed when an AI backend is
   configured and on demand from the Notes rail; a failed call changes nothing.
   `POST /api/v2/war-rooms/<id>/notes/ics/ai-draft` (202 + job id, `?sync=true` inline).
+
+### Fixed
+- **Hayabusa CSV import of a full-host run (#119).** A Hayabusa 4.x `dfir-timeline`
+  export over a whole host is a multi-hundred-megabyte CSV, and the upload died at the
+  reverse proxy's 100 MB body limit with a bare `413` before the app read a single row —
+  which read like a format problem. The column layout is unchanged between 3.x and 4.x,
+  and both parse identically. Fixed on three fronts: the working-timeline import routes
+  now accept any body size with the same ten-minute timeouts as the other upload paths
+  (nginx image rebuild required); the parser streams the upload instead of decoding it
+  into one string, grouping fan-out rows as they arrive; and the import modal gained a
+  **severity filter** — critical / high / medium / low / info checkboxes, info off by
+  default because it is over 99% of a full-host run — applied per event (a card keeps
+  every rule that fired on it and is dropped only when its highest level is unticked),
+  together with the date window, ahead of a 25,000-event cap matching the EZ Tools
+  import. The result message names what was skipped by level, by date, and whether the
+  cap stopped the import. Also: the channel table now mirrors Hayabusa's own
+  abbreviations (`RDS-LSM`, `BitsCli`, `MS-Win-…/Op` and kin) while still accepting the
+  older spellings, so the Event Source of a promoted event reads as the Windows log name;
+  and the modal names the 4.x command (`dfir-timeline -t csv`, `--utc`) beside the 3.x one.
+  API: `POST …/working-timeline/import/hayabusa` accepts `levels` (comma-separated) and
+  returns `skipped_by_level`, `truncated`, `cap`, `levels` and `rows_read`.
 
 ### Dependencies
 
