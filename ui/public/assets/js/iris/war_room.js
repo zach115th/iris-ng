@@ -1985,6 +1985,16 @@ function iris_wroom_nt_show_doc(doc, readOnly) {
         readOnly ? '' : 'none';
     document.getElementById('iris-wr-nt-del').style.display =
         (!readOnly && iris_wroom_nt_can_edit()) ? '' : 'none';
+    /* The PDF export is offered on ICS notes only (the server names the
+       form from the title); a case note or a plain room note has none. */
+    var pdfBtn = document.getElementById('iris-wr-nt-icspdf');
+    if (pdfBtn) {
+        pdfBtn.style.display = (doc.ics_form && IRIS_WROOM_NT.sel
+            && IRIS_WROOM_NT.sel.type === 'room') ? '' : 'none';
+        pdfBtn.title = doc.ics_form
+            ? 'Download ICS ' + doc.ics_form + ' as the filled FEMA PDF'
+            : '';
+    }
     document.getElementById('iris-wr-nt-meta').textContent = doc.meta || '';
     var view = document.getElementById('iris-wr-nt-view');
     view.innerHTML = doc.content_html
@@ -2019,6 +2029,61 @@ function iris_wroom_nt_open_case(caseId, noteId) {
             iris_wroom_nt_show_doc(res.j, true);
             iris_wroom_nt_render_rail();
         });
+}
+
+/* ICS forms — PDF export. The server fills the official FEMA form from the
+   note and reports in headers what a file body cannot carry: rows that did
+   not fit, AI-drafted fields nobody has reviewed, sections no block accepts.
+   The status line says all three — a partial or unreviewed export must not
+   look complete. Unsaved editor text is flushed first so the PDF is what
+   the analyst sees. */
+function iris_wroom_nt_ics_pdf() {
+    var s = IRIS_WROOM_NT;
+    if (!s.sel || s.sel.type !== 'room' || !s.doc || !s.doc.ics_form) return;
+    iris_wroom_nt_flush_save();
+    var noteId = s.sel.id;
+    var form = s.doc.ics_form;
+    iris_wroom_nt_status('Filling ICS ' + form + '…');
+    fetch('/api/v2/war-rooms/' + IRIS_WROOM._rid + '/notes/room/' + noteId + '/ics-pdf',
+          {headers: {'Accept': 'application/pdf'}})
+        .then(function (r) {
+            if (!r.ok) {
+                return r.json().then(function (j) {
+                    iris_wroom_nt_status('PDF refused: ' + ((j && j.message) || r.status));
+                }, function () { iris_wroom_nt_status('PDF failed: HTTP ' + r.status); });
+            }
+            var overflow = {};
+            var unmapped = [];
+            try { overflow = JSON.parse(r.headers.get('X-IRIS-ICS-Overflow') || '{}'); } catch (e) { overflow = {}; }
+            try { unmapped = JSON.parse(r.headers.get('X-IRIS-ICS-Unmapped') || '[]'); } catch (e) { unmapped = []; }
+            var unreviewed = parseInt(r.headers.get('X-IRIS-ICS-Unreviewed') || '0', 10) || 0;
+            return r.blob().then(function (blob) {
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'ICS-' + form + '-WR' + IRIS_WROOM._rid + '.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+                var notes = [];
+                var over = Object.keys(overflow);
+                if (over.length) {
+                    notes.push(over.map(function (k) {
+                        return overflow[k] + ' row(s) of block ' + k + ' did not fit';
+                    }).join('; '));
+                }
+                if (unreviewed) {
+                    notes.push(unreviewed + ' AI-drafted field(s) still unreviewed');
+                }
+                if (unmapped.length) {
+                    notes.push('not on the form: ' + unmapped.join(', '));
+                }
+                iris_wroom_nt_status('ICS ' + form + ' PDF downloaded' +
+                    (notes.length ? ' — ' + notes.join(' · ') : ''));
+            });
+        })
+        .catch(function () { iris_wroom_nt_status('PDF failed'); });
 }
 
 /* ICS forms — AI pass. The server fills ONLY fields still at their seeded
@@ -3310,6 +3375,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     iris_wroom_nt_status('All ICS forms are already present in this room.');
                 }
             });
+        });
+    }
+    var pdfIcs = document.getElementById('iris-wr-nt-icspdf');
+    if (pdfIcs) {
+        pdfIcs.addEventListener('click', function (e) {
+            e.preventDefault();
+            iris_wroom_nt_ics_pdf();
         });
     }
     var aiIcs = document.getElementById('iris-wr-nt-aiics');

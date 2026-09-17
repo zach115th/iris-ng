@@ -514,9 +514,9 @@ def attach_war_room_case(room_id):
         attach_case(room, case_id, current_user.id)
     except BusinessProcessingError as e:
         return response_api_error(str(e))
-    # ICS room-note templates (201/202/203) are seeded on the FIRST case
-    # attach, one set per room, idempotent by title, fail-soft — a seeding
-    # problem never fails the attach (business/war_room_ics.py).
+    # ICS room-note templates (201/202/203/204/205A/209/214) are seeded on
+    # the FIRST case attach, one set per room, idempotent by title, fail-soft
+    # — a seeding problem never fails the attach (business/war_room_ics.py).
     from app.business.war_room_ics import seed_ics_notes_soft
     ics = seed_ics_notes_soft(room, current_user.id)
     # Second pass: when the seed created forms, queue the AI pass that fills
@@ -1433,7 +1433,8 @@ def delete_war_room_note_folder(room_id, folder_id):
                            methods=['GET'])
 @ac_api_requires()
 def war_room_ics_state(room_id):
-    """Which ICS forms (201/202/203) exist in this room, by title."""
+    """Which ICS forms (201/202/203/204/205A/209/214) exist in this room,
+    by title."""
     from app.business.war_room_ics import ics_state
     room, _, err = _resolve(room_id, 'observer')
     if err:
@@ -1508,6 +1509,48 @@ def ai_draft_war_room_ics(room_id):
                                  'force': force})
     return response(202, data={'task_id': job.task_id, 'state': 'queued',
                                'seeded': seeded.get('created', [])})
+
+
+@war_rooms_blueprint.route(
+    '/war-rooms/<int:room_id>/notes/room/<int:note_id>/ics-pdf', methods=['GET'])
+@ac_api_requires()
+def war_room_note_ics_pdf(room_id, note_id):
+    """The official FEMA ICS form, filled from this room note (the note
+    title names the form: "ICS 201 - ...", any folder). Read access, like
+    reading the note. Response headers carry what a file body cannot:
+    `X-IRIS-ICS-Overflow` (rows that did not fit, per block),
+    `X-IRIS-ICS-Unreviewed` (AI-drafted fields still carrying their marker)
+    and `X-IRIS-ICS-Unmapped` (note sections no block accepts). ?format=json
+    returns the field values and the same report instead of the PDF."""
+    from app.business.war_room_ics import form_number
+    from app.business.war_room_ics_pdf import IcsPdfError
+    from app.business.war_room_ics_pdf import build_field_values
+    from app.business.war_room_ics_pdf import render_ics_pdf
+    from app.business.war_rooms import _get_room_note
+    room, _, err = _resolve(room_id, 'observer')
+    if err:
+        return err
+    try:
+        n = _get_room_note(room, note_id)
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    number = form_number(n.title)
+    if number is None:
+        return response_api_error(
+            'Not an ICS form: the note title must start with "ICS <number> - "')
+    try:
+        if request.args.get('format') == 'json':
+            return response_api_success(build_field_values(number, n.content or ''))
+        pdf, report = render_ics_pdf(number, n.content or '')
+    except IcsPdfError as e:
+        return response_api_error(str(e))
+    resp = Response(pdf, mimetype='application/pdf')
+    resp.headers['Content-Disposition'] = (
+        'attachment; filename="ICS-%s-WR%d.pdf"' % (number, room.id))
+    resp.headers['X-IRIS-ICS-Overflow'] = json.dumps(report['overflow'])
+    resp.headers['X-IRIS-ICS-Unreviewed'] = str(report['unreviewed_ai_fields'])
+    resp.headers['X-IRIS-ICS-Unmapped'] = json.dumps(report['unmapped'])
+    return resp
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/room',

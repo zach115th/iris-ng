@@ -11,6 +11,43 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [Unreleased]
+
+### Added
+- **The full ICS packet for a cyber incident, exported as the official FEMA forms.** War
+  rooms now seed seven Incident Command System forms on the first case attach instead of
+  three — ICS 201 Incident Briefing, 202 Incident Objectives, 203 Organization Assignment
+  List, and new **204 Assignment List**, **205A Communications List**, **209 Incident Status
+  Summary** and **214 Activity Log** — the set an emergency-management reporting chain
+  expects from an incident. The new forms are prefilled from what the room knows: 204
+  from the responders (one resource per person, account e-mail as contact) and the open
+  room and case tasks as work assignments; 205A as an alphabetized contact list of the
+  members with their ICS position; 209 with the incident number, start date, a
+  server-computed scope line (cases, assets, IOCs, evidence, timeline events), the case
+  classifications as the incident definition, the customers as the affected area, and
+  the team headcount; 214 with the members as resources and the room stream (messages,
+  decisions, cases attached, members added, tasks, SitReps) as the activity log up to
+  seed time. A room seeded before a form existed gets the missing ones on its next seed;
+  existing notes are never touched. **Every ICS note now downloads as the filled official
+  FEMA PDF** (a download button on the note; read access) — the bundled forms are FEMA's
+  own fillable files, so the output is the real form, not a look-alike. The note's block
+  numbers were aligned to FEMA's (the 201 gained "2. Incident Number" and its remaining
+  blocks moved down by one) so each section maps onto the block with that number; notes
+  seeded under the old numbering still export by their headings. The export fills what
+  fits, prints no placeholder dashes, drops FEMA's instruction pages, leaves signatures
+  for a pen, transliterates the few symbols the forms' font lacks, and tells you what it
+  could not carry: rows that did not fit, AI-drafted fields nobody has reviewed yet, and
+  any section you added that has no block on the form. Two ICS 209 blocks (38, 39) share
+  a single field in FEMA's file and are carried in block 47 Remarks instead.
+  `GET /api/v2/war-rooms/<id>/notes/room/<note_id>/ics-pdf` (`?format=json` for the field
+  values and the report). New dependency: pypdf.
+- **AI pass extended to the 204 and 209.** Work assignments and special instructions on
+  the 204; incident definition, significant events, projected activity and threat
+  summary per horizon, strategic objectives, critical resource needs, strategic
+  discussion and planned actions on the 209 — same rules as before: only empty fields,
+  every fill marked. The 205A contact list and the 214 activity log are records and are
+  never drafted.
+
 ## [IRIS-NG-v2.1.1] — 2026-09-17
 
 Incident Command System forms in war rooms, and a PyJWT security update. No

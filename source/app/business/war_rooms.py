@@ -1273,11 +1273,15 @@ def _get_room_note(room, note_id):
 
 
 def serialize_room_note(n):
+    from app.business.war_room_ics import form_number
     from app.iris_engine.safe_markdown import render_markdown_safe
     return {
         'id': n.id, 'title': n.title, 'folder_id': n.folder_id,
         'content': n.content or '',
         'content_html': render_markdown_safe(n.content or ''),
+        # '201', '205A', ... when the title names an ICS form (the PDF
+        # export offers itself on those notes); None otherwise.
+        'ics_form': form_number(n.title),
         'updated_at': n.updated_at or n.created_at,
         'updated_by_name': (n.editor.name if n.editor
                             else (n.creator.name if n.creator else None)),

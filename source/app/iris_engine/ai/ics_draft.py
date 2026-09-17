@@ -17,11 +17,14 @@ Three passes, in this order (maintainer decision, 2026-09-16):
 
   1. DETERMINISTIC seed — business/war_room_ics.py fills every field the
      database answers directly (incident name, dates, attached cases, the
-     lead as Incident Commander, members). Runs on the first case attach.
+     lead as Incident Commander, members, contacts, tasks, the activity
+     log). Runs on the first case attach.
   2. THIS AI pass — proposes text for the fields still at their seeded `—`
      from the attached cases' material (descriptions, cached executive
-     summaries, tasks, activity). Runs automatically right after the seed
-     and on demand from the Notes rail.
+     summaries, tasks, activity) on ICS 201, 202, 203, 204 and 209. Runs
+     automatically right after the seed and on demand from the Notes rail.
+     ICS 205A (contact list) and 214 (activity log) are RECORDS and are
+     never drafted (2026-09-17).
   3. The HUMAN pass — the Incident Commander reviews and edits.
 
 Rules that make pass 2 safe to run unattended:
@@ -78,7 +81,7 @@ from app.models.models import WarRoomNote
 
 log = logging.getLogger(__name__)
 
-PROMPT_ID = 'IcsDraftSystemPrompt-v1'
+PROMPT_ID = 'IcsDraftSystemPrompt-v2'
 FEATURE_KEY = 'ics_draft'
 KIND = 'ics_draft'
 ANCHOR_TYPE = 'war_room'
@@ -97,11 +100,17 @@ _ROWS_CAP = 12
 _DESC_CAP = 3000
 _TASKS_CAP = 25
 
+# Forms the AI pass may draft. ICS 205A (a contact list) and ICS 214 (an
+# activity log) are records — never drafted, deterministic seed only.
 _FORM_KEYS = {
     'ICS 201 - Incident Briefing': 'ics_201',
     'ICS 202 - Incident Objectives': 'ics_202',
     'ICS 203 - Organization Assignment List': 'ics_203',
+    'ICS 204 - Assignment List': 'ics_204',
+    'ICS 209 - Incident Status Summary': 'ics_209',
 }
+_HORIZON_KEYS = (('12h', '12 hours'), ('24h', '24 hours'), ('48h', '48 hours'),
+                 ('72h', '72 hours'), ('beyond', 'Beyond 72 hours'))
 
 # ICS 203 positions the model may propose → (section heading, table row
 # label, label reported/marked — "Chief" alone names two positions).
@@ -157,6 +166,7 @@ def build_ics_payload(room: WarRoom) -> dict[str, Any]:
         if c is None:
             continue
         entry['description'] = (c.description or '')[:_DESC_CAP] or None
+        entry['classification'] = c.classification.name if c.classification else None
         entry['tags'] = [t.tag_title for t in (c.tags or [])][:20]
         entry['owner'] = _uname(c.owner)
         entry['state'] = c.state.state_name if c.state else None
@@ -301,12 +311,23 @@ def _parse_response(raw: str, candidates: list[dict]) -> dict[str, Any]:
     except json.JSONDecodeError as exc:
         raise IcsDraftError(f'AI backend returned invalid JSON: {exc}')
     if not isinstance(obj, dict) or not any(
-            isinstance(obj.get(k), dict) for k in ('ics_201', 'ics_202', 'ics_203')):
+            isinstance(obj.get(k), dict) for k in _FORM_KEYS.values()):
         raise IcsDraftError('AI backend returned no ICS form object')
 
-    f1 = obj.get('ics_201') if isinstance(obj.get('ics_201'), dict) else {}
-    f2 = obj.get('ics_202') if isinstance(obj.get('ics_202'), dict) else {}
-    f3 = obj.get('ics_203') if isinstance(obj.get('ics_203'), dict) else {}
+    def _form(key):
+        return obj.get(key) if isinstance(obj.get(key), dict) else {}
+    f1, f2, f3, f4, f9 = (_form(k) for k in ('ics_201', 'ics_202', 'ics_203',
+                                             'ics_204', 'ics_209'))
+
+    def _horizons(value):
+        if not isinstance(value, dict):
+            return None
+        out = {}
+        for key, _label in _HORIZON_KEYS:
+            v = _item(value.get(key))
+            if v:
+                out[key] = v
+        return out or None
 
     actions = None
     if isinstance(f1.get('actions'), list):
@@ -390,6 +411,20 @@ def _parse_response(raw: str, candidates: list[dict]) -> dict[str, Any]:
             'site_safety_plan_required': ssp,
         },
         'ics_203': dict(positions, technical_specialists=specialists),
+        'ics_204': {
+            'work_assignments': _str_list(f4.get('work_assignments'), _ROWS_CAP),
+            'special_instructions': _prose(f4.get('special_instructions'), 1500),
+        },
+        'ics_209': {
+            'incident_definition': _item(f9.get('incident_definition')),
+            'significant_events': _prose(f9.get('significant_events')),
+            'projected_activity': _horizons(f9.get('projected_activity')),
+            'strategic_objectives': _str_list(f9.get('strategic_objectives')),
+            'threat_summary': _horizons(f9.get('threat_summary')),
+            'critical_resource_needs': _str_list(f9.get('critical_resource_needs')),
+            'strategic_discussion': _prose(f9.get('strategic_discussion'), 2000),
+            'planned_actions': _str_list(f9.get('planned_actions')),
+        },
         'dropped_names': dropped,
     }
 
@@ -493,14 +528,17 @@ def _apply_201(content: str, f: dict) -> tuple[str, list[str]]:
         b, ok2 = _fill_health_safety(b, f.get('health_safety'))
         return b, ok1 or ok2
 
-    _in_section('Situation Summary and Health & Safety Briefing', '§4 situation', _s4)
-    _in_section('Current and Planned Objectives', '§6 objectives',
+    # Labels carry FEMA's block numbers (the templates were renumbered to
+    # match the official form on 2026-09-17); sections are located by
+    # heading TEXT, so a note seeded before that still merges.
+    _in_section('Situation Summary and Health & Safety Briefing', '§5 situation', _s4)
+    _in_section('Current and Planned Objectives', '§7 objectives',
                 lambda b: _fill_bullets(b, f.get('objectives')))
-    _in_section('Current and Planned Actions, Strategies and Tactics', '§7 actions',
+    _in_section('Current and Planned Actions, Strategies and Tactics', '§8 actions',
                 lambda b: _fill_table(b, '| — | — |', [
                     '| %s | %s |' % (_cell(a.get('time')), _cell(a.get('action')))
                     for a in (f.get('actions') or [])]))
-    _in_section('Resource Summary', '§9 resources',
+    _in_section('Resource Summary', '§10 resources',
                 lambda b: _fill_table(b, '| — | — | — | — | — | — |', [
                     '| %s | %s | — | — | — | %s |' % (
                         _cell(r.get('resource')), _cell(r.get('identifier')), _cell(r.get('notes')))
@@ -570,6 +608,75 @@ def _apply_203(content: str, f: dict) -> tuple[str, list[str]]:
     return content, filled
 
 
+def _in_section_of(content_ref: list, heading, label, fn, filled: list):
+    """Shared section runner for the newer forms: content_ref is a one-item
+    list so the closure can rebind it."""
+    span = _section_span(content_ref[0], heading)
+    if span is None:
+        return
+    body, ok = fn(content_ref[0][span[0]:span[1]])
+    if ok:
+        content_ref[0] = content_ref[0][:span[0]] + body + content_ref[0][span[1]:]
+        filled.append(label)
+
+
+def _fill_dash_line(body, text):
+    """The lone `—` line the templates use for a prose block."""
+    if not text:
+        return body, False
+    return _replace_line(body, r'^—[ \t]*$', text + '\n\n' + MARK)
+
+
+def _fill_horizons(body, values):
+    """`| 12 hours | — |` rows (ICS 209 blocks 36/38): fill the rows the
+    model answered, leave the rest, one marker for the table."""
+    if not values:
+        return body, False
+    any_ok = False
+    for key, label in _HORIZON_KEYS:
+        v = values.get(key)
+        if not v:
+            continue
+        body, ok = _fill_position(body, label, v)
+        any_ok = any_ok or ok
+    if any_ok:
+        body = body.rstrip('\n') + '\n\n' + MARK + '\n\n'
+    return body, any_ok
+
+
+def _apply_204(content: str, f: dict) -> tuple[str, list[str]]:
+    filled: list[str] = []
+    ref = [content]
+    _in_section_of(ref, 'Work Assignments', '§6 work assignments',
+                   lambda b: _fill_bullets(b, f.get('work_assignments')), filled)
+    _in_section_of(ref, 'Special Instructions', '§7 special instructions',
+                   lambda b: _fill_dash_line(b, f.get('special_instructions')), filled)
+    return ref[0], filled
+
+
+def _apply_209(content: str, f: dict) -> tuple[str, list[str]]:
+    filled: list[str] = []
+    ref = [content]
+    _in_section_of(ref, 'Incident Definition', '§9 incident definition',
+                   lambda b: _fill_dash_line(b, f.get('incident_definition')), filled)
+    _in_section_of(ref, 'Significant Events for the Time Period Reported', '§28 significant events',
+                   lambda b: _fill_dash_line(b, f.get('significant_events')), filled)
+    _in_section_of(ref, 'Projected Incident Activity, Potential, Movement, Escalation, or Spread',
+                   '§36 projected activity',
+                   lambda b: _fill_horizons(b, f.get('projected_activity')), filled)
+    _in_section_of(ref, 'Strategic Objectives', '§37 strategic objectives',
+                   lambda b: _fill_bullets(b, f.get('strategic_objectives')), filled)
+    _in_section_of(ref, 'Current Incident Threat Summary and Risk Information', '§38 threat summary',
+                   lambda b: _fill_horizons(b, f.get('threat_summary')), filled)
+    _in_section_of(ref, 'Critical Resource Needs', '§39 critical resource needs',
+                   lambda b: _fill_bullets(b, f.get('critical_resource_needs')), filled)
+    _in_section_of(ref, 'Strategic Discussion', '§40 strategic discussion',
+                   lambda b: _fill_dash_line(b, f.get('strategic_discussion')), filled)
+    _in_section_of(ref, 'Planned Actions for Next Operational Period', '§41 planned actions',
+                   lambda b: _fill_bullets(b, f.get('planned_actions')), filled)
+    return ref[0], filled
+
+
 def _header_line(model: str, labels: list[str]) -> str:
     return ('> AI pass (%s, %s UTC) filled: %s. Each filled field carries an '
             '"AI draft" line — review it and delete the line.' % (
@@ -596,13 +703,19 @@ def apply_ics_draft(room: WarRoom, proposal: dict, actor_id: int | None,
     appliers = {'ics_201': (_apply_201, proposal.get('ics_201') or {}),
                 'ics_202': (_apply_202, dict(proposal.get('ics_202') or {},
                                              situation_summary=(proposal.get('ics_201') or {}).get('situation_summary'))),
-                'ics_203': (_apply_203, proposal.get('ics_203') or {})}
+                'ics_203': (_apply_203, proposal.get('ics_203') or {}),
+                'ics_204': (_apply_204, proposal.get('ics_204') or {}),
+                'ics_209': (_apply_209, proposal.get('ics_209') or {})}
     filled: dict[str, list[str]] = {}
     untouched: list[str] = []
     missing: list[str] = []
+    not_drafted: list[str] = []
     note_ids: dict[str, int] = {}
     now = datetime.utcnow()
     for title, _file in ICS_FORMS:
+        if title not in _FORM_KEYS:
+            not_drafted.append(title)  # a record (205A, 214): seed only
+            continue
         note = (WarRoomNote.query.filter_by(room_id=room.id, title=title)
                 .order_by(WarRoomNote.id.asc()).first())
         if note is None:
@@ -620,7 +733,7 @@ def apply_ics_draft(room: WarRoom, proposal: dict, actor_id: int | None,
         filled[title] = labels
     db.session.commit()
     return {'filled': filled, 'untouched': untouched, 'missing': missing,
-            'note_ids': note_ids}
+            'not_drafted': not_drafted, 'note_ids': note_ids}
 
 
 # -------------------------------------------------------------- orchestration
@@ -679,9 +792,10 @@ def run_ics_draft(room_id: int, actor_id: int | None, *, force: bool = False) ->
     if room.status == 'closed':
         raise IcsDraftError('Room is closed')
     st = ics_state(room)
-    if st['missing']:
+    missing_drafted = [t for t in st['missing'] if t in _FORM_KEYS]
+    if missing_drafted:
         raise IcsDraftError('ICS forms are not seeded in this room: '
-                            + ', '.join(st['missing']))
+                            + ', '.join(missing_drafted))
 
     client: OpenAIClient | None = build_default_client(
         feature=FEATURE_KEY, timeout=240.0, default_max_tokens=_MAX_TOKENS)
