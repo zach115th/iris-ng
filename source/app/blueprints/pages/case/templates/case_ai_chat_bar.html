@@ -120,6 +120,18 @@
     transition: background 120ms, border-color 120ms;
   }
   .iris-chat-suggestion:hover { background: rgba(255, 255, 255, 0.10); border-color: rgba(255, 255, 255, 0.20); }
+  /* Follow-up chips under the newest answer — same pill as the starters */
+  .iris-chat-followups {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    align-self: flex-start; max-width: 92%;
+    margin-top: -6px;
+  }
+  .iris-chat-followups .iris-chat-suggestion { text-align: left; }
+  .iris-chat-truncated {
+    margin-top: 8px; padding-top: 6px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.15);
+    font-size: 11.5px; color: #f0b429;
+  }
 
   .iris-chat-msg { display: flex; flex-direction: column; gap: 4px; max-width: 92%; }
   .iris-chat-msg.role-user { align-self: flex-end; align-items: flex-end; }
@@ -475,6 +487,31 @@
     inputEl.disabled = busy;
   }
 
+  var CONTINUE_PROMPT = 'Continue your previous answer from where it stopped.';
+
+  // Follow-up chips (job.result.followups) sit under the NEWEST answer only:
+  // they are about that answer, so the next question retires them.
+  function removeFollowups() {
+    var old = msgsEl.querySelectorAll('.iris-chat-followups');
+    for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+  }
+  function renderFollowups(followups) {
+    if (!Array.isArray(followups) || !followups.length) return;
+    var box = document.createElement('div');
+    box.className = 'iris-chat-followups';
+    followups.forEach(function(q) {
+      if (typeof q !== 'string' || !q.trim()) return;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'iris-chat-suggestion';
+      btn.textContent = q.trim();
+      box.appendChild(btn);
+    });
+    if (!box.childNodes.length) return;
+    msgsEl.appendChild(box);
+    scrollMsgs();
+  }
+
   // Poll an async AI job until terminal (docs/19 §5b.3). Resolves with the
   // job object on done; rejects on error/cancelled.
   function pollChatJob(taskId) {
@@ -503,6 +540,7 @@
     question = question.trim();
 
     openConv();
+    removeFollowups();
     appendMessage('user', question);
     history.push({ role: 'user', content: question });
     inputEl.value = '';
@@ -539,8 +577,20 @@
       removeTyping();
       var data = job && job.result ? job.result : {};
       var answer = (data && data.answer) || '(no answer returned)';
-      appendMessage('assistant', answer);
+      var bubble = appendMessage('assistant', answer);
       history.push({ role: 'assistant', content: answer });
+      var chips = (data && Array.isArray(data.followups)) ? data.followups.slice() : [];
+      if (data && data.truncated) {
+        // Token limit hit: say so instead of ending mid-sentence, and offer
+        // the one follow-up that is always valid.
+        var note = document.createElement('div');
+        note.className = 'iris-chat-truncated';
+        note.textContent = 'This answer was cut off at the model’s output limit.';
+        bubble.appendChild(note);
+        chips.unshift(CONTINUE_PROMPT);
+        scrollMsgs();
+      }
+      renderFollowups(chips);
     }).catch(function(e) {
       removeTyping();
       appendMessage('assistant', 'AI request failed: ' + (e.message || String(e)), { error: true });
@@ -568,6 +618,16 @@
       }
     });
   }
+  // Follow-up chips are created per answer, so delegate from the message list.
+  // Scoped to .iris-chat-followups: the starter chips live inside msgsEl too
+  // and already have their own listener above.
+  msgsEl.addEventListener('click', function(e) {
+    var t = e.target;
+    if (t && t.classList.contains('iris-chat-suggestion') &&
+        t.parentNode && t.parentNode.classList.contains('iris-chat-followups')) {
+      sendQuestion(t.textContent);
+    }
+  });
 
   // Auto-focus the input when the conversation opens
   inputEl.addEventListener('focus', openConv);
