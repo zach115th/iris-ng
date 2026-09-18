@@ -800,15 +800,21 @@ function iris_tk_comments_body(task) {
             $c.append($('<div>').addClass('iris-tk-comment-meta')
                 .text((c.user && c.user.user_name ? c.user.user_name : 'unknown') +
                       ' · ' + (iris_task_utc_label(c.comment_date, true) || '')));
-            $c.append($('<div>').text(c.comment_text || ''));
+            // Escaped through jQuery text(), then resolved @logins get the
+            // shared highlight (#120) — the module is loaded by footer_case.html.
+            const escaped = $('<div>').text(c.comment_text || '').html();
+            $c.append($('<div>').html(window.IrisMentionPalette
+                ? window.IrisMentionPalette.highlightHtml(escaped) : escaped));
             $list.append($c);
         });
     }
     $body.append($list);
 
     const $form = $('<div>').css({marginTop: '10px', flexShrink: 0});
+    // data-iris-mention: mention_palette.js attaches the @-palette on first focus.
     const $input = $('<textarea>').attr({id: 'iris-tk-comment-input', rows: 2,
-                                         placeholder: 'Write a comment…'})
+                                         placeholder: 'Write a comment…',
+                                         'data-iris-mention': 'case'})
         .addClass('form-control form-control-sm');
     $form.append($input);
     $form.append($('<button>').attr('type', 'button')

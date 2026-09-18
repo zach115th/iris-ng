@@ -361,7 +361,8 @@
             <!-- Activity -->
             <div class="iris-acd-pane" id="iris-acd-pane-activity">
                 <div id="iris-acd-comment-box">
-                    <textarea id="iris-acd-comment-input" placeholder="Add a note or update on this alert cluster&hellip;"></textarea>
+                    {# data-iris-mention: mention_palette.js attaches the @-palette on first focus (#120) #}
+                    <textarea id="iris-acd-comment-input" placeholder="Add a note or update on this alert cluster&hellip;" data-iris-mention="users"></textarea>
                     <div class="text-right mt-2">
                         <button type="button" class="btn btn-sm btn-primary" id="iris-acd-comment-post">&#9655; Post</button>
                     </div>
@@ -428,5 +429,6 @@
 {% block javascripts %}
     <script src="/static/assets/js/plugin/d3.v7.min.js"></script>
     <script src="/static/assets/js/iris/flow_checklist.js"></script>
+    <script src="/static/assets/js/iris/mention_palette.js"></script>
     <script src="/static/assets/js/iris/alert_cluster_detail.js"></script>
 {% endblock javascripts %}

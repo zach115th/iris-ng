@@ -160,6 +160,12 @@ function iris_ce_load_comments(evId) {
         });
 }
 
+/* Resolved @logins in an ESCAPED comment get the shared highlight (#120). */
+function iris_ce_mentions(escapedHtml) {
+    return (window.IrisMentionPalette
+        ? window.IrisMentionPalette.highlightHtml(escapedHtml) : escapedHtml);
+}
+
 function iris_ce_post_comment(evId) {
     var box = document.getElementById('iris-ce-comment-input');
     if (!box || !box.value.trim()) return;
@@ -818,14 +824,17 @@ function iris_ce_render_detail() {
                         iris_ce_esc(who) + '</b> &middot; ' +
                         iris_ce_esc(when) + '</div>' +
                         '<div style="font-size:0.8rem; color:#e8e8ee; white-space:pre-wrap;">' +
-                        iris_ce_esc(cm.comment_text) + '</div></div>';
+                        iris_ce_mentions(iris_ce_esc(cm.comment_text)) + '</div></div>';
                 }).join('')
                 : '<div class="text-muted" style="font-size:0.8rem;">No comments yet.</div>';
             body += '</div>';
+            /* data-iris-mention: mention_palette.js attaches the @-palette on
+               first focus; an open palette swallows Enter BEFORE the
+               detail-pane Enter → post listener below sees it */
             body += '<div class="iris-ce-cfoot">' +
                 '<input type="text" class="form-control form-control-sm" ' +
                 'id="iris-ce-comment-input" placeholder="Add a comment..." ' +
-                'autocomplete="off">' +
+                'autocomplete="off" data-iris-mention="case">' +
                 '<button type="button" class="btn btn-sm btn-primary" ' +
                 'onclick="iris_ce_post_comment(' + r.id +
                 ');">Comment</button></div>';

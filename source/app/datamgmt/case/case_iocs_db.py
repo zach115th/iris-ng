@@ -385,6 +385,107 @@ def case_iocs_db_exists(ioc: Ioc):
     return iocs.first() is not None
 
 
+def find_existing_ioc(case_id, ioc_type_id, ioc_value, exclude_ioc_id=None):
+    """The case's FIRST IOC (lowest id) that is the same indicator as
+    (type, value) under the dedup key (#83: trim / refang / case-fold —
+    `iris_engine.utils.ioc_normalise`). None when the case has no such row.
+
+    This is the ingestion guard: CSV import and alert escalation call it so
+    a second row is never minted for an indicator the case already holds.
+    The exact-string check `case_iocs_db_exists` stays for the single-add
+    path's error message."""
+    from app.iris_engine.utils.ioc_normalise import normalise_ioc_value
+    key = normalise_ioc_value(ioc_value)
+    if not key:
+        return None
+    q = Ioc.query.filter(Ioc.case_id == case_id,
+                         Ioc.ioc_type_id == ioc_type_id)
+    if exclude_ioc_id is not None:
+        q = q.filter(Ioc.ioc_id != exclude_ioc_id)
+    for row in q.order_by(Ioc.ioc_id).all():
+        if normalise_ioc_value(row.ioc_value) == key:
+            return row
+    return None
+
+
+def transfer_ioc_links(loser_id, survivor_id):
+    """Move every relationship the loser IOC holds onto the survivor (#83
+    merge). Idempotent per link kind: a link the survivor already has is
+    dropped from the loser instead of duplicated. Session-only — the caller
+    commits. Returns {kind: moved_count}."""
+    from sqlalchemy import text as sa_text
+    from app.models.alerts import AlertSimilarity
+    moved = {}
+
+    # asset links — unique per (ioc, asset) in spirit
+    have = {l.asset_id for l in IocAssetLink.query.filter_by(ioc_id=survivor_id).all()}
+    n = 0
+    for link in IocAssetLink.query.filter_by(ioc_id=loser_id).all():
+        if link.asset_id in have:
+            db.session.delete(link)
+        else:
+            link.ioc_id = survivor_id
+            have.add(link.asset_id)
+            n += 1
+    moved['assets'] = n
+
+    # timeline events
+    from app.models.models import CaseEventsIoc
+    have = {l.event_id for l in CaseEventsIoc.query.filter_by(ioc_id=survivor_id).all()}
+    n = 0
+    for link in CaseEventsIoc.query.filter_by(ioc_id=loser_id).all():
+        if link.event_id in have:
+            db.session.delete(link)
+        else:
+            link.ioc_id = survivor_id
+            have.add(link.event_id)
+            n += 1
+    moved['events'] = n
+
+    # note provenance (UNIQUE ioc_id + note_id)
+    have = {l.note_id for l in IocNoteLink.query.filter_by(ioc_id=survivor_id).all()}
+    n = 0
+    for link in IocNoteLink.query.filter_by(ioc_id=loser_id).all():
+        if link.note_id in have:
+            db.session.delete(link)
+        else:
+            link.ioc_id = survivor_id
+            have.add(link.note_id)
+            n += 1
+    moved['notes'] = n
+    db.session.flush()
+
+    # alert association (composite PK, no ORM row class)
+    res = db.session.execute(sa_text(
+        'INSERT INTO alert_iocs_association (alert_id, ioc_id) '
+        'SELECT alert_id, :s FROM alert_iocs_association WHERE ioc_id = :l '
+        'ON CONFLICT DO NOTHING'), {'s': survivor_id, 'l': loser_id})
+    moved['alerts'] = res.rowcount if res.rowcount and res.rowcount > 0 else 0
+    db.session.execute(sa_text(
+        'DELETE FROM alert_iocs_association WHERE ioc_id = :l'), {'l': loser_id})
+
+    # comments follow the indicator
+    n = IocComments.query.filter_by(comment_ioc_id=loser_id).update(
+        {'comment_ioc_id': survivor_id}, synchronize_session=False)
+    moved['comments'] = int(n or 0)
+
+    # MISP attribute link: one per IOC — move it only if the survivor has none
+    n = 0
+    if MispAttributeLink.query.filter_by(ioc_id=survivor_id).first() is None:
+        link = MispAttributeLink.query.filter_by(ioc_id=loser_id).first()
+        if link is not None:
+            link.ioc_id = survivor_id
+            n = 1
+    moved['misp'] = n
+
+    # alert similarity rows pointing at the loser
+    n = AlertSimilarity.query.filter_by(matching_ioc_id=loser_id).update(
+        {'matching_ioc_id': survivor_id}, synchronize_session=False)
+    moved['alert_similarity'] = int(n or 0)
+    db.session.flush()
+    return moved
+
+
 def get_ioc_types_list():
     ioc_types = IocType.query.with_entities(
         IocType.type_id,

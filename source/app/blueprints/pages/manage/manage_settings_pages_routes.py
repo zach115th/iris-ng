@@ -101,3 +101,13 @@ def manage_banners_view_route(caseid, url_redir) -> Union[str, Response]:
         return redirect(url_for('manage_settings_pages.manage_banners_view_route', cid=caseid))
 
     return render_template('manage_banners.html', form=FlaskForm())
+
+
+@manage_settings_pages_blueprint.route('/manage/war-room-teams', methods=['GET'])
+@ac_requires(Permissions.server_administrator, no_cid_required=True)
+def manage_war_room_teams_view_route(caseid, url_redir) -> Union[str, Response]:
+    """#115: org-wide default @-mention teams seeded into every new war room."""
+    if url_redir:
+        return redirect(url_for('manage_settings_pages.manage_war_room_teams_view_route', cid=caseid))
+
+    return render_template('manage_war_room_teams.html', form=FlaskForm())

@@ -1,0 +1,353 @@
+{# IOC deduplication modal (#83). Opened by: irisIocDedupOpen(caseId) from
+   the IOC page's ⋮ menu. Shape and styling mirror modal_timeline_dedup.html
+   (the .iris-dd-* classes are defined THERE only on the timeline page, so
+   this modal carries its own prefixed copy, .iris-idd-*).
+
+   Three sections: exact groups (Auto-resolve all), heuristic near pairs, and
+   the AI pass (Run AI pass -> async job -> proposals appended). Every pair
+   offers Keep left / Merge / Keep right / Keep both. Keep and Merge both
+   transfer the removed row's links server-side; Keep both is a dismissal.
+
+   All jQuery ($) calls sit inside function bodies. #}
+
+<style>
+#iris-idd-modal .modal-content { background:#0f0f18; border:1px solid rgba(139,92,246,0.25); border-radius:8px; }
+#iris-idd-modal .modal-header { border-bottom:1px solid rgba(139,92,246,0.18); padding:14px 20px; }
+#iris-idd-modal .modal-body { padding:20px; max-height:72vh; overflow-y:auto; }
+.iris-idd-title { color:#e2d9f3; font-size:13px; font-weight:600; letter-spacing:0.02em; }
+.iris-idd-badge { display:inline-block; font-size:11px; padding:1px 8px; border-radius:999px; margin-left:6px; vertical-align:middle; }
+.iris-idd-badge-violet { background:rgba(139,92,246,0.18); border:1px solid rgba(139,92,246,0.35); color:#d4c4ff; }
+.iris-idd-badge-amber { background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); color:#fcd34d; }
+.iris-idd-badge-green { background:rgba(74,222,128,0.12); border:1px solid rgba(74,222,128,0.3); color:#4ade80; }
+.iris-idd-group { background:rgba(15,15,30,0.6); border:1px solid rgba(139,92,246,0.15); border-radius:6px; padding:10px 14px; margin-bottom:8px; font-size:12px; }
+.iris-idd-keep { color:#a5b4fc; font-weight:600; word-break:break-all; }
+.iris-idd-del { color:#94a3b8; margin-top:4px; word-break:break-all; }
+.iris-idd-pair { background:rgba(15,15,30,0.6); border:1px solid rgba(139,92,246,0.15); border-radius:6px; margin-bottom:14px; overflow:hidden; }
+.iris-idd-pair.iris-idd-resolved { opacity:0.45; pointer-events:none; }
+.iris-idd-pair-header { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 14px; background:rgba(139,92,246,0.06); border-bottom:1px solid rgba(139,92,246,0.12); font-size:11px; color:#94a3b8; }
+.iris-idd-pair-cols { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:rgba(139,92,246,0.12); }
+.iris-idd-col { background:#0f0f18; padding:12px 14px; }
+.iris-idd-val { color:#e2d9f3; font-size:12px; font-weight:600; word-break:break-all; margin-bottom:4px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; }
+.iris-idd-type { color:#6366f1; font-size:11px; margin-bottom:6px; }
+.iris-idd-desc { color:#94a3b8; font-size:11px; line-height:1.5; word-break:break-word; }
+.iris-idd-meta { margin-top:6px; font-size:10px; color:#64748b; }
+.iris-idd-actions { display:flex; align-items:center; gap:8px; padding:8px 14px; border-top:1px solid rgba(139,92,246,0.12); flex-wrap:wrap; }
+.iris-idd-btn { font-size:11px; padding:4px 12px; border-radius:999px; cursor:pointer; border:1px solid; background:transparent; transition:background 0.15s; }
+.iris-idd-btn-keep { border-color:rgba(99,102,241,0.5); color:#a5b4fc; }
+.iris-idd-btn-keep:hover { background:rgba(99,102,241,0.15); }
+.iris-idd-btn-merge { border-color:rgba(251,191,36,0.4); color:#fcd34d; }
+.iris-idd-btn-merge:hover { background:rgba(251,191,36,0.1); }
+.iris-idd-btn-primary { border-color:rgba(139,92,246,0.5); color:#d4c4ff; background:rgba(139,92,246,0.18); }
+.iris-idd-btn-primary:hover { background:rgba(139,92,246,0.28); }
+.iris-idd-btn-cancel { border-color:rgba(100,116,139,0.4); color:#94a3b8; }
+.iris-idd-btn-cancel:hover { background:rgba(100,116,139,0.1); }
+.iris-idd-btn:disabled { opacity:0.5; cursor:default; }
+.iris-idd-sim-high { color:#4ade80; } .iris-idd-sim-med { color:#fcd34d; } .iris-idd-sim-low { color:#94a3b8; }
+.iris-idd-reason { color:#c4b5fd; font-style:italic; }
+</style>
+
+<div class="modal fade" id="iris-idd-modal" tabindex="-1" role="dialog" aria-labelledby="iris-idd-title">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="iris-idd-title" style="color:#e2d9f3; font-size:14px; font-weight:600;">
+          <i class="fas fa-clone mr-2" style="color:#8b5cf6;"></i>Find Duplicates &mdash; Indicators
+          <span class="iris-idd-badge iris-idd-badge-violet" id="iris-idd-count"></span>
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" style="color:#94a3b8; opacity:1;">&times;</button>
+      </div>
+      <div class="modal-body" id="iris-idd-body">
+
+        <div id="iris-idd-scanning" style="text-align:center; padding:40px; color:#94a3b8; font-size:13px;">
+          <i class="fas fa-circle-notch fa-spin mr-2"></i>Scanning indicators…
+        </div>
+        <div id="iris-idd-error" style="display:none; color:#f87171; font-size:13px; padding:20px; text-align:center;"></div>
+
+        <div id="iris-idd-results" style="display:none;">
+
+          <div style="margin-bottom:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+              <div>
+                <span class="iris-idd-title">Exact duplicates</span>
+                <span class="iris-idd-badge iris-idd-badge-violet" id="iris-idd-exact-badge">0 groups</span>
+                <span style="font-size:11px; color:#64748b; margin-left:10px;">Same type, same value after trimming, refanging and case-folding — the first entry is kept, its duplicates' links move onto it</span>
+              </div>
+              <button id="iris-idd-auto-btn" class="iris-idd-btn iris-idd-btn-primary" onclick="irisIocDedupAutoExact()" style="display:none;">
+                <i class="fas fa-magic mr-1"></i>Auto-resolve all
+              </button>
+            </div>
+            <div id="iris-idd-exact-list"></div>
+            <div id="iris-idd-exact-empty" style="display:none; color:#4ade80; font-size:12px;"><i class="fas fa-check-circle mr-1"></i>No exact duplicates found.</div>
+          </div>
+
+          <hr style="border-color:rgba(139,92,246,0.15); margin:16px 0;">
+
+          <div style="margin-bottom:20px;">
+            <div style="display:flex; align-items:center; margin-bottom:10px;">
+              <span class="iris-idd-title">Near duplicates</span>
+              <span class="iris-idd-badge iris-idd-badge-amber" id="iris-idd-near-badge">0 pairs</span>
+              <span style="font-size:11px; color:#64748b; margin-left:10px;">URL host vs domain, host:port vs host, same value under two types, close spellings — review required</span>
+            </div>
+            <div id="iris-idd-near-list"></div>
+            <div id="iris-idd-near-empty" style="display:none; color:#4ade80; font-size:12px;"><i class="fas fa-check-circle mr-1"></i>No near duplicates found.</div>
+          </div>
+
+          <hr style="border-color:rgba(139,92,246,0.15); margin:16px 0;">
+
+          <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+              <div>
+                <span class="iris-idd-title">AI pass</span>
+                <span class="iris-idd-badge iris-idd-badge-green" id="iris-idd-ai-badge" style="display:none;">0 pairs</span>
+                <span style="font-size:11px; color:#64748b; margin-left:10px;" id="iris-idd-ai-hint">The configured model judges the whole list for indicators written two ways — advisory, nothing is applied</span>
+              </div>
+              <button id="iris-idd-ai-btn" class="iris-idd-btn iris-idd-btn-primary" onclick="irisIocDedupAiScan()">
+                <i class="fas fa-wand-magic-sparkles mr-1"></i>Run AI pass
+              </button>
+            </div>
+            <div id="iris-idd-ai-status" style="display:none; color:#94a3b8; font-size:12px; margin-bottom:8px;"></div>
+            <div id="iris-idd-ai-list"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var IDD = { caseId: null, pairs: {}, aiTask: null, aiTimer: null };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function trunc(s, n) { s = s || ''; return s.length > n ? s.slice(0, n) + '…' : s; }
+  function csrf() { var el = document.getElementById('csrf_token'); return el ? el.value : ''; }
+  function show(id, disp) { document.getElementById(id).style.display = disp === undefined ? '' : disp; }
+  function hide(id) { document.getElementById(id).style.display = 'none'; }
+  function simClass(sim) { return sim >= 0.9 ? 'iris-idd-sim-high' : sim >= 0.8 ? 'iris-idd-sim-med' : 'iris-idd-sim-low'; }
+  function reasonLabel(r) {
+    return {similar: 'close spelling', same_value: 'same value, different type',
+            url_host: 'URL host is another indicator', port_variant: 'host:port vs host'}[r] || r;
+  }
+  function linksText(l) {
+    l = l || {};
+    var parts = [];
+    if (l.assets) parts.push(l.assets + ' asset' + (l.assets === 1 ? '' : 's'));
+    if (l.events) parts.push(l.events + ' event' + (l.events === 1 ? '' : 's'));
+    if (l.notes) parts.push(l.notes + ' note' + (l.notes === 1 ? '' : 's'));
+    return parts.length ? parts.join(' · ') : 'no links';
+  }
+  function refreshPage() {
+    if (typeof window.get_case_ioc === 'function') { window.get_case_ioc(); }
+    else if (typeof window.iris_ci_load === 'function') { window.iris_ci_load(); }
+  }
+  function showError(msg) {
+    hide('iris-idd-scanning'); hide('iris-idd-results');
+    var el = document.getElementById('iris-idd-error');
+    el.textContent = 'Error: ' + msg; el.style.display = 'block';
+  }
+  async function post(path, body) {
+    var t = csrf();
+    body = body || {}; body.csrf_token = t;
+    var r = await fetch('/api/v2/cases/' + IDD.caseId + '/iocs/dedup/' + path + '?cid=' + IDD.caseId, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    var data = null;
+    try { data = await r.json(); } catch (e) { data = null; }
+    return { ok: r.ok, status: r.status, data: data };
+  }
+
+  window.irisIocDedupOpen = function (caseId) {
+    IDD.caseId = caseId; IDD.pairs = {};
+    if (IDD.aiTimer) { clearInterval(IDD.aiTimer); IDD.aiTimer = null; }
+    show('iris-idd-scanning', 'block'); hide('iris-idd-results'); hide('iris-idd-error');
+    document.getElementById('iris-idd-ai-list').innerHTML = '';
+    hide('iris-idd-ai-status'); hide('iris-idd-ai-badge');
+    document.getElementById('iris-idd-ai-btn').disabled = false;
+    $('#iris-idd-modal').modal('show');
+    irisIocDedupScan();
+  };
+
+  window.irisIocDedupScan = async function () {
+    show('iris-idd-scanning', 'block'); hide('iris-idd-results'); hide('iris-idd-error');
+    try {
+      var res = await post('scan', {});
+      if (!res.ok) { showError((res.data && res.data.message) || ('Scan failed (HTTP ' + res.status + ')')); return; }
+      hide('iris-idd-scanning'); show('iris-idd-results', 'block');
+      document.getElementById('iris-idd-count').textContent = res.data.ioc_count + ' indicator' + (res.data.ioc_count === 1 ? '' : 's');
+      renderExact(res.data.exact || []);
+      renderPairs('iris-idd-near-list', 'iris-idd-near-badge', 'iris-idd-near-empty', res.data.near || [], 'near');
+    } catch (e) { showError(e.toString()); }
+  };
+
+  function iocCol(i) {
+    return '<div class="iris-idd-col">' +
+      '<div class="iris-idd-val">' + esc(i.value) + '</div>' +
+      '<div class="iris-idd-type">#' + i.id + ' · ' + esc(i.type) + (i.tlp ? ' · TLP:' + esc(i.tlp) : '') + '</div>' +
+      (i.description ? '<div class="iris-idd-desc">' + esc(trunc(i.description, 200)) + '</div>' : '') +
+      (i.tags ? '<div class="iris-idd-meta"><i class="fas fa-tags mr-1"></i>' + esc(i.tags) + '</div>' : '') +
+      '<div class="iris-idd-meta"><i class="fas fa-link mr-1"></i>' + esc(linksText(i.links)) + '</div>' +
+      '</div>';
+  }
+
+  function renderExact(groups) {
+    var list = document.getElementById('iris-idd-exact-list');
+    document.getElementById('iris-idd-exact-badge').textContent = groups.length + (groups.length === 1 ? ' group' : ' groups');
+    list.innerHTML = '';
+    if (!groups.length) { show('iris-idd-exact-empty', 'block'); hide('iris-idd-auto-btn'); return; }
+    hide('iris-idd-exact-empty'); show('iris-idd-auto-btn');
+    groups.forEach(function (g) {
+      list.insertAdjacentHTML('beforeend',
+        '<div class="iris-idd-group">' +
+        '<div class="iris-idd-keep"><i class="fas fa-check-circle mr-1" style="color:#4ade80;"></i>Keep #' + g.keep.id + ' ' + esc(g.keep.value) +
+        ' <span style="color:#64748b; font-weight:400; font-size:11px;">' + esc(g.keep.type) + ' · ' + esc(linksText(g.keep.links)) + '</span></div>' +
+        '<div class="iris-idd-del"><i class="fas fa-code-merge mr-1" style="color:#fcd34d;"></i>Fold in ' + g.duplicates.length + ' duplicate' + (g.duplicates.length > 1 ? 's' : '') + ': ' +
+        g.duplicates.map(function (d) { return '<span style="color:#f87171; margin-left:6px;">#' + d.id + ' ' + esc(d.value) + ' <span style="color:#64748b;">(' + esc(linksText(d.links)) + ')</span></span>'; }).join('') +
+        '</div></div>');
+    });
+  }
+
+  window.irisIocDedupAutoExact = async function () {
+    var btn = document.getElementById('iris-idd-auto-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i>Resolving…';
+    try {
+      var res = await post('auto-exact', {});
+      if (!res.ok) { alert('Error: ' + ((res.data && res.data.message) || 'Failed')); btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic mr-1"></i>Auto-resolve all'; return; }
+      refreshPage();
+      irisIocDedupScan();
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic mr-1"></i>Auto-resolve all';
+    } catch (e) { alert('Error: ' + e.toString()); btn.disabled = false; }
+  };
+
+  function renderPairs(listId, badgeId, emptyId, pairs, source) {
+    var list = document.getElementById(listId);
+    var badge = document.getElementById(badgeId);
+    badge.textContent = pairs.length + (pairs.length === 1 ? ' pair' : ' pairs');
+    badge.style.display = '';
+    list.innerHTML = '';
+    if (!pairs.length) { if (emptyId) show(emptyId, 'block'); return; }
+    if (emptyId) hide(emptyId);
+    pairs.forEach(function (p, idx) {
+      var key = source + '-' + p.ioc_a.id + '-' + p.ioc_b.id;
+      IDD.pairs[key] = p;
+      var score = source === 'ai' ? p.confidence : p.similarity;
+      var pct = Math.round((score || 0) * 100);
+      var head = source === 'ai'
+        ? '<span class="' + simClass(score) + '" style="font-weight:600;">' + pct + '% confidence</span>' +
+          (p.reason ? '<span class="iris-idd-reason">' + esc(p.reason) + '</span>' : '')
+        : '<span class="' + simClass(score) + '" style="font-weight:600;">' + pct + '% similar</span>' +
+          '<span class="iris-idd-reason">' + esc(reasonLabel(p.reason)) + '</span>';
+      list.insertAdjacentHTML('beforeend',
+        '<div class="iris-idd-pair" id="iris-idd-pair-' + key + '">' +
+        '<div class="iris-idd-pair-header"><span>Pair ' + (idx + 1) + '</span>' + head + '</div>' +
+        '<div class="iris-idd-pair-cols">' + iocCol(p.ioc_a) + iocCol(p.ioc_b) + '</div>' +
+        '<div class="iris-idd-actions">' +
+        '<button class="iris-idd-btn iris-idd-btn-keep" data-act="keep" data-keep="' + p.ioc_a.id + '" data-del="' + p.ioc_b.id + '" data-key="' + key + '"><i class="fas fa-arrow-left mr-1"></i>Keep left</button>' +
+        '<button class="iris-idd-btn iris-idd-btn-merge" data-act="merge" data-keep="' + p.ioc_a.id + '" data-del="' + p.ioc_b.id + '" data-key="' + key + '"><i class="fas fa-code-merge mr-1"></i>Merge into left</button>' +
+        '<button class="iris-idd-btn iris-idd-btn-merge" data-act="merge" data-keep="' + p.ioc_b.id + '" data-del="' + p.ioc_a.id + '" data-key="' + key + '">Merge into right<i class="fas fa-code-merge ml-1"></i></button>' +
+        '<button class="iris-idd-btn iris-idd-btn-keep" data-act="keep" data-keep="' + p.ioc_b.id + '" data-del="' + p.ioc_a.id + '" data-key="' + key + '">Keep right<i class="fas fa-arrow-right ml-1"></i></button>' +
+        '<span style="flex:1;"></span>' +
+        '<button class="iris-idd-btn iris-idd-btn-cancel" data-act="both" data-key="' + key + '">Keep both</button>' +
+        '</div></div>');
+    });
+  }
+
+  /* one delegated handler for every pair action — ids come from data-*
+     attributes and are re-derived as integers before they reach the API */
+  document.getElementById('iris-idd-modal').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]');
+    if (!b) return;
+    var act = b.getAttribute('data-act');
+    var key = b.getAttribute('data-key');
+    var pairEl = document.getElementById('iris-idd-pair-' + key);
+    if (act === 'both') {
+      if (pairEl) { pairEl.innerHTML = '<div style="padding:10px 14px; color:#94a3b8; font-size:12px;"><i class="fas fa-check mr-1"></i>Kept both.</div>'; pairEl.classList.add('iris-idd-resolved'); }
+      return;
+    }
+    var keepId = parseInt(b.getAttribute('data-keep'), 10);
+    var delId = parseInt(b.getAttribute('data-del'), 10);
+    if (isNaN(keepId) || isNaN(delId)) return;
+    irisIocDedupResolve(act, keepId, [delId], key);
+  });
+
+  window.irisIocDedupResolve = async function (action, keepId, deleteIds, key) {
+    var pairEl = document.getElementById('iris-idd-pair-' + key);
+    if (pairEl) { pairEl.style.opacity = '0.5'; pairEl.style.pointerEvents = 'none'; }
+    try {
+      var res = await post('resolve', { action: action, keep_id: keepId, delete_ids: deleteIds });
+      if (!res.ok) {
+        alert('Error: ' + ((res.data && res.data.message) || 'Failed'));
+        if (pairEl) { pairEl.style.opacity = ''; pairEl.style.pointerEvents = ''; }
+        return;
+      }
+      var t = (res.data && res.data.transferred) || {};
+      var moved = Object.keys(t).filter(function (k) { return t[k]; }).map(function (k) { return t[k] + ' ' + k; }).join(', ');
+      if (pairEl) {
+        pairEl.innerHTML = '<div style="padding:10px 14px; color:#4ade80; font-size:12px;"><i class="fas fa-check-circle mr-1"></i>' +
+          (action === 'merge' ? 'Merged into' : 'Kept') + ' #' + keepId + (moved ? ' — moved ' + esc(moved) : '') + '.</div>';
+        pairEl.classList.add('iris-idd-resolved');
+      }
+      /* the removed id may sit in other listed pairs — retire those too */
+      Object.keys(IDD.pairs).forEach(function (k) {
+        var p = IDD.pairs[k];
+        if (k !== key && (deleteIds.indexOf(p.ioc_a.id) !== -1 || deleteIds.indexOf(p.ioc_b.id) !== -1)) {
+          var el = document.getElementById('iris-idd-pair-' + k);
+          if (el && !el.classList.contains('iris-idd-resolved')) {
+            el.innerHTML = '<div style="padding:10px 14px; color:#94a3b8; font-size:12px;">Indicator #' + deleteIds[0] + ' was merged elsewhere.</div>';
+            el.classList.add('iris-idd-resolved');
+          }
+        }
+      });
+      refreshPage();
+    } catch (e) {
+      alert('Error: ' + e.toString());
+      if (pairEl) { pairEl.style.opacity = ''; pairEl.style.pointerEvents = ''; }
+    }
+  };
+
+  window.irisIocDedupAiScan = async function () {
+    var btn = document.getElementById('iris-idd-ai-btn');
+    var st = document.getElementById('iris-idd-ai-status');
+    btn.disabled = true;
+    st.style.display = ''; st.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i>Queued…';
+    document.getElementById('iris-idd-ai-list').innerHTML = '';
+    hide('iris-idd-ai-badge');
+    try {
+      var res = await post('ai-scan', {});
+      if (!(res.status === 202 || res.ok) || !res.data || !res.data.task_id) {
+        st.innerHTML = '<span style="color:#f87171;">' + esc((res.data && res.data.message) || ('Could not start the AI pass (HTTP ' + res.status + ')')) + '</span>';
+        btn.disabled = false; return;
+      }
+      IDD.aiTask = res.data.task_id;
+      IDD.aiTimer = setInterval(pollAi, 2000);
+    } catch (e) { st.innerHTML = '<span style="color:#f87171;">' + esc(e.toString()) + '</span>'; btn.disabled = false; }
+  };
+
+  async function pollAi() {
+    var st = document.getElementById('iris-idd-ai-status');
+    var btn = document.getElementById('iris-idd-ai-btn');
+    try {
+      var r = await fetch('/api/v2/ai/jobs/' + IDD.aiTask + '?cid=' + IDD.caseId, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+      var j = await r.json();
+      if (!r.ok) { throw new Error(j.message || ('HTTP ' + r.status)); }
+      if (j.state === 'queued') { st.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i>Queued' + (j.queue_position ? ' (#' + j.queue_position + ' in line)' : '') + '…'; return; }
+      if (j.state === 'running') { st.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i>The model is reading the list…'; return; }
+      clearInterval(IDD.aiTimer); IDD.aiTimer = null; btn.disabled = false;
+      if (j.state !== 'done') { st.innerHTML = '<span style="color:#f87171;">AI pass failed: ' + esc(j.error || j.state) + '</span>'; return; }
+      var result = j.result || {};
+      var pairs = result.pairs || [];
+      st.innerHTML = (result.model ? esc(result.model) + ' judged ' + result.sent + ' of ' + result.ioc_count + ' indicators' : 'Done') +
+        (result.truncated ? ' <span style="color:#fcd34d;">(list truncated — the first ' + result.sent + ' by id)</span>' : '') +
+        (pairs.length ? '' : ' — no likely duplicates proposed.');
+      renderPairs('iris-idd-ai-list', 'iris-idd-ai-badge', null, pairs, 'ai');
+    } catch (e) {
+      clearInterval(IDD.aiTimer); IDD.aiTimer = null; btn.disabled = false;
+      st.innerHTML = '<span style="color:#f87171;">' + esc(e.toString()) + '</span>';
+    }
+  }
+})();
+</script>

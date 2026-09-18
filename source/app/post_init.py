@@ -1871,7 +1871,8 @@ def create_safe_server_settings():
                     pinecone_embed_model=env_pc_embed or None,
                     pinecone_sigma_host=env_pc_sigma or None,
                     pinecone_attack_host=env_pc_attack or None,
-                    pinecone_atomic_host=env_pc_atomic or None)
+                    pinecone_atomic_host=env_pc_atomic or None,
+                    notification_defaults=dict(MENTION_ORG_DEFAULT))
         return
 
     # Existing-install backfill: if the AI columns are still empty after the
@@ -1932,6 +1933,32 @@ def create_safe_server_settings():
     if pc_changed:
         db.session.commit()
         log.info("Backfilled Pinecone settings from environment on existing ServerSettings row")
+
+    backfill_mention_org_default(row)
+
+
+# Org-default channels for the `mention` event (#120): an @mention is an
+# explicit address, so it reaches the mailbox as well as the bell out of the
+# box. This is the ORG default (server_settings.notification_defaults), not
+# the code default in business/notifications.py — an admin can switch it off
+# on Settings > Notifications and a per-user override still wins. Email
+# delivery additionally needs email_notifications_enabled + SMTP.
+MENTION_ORG_DEFAULT = {'mention': {'in_app': True, 'email': True}}
+
+
+def backfill_mention_org_default(row):
+    """Existing-install backfill, never-overwrite: only an org matrix with NO
+    `mention` entry gets the default. The Settings page saves every catalog
+    event on each save, so an admin who deliberately left email off keeps it
+    off (the key exists). Returns True when the row changed."""
+    nd = dict(row.notification_defaults or {})
+    if 'mention' in nd:
+        return False
+    nd.update(MENTION_ORG_DEFAULT)
+    row.notification_defaults = nd  # new dict — JSONB change tracking needs a new object
+    db.session.commit()
+    log.info("Backfilled org notification default: mention -> in-app + email")
+    return True
 
 
 def register_modules_pipelines():

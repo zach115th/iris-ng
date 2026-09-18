@@ -508,13 +508,21 @@ var IRIS_WROOM_RES_URLS = {
 
 function iris_wroom_render_body(content) {
     var esc = iris_wroom_esc(content);
-    return esc.replace(
+    var html = esc.replace(
         /#\[(event|ioc|asset|task):(\d+):(\d+)\|([^\]]{1,120})\]/g,
         function (_, type, cid, oid, title) {
             return '<a class="iris-wr-res-chip" href="' +
                 IRIS_WROOM_RES_URLS[type] + cid + '" title="' + type +
                 ' in case #' + cid + '">' + title + '</a>';
         });
+    /* Resolved @mentions (members + team slugs — exactly what the server
+       notifies) get the shared highlight (#120); the walker never enters
+       the resource chips. */
+    if (window.IrisMentionPalette) {
+        html = window.IrisMentionPalette.highlightHtml(html,
+            iris_wroom_mention_candidates().map(function (c) { return c.login; }));
+    }
+    return html;
 }
 
 function iris_wroom_visible_stream() {

@@ -94,6 +94,7 @@ from app.blueprints.rest.manage.manage_ioc_types_routes import manage_ioc_type_r
 from app.blueprints.rest.manage.manage_modules_routes import manage_modules_rest_blueprint
 from app.blueprints.rest.manage.manage_severities_routes import manage_severities_rest_blueprint
 from app.blueprints.rest.manage.manage_banners_routes import manage_banners_rest_blueprint
+from app.blueprints.rest.manage.manage_war_room_teams_routes import manage_war_room_teams_rest_blueprint
 from app.blueprints.rest.manage.manage_server_settings_routes import manage_server_settings_rest_blueprint
 from app.blueprints.rest.manage.manage_tags import manage_tags_rest_blueprint
 from app.blueprints.rest.manage.manage_task_status_routes import manage_task_status_rest_blueprint
@@ -129,6 +130,7 @@ def register_blusprints(app):
     app.register_blueprint(manage_settings_pages_blueprint)
     app.register_blueprint(manage_srv_settings_blueprint)
     app.register_blueprint(manage_banners_rest_blueprint)
+    app.register_blueprint(manage_war_room_teams_rest_blueprint)
     app.register_blueprint(manage_server_settings_rest_blueprint)
     app.register_blueprint(manage_teams_blueprint)
     app.register_blueprint(manage_users_blueprint)

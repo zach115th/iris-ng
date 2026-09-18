@@ -57,6 +57,7 @@ from app.models.models import WarRoomNoteFolder
 from app.models.models import WarRoomTask
 from app.models.models import WarRoomTeam
 from app.models.models import WarRoomTeamMember
+from app.models.models import WarRoomTeamTemplate
 from app.models.models import WarRoomTimeline
 from app.models.models import WarRoomTimelineEvent
 
@@ -110,6 +111,8 @@ def create_room(name, description, creator_id):
     db.session.flush()
     db.session.add(WarRoomMember(room_id=room.id, user_id=creator_id,
                                  role='lead', added_by=creator_id))
+    # #115: default teams ride in the SAME transaction as the room.
+    seed_default_teams(room, creator_id)
     db.session.commit()
     return room
 
@@ -370,6 +373,130 @@ def remove_team_member(room, team_id, user_id):
     t = _get_team(room, team_id)
     WarRoomTeamMember.query.filter_by(team_id=t.id, user_id=user_id).delete()
     db.session.commit()
+
+
+# ---- team templates (#115, Settings > War Room Teams) --------------------
+# Org-wide defaults: every NEW room gets one EMPTY team per enabled template.
+# Shells only, by maintainer decision — the lead adds people. Seeding runs
+# inside room creation's transaction (create_room, promote) and never
+# touches an existing room; a seeded team is an ordinary room team after.
+
+def _normalise_team_name(name):
+    return (name or '').strip().lstrip('@').lower()
+
+
+def list_team_templates(active_only=False):
+    q = WarRoomTeamTemplate.query
+    if active_only:
+        q = q.filter(WarRoomTeamTemplate.is_active.is_(True))
+    return q.order_by(WarRoomTeamTemplate.sort_order,
+                      WarRoomTeamTemplate.id).all()
+
+
+def team_template_row(t):
+    return {'id': t.id, 'name': t.name, 'description': t.description,
+            'color': t.color, 'is_active': bool(t.is_active),
+            'sort_order': t.sort_order,
+            'created_at': t.created_at.isoformat() + 'Z' if t.created_at else None,
+            'created_by': t.created_by}
+
+
+def create_team_template(name, user_id, description=None, color=None,
+                         is_active=True):
+    name = _normalise_team_name(name)
+    if not _valid_team_name(name):
+        raise BusinessProcessingError(
+            'Team name must be letters/digits/._- (e.g. leadership)')
+    if WarRoomTeamTemplate.query.filter_by(name=name).first():
+        raise BusinessProcessingError('A team template with that name already exists')
+    if color and not _valid_color(color):
+        raise BusinessProcessingError('Colour must be a #hex value')
+    last = (WarRoomTeamTemplate.query
+            .order_by(desc(WarRoomTeamTemplate.sort_order)).first())
+    t = WarRoomTeamTemplate(
+        name=name, description=(description or '').strip()[:500] or None,
+        color=color or None, is_active=bool(is_active),
+        sort_order=(last.sort_order + 1) if last else 0, created_by=user_id)
+    db.session.add(t)
+    db.session.commit()
+    return t
+
+
+def _get_team_template(template_id):
+    t = db.session.get(WarRoomTeamTemplate, int(template_id))
+    if t is None:
+        raise BusinessProcessingError('Invalid team template')
+    return t
+
+
+def update_team_template(template_id, **fields):
+    t = _get_team_template(template_id)
+    if 'name' in fields and fields['name'] is not None:
+        name = _normalise_team_name(fields['name'])
+        if not _valid_team_name(name):
+            raise BusinessProcessingError(
+                'Team name must be letters/digits/._- (e.g. leadership)')
+        dup = WarRoomTeamTemplate.query.filter_by(name=name).first()
+        if dup is not None and dup.id != t.id:
+            raise BusinessProcessingError('A team template with that name already exists')
+        t.name = name
+    if 'description' in fields:
+        t.description = (fields['description'] or '').strip()[:500] or None
+    if 'color' in fields:
+        c = fields['color']
+        if c and not _valid_color(c):
+            raise BusinessProcessingError('Colour must be a #hex value')
+        t.color = c or None
+    if 'is_active' in fields and fields['is_active'] is not None:
+        t.is_active = bool(fields['is_active'])
+    db.session.commit()
+    return t
+
+
+def delete_team_template(template_id):
+    t = _get_team_template(template_id)
+    db.session.delete(t)
+    db.session.commit()
+
+
+def reorder_team_templates(ids):
+    """ids = the full desired order. Listed templates take positions
+    0..n-1; anything not listed keeps a position after them (never lost)."""
+    try:
+        wanted = [int(i) for i in (ids or [])]
+    except (TypeError, ValueError):
+        raise BusinessProcessingError('Invalid order')
+    rows = {t.id: t for t in WarRoomTeamTemplate.query.all()}
+    if any(i not in rows for i in wanted):
+        raise BusinessProcessingError('Unknown team template in order')
+    pos = 0
+    for i in wanted:
+        rows[i].sort_order = pos
+        pos += 1
+    for t in sorted((t for t in rows.values() if t.id not in wanted),
+                    key=lambda t: (t.sort_order, t.id)):
+        t.sort_order = pos
+        pos += 1
+    db.session.commit()
+
+
+def seed_default_teams(room, user_id):
+    """Add one EMPTY WarRoomTeam per enabled template that the room does not
+    already have (by name). Adds to the session only — the caller owns the
+    transaction, so a room and its default teams commit together. Returns
+    the names seeded, in order."""
+    existing = {t.name for t in
+                WarRoomTeam.query.filter_by(room_id=room.id).all()}
+    out = []
+    for tpl in list_team_templates(active_only=True):
+        if tpl.name in existing:
+            continue
+        db.session.add(WarRoomTeam(room_id=room.id, name=tpl.name,
+                                   description=tpl.description,
+                                   color=tpl.color, created_by=user_id))
+        existing.add(tpl.name)
+        out.append(tpl.name)
+    return out
 
 
 def _notify_team_mentions(room, content, title, body, actor_id):
@@ -760,6 +887,8 @@ def promote_cluster_to_room(cluster_id, user_id, min_shared=2,
     db.session.flush()
     db.session.add(WarRoomMember(room_id=room.id, user_id=user_id,
                                  role='lead', added_by=user_id))
+    # #115: a promoted room is a new room — same default teams.
+    seed_default_teams(room, user_id)
     for cid in cluster['case_ids']:
         db.session.add(WarRoomCaseLink(room_id=room.id, case_id=cid,
                                        added_by=user_id))

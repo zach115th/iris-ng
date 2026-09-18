@@ -11,7 +11,14 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
-## [Unreleased]
+## [IRIS-NG-v2.2.0] — 2026-09-18
+
+The full ICS packet with official FEMA PDF export, IOC deduplication, @mention
+completion on every comment box, default war-room teams, and pypdf. **One schema
+change:** the `war_room_team_template` table (migration `d6a2f8c47b19`, guarded create —
+back the database up before upgrading, migrations are one-way). **An image rebuild is
+required:** pypdf is a new dependency and the mention palette ships as a static asset in
+the built app image.
 
 ### Added
 - **The full ICS packet for a cyber incident, exported as the official FEMA forms.** War
@@ -47,6 +54,45 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
   discussion and planned actions on the 209 — same rules as before: only empty fields,
   every fill marked. The 205A contact list and the 214 activity log are records and are
   never drafted.
+- **@mention autocomplete on every comment box (#120).** Typing `@` in a comment on an
+  asset, IOC, evidence item, task, note, timeline event, alert or alert cluster now opens
+  the same completion palette the war-room composer has: users who can see the object
+  (case access for case objects, deny-all rows excluded), by login with the display name
+  beside it; arrows to move, Tab or Enter to complete, Escape to dismiss, and while it is
+  open Enter completes instead of posting. It works in the side-panel inputs and in the
+  legacy comment modal's editor. Mentions resolve against the **login** (a typed display
+  name notifies nobody), which is exactly the gap the palette closes. Rendered comments
+  and war-room messages now highlight the mentions that resolved, so a plain `@name`
+  visibly means nobody was notified.
+- **Default war-room teams (#115).** Settings → War Room Teams lets administrators define
+  the @-mention teams every room should start with — `@leadership`, `@dfir`, `@cti` — with
+  a description, a colour, an order and an enabled switch. Every **new** war room (created
+  or promoted from a correlation cluster) is seeded with one empty team per enabled
+  template; the room's lead adds the people. Existing rooms are not changed, and a seeded
+  team is an ordinary room team afterwards. New table `war_room_team_template` (migration
+  `d6a2f8c47b19`).
+- **IOC deduplication (#83).** *Find duplicates* in the IOC page's ⋮ menu scans the case:
+  **exact** duplicates (same type and the same value after trimming, refanging `hxxp`,
+  `[.]`, `[at]` and the like, and case-folding) are grouped with the first entry as the
+  survivor and can be collapsed in one click; **near** candidates (a URL whose host is
+  another indicator, `host:port` beside `host`, the same value under two types, close
+  spellings within a type) are listed for review with Keep left / Merge / Keep right /
+  Keep both; and **Run AI pass** asks the configured model to judge the whole list and
+  appends its proposals with a confidence and a one-line reason, advisory only. A keep and
+  a merge both carry the removed row's links — assets, timeline events, note provenance,
+  alert association, comments, and the MISP attribute link when the survivor has none —
+  onto the survivor, so nothing is orphaned; a merge also unions the tags and appends a
+  differing description; the survivor's history records what was folded in. The same
+  rule now holds at ingestion: a CSV import reports and skips a row the case already holds,
+  and escalating an alert links the case's existing indicator instead of minting a second
+  one. `POST /api/v2/cases/<id>/iocs/dedup/{scan,auto-exact,resolve,ai-scan}`.
+
+### Changed
+- **Mentions reach the mailbox by default.** The organisation default for the *You are
+  mentioned* event is now in-app **and** email; an existing install gains it on its next
+  boot unless an administrator has already saved the Notifications matrix (an explicit
+  choice is never overwritten). Email still needs *Email notifications* enabled and SMTP
+  configured on the Mail tab, and a personal override on the profile page still wins.
 
 ### Dependencies
 
@@ -1554,6 +1600,7 @@ Pristine import of DFIR-IRIS v2.5.0-beta.1 (upstream commit `a4bfeda`).
 Tagged `baseline-v2.5.0-beta.1` on `main` as the reference point for upstream
 cherry-picks.
 
+[IRIS-NG-v2.2.0]: https://github.com/zach115th/iris-ng/releases/tag/IRIS-NG-v2.2.0
 [Unreleased]: https://github.com/zach115th/iris-ng/compare/v2.5.0-beta.1+iris-next.3...HEAD
 [v2.5.0-beta.1+iris-next.3]: https://github.com/zach115th/iris-ng/releases/tag/v2.5.0-beta.1%2Biris-next.3
 [v2.5.0-beta.1+iris-next.2]: https://github.com/zach115th/iris-ng/releases/tag/v2.5.0-beta.1%2Biris-next.2

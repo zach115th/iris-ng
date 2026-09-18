@@ -2159,6 +2159,34 @@ class RuntimeSecret(db.Model):
     created_at = Column(DateTime, server_default=text('now()'))
 
 
+class WarRoomTeamTemplate(db.Model):
+    """iris-ng v2 (#115, Settings > War Room Teams): org-wide default
+    @-mention teams. Every NEW war room (created or promoted) is seeded with
+    one EMPTY team per enabled template, in sort order — the lead fills them.
+    Existing rooms are never touched, and a seeded team is an ordinary
+    WarRoomTeam afterwards (the room can delete it); templates are defaults,
+    not enforcement. `name` follows the team-name rule (what people type
+    after @) and is unique across templates.
+
+    UNIQUE lives on __table_args__ because db.create_all() runs before
+    alembic — a constraint declared only in the migration is skipped on a
+    fresh install.
+    """
+    __tablename__ = 'war_room_team_template'
+    __table_args__ = (
+        UniqueConstraint('name', name='uq_war_room_team_template_name'),
+    )
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False)
+    description = Column(Text, nullable=True)
+    color = Column(String(16), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default=text('true'))
+    sort_order = Column(Integer, nullable=False, default=0, server_default='0')
+    created_at = Column(DateTime, server_default=text('now()'))
+    created_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+
+
 class AnnouncementBanner(db.Model):
     """iris-ng v2: top-of-app announcement banners (v3 parity, Settings >
     Banners). Published to every AUTHENTICATED user while active — maintenance

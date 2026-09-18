@@ -1,0 +1,229 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} War Room Teams {% endblock title %}
+
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'war_room_teams' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content">
+<form style="display:none;">{{ form.hidden_tag() }}</form>
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex align-items-center justify-content-between w-100">
+                <div>
+                    <div class="card-title">War Room Teams</div>
+                    <div class="text-muted"><small>Default @-mention teams. Every <b>new</b> war room is
+                        created with one empty team per enabled template, in this order; the room's lead
+                        adds the people. Existing rooms are not changed.</small></div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="iris_wrt_load();">Refresh</button>
+                    <button type="button" class="btn btn-sm btn-dark ml-2" onclick="iris_wrt_new();">+ Add team</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+
+            <div id="iris-wrt-editor" style="display:none; border:1px solid rgba(139,92,246,0.35); border-radius:6px; padding:14px;" class="mb-3">
+                <h4 id="iris-wrt-editor-title">New team template</h4>
+                <input type="hidden" id="wrt-edit-id" value="">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="wrt-name">Team name</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend"><span class="input-group-text">@</span></div>
+                            <input type="text" class="form-control" id="wrt-name" maxlength="64" placeholder="leadership" autocomplete="off">
+                        </div>
+                        <small class="text-muted">Letters, digits, dot, underscore, dash. Stored lower-case — this is what people type after @.</small>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label for="wrt-color">Colour</label>
+                        <input type="text" class="form-control" id="wrt-color" maxlength="9" placeholder="#8b5cf6" autocomplete="off">
+                    </div>
+                    <div class="form-group col-md-2 d-flex align-items-end">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="wrt-active" checked>
+                            <label class="form-check-label" for="wrt-active">Enabled</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="wrt-description">Description</label>
+                    <input type="text" class="form-control" id="wrt-description" maxlength="500" placeholder="e.g. Incident leadership — decisions and external comms" autocomplete="off">
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="iris_wrt_save();">Save team</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="iris_wrt_cancel();">Cancel</button>
+                </div>
+            </div>
+
+            <table class="table table-sm table-striped" id="iris-wrt-table">
+                <thead><tr><th style="width:70px;">Order</th><th style="width:200px;">Team</th><th>Description</th><th style="width:80px;">Enabled</th><th style="width:130px;"></th></tr></thead>
+                <tbody id="iris-wrt-body"><tr><td colspan="5" class="text-muted">Loading&hellip;</td></tr></tbody>
+            </table>
+            <div id="iris-wrt-empty" class="text-muted text-center py-4" style="display:none;">
+                No default teams yet. Add the teams every room should start with — for example
+                <code>@leadership</code>, <code>@dfir</code> and <code>@cti</code>.
+            </div>
+
+        </div>
+    </div>
+</div>{# /iris-msr-content #}
+</div>{# /iris-msr-wrap #}
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+/* War-room team templates (#115). Legacy envelope ({status,data}) on
+   /manage/war-room-teams/*; POSTs carry csrf_token in the BODY (project
+   rule - the header is never read). Rows are built with DOM APIs; the colour
+   is validated server-side as #hex before it can reach a style attribute,
+   and re-checked here before use. */
+var IRIS_WRT = { rows: [], loaded: false, failed: false };
+var IRIS_WRT_COLOR_RE = /^#[0-9a-fA-F]{3,8}$/;
+
+function iris_wrt_csrf() { return document.getElementById('csrf_token').value; }
+function iris_wrt_cid() { return new URLSearchParams(location.search).get('cid'); }
+
+function iris_wrt_load() {
+    fetch('/manage/war-room-teams/list?cid=' + iris_wrt_cid(), { credentials: 'same-origin' })
+        .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+        .then(function (j) {
+            IRIS_WRT.rows = j.data || [];
+            IRIS_WRT.loaded = true; IRIS_WRT.failed = false;
+            iris_wrt_render();
+        })
+        .catch(function () {
+            IRIS_WRT.failed = true;
+            document.getElementById('iris-wrt-body').innerHTML =
+                '<tr><td colspan="5" class="text-warning">Could not load team templates.</td></tr>';
+        });
+}
+
+function iris_wrt_render() {
+    var body = document.getElementById('iris-wrt-body');
+    var empty = document.getElementById('iris-wrt-empty');
+    body.innerHTML = '';
+    if (!IRIS_WRT.rows.length) {
+        empty.style.display = '';
+        document.getElementById('iris-wrt-table').style.display = 'none';
+        return;
+    }
+    empty.style.display = 'none';
+    document.getElementById('iris-wrt-table').style.display = '';
+    IRIS_WRT.rows.forEach(function (t, i) {
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-template-id', t.id);
+        var tdOrd = document.createElement('td');
+        var up = document.createElement('button');
+        up.className = 'btn btn-xs btn-outline-secondary'; up.textContent = '↑'; up.title = 'Move up';
+        up.disabled = i === 0;
+        up.addEventListener('click', function () { iris_wrt_move(i, -1); });
+        var down = document.createElement('button');
+        down.className = 'btn btn-xs btn-outline-secondary ml-1'; down.textContent = '↓'; down.title = 'Move down';
+        down.disabled = i === IRIS_WRT.rows.length - 1;
+        down.addEventListener('click', function () { iris_wrt_move(i, 1); });
+        tdOrd.appendChild(up); tdOrd.appendChild(down);
+        var tdName = document.createElement('td');
+        var dot = document.createElement('span');
+        dot.style.cssText = 'display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle;background:' +
+            (IRIS_WRT_COLOR_RE.test(t.color || '') ? t.color : '#5e5e6a') + ';';
+        var code = document.createElement('code');
+        code.textContent = '@' + t.name;
+        tdName.appendChild(dot); tdName.appendChild(code);
+        var tdDesc = document.createElement('td'); tdDesc.textContent = t.description || '';
+        var tdAct = document.createElement('td'); tdAct.textContent = t.is_active ? 'Yes' : 'No';
+        var tdBtn = document.createElement('td');
+        tdBtn.className = 'text-right';
+        var be = document.createElement('button');
+        be.className = 'btn btn-xs btn-outline-secondary'; be.textContent = 'Edit';
+        be.addEventListener('click', function () { iris_wrt_edit(t.id); });
+        var bd = document.createElement('button');
+        bd.className = 'btn btn-xs btn-outline-danger ml-1'; bd.textContent = 'Delete';
+        bd.addEventListener('click', function () { iris_wrt_delete(t.id, t.name); });
+        tdBtn.appendChild(be); tdBtn.appendChild(bd);
+        [tdOrd, tdName, tdDesc, tdAct, tdBtn].forEach(function (td) { tr.appendChild(td); });
+        body.appendChild(tr);
+    });
+}
+
+function iris_wrt_move(i, delta) {
+    var ids = IRIS_WRT.rows.map(function (t) { return t.id; });
+    var j = i + delta;
+    if (j < 0 || j >= ids.length) { return; }
+    var tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp;
+    fetch('/manage/war-room-teams/reorder?cid=' + iris_wrt_cid(), {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ids, csrf_token: iris_wrt_csrf() })
+    }).then(function () { iris_wrt_load(); });
+}
+
+function iris_wrt_new() {
+    document.getElementById('wrt-edit-id').value = '';
+    document.getElementById('wrt-name').value = '';
+    document.getElementById('wrt-description').value = '';
+    document.getElementById('wrt-color').value = '';
+    document.getElementById('wrt-active').checked = true;
+    document.getElementById('iris-wrt-editor-title').textContent = 'New team template';
+    document.getElementById('iris-wrt-editor').style.display = '';
+    document.getElementById('wrt-name').focus();
+}
+
+function iris_wrt_edit(id) {
+    var t = IRIS_WRT.rows.find(function (r) { return r.id === id; });
+    if (!t) { return; }
+    document.getElementById('wrt-edit-id').value = t.id;
+    document.getElementById('wrt-name').value = t.name;
+    document.getElementById('wrt-description').value = t.description || '';
+    document.getElementById('wrt-color').value = t.color || '';
+    document.getElementById('wrt-active').checked = !!t.is_active;
+    document.getElementById('iris-wrt-editor-title').textContent = 'Edit @' + t.name;
+    document.getElementById('iris-wrt-editor').style.display = '';
+}
+
+function iris_wrt_cancel() {
+    document.getElementById('iris-wrt-editor').style.display = 'none';
+}
+
+function iris_wrt_save() {
+    var id = document.getElementById('wrt-edit-id').value;
+    var url = id ? '/manage/war-room-teams/update/' + id + '?cid=' + iris_wrt_cid()
+                 : '/manage/war-room-teams/add?cid=' + iris_wrt_cid();
+    fetch(url, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: document.getElementById('wrt-name').value,
+            description: document.getElementById('wrt-description').value,
+            color: document.getElementById('wrt-color').value.trim(),
+            is_active: document.getElementById('wrt-active').checked,
+            csrf_token: iris_wrt_csrf()
+        })
+    }).then(function (r) {
+        if (r.ok) { iris_wrt_cancel(); iris_wrt_load(); }
+        else { r.json().then(function (j) { alert(j.message || ('Save failed (HTTP ' + r.status + ')')); })
+                      .catch(function () { alert('Save failed (HTTP ' + r.status + ')'); }); }
+    });
+}
+
+function iris_wrt_delete(id, name) {
+    if (!confirm('Delete the default team @' + name + '? Rooms that already have it keep theirs.')) { return; }
+    fetch('/manage/war-room-teams/delete/' + id + '?cid=' + iris_wrt_cid(), {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csrf_token: iris_wrt_csrf() })
+    }).then(function () { iris_wrt_load(); });
+}
+
+document.addEventListener('DOMContentLoaded', iris_wrt_load);
+</script>
+{% endblock javascripts %}

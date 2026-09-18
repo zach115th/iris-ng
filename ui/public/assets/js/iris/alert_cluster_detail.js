@@ -699,7 +699,11 @@ function iris_acd_render_comments() {
         var el = $('<div class="iris-acd-comment"></div>');
         el.append($('<div class="iris-acd-sub"></div>')
             .text((cm.user_name || 'unknown') + ' · ' + iris_ac_ts(cm.created_at)));
-        el.append($('<div style="white-space:pre-wrap;"></div>').text(cm.content));
+        // Escaped through text(), then resolved @logins highlighted (#120).
+        var escaped = $('<div>').text(cm.content || '').html();
+        el.append($('<div style="white-space:pre-wrap;"></div>').html(
+            window.IrisMentionPalette
+                ? window.IrisMentionPalette.highlightHtml(escaped) : escaped));
         box.append(el);
     });
 }

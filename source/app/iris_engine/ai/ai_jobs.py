@@ -72,6 +72,12 @@ def _run_sitrep_draft(case_id: int, params: dict[str, Any]):
                                  force=bool(params.get('force', False)))
 
 
+def _run_ioc_dedup(case_id: int, params: dict[str, Any]):
+    # #83: advisory pair suggestions for the IOC dedup modal (stateless).
+    from app.iris_engine.ai.ioc_dedup import suggest_ioc_duplicates
+    return suggest_ioc_duplicates(int(case_id))
+
+
 def _run_ics_draft(case_id: int, params: dict[str, Any]):
     # case_id is None — the anchor is the war-room id carried in params.
     from app.iris_engine.ai.ics_draft import run_ics_draft
@@ -97,6 +103,9 @@ FEATURES: dict[str, dict[str, Any]] = {
     # War-room ICS forms AI pass — result_json carries what was filled per
     # form; the merge itself is written into the room notes by the runner.
     'ics_draft': {'runner': _run_ics_draft, 'kind': 'dict', 'priority': 5},
+    # #83: IOC dedup AI pass — result_json carries the proposed pairs the
+    # modal lists; nothing is applied by the runner.
+    'ioc_dedup': {'runner': _run_ioc_dedup, 'kind': 'dict', 'priority': 5},
 }
 
 

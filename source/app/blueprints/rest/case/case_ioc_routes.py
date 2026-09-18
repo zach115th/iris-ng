@@ -37,6 +37,7 @@ from app.business.errors import ObjectNotFoundError
 from app.datamgmt.case.case_iocs_db import add_comment_to_ioc
 from app.datamgmt.case.case_iocs_db import add_ioc
 from app.datamgmt.case.case_iocs_db import delete_ioc_comment
+from app.datamgmt.case.case_iocs_db import find_existing_ioc
 from app.datamgmt.case.case_iocs_db import get_case_ioc_comment
 from app.datamgmt.case.case_iocs_db import get_case_ioc_comments
 from app.datamgmt.case.case_iocs_db import get_detailed_iocs
@@ -140,6 +141,7 @@ def case_upload_ioc(caseid):
         tlp_dict = get_tlps_dict()
         ret = []
         errors = []
+        skipped = []
 
         index = 0
         for row in csv_data:
@@ -189,6 +191,17 @@ def case_upload_ioc(caseid):
                 log.error(f'Unable to create IOC {ioc.ioc_value} for internal reasons')
                 continue
 
+            # #83: keep the first entry — a row that is the same indicator
+            # (type + normalised value: trim / refang / case-fold) as one the
+            # case already holds is reported, not minted a second time.
+            existing = find_existing_ioc(caseid, ioc.ioc_type_id, ioc.ioc_value)
+            if existing is not None:
+                skipped.append(f'{ioc.ioc_value} already exists as IOC #{existing.ioc_id} '
+                               f'({existing.ioc_value}) — row {index - 1} skipped')
+                if ioc in db.session:
+                    db.session.expunge(ioc)
+                continue
+
             add_ioc(ioc, current_user.id, caseid)
             ioc = call_modules_hook('on_postload_ioc_create', data=ioc, caseid=caseid)
             ret.append(request_data)
@@ -198,6 +211,8 @@ def case_upload_ioc(caseid):
             msg = 'Successfully imported data.'
         else:
             msg = 'Data is imported but we got errors with the following rows:\n- ' + '\n- '.join(errors)
+        if skipped:
+            msg += f'\nSkipped {len(skipped)} duplicate(s):\n- ' + '\n- '.join(skipped)
 
         return response_success(msg=msg, data=ret)
 

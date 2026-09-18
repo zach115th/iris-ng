@@ -1158,6 +1158,13 @@ function iris_ca_new_ioc_and_link(r) {
         .catch(function () { window.alert('IOC add failed'); });
 }
 
+/* Resolved @logins in an ESCAPED comment get the shared highlight (#120);
+   the module is loaded by footer_case.html, guarded anyway. */
+function iris_ca_mentions(escapedHtml) {
+    return (window.IrisMentionPalette
+        ? window.IrisMentionPalette.highlightHtml(escapedHtml) : escapedHtml);
+}
+
 function iris_ca_post_comment(assetId) {
     var box = document.getElementById('iris-ca-comment-input');
     if (!box || !box.value.trim()) return;
@@ -1478,15 +1485,17 @@ function iris_ca_render_detail() {
                         iris_ca_esc(who) + '</b> &middot; ' +
                         iris_ca_esc(when) + '</div>' +
                         '<div style="font-size:0.8rem; color:#e8e8ee; white-space:pre-wrap;">' +
-                        iris_ca_esc(cm.comment_text) + '</div></div>';
+                        iris_ca_mentions(iris_ca_esc(cm.comment_text)) + '</div></div>';
                 }).join('')
                 : '<div class="text-muted" style="font-size:0.8rem;">No comments yet.</div>';
             body += '</div>';
+            /* data-iris-mention: mention_palette.js attaches the @-palette on
+               first focus (the input is re-created on every render) */
             body +=
                 '<div class="iris-ca-cfoot">' +
                 '<input type="text" class="form-control form-control-sm" ' +
                 'id="iris-ca-comment-input" placeholder="Add a comment..." ' +
-                'autocomplete="off">' +
+                'autocomplete="off" data-iris-mention="case">' +
                 '<button type="button" class="btn btn-sm btn-primary" ' +
                 'onclick="iris_ca_post_comment(' + r.asset_id +
                 ');">Comment</button></div>';

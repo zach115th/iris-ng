@@ -30,6 +30,15 @@ function comment_element(element_id, element_type, is_alert=false) {
             headers = get_editor_headers('g_comment_desc_editor', null, 'comment_edition_btn');
             $('#comment_edition_btn').append(headers);
 
+            // @-palette on the comment editor (#120): case-object comments
+            // complete over users with access to the case; alert comments
+            // over the users the session can see (the server applies the
+            // client-access filter to the notification itself).
+            if (window.IrisMentionPalette) {
+                window.IrisMentionPalette.attachAce(g_comment_desc_editor,
+                    {kind: is_alert ? 'users' : 'case'});
+            }
+
             load_comments(element_id, element_type, undefined, undefined, is_alert);
         }
     );
@@ -199,6 +208,12 @@ function load_comments(element_id, element_type, comment_id, do_notification, is
             converter = get_showdown_convert();
             html = converter.makeHtml(do_md_filter_xss(comment_text));
             comment_html = do_md_filter_xss(html);
+            // Resolved @logins highlighted AFTER sanitising (#120): the
+            // highlighter walks text nodes of the sanitised markup and only
+            // ever inserts a <span class="iris-mention">.
+            if (window.IrisMentionPalette) {
+                comment_html = window.IrisMentionPalette.highlightHtml(comment_html);
+            }
             const username = data['data'][i].user.user_name;
             if (names.hasOwnProperty(username)) {
                 avatar = names[username];

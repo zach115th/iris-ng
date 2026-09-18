@@ -998,6 +998,12 @@ function iris_ci_load_comments(iocId) {
         });
 }
 
+/* Resolved @logins in an ESCAPED comment get the shared highlight (#120). */
+function iris_ci_mentions(escapedHtml) {
+    return (window.IrisMentionPalette
+        ? window.IrisMentionPalette.highlightHtml(escapedHtml) : escapedHtml);
+}
+
 function iris_ci_post_comment(iocId) {
     var input = document.getElementById('iris-ci-comment-input');
     if (!input || !input.value.trim()) return;
@@ -1615,13 +1621,16 @@ function iris_ci_render_detail() {
                         iris_ci_esc(who) + '</b> &middot; ' +
                         iris_ci_esc(when) + '</div>' +
                         '<div style="font-size:0.8rem; color:#e8e8ee; white-space:pre-wrap;">' +
-                        iris_ci_esc(cm.comment_text) + '</div></div>';
+                        iris_ci_mentions(iris_ci_esc(cm.comment_text)) + '</div></div>';
                 }).join('')
                 : '<div class="text-muted" style="font-size:0.8rem;">No comments yet.</div>';
             body += '</div>';
+            /* data-iris-mention: mention_palette.js attaches the @-palette on
+               first focus (the input is re-created on every render) */
             body += '<div class="iris-ci-cfoot">' +
                 '<input type="text" class="form-control form-control-sm" ' +
-                'id="iris-ci-comment-input" placeholder="Add a comment..." autocomplete="off">' +
+                'id="iris-ci-comment-input" placeholder="Add a comment..." autocomplete="off" ' +
+                'data-iris-mention="case">' +
                 '<button type="button" class="btn btn-sm btn-primary" ' +
                 'onclick="iris_ci_post_comment(' + r.ioc_id +
                 ');">Comment</button></div>';

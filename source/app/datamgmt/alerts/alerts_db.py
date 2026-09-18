@@ -32,6 +32,7 @@ from app.datamgmt.case.case_assets_db import get_unspecified_analysis_status_id
 from app.datamgmt.case.case_events_db import update_event_assets
 from app.datamgmt.case.case_events_db import update_event_iocs
 from app.datamgmt.case.case_iocs_db import add_ioc
+from app.datamgmt.case.case_iocs_db import find_existing_ioc
 from app.datamgmt.manage.manage_access_control_db import get_user_clients_id
 from app.datamgmt.manage.manage_case_state_db import get_case_state_by_name
 from app.datamgmt.manage.manage_case_templates_db import get_case_template_by_id
@@ -502,6 +503,16 @@ def create_case_from_alerts(alerts: List[Alert], iocs_list: List[str], assets_li
             for alert_ioc in alert.iocs:
                 if str(alert_ioc.ioc_uuid) == ioc_uuid:
 
+                    # #83: the case keeps its FIRST entry — link the existing
+                    # indicator instead of minting a second row (this batch
+                    # path never checked; the two single-alert paths did, but
+                    # only on the raw string).
+                    existing = find_existing_ioc(case.case_id, alert_ioc.ioc_type_id,
+                                                 alert_ioc.ioc_value)
+                    if existing is not None:
+                        ioc_links.append(existing.ioc_id)
+                        continue
+
                     add_ioc(alert_ioc, current_user.id, case.case_id)
                     ioc_links.append(alert_ioc.ioc_id)
 
@@ -635,11 +646,10 @@ def create_case_from_alert(alert: Alert, iocs_list: List[str], assets_list: List
             if str(alert_ioc.ioc_uuid) == ioc_uuid:
 
                 # Make sure we don't have an existing IOC already
-                tmp_ioc = Ioc.query.filter(
-                    Ioc.case_id == case.case_id,
-                    Ioc.ioc_value == alert_ioc.ioc_value,
-                    Ioc.ioc_type_id == alert_ioc.ioc_type_id
-                ).first()
+                # #83: same indicator under the dedup key (trim / refang /
+                # case-fold), not only the raw string.
+                tmp_ioc = find_existing_ioc(case.case_id, alert_ioc.ioc_type_id,
+                                            alert_ioc.ioc_value)
 
                 if tmp_ioc:
                     # Skip as we already have it in the case
@@ -783,14 +793,15 @@ def merge_alert_in_case(alert: Alert, case: Cases, iocs_list: List[str],
         for alert_ioc in alert.iocs:
             if str(alert_ioc.ioc_uuid) == ioc_uuid:
 
-                tmp_ioc = Ioc.query.filter(
-                    Ioc.case_id == case.case_id,
-                    Ioc.ioc_value == alert_ioc.ioc_value,
-                    Ioc.ioc_type_id == alert_ioc.ioc_type_id
-                ).first()
+                # #83: same indicator under the dedup key (trim / refang /
+                # case-fold). Link the existing row and leave it alone —
+                # re-adding it used to overwrite its creator (user_id).
+                tmp_ioc = find_existing_ioc(case.case_id, alert_ioc.ioc_type_id,
+                                            alert_ioc.ioc_value)
 
                 if tmp_ioc:
-                    alert_ioc = tmp_ioc
+                    ioc_links.append(tmp_ioc.ioc_id)
+                    continue
 
                 add_ioc(alert_ioc, current_user.id, case.case_id)
                 ioc_links.append(alert_ioc.ioc_id)

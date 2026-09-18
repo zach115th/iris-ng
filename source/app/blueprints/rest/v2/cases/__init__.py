@@ -41,6 +41,7 @@ from app.blueprints.rest.v2.cases.tasks import case_tasks_blueprint
 from app.blueprints.rest.v2.cases.time import case_time_blueprint
 from app.blueprints.rest.v2.cases.team import case_team_blueprint
 from app.blueprints.rest.v2.cases.dedup import case_dedup_blueprint
+from app.blueprints.rest.v2.cases.ioc_dedup import case_ioc_dedup_blueprint
 from app.blueprints.rest.v2.cases.working_timeline import case_working_timeline_blueprint
 from app.business.cases import cases_create
 from app.business.cases import cases_delete
@@ -73,6 +74,7 @@ cases_blueprint.register_blueprint(case_time_blueprint)
 cases_blueprint.register_blueprint(case_team_blueprint)
 cases_blueprint.register_blueprint(case_working_timeline_blueprint)
 cases_blueprint.register_blueprint(case_dedup_blueprint)
+cases_blueprint.register_blueprint(case_ioc_dedup_blueprint)
 cases_blueprint.register_blueprint(case_notifications_blueprint)
 
 
