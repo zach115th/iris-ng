@@ -41,6 +41,16 @@ Load-bearing rules honoured:
   - nothing wall-clock-derived lands in the hashed payload — the
     "since last published" window derives from stored rows (published_at),
     and the no-publish fallback is a fixed item cap, not a time window.
+
+Delta drafts (maintainer, 2026-09-18: "SitReps should not repeat information
+from previous SitReps, they should be like deltas"): when the room has a
+published SitRep, the payload carries its FULL content and the prompt asks
+for what changed since — new facts, new actions, decisions still open tagged
+as such — never a re-narration. The "Since SitRep ..." reference line is
+written by the SERVER from the stored row (never trusted to the model), and
+the server counts the draft lines that repeat the previous SitRep verbatim
+(`repeated_lines`) so the reviewer is told when the model ignored the rule.
+The first SitRep of a room is a full picture.
 """
 
 from __future__ import annotations
@@ -69,7 +79,7 @@ from app.models.models import WarRoomMessage
 
 log = logging.getLogger(__name__)
 
-PROMPT_ID = 'SitrepDraftSystemPrompt-v1'
+PROMPT_ID = 'SitrepDraftSystemPrompt-v2'
 FEATURE_KEY = 'sitrep_draft'
 KIND = 'sitrep_draft'
 ANCHOR_TYPE = 'war_room'
@@ -84,6 +94,13 @@ _PROMPT_PATH = os.path.join(
 _FALLBACK_ITEM_CAP = 60
 _ACTIVITY_CAP = 80
 _SUMMARY_CHAR_CAP = 6000
+# The previous published SitRep travels whole (it is what the delta is
+# against); a cap keeps a runaway report from crowding the window.
+_PREVIOUS_CHAR_CAP = 8000
+# Lines shorter than this are structural (headings, "None.") — a repeat of
+# those is not a repeated fact.
+_REPEAT_MIN_CHARS = 24
+_REPEAT_SAMPLE_CAP = 5
 
 
 class SitrepDraftError(Exception):
@@ -167,6 +184,8 @@ def build_sitrep_payload(room: WarRoom) -> dict[str, Any]:
             'summary': room.summary,
             'campaign_tag': room.campaign_tag,
         },
+        # Explicit so the prompt branches on a word, not on a null.
+        'draft_mode': 'delta' if last_pub is not None else 'full',
         'stats': {
             'attached_cases': len(case_entries),
             'cases_with_summary': summaries_available,
@@ -189,12 +208,63 @@ def build_sitrep_payload(room: WarRoom) -> dict[str, Any]:
                 'description': (a.activity_desc or '')[:400],
             } for a in acts],
         },
-        'last_published_sitrep': ({
-            'title': last_pub.title,
-            'published_at': (last_pub.published_at.isoformat()
-                             if last_pub.published_at else None),
-        } if last_pub is not None else None),
+        'last_published_sitrep': (previous_sitrep_ref(last_pub)
+                                  if last_pub is not None else None),
     }
+
+
+def previous_sitrep_ref(s: SitRep) -> dict[str, Any]:
+    """The previous published SitRep as the delta baseline: identity for the
+    server-written reference line, full content for the model."""
+    return {
+        'id': s.id,
+        'title': s.title,
+        # v3 meta: the version is the edit generation (matches _sitrep_row).
+        'version': len(s.revisions) + 1,
+        'published_at': (s.published_at.isoformat()
+                         if s.published_at else None),
+        'content': (s.content or '')[:_PREVIOUS_CHAR_CAP],
+    }
+
+
+def _norm_line(line: str) -> str:
+    """Bullet markers, heading hashes, emphasis and whitespace stripped,
+    case-folded — so '- **Foo** bar' and 'Foo bar' compare equal."""
+    s = re.sub(r'^\s*(?:[-*+]|\d+[.)]|#{1,6})\s+', '', line or '')
+    s = re.sub(r'[*_`]+', '', s)
+    return re.sub(r'\s+', ' ', s).strip().lower()
+
+
+def repeated_lines(sections: dict[str, str], previous_content: str | None
+                   ) -> dict[str, Any]:
+    """Draft lines that repeat the previous SitRep VERBATIM (after
+    normalisation). A count the reviewer can see; the model is told not to
+    repeat, and this is how the server knows whether it listened. Only the
+    narrative sections count — the title is expected to rhyme."""
+    if not previous_content:
+        return {'count': 0, 'samples': []}
+    prev = {_norm_line(l) for l in previous_content.splitlines()}
+    prev = {l for l in prev if len(l) >= _REPEAT_MIN_CHARS}
+    count = 0
+    samples: list[str] = []
+    for key in ('situation', 'actions_taken', 'decisions_needed', 'next_steps'):
+        for raw in (sections.get(key) or '').splitlines():
+            n = _norm_line(raw)
+            if len(n) >= _REPEAT_MIN_CHARS and n in prev:
+                count += 1
+                if len(samples) < _REPEAT_SAMPLE_CAP:
+                    samples.append(raw.strip()[:160])
+    return {'count': count, 'samples': samples}
+
+
+def _since_line(previous: dict[str, Any]) -> str:
+    """The reference line the server writes at the top of a delta draft —
+    from the stored row, never from the model."""
+    when = (previous.get('published_at') or '')[:16].replace('T', ' ')
+    return ('_Delta since SitRep "%s" (v%s, published %s UTC). Unchanged '
+            'facts from that report are not repeated here._'
+            % (previous.get('title') or '', previous.get('version') or 1,
+               when or 'unknown'))
 
 
 def _compute_input_hash(payload: dict, system_prompt: str, model: str) -> str:
@@ -227,9 +297,15 @@ def _find_cache_hit(room_id: int, input_hash: str) -> AiArtifact | None:
             .first())
 
 
-def _compose_content(sections: dict[str, str]) -> str:
-    """The editor holds one markdown body — compose the four sections."""
-    parts = ['## Situation', sections['situation']]
+def _compose_content(sections: dict[str, Any]) -> str:
+    """The editor holds one markdown body — compose the four sections. A
+    delta draft opens with the server-written reference to the SitRep it
+    is the delta against (stored inside the artifact, so a cached read
+    composes the same text)."""
+    parts = []
+    if sections.get('previous'):
+        parts += [_since_line(sections['previous']), '']
+    parts += ['## Situation', sections['situation']]
     if sections['actions_taken']:
         parts += ['', '## Actions taken', sections['actions_taken']]
     if sections['decisions_needed']:
@@ -244,6 +320,8 @@ def artifact_to_result(art: AiArtifact, *, cached: bool) -> dict[str, Any]:
         obj = json.loads(art.content)
     except (TypeError, ValueError):
         raise SitrepDraftError('Stored draft is unreadable — regenerate')
+    previous = obj.get('previous') or None
+    repeats = obj.get('repeated_lines') or {'count': 0, 'samples': []}
     return {
         'title': obj.get('title', 'SitRep draft'),
         'content': _compose_content(obj),
@@ -255,6 +333,15 @@ def artifact_to_result(art: AiArtifact, *, cached: bool) -> dict[str, Any]:
         'generated_at': (art.generated_at.isoformat()
                          if art.generated_at else None),
         'artifact_id': art.id,
+        # Delta metadata for the editor's status line: which SitRep this
+        # is the delta against (None = the room's first, a full picture)
+        # and how many draft lines repeat it verbatim (0 is the goal).
+        'delta_since': ({'id': previous.get('id'), 'title': previous.get('title'),
+                         'version': previous.get('version'),
+                         'published_at': previous.get('published_at')}
+                        if previous else None),
+        'repeated_lines': int(repeats.get('count') or 0),
+        'repeated_samples': list(repeats.get('samples') or []),
     }
 
 
@@ -270,16 +357,34 @@ def _parse_response(raw: str) -> dict[str, Any]:
     except json.JSONDecodeError as exc:
         raise SitrepDraftError(f'AI backend returned invalid JSON: {exc}')
 
-    situation = str(obj.get('situation', '')).strip()
+    situation = _section_text(obj.get('situation'), '\n\n')
     if not situation:
         raise SitrepDraftError('AI backend returned an empty situation section')
     return {
         'title': (str(obj.get('title', '')).strip() or 'SitRep draft')[:80],
         'situation': situation,
-        'actions_taken': str(obj.get('actions_taken', '')).strip(),
-        'decisions_needed': str(obj.get('decisions_needed', '')).strip(),
-        'next_steps': str(obj.get('next_steps', '')).strip(),
+        'actions_taken': _section_text(obj.get('actions_taken')),
+        'decisions_needed': _section_text(obj.get('decisions_needed')),
+        'next_steps': _section_text(obj.get('next_steps')),
     }
+
+
+def _section_text(value: Any, joiner: str = '\n') -> str:
+    """A section is a markdown STRING in the contract, but small models hand
+    back a JSON array for the bullet sections ("actions_taken": [...]). A
+    plain str() of that is a Python repr in the editor — and, being one
+    line, it hides verbatim repeats from the line-wise detector. Arrays
+    become one bullet per item (paragraphs for the situation); an empty
+    array is an empty section."""
+    if value is None:
+        return ''
+    if isinstance(value, (list, tuple)):
+        items = [str(x).strip() for x in value if str(x or '').strip()]
+        if joiner == '\n':
+            items = [x if re.match(r'^\s*(?:[-*+]|\d+[.)])\s', x) else '- ' + x
+                     for x in items]
+        return joiner.join(items)
+    return str(value).strip()
 
 
 def generate_sitrep_draft(room_id: int, *, force: bool = False) -> dict[str, Any]:
@@ -322,6 +427,17 @@ def generate_sitrep_draft(room_id: int, *, force: bool = False) -> dict[str, Any
         raise SitrepDraftError(str(exc))
 
     result = _parse_response(raw)
+    # Delta bookkeeping lives INSIDE the artifact so a cached read renders
+    # the same reference line and the same repeat count as the fresh one.
+    previous = payload.get('last_published_sitrep')
+    if previous:
+        result['previous'] = {k: previous.get(k) for k in
+                              ('id', 'title', 'version', 'published_at')}
+        result['repeated_lines'] = repeated_lines(result, previous.get('content'))
+        if result['repeated_lines']['count']:
+            log.info('sitrep_draft: %d line(s) repeat SitRep #%s (room=%s)',
+                     result['repeated_lines']['count'], previous.get('id'),
+                     room_id)
 
     art = AiArtifact(
         anchor_type=ANCHOR_TYPE,

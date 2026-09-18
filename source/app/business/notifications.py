@@ -68,6 +68,11 @@ EVENT_CATALOG = {
     'war_room_added': 'Added to a war room',
     'war_room_message': 'War-room message',
     'sitrep_published': 'SitRep published',
+    # 2026-09-18 (maintainer): a published SitRep goes to the room's
+    # @leadership team — in-app AND email — with the FULL text; the rest of
+    # the room keeps the teaser above. Falls back to the room leads when the
+    # room has no (or an empty) leadership team.
+    'sitrep_published_leadership': 'SitRep published (leadership team / room lead)',
     'custom_module_notification': 'Custom module notification',
 }
 
@@ -79,6 +84,9 @@ _CODE_DEFAULT = {'in_app': True, 'email': False}
 # matrix (or the org default) when they want message pings.
 _EVENT_CODE_DEFAULTS = {
     'war_room_message': {'in_app': False, 'email': False},
+    # Leadership copy of a SitRep: mailbox + email out of the box (the
+    # maintainer's ask). Org matrix and personal overrides still win.
+    'sitrep_published_leadership': {'in_app': True, 'email': True},
 }
 
 

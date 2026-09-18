@@ -33,6 +33,7 @@ extend; a live socket layer is a deliberate later step.
 from datetime import datetime
 
 from sqlalchemy import desc
+from sqlalchemy import func
 
 import app
 from app import db
@@ -293,6 +294,28 @@ def case_peek(room, viewer_id, case_id):
 def member_user_ids(room_id):
     return [m.user_id for m in
             WarRoomMember.query.filter_by(room_id=room_id).all()]
+
+
+# The team a published SitRep is addressed to (maintainer, 2026-09-18). Team
+# names are stored lower-case (create_team / the templates normalise), so a
+# plain equality is the case-insensitive match.
+LEADERSHIP_TEAM_NAME = 'leadership'
+
+
+def sitrep_leadership_user_ids(room_id):
+    """Recipients of the leadership copy of a SitRep: the members of the
+    room's @leadership team; when the room has no such team or it is empty
+    (rooms from before the default teams, a disabled template, shells nobody
+    filled), the room LEADS — a SitRep must reach someone accountable."""
+    team = (WarRoomTeam.query
+            .filter(WarRoomTeam.room_id == room_id,
+                    func.lower(WarRoomTeam.name) == LEADERSHIP_TEAM_NAME)
+            .first())
+    ids = [m.user_id for m in team.members] if team is not None else []
+    if not ids:
+        ids = [m.user_id for m in
+               WarRoomMember.query.filter_by(room_id=room_id, role='lead').all()]
+    return ids
 
 
 # ------------------------------------------------------------------- teams
@@ -957,9 +980,23 @@ def publish_sitrep(room, sitrep, user_id):
     sitrep.published_at = datetime.utcnow()
     sitrep.published_by = user_id
     db.session.commit()
-    # Post-commit, fail-soft by notify()'s contract.
-    notify('sitrep_published', member_user_ids(room.id),
-           f'SitRep "{sitrep.title}" published in war room "{room.name}"',
+    # Post-commit, fail-soft by notify()'s contract. Fires on the draft ->
+    # published transition ONLY: later edits of a published SitRep write
+    # revisions (update_sitrep) and re-notify nobody (maintainer decision).
+    #
+    # Two audiences, two events: the @leadership team (or the room leads)
+    # gets the FULL report on the leadership event (in-app + email by code
+    # default); everyone else in the room keeps the teaser on the ordinary
+    # event. A leadership recipient is removed from the member set so nobody
+    # is told twice.
+    title = f'SitRep "{sitrep.title}" published in war room "{room.name}"'
+    leadership = set(sitrep_leadership_user_ids(room.id))
+    members = set(member_user_ids(room.id)) - leadership
+    notify('sitrep_published_leadership', list(leadership), title,
+           body=(sitrep.content or ''),
+           object_type='war_room', object_id=room.id,
+           url=f'/war-rooms/{room.id}', actor_id=user_id)
+    notify('sitrep_published', list(members), title,
            body=(sitrep.content or '')[:280],
            object_type='war_room', object_id=room.id,
            url=f'/war-rooms/{room.id}', actor_id=user_id)

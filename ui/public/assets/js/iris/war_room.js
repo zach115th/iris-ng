@@ -2011,6 +2011,7 @@ function iris_wroom_nt_show_doc(doc, readOnly) {
     view.style.display = '';
     document.getElementById('iris-wr-nt-edit').style.display = 'none';
     iris_wroom_nt_status('');
+    iris_wroom_fit_doc();
 }
 
 function iris_wroom_nt_open_room(id) {
@@ -2182,6 +2183,51 @@ function iris_wroom_nt_flush_save() {
         });
 }
 
+/* ---------------------------------------------------- document body fit */
+
+/* The Notes and SitReps document bodies (rendered view, markdown editor,
+   editor preview) reach the bottom of the window and scroll inside. Height
+   is MEASURED, not guessed: everything between the body's bottom edge and
+   the card's outer bottom (padding, margin) is one overhang that does not
+   change with the body's height, so this cannot oscillate; the top is
+   taken in DOCUMENT coordinates so a scrolled page yields the same answer
+   as an unscrolled one. Hidden bodies (the other pane, the other mode) are
+   skipped — a hidden element measures 0 at the top of the viewport, not
+   where it will land. The height is written as the --iris-wr-doc-h custom
+   property, consumed by an id-scoped !important rule in the template:
+   atlantis's `.form-control { height: unset !important }` beats an inline
+   height on the textareas. rows="16" / min-height are the no-JS fallback. */
+var IRIS_WROOM_DOC_GAP = 16;
+var IRIS_WROOM_DOC_MIN = 300;
+var IRIS_WROOM_DOC_BODIES = [
+    ['iris-wr-nt-view', 'iris-wr-nt-card'],
+    ['iris-wr-nt-edit', 'iris-wr-nt-card'],
+    ['iris-wr-sr-content', 'iris-wr-sr-card'],
+    ['iris-wr-sr-preview', 'iris-wr-sr-card'],
+    ['iris-wr-sr-view', 'iris-wr-sr-card']
+];
+
+function iris_wroom_fit_doc() {
+    IRIS_WROOM_DOC_BODIES.forEach(function (pair) {
+        var el = document.getElementById(pair[0]);
+        var card = document.getElementById(pair[1]);
+        if (!el || !card || el.offsetParent === null) return;
+        var r = el.getBoundingClientRect();
+        var c = card.getBoundingClientRect();
+        var overhang = Math.max(0, c.bottom - r.bottom);
+        var top = r.top + (window.pageYOffset || 0);
+        var h = Math.max(IRIS_WROOM_DOC_MIN, Math.round(
+            window.innerHeight - top - overhang - IRIS_WROOM_DOC_GAP));
+        var px = h + 'px';
+        /* write-only-on-change: this runs from a ResizeObserver on the
+           card, and an unchanged write still invalidates layout. */
+        if (el.style.getPropertyValue('--iris-wr-doc-h') !== px) {
+            el.style.setProperty('--iris-wr-doc-h', px);
+        }
+    });
+}
+window.irisWroomFitDoc = iris_wroom_fit_doc;
+
 /* --------------------------------------------------------------- sitreps */
 
 /* v3 two-pane SitReps: rail + inline editor (markdown toolbar + preview),
@@ -2269,6 +2315,7 @@ function iris_wroom_sr_show(s, mode) {
     document.getElementById('iris-wr-sr-del').style.display =
         lead ? '' : 'none';
     iris_wroom_sr_render_rail();
+    iris_wroom_fit_doc();
 }
 
 function iris_wroom_open_sitrep(id, forceMode) {
@@ -2355,6 +2402,7 @@ function iris_wroom_sr_toggle_preview() {
         pv.style.display = 'none';
         ta.style.display = '';
         btn.innerHTML = '&#128065; Preview';
+        iris_wroom_fit_doc();
         return;
     }
     iris_wroom_api('POST', '/sitreps/preview', {content: ta.value})
@@ -2366,6 +2414,7 @@ function iris_wroom_sr_toggle_preview() {
             pv.style.display = '';
             ta.style.display = 'none';
             btn.innerHTML = '&#10003; Done';
+            iris_wroom_fit_doc();
         });
 }
 
@@ -2555,8 +2604,17 @@ function iris_wroom_open_draft(draft) {
         iris_wroom_show_pane('sitreps');
         iris_wroom_load_sitreps();
         iris_wroom_sr_show(res.j, 'edit');
+        /* Delta metadata (server-computed): which SitRep this is the
+           delta against and how many draft lines repeat it verbatim —
+           the reviewer is told when the model ignored the delta rule. */
+        var delta = draft.delta_since
+            ? ' · delta since v' + (draft.delta_since.version || 1)
+            : ' · first SitRep (full picture)';
+        var rep = draft.repeated_lines
+            ? ' · ' + draft.repeated_lines + ' line(s) repeat the previous SitRep'
+            : '';
         iris_wroom_ai_status('AI draft · ' + (draft.model || '') +
-            (draft.cached ? ' · cached' : ''));
+            (draft.cached ? ' · cached' : '') + delta + rep);
     });
 }
 
@@ -2591,6 +2649,8 @@ function iris_wroom_show_pane(name) {
     });
     var pane = document.getElementById('iris-wr-pane-' + name);
     if (pane) pane.classList.add('active');
+    /* The pane just became visible — its document body measures now. */
+    iris_wroom_fit_doc();
     /* Lazy-load the read-only aggregation tabs on first open. */
     if (!IRIS_WROOM._loadedTabs[name]) {
         IRIS_WROOM._loadedTabs[name] = true;
@@ -2630,6 +2690,19 @@ document.addEventListener('DOMContentLoaded', function () {
             var tab = e.target.closest('.iris-wr-tab');
             if (tab) iris_wroom_show_pane(tab.getAttribute('data-pane'));
         });
+
+    /* Document-body fit: the window is the floor (resize), and the card is
+       what moves the body's top (a wrapping header row, a status line). The
+       observer covers both cards; the explicit calls at every display toggle
+       cover the case where a swap leaves the card the same height. */
+    window.addEventListener('resize', iris_wroom_fit_doc);
+    if (window.ResizeObserver) {
+        var docRo = new window.ResizeObserver(function () { iris_wroom_fit_doc(); });
+        ['iris-wr-nt-card', 'iris-wr-sr-card'].forEach(function (id) {
+            var card = document.getElementById(id);
+            if (card) docRo.observe(card);
+        });
+    }
 
     /* Stream filters — delegated on the rail (it re-renders per refresh). */
     document.querySelector('.iris-wr-rail')
@@ -3502,6 +3575,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var ed = document.getElementById('iris-wr-nt-edit');
             ed.value = (s.doc && s.doc.content) || '';
             ed.style.display = '';
+            iris_wroom_fit_doc();
             ed.focus();
         });
     document.getElementById('iris-wr-nt-edit')
@@ -3520,6 +3594,7 @@ document.addEventListener('DOMContentLoaded', function () {
             this.style.display = 'none';
             var view = document.getElementById('iris-wr-nt-view');
             view.style.display = '';
+            iris_wroom_fit_doc();
             iris_wroom_nt_flush_save();
             var doc = IRIS_WROOM_NT.doc;
             /* flush_save refreshes content_html async; show what we have and

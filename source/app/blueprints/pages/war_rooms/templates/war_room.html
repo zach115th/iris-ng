@@ -411,6 +411,19 @@
     .iris-wr-nt-view .iris-wr-nt-hintline {
         color: #5a5a64; font-style: italic;
     }
+    /* Notes / SitReps document bodies fill the window: iris_wroom_fit_doc()
+       writes --iris-wr-doc-h on the body so the card ends at the window's
+       bottom edge and the text scrolls INSIDE. The height goes through a
+       variable + id-scoped !important because atlantis declares
+       `.form-control { height: unset !important }`, which beats an inline
+       height on the textareas. rows="16" / min-height stay as the no-JS
+       fallback (the variable is unset until the fit runs). resize is off
+       because the fit would snap a hand-resized box back. */
+    #iris-wr-nt-view, #iris-wr-nt-edit, #iris-wr-sr-content,
+    #iris-wr-sr-preview, #iris-wr-sr-view {
+        overflow-y: auto; height: var(--iris-wr-doc-h, auto) !important;
+    }
+    #iris-wr-nt-edit, #iris-wr-sr-content { resize: none; }
     /* SitReps tab (v3 two-pane) */
     .iris-wr-sr-toolbar {
         display: flex; align-items: center; gap: 4px;
@@ -902,7 +915,7 @@
                 </div>
             </div>
             <div class="col-md-9">
-                <div class="card"><div class="card-body">
+                <div class="card" id="iris-wr-nt-card"><div class="card-body">
                     <div class="text-muted" id="iris-wr-nt-placeholder">Select a note — or create one with the new-note button.</div>
                     <div id="iris-wr-nt-doc" style="display:none;">
                         <div style="display:flex; align-items:center; gap:8px;">
@@ -941,7 +954,7 @@
                 </div>
             </div>
             <div class="col-md-9">
-                <div class="card"><div class="card-body">
+                <div class="card" id="iris-wr-sr-card"><div class="card-body">
                     <div class="text-muted" id="iris-wr-sr-placeholder" style="text-align:center; padding:60px 0;">Select a SitRep or create a new draft.</div>
                     <div id="iris-wr-sr-doc" style="display:none;">
                         <div style="display:flex; align-items:flex-start; gap:8px;">
