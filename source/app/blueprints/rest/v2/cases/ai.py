@@ -648,3 +648,77 @@ def generate_event_analysis_endpoint(case_identifier, event_id):
         return response_api_error(str(exc))
 
     return response_api_success(_serialize_artifact(artifact))
+
+
+# --- AI task suggester (Tasks tab) -------------------------------------------
+
+@case_ai_blueprint.get('/task-suggestions')
+@ac_api_requires()
+def get_task_suggestions(case_identifier):
+    """Newest stored suggester run for the case (assignees ranked live), or
+    404 when it never ran. `stale` is true when the case changed since, null
+    when that cannot be determined (no AI backend configured)."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.read_only, CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    from app.iris_engine.ai.task_suggester import get_cached_suggestions
+    result = get_cached_suggestions(case_identifier)
+    if result is None:
+        return response_api_not_found()
+    return response_api_success(result)
+
+
+@case_ai_blueprint.post('/task-suggestions')
+@ac_api_requires()
+def generate_task_suggestions(case_identifier):
+    """Propose next tasks for the case. ADVISORY: creates nothing.
+
+    Query params: force=true bypasses the cache; sync=true runs inline.
+    Async by default: 202 + task_id, poll GET /api/v2/ai/jobs/<task_id>.
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    force = request.args.get('force', False, type=parse_boolean) or False
+    sync = request.args.get('sync', False, type=parse_boolean) or False
+
+    if sync:
+        from app.iris_engine.ai.task_suggester import TaskSuggesterError
+        from app.iris_engine.ai.task_suggester import suggest_tasks
+        try:
+            return response_api_success(suggest_tasks(case_identifier, force=force))
+        except TaskSuggesterError as exc:
+            return response_api_error(str(exc))
+
+    try:
+        job = enqueue_ai_job(feature='task_suggester', case_id=case_identifier,
+                             user_id=current_user.id, params={'force': force})
+    except AiJobError as exc:
+        return response_api_error(str(exc))
+    return _accepted(job)
+
+
+@case_ai_blueprint.post('/task-suggestions/accept')
+@ac_api_requires()
+def accept_task_suggestions(case_identifier):
+    """Turn accepted suggestions into real tasks (+ depends_on links).
+
+    Body: {tasks: [{ref, title, description, assignee_id|null, depends_on: [ref]}]}
+    """
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    from app.business.errors import BusinessProcessingError
+    from app.business.task_suggestions import accept_suggestions
+    body = request.get_json(silent=True) or {}
+    try:
+        result = accept_suggestions(case_identifier, body.get('tasks'))
+    except BusinessProcessingError as exc:
+        return response_api_error(exc.get_message())
+    return response_api_success(result)

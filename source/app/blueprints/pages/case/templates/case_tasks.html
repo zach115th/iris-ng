@@ -304,6 +304,15 @@
                         <li class="nav-item ml-2">
                             <span class="text-white text-sm mr-2" id="last_resfresh">Loading</span>
                         </li>
+                        {# AI task suggester: proposes next tasks from the case data;
+                           nothing is created until the analyst accepts. Same icon-button
+                           class as Refresh; the sparkle is the AI surfaces' glyph (Lucide). #}
+                        <li class="nav-item">
+                            <button type="button" class="iris-cshell-iconbtn" id="iris-tsg-open"
+                                    onclick="irisTaskSuggestOpen({{ case.case_id }});" title="Suggest tasks (AI)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></svg>
+                            </button>
+                        </li>
                         {# iris-next: Refresh is the Assets tab's icon button —
                            same glyph, same class (styled by the shell include). #}
                         <li class="nav-item">
@@ -464,6 +473,8 @@
 {% endblock content %}
 
 {% block javascripts %}
+{# AI task suggestions panel — opened by the sparkle button on the toolbar #}
+{% include 'modal_task_suggestions.html' %}
 {% include 'includes/footer_case.html' %}
 
 <script src="/static/assets/js/plugin/datatables/dataTables.cellEdit.js"></script>

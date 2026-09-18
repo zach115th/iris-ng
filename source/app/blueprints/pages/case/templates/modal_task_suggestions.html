@@ -1,0 +1,360 @@
+{# AI task suggestions panel (Tasks tab). Opened by irisTaskSuggestOpen(caseId)
+   from the sparkle button on the Tasks toolbar.
+
+   Review-then-accept: the AI only PROPOSES. Each card is editable (title,
+   description), carries a server-ranked assignee the analyst can override,
+   and shows what it depends on. A task exists only after Accept / Accept all
+   (POST .../ai/task-suggestions/accept). Dismiss is local to this session.
+
+   Opening shows the cached run when there is one (with a "case changed"
+   notice when stale) and runs the suggester only when there is none, or on
+   Regenerate. Cards are DOM-built with textContent: model output is untrusted.
+
+   All jQuery ($) calls sit inside function bodies. #}
+
+<style>
+#iris-tsg-modal .modal-content { background:#0f0f18; border:1px solid rgba(139,92,246,0.25); border-radius:8px; }
+#iris-tsg-modal .modal-header { border-bottom:1px solid rgba(139,92,246,0.18); padding:14px 20px; }
+#iris-tsg-modal .modal-body { padding:20px; max-height:70vh; overflow-y:auto; }
+#iris-tsg-modal .modal-footer { border-top:1px solid rgba(139,92,246,0.18); padding:12px 20px; }
+.iris-tsg-badge { display:inline-block; font-size:11px; padding:1px 8px; border-radius:999px; margin-left:6px; vertical-align:middle; background:rgba(139,92,246,0.18); border:1px solid rgba(139,92,246,0.35); color:#d4c4ff; }
+.iris-tsg-status { font-size:12px; color:#94a3b8; margin-bottom:12px; }
+.iris-tsg-notice { font-size:12px; color:#fcd34d; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25); border-radius:6px; padding:8px 12px; margin-bottom:12px; }
+.iris-tsg-error { font-size:12px; color:#fca5a5; background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.3); border-radius:6px; padding:8px 12px; margin-bottom:12px; word-break:break-word; }
+.iris-tsg-card { background:rgba(15,15,30,0.6); border:1px solid rgba(139,92,246,0.15); border-radius:6px; margin-bottom:12px; padding:12px 14px; }
+.iris-tsg-card.iris-tsg-busy { opacity:0.5; pointer-events:none; }
+.iris-tsg-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.iris-tsg-prio { font-size:10px; text-transform:uppercase; letter-spacing:0.06em; padding:2px 8px; border-radius:999px; border:1px solid; flex:0 0 auto; }
+.iris-tsg-prio-high { color:#fca5a5; border-color:rgba(248,113,113,0.45); background:rgba(248,113,113,0.10); }
+.iris-tsg-prio-medium { color:#fcd34d; border-color:rgba(251,191,36,0.4); background:rgba(251,191,36,0.08); }
+.iris-tsg-prio-low { color:#94a3b8; border-color:rgba(100,116,139,0.4); background:rgba(100,116,139,0.08); }
+#iris-tsg-modal input.iris-tsg-title, #iris-tsg-modal textarea.iris-tsg-desc, #iris-tsg-modal select.iris-tsg-assignee {
+  background:#0b0b14; border:1px solid rgba(139,92,246,0.22); border-radius:4px; color:#e2d9f3; font-size:12.5px; padding:6px 8px; width:100%; }
+#iris-tsg-modal input.iris-tsg-title { font-weight:600; }
+#iris-tsg-modal textarea.iris-tsg-desc { min-height:64px; resize:vertical; line-height:1.5; }
+#iris-tsg-modal select.iris-tsg-assignee { width:auto; min-width:200px; }
+.iris-tsg-why { font-size:11.5px; color:#c4b5fd; font-style:italic; margin:8px 0; }
+.iris-tsg-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:11px; color:#94a3b8; margin-top:8px; }
+.iris-tsg-chip { display:inline-block; font-size:10.5px; padding:1px 8px; border-radius:999px; border:1px solid rgba(99,102,241,0.35); color:#a5b4fc; background:rgba(99,102,241,0.10); }
+.iris-tsg-chip-dep { border-color:rgba(139,92,246,0.4); color:#d4c4ff; background:rgba(139,92,246,0.12); }
+.iris-tsg-chip-dep.iris-tsg-dep-pending { border-style:dashed; }
+.iris-tsg-match { font-size:10.5px; color:#4ade80; }
+.iris-tsg-actions { display:flex; align-items:center; gap:8px; margin-top:10px; }
+.iris-tsg-btn { font-size:11px; padding:4px 12px; border-radius:999px; cursor:pointer; border:1px solid; background:transparent; transition:background 0.15s; }
+.iris-tsg-btn-primary { border-color:rgba(139,92,246,0.5); color:#d4c4ff; background:rgba(139,92,246,0.18); }
+.iris-tsg-btn-primary:hover { background:rgba(139,92,246,0.28); }
+.iris-tsg-btn-cancel { border-color:rgba(100,116,139,0.4); color:#94a3b8; }
+.iris-tsg-btn-cancel:hover { background:rgba(100,116,139,0.1); }
+.iris-tsg-btn:disabled { opacity:0.5; cursor:default; }
+.iris-tsg-log { font-size:11.5px; color:#4ade80; margin-bottom:6px; }
+.iris-tsg-log.iris-tsg-log-warn { color:#fcd34d; }
+</style>
+
+<div class="modal fade" id="iris-tsg-modal" tabindex="-1" role="dialog" aria-labelledby="iris-tsg-title"
+     data-current-user="{{ current_user.id }}">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="iris-tsg-title" style="color:#e2d9f3; font-size:14px; font-weight:600;">
+          <span aria-hidden="true" style="color:#8b5cf6;">&#10024;</span> Suggested tasks
+          <span class="iris-tsg-badge" id="iris-tsg-count" style="display:none;"></span>
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" style="color:#94a3b8; opacity:1;">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="iris-tsg-status" id="iris-tsg-status"></div>
+        <div class="iris-tsg-notice" id="iris-tsg-stale" style="display:none;">
+          The case has changed since these suggestions were generated. Regenerate to take the new data into account.
+        </div>
+        <div class="iris-tsg-error" id="iris-tsg-error" style="display:none;"></div>
+        <div id="iris-tsg-log"></div>
+        <div id="iris-tsg-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="iris-tsg-btn iris-tsg-btn-cancel" id="iris-tsg-regen">Regenerate</button>
+        <span style="flex:1 1 auto;"></span>
+        <button type="button" class="iris-tsg-btn iris-tsg-btn-cancel" data-dismiss="modal">Close</button>
+        <button type="button" class="iris-tsg-btn iris-tsg-btn-primary" id="iris-tsg-accept-all" disabled>Accept all</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modalEl = document.getElementById('iris-tsg-modal');
+  if (!modalEl) return;
+
+  // null = not loaded yet; [] = loaded, nothing (left) to suggest.
+  var TSG = { caseId: null, suggestions: null, users: [], accepted: {}, busy: false };
+  var listEl = document.getElementById('iris-tsg-list');
+  var statusEl = document.getElementById('iris-tsg-status');
+  var errorEl = document.getElementById('iris-tsg-error');
+  var staleEl = document.getElementById('iris-tsg-stale');
+  var logEl = document.getElementById('iris-tsg-log');
+  var countEl = document.getElementById('iris-tsg-count');
+  var acceptAllBtn = document.getElementById('iris-tsg-accept-all');
+  var regenBtn = document.getElementById('iris-tsg-regen');
+  var currentUserId = parseInt(modalEl.getAttribute('data-current-user'), 10);
+
+  function csrf() { var el = document.getElementById('csrf_token'); return el ? el.value : ''; }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = text;
+    return n;
+  }
+  function setStatus(msg) { statusEl.textContent = msg || ''; }
+  function setError(msg) { errorEl.textContent = msg || ''; errorEl.style.display = msg ? '' : 'none'; }
+  function log(msg, warn) { logEl.appendChild(el('div', 'iris-tsg-log' + (warn ? ' iris-tsg-log-warn' : ''), msg)); }
+  function setBusy(b) {
+    TSG.busy = b;
+    regenBtn.disabled = b;
+    acceptAllBtn.disabled = b || !(TSG.suggestions && TSG.suggestions.length);
+  }
+
+  async function readJson(r) {
+    var t = await r.text();
+    try { return t ? JSON.parse(t) : {}; } catch (e) { return { message: t.substring(0, 240) }; }
+  }
+  function apiError(r, body) {
+    return (body && (body.message || (body.data && body.data.message))) || ('HTTP ' + r.status);
+  }
+
+  function renderAll() {
+    listEl.textContent = '';
+    var items = TSG.suggestions;
+    if (items === null) { countEl.style.display = 'none'; return; }
+    countEl.textContent = String(items.length);
+    countEl.style.display = '';
+    acceptAllBtn.textContent = items.length > 1 ? 'Accept all (' + items.length + ')' : 'Accept all';
+    acceptAllBtn.disabled = TSG.busy || !items.length;
+    if (!items.length) {
+      listEl.appendChild(el('div', 'iris-tsg-status',
+        'No task suggestions left. Regenerate after the case has moved on.'));
+      return;
+    }
+    items.forEach(function (s) { listEl.appendChild(renderCard(s)); });
+  }
+
+  function renderCard(s) {
+    var card = el('div', 'iris-tsg-card');
+    card.setAttribute('data-ref', s.ref);
+
+    var row = el('div', 'iris-tsg-row');
+    row.appendChild(el('span', 'iris-tsg-prio iris-tsg-prio-' + s.priority, s.priority));
+    var title = el('input', 'iris-tsg-title');
+    title.type = 'text'; title.value = s.title || ''; title.maxLength = 160;
+    title.setAttribute('aria-label', 'Task title');
+    row.appendChild(title);
+    card.appendChild(row);
+
+    var desc = el('textarea', 'iris-tsg-desc');
+    desc.value = s.description || ''; desc.maxLength = 2000;
+    desc.setAttribute('aria-label', 'Task description');
+    card.appendChild(desc);
+
+    if (s.rationale) card.appendChild(el('div', 'iris-tsg-why', 'Why: ' + s.rationale));
+
+    var meta = el('div', 'iris-tsg-meta');
+    meta.appendChild(el('span', null, 'Assign to'));
+    var sel = el('select', 'iris-tsg-assignee');
+    sel.setAttribute('aria-label', 'Assignee');
+    var none = el('option', null, 'Unassigned'); none.value = ''; sel.appendChild(none);
+    TSG.users.forEach(function (u) {
+      var o = el('option', null, u.user_name + (u.open_tasks ? ' (' + u.open_tasks + ' open)' : ''));
+      o.value = String(u.user_id); sel.appendChild(o);
+    });
+    // Server-ranked skill match first; otherwise whoever is accepting, when
+    // they can work the case; otherwise unassigned.
+    var preferred = s.assignee ? s.assignee.user_id : currentUserId;
+    var canPick = TSG.users.some(function (u) { return u.user_id === preferred; });
+    // `picked` is the analyst's own choice (kept across re-renders); '' is a
+    // deliberate "Unassigned", so test for undefined, not falsiness.
+    sel.value = s.picked !== undefined ? s.picked : (canPick ? String(preferred) : '');
+    meta.appendChild(sel);
+    if (s.assignee && s.assignee.matched_skills && s.assignee.matched_skills.length) {
+      meta.appendChild(el('span', 'iris-tsg-match', 'skill match: ' + s.assignee.matched_skills.join(', ')));
+    }
+    card.appendChild(meta);
+
+    if ((s.skills && s.skills.length) || (s.depends_on && s.depends_on.length)) {
+      var meta2 = el('div', 'iris-tsg-meta');
+      (s.skills || []).forEach(function (k) { meta2.appendChild(el('span', 'iris-tsg-chip', k)); });
+      (s.depends_on || []).forEach(function (d) {
+        // A suggestion accepted earlier this session IS a task now.
+        var taskId = d.kind === 'task' ? d.task_id : TSG.accepted[d.ref];
+        var pending = !taskId;
+        var chip = el('span', 'iris-tsg-chip iris-tsg-chip-dep' + (pending ? ' iris-tsg-dep-pending' : ''),
+          'depends on ' + (pending ? 'suggestion: ' : '#' + taskId + ' ') + d.title);
+        if (pending) chip.title = 'Kept only if that suggestion is accepted first, or together with this one';
+        meta2.appendChild(chip);
+      });
+      card.appendChild(meta2);
+    }
+
+    var actions = el('div', 'iris-tsg-actions');
+    var acc = el('button', 'iris-tsg-btn iris-tsg-btn-primary', 'Accept'); acc.type = 'button';
+    acc.setAttribute('data-tsg-action', 'accept');
+    var dis = el('button', 'iris-tsg-btn iris-tsg-btn-cancel', 'Dismiss'); dis.type = 'button';
+    dis.setAttribute('data-tsg-action', 'dismiss');
+    actions.appendChild(acc); actions.appendChild(dis);
+    card.appendChild(actions);
+    return card;
+  }
+
+  // What the analyst has on screen for a card, in the accept endpoint's shape.
+  // A dependency on a suggestion accepted EARLIER this session is sent as the
+  // real task it became; one still pending travels as its S-ref and survives
+  // only inside the same batch.
+  function collect(card) {
+    var ref = card.getAttribute('data-ref');
+    var s = TSG.suggestions.filter(function (x) { return x.ref === ref; })[0];
+    var pick = card.querySelector('.iris-tsg-assignee').value;
+    return {
+      ref: ref,
+      title: card.querySelector('.iris-tsg-title').value,
+      description: card.querySelector('.iris-tsg-desc').value,
+      assignee_id: pick === '' ? null : parseInt(pick, 10),
+      depends_on: (s.depends_on || []).map(function (d) {
+        return (d.kind === 'suggestion' && TSG.accepted[d.ref]) ? 'T' + TSG.accepted[d.ref] : d.ref;
+      })
+    };
+  }
+
+  async function accept(cards) {
+    if (!cards.length || TSG.busy) return;
+    setError(''); setBusy(true);
+    cards.forEach(function (c) { c.classList.add('iris-tsg-busy'); });
+    try {
+      var token = csrf();
+      var r = await fetch('/api/v2/cases/' + encodeURIComponent(TSG.caseId) + '/ai/task-suggestions/accept', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: cards.map(collect), csrf_token: token })
+      });
+      var body = await readJson(r);
+      if (!r.ok) throw new Error(apiError(r, body));
+      var res = body.data || body;
+      (res.created || []).forEach(function (c) {
+        TSG.accepted[c.ref] = c.task_id;
+        TSG.suggestions = TSG.suggestions.filter(function (x) { return x.ref !== c.ref; });
+        log('Created task #' + c.task_id + ': ' + c.title);
+      });
+      if (res.links_created) log(res.links_created + ' dependency link' + (res.links_created > 1 ? 's' : '') + ' created');
+      (res.links_dropped || []).forEach(function (d) {
+        log('Dependency not linked for ' + d.ref + ' (' + d.reason + ')', true);
+      });
+      (res.failed || []).forEach(function (f) { log('Not created (' + f.ref + '): ' + f.error, true); });
+      renderAll();
+      if ((res.created || []).length && typeof window.get_tasks === 'function') window.get_tasks();
+    } catch (e) {
+      setError('Could not create the task(s): ' + (e.message || String(e)));
+      cards.forEach(function (c) { c.classList.remove('iris-tsg-busy'); });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function show(result) {
+    TSG.suggestions = result.suggestions || [];
+    TSG.users = result.assignable_users || [];
+    staleEl.style.display = result.stale === true ? '' : 'none';
+    var when = result.generated_at ? result.generated_at.replace('T', ' ').substring(0, 16) + ' UTC' : '';
+    var bits = [];
+    if (when) bits.push('Generated ' + when);
+    if (result.model) bits.push(result.model);
+    if (result.withheld_now_tasks) bits.push(result.withheld_now_tasks + ' already accepted');
+    setStatus(bits.join(' · '));
+    renderAll();
+  }
+
+  function pollJob(taskId) {
+    var url = '/api/v2/ai/jobs/' + encodeURIComponent(taskId);
+    return new Promise(function (resolve, reject) {
+      (function tick() {
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+          .then(function (r) { return readJson(r).then(function (b) { if (!r.ok) throw new Error(apiError(r, b)); return b; }); })
+          .then(function (job) {
+            if (job.state === 'done') return resolve(job.result || {});
+            if (job.state === 'error') return reject(new Error(job.error || 'AI job failed'));
+            if (job.state === 'cancelled') return reject(new Error('AI job was cancelled'));
+            setTimeout(tick, 1500);
+          }).catch(reject);
+      })();
+    });
+  }
+
+  async function generate(force) {
+    if (TSG.busy) return;
+    setError(''); setBusy(true);
+    TSG.suggestions = null; renderAll();
+    staleEl.style.display = 'none';
+    setStatus('Reading the case and drafting suggestions… this can take a minute.');
+    try {
+      var token = csrf();
+      var r = await fetch('/api/v2/cases/' + encodeURIComponent(TSG.caseId) + '/ai/task-suggestions' + (force ? '?force=true' : ''), {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csrf_token: token })
+      });
+      var body = await readJson(r);
+      if (r.status !== 202) throw new Error(apiError(r, body));
+      show(await pollJob((body.data || body).task_id));
+    } catch (e) {
+      setStatus('');
+      setError('Task suggestions failed: ' + (e.message || String(e)));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  window.irisTaskSuggestOpen = async function (caseId) {
+    TSG.caseId = caseId; TSG.accepted = {};
+    logEl.textContent = ''; setError('');
+    $('#iris-tsg-modal').modal('show');
+    if (TSG.busy) return;
+    TSG.suggestions = null; renderAll();
+    setStatus('Loading…');
+    try {
+      var r = await fetch('/api/v2/cases/' + encodeURIComponent(caseId) + '/ai/task-suggestions',
+        { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+      if (r.status === 404) { setStatus(''); return generate(false); }   // never ran: run it now
+      var body = await readJson(r);
+      if (!r.ok) throw new Error(apiError(r, body));
+      show(body.data || body);
+    } catch (e) {
+      setStatus('');
+      setError('Could not load task suggestions: ' + (e.message || String(e)));
+    }
+  };
+
+  // Edits live in the state, not only in the DOM: accepting or dismissing one
+  // card re-renders the list, and the other cards must keep what was typed.
+  function writeBack(e) {
+    var card = e.target.closest ? e.target.closest('.iris-tsg-card') : null;
+    if (!card || !TSG.suggestions) return;
+    var s = TSG.suggestions.filter(function (x) { return x.ref === card.getAttribute('data-ref'); })[0];
+    if (!s) return;
+    if (e.target.classList.contains('iris-tsg-title')) s.title = e.target.value;
+    else if (e.target.classList.contains('iris-tsg-desc')) s.description = e.target.value;
+    else if (e.target.classList.contains('iris-tsg-assignee')) s.picked = e.target.value;
+  }
+  listEl.addEventListener('input', writeBack);
+  listEl.addEventListener('change', writeBack);
+
+  listEl.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('[data-tsg-action]') : null;
+    if (!btn) return;
+    var card = btn.closest('.iris-tsg-card');
+    if (btn.getAttribute('data-tsg-action') === 'accept') return accept([card]);
+    var ref = card.getAttribute('data-ref');
+    TSG.suggestions = TSG.suggestions.filter(function (x) { return x.ref !== ref; });
+    renderAll();
+  });
+  acceptAllBtn.addEventListener('click', function () {
+    accept(Array.prototype.slice.call(listEl.querySelectorAll('.iris-tsg-card')));
+  });
+  regenBtn.addEventListener('click', function () { generate(true); });
+})();
+</script>

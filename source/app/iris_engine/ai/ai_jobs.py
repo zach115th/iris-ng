@@ -86,6 +86,12 @@ def _run_ics_draft(case_id: int, params: dict[str, Any]):
                          force=bool(params.get('force', False)))
 
 
+def _run_task_suggester(case_id: int, params: dict[str, Any]):
+    # Tasks tab: advisory next-task proposals; nothing is created by the runner.
+    from app.iris_engine.ai.task_suggester import suggest_tasks
+    return suggest_tasks(int(case_id), force=bool(params.get('force', False)))
+
+
 # Error classes are imported lazily inside run_ai_job so this module stays
 # import-cheap and never fails to load if one orchestrator has a heavy import.
 FEATURES: dict[str, dict[str, Any]] = {
@@ -106,6 +112,9 @@ FEATURES: dict[str, dict[str, Any]] = {
     # #83: IOC dedup AI pass — result_json carries the proposed pairs the
     # modal lists; nothing is applied by the runner.
     'ioc_dedup': {'runner': _run_ioc_dedup, 'kind': 'dict', 'priority': 5},
+    # Task suggester - result_json carries the suggestions the Tasks panel
+    # lists (artifact row is a cache managed by the orchestrator).
+    'task_suggester': {'runner': _run_task_suggester, 'kind': 'dict', 'priority': 5},
 }
 
 
