@@ -53,6 +53,10 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
   (four more crafted-PDF resource-exhaustion advisories, unreachable because IRIS only
   opens its own bundled FEMA forms; all seven ICS exports read back field-for-field
   identical and slightly smaller).
+- Python: pymisp 2.5.34.4 — one line in the optional `FileObject` helper (a new argument
+  to the `pure-magic-rs` buffer scan) and raised floors on three optional extras; the API
+  client module is byte-identical to 2.5.34.3 and the bundled MISP module only constructs
+  the client and searches attributes. Core dependency floors unchanged.
 
 ## [IRIS-NG-v2.2.0] — 2026-09-18
 
