@@ -20,6 +20,7 @@ from sqlalchemy import and_
 
 from app import db
 from app.datamgmt.manage.manage_attribute_db import get_default_custom_attributes
+from app.datamgmt.manage.manage_tags_db import add_db_tag
 from app.datamgmt.states import update_notes_state
 from app.models.models import Comments
 from app.models.models import NoteDirectory
@@ -118,7 +119,7 @@ def update_note(note_content, note_title, update_date, user_id, note_id, caseid)
         return None
 
 
-def add_note(note_title, creation_date, user_id, caseid, directory_id, note_content=""):
+def add_note(note_title, creation_date, user_id, caseid, directory_id, note_content="", note_tags=None):
     note = Notes()
     note.note_title = note_title
     note.note_creationdate = note.note_lastupdate = creation_date
@@ -126,6 +127,13 @@ def add_note(note_title, creation_date, user_id, caseid, directory_id, note_cont
     note.note_case_id = caseid
     note.note_user = user_id
     note.directory_id = directory_id
+    # iris-ng #129: direct-construct path (case import) — normalise + register like the schema does
+    tags = split_note_tags(note_tags) if isinstance(note_tags, (str, list)) else []
+    if isinstance(note_tags, list):
+        tags = split_note_tags(','.join(str(t) for t in note_tags if t))
+    for tag in tags:
+        add_db_tag(tag)
+    note.note_tags = ','.join(tags) if tags else None
 
     note.custom_attributes = get_default_custom_attributes('note')
     db.session.add(note)
@@ -385,6 +393,18 @@ def delete_note_comment(note_id, comment_id):
     return True, "Comment deleted"
 
 
+def split_note_tags(value):
+    """CSV `note_tags` -> ordered, deduplicated list (iris-ng #129). `None`/'' -> []."""
+    if not value:
+        return []
+    out = []
+    for tag in str(value).split(','):
+        tag = tag.strip()
+        if tag and tag not in out:
+            out.append(tag)
+    return out
+
+
 def get_directories_with_note_count(case_id):
     # Fetch all directories for the given case
     directories = NoteDirectory.query.filter_by(case_id=case_id).order_by(
@@ -397,7 +417,8 @@ def get_directories_with_note_count(case_id):
     # For each directory, fetch the subdirectories, note count, and note titles
     for directory in directories:
         directory_with_note_count = get_directory_with_note_count(directory)
-        notes = [{'id': note.note_id, 'title': note.note_title} for note in directory.notes]
+        notes = [{'id': note.note_id, 'title': note.note_title, 'tags': split_note_tags(note.note_tags)}
+                 for note in directory.notes]
         # Order by note title
         notes = sorted(notes, key=lambda note: note['title'])
         directory_with_note_count['notes'] = notes

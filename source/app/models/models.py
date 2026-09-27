@@ -999,6 +999,9 @@ class Notes(db.Model):
     custom_attributes = Column(JSON)
     directory_id = Column(ForeignKey('note_directory.id'), nullable=True)
     modification_history = Column(JSON)
+    # iris-ng #129: comma-separated like ioc_tags / asset_tags / task_tags /
+    # event_tags; every tag is also registered in `tags` for autocomplete.
+    note_tags = Column(Text)
 
     user = relationship('User')
     case = relationship('Cases')

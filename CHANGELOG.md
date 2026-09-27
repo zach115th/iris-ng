@@ -11,6 +11,24 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Tags on case notes, manual and AI-suggested** ([#129](https://github.com/zach115th/iris-ng/issues/129)).
+  Every note now carries tags the same way IOCs, assets, tasks and timeline events do: a tag
+  input under the note title with the usual autocomplete, saved with the note and on every
+  add or remove; each note's tags show as chips in the directory tree, clicking a chip
+  filters the tree to notes carrying it, and the notes search box matches tags as well as
+  titles and content. The **Suggest tags** pill beside the input asks the AI tag suggester
+  with the note's title, folder and text; besides the MISP taxonomy and galaxy catalog it
+  may propose any tag already in use elsewhere in the case (its own notes, IOCs, assets,
+  tasks, events and the case itself), so a case's labels stay consistent — an invented tag
+  is still refused, and nothing is written until a chip is accepted. Tags travel with the
+  note into the AI summary and chat payloads, the report (`note.note_tags`) and the case
+  export/import. **One additive schema change:** `notes.note_tags` (migration
+  `f1c4e7a92b38`). Also fixed on the way: the tag suggester's case-level suggestions never
+  excluded the case's existing tags (it read an attribute that does not exist).
+
 ## [IRIS-NG-v2.2.1] — 2026-09-26
 
 An AI task suggester on the Tasks page, follow-up question chips in every case chat,

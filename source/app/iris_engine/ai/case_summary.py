@@ -130,6 +130,8 @@ def _build_notes_payload(case_id: int) -> tuple[dict[str, Any], bool]:
     notes = [
         {
             "title": n.note_title,
+            # iris-ng #129: the analyst's labels travel with the note; [] = none set
+            "tags": [t.strip() for t in (n.note_tags or "").split(",") if t.strip()],
             "content": _truncate(n.note_content, 6000),
         }
         for n in rows

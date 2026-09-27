@@ -1,6 +1,16 @@
 {% extends "layouts/default_ext.html" %} {% block title %} Case notes {% endblock title %} {% block stylesheets %}
 {% include 'includes/header_case.html' %}
 <link rel="stylesheet" href="/static/assets/css/bootstrap-select.min.css">
+<style>
+/* iris-ng #129: note tags — chips in the tree, the header tag row, the active filter */
+#directoriesListing .iris-nt-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
+#directoriesListing .iris-nt-chip,
+#iris-nt-tagfilter .iris-nt-chip { display: inline-block; font-size: 10px; line-height: 1; padding: 2px 7px; border-radius: 999px; background: rgba(139, 92, 246, 0.16); border: 1px solid rgba(139, 92, 246, 0.4); color: #d4c4ff; cursor: pointer; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+#directoriesListing .iris-nt-chip:hover { background: rgba(139, 92, 246, 0.32); }
+#iris-nt-tagrow .amsify-suggestags-area { flex: 1 1 auto; max-width: 520px; }
+#iris-nt-tagrow .amsify-suggestags-input-area { min-height: 30px; padding: 2px 6px; }
+#iris-nt-tagfilter .iris-nt-chip { cursor: default; margin: 0 6px; }
+</style>
 {% endblock stylesheets %}
 {% block content %}
 {% include 'includes/navigation_ext.html' %}
@@ -47,6 +57,12 @@
 
                     </div>
 					<div class="aside-nav" id="notes-nav">
+						{# iris-ng #129: active tag filter (click a chip in the tree) #}
+						<div id="iris-nt-tagfilter" class="px-2 py-1" style="display: none;">
+							<span class="text-muted" style="font-size: 11px;">Filtered by</span>
+							<span class="iris-nt-chip" id="iris-nt-tagfilter-tag"></span>
+							<a href="#" id="iris-nt-tagfilter-clear" style="font-size: 11px;" onclick="iris_nt_clear_tag_filter();return false;">clear</a>
+						</div>
 						<ul class="nav" id="directoriesListing">
 						</ul>
 					</div>
@@ -69,7 +85,23 @@
 								<i class="fa fa-cloud-upload-alt ml-2" title="Auto saving enabled"></i>
 								<a class="bg-transparent" onclick="load_note_revisions()"><i class="fa-solid fa-clock-rotate-left ml-2 mt-2" style="cursor: pointer;" title="Modifications history"></i></a>
 							</small>
-
+							{# iris-ng #129: note tags — manual (autocomplete from /manage/tags/suggest)
+							   + the AI tag suggester with object_type=note. The pill renders once with
+							   a placeholder id; case.notes.js rewrites data-iris-tagsuggest-id per note. #}
+							<div id="iris-nt-tagrow" class="mt-1 d-flex align-items-center flex-wrap">
+								<label for="note_tags" class="mb-0 mr-2 text-muted" style="font-size: 11px;">Tags</label>
+								<input type="text" id="note_tags" name="note_tags" class="form-control form-control-sm" style="max-width: 520px;" placeholder="Add tags" autocomplete="off">
+								<span class="ml-2">
+								{% set tagsuggest_object_type = "note" %}
+								{% set tagsuggest_object_id = "pending" %}
+								{% set tagsuggest_target_input_id = "note_tags" %}
+								{% set tagsuggest_pill_only = True %}
+								{% include 'case_tag_suggester.html' %}
+								</span>
+							</div>
+							{% set tagsuggest_pill_only = False %}
+							{% set tagsuggest_results_only = True %}
+							{% include 'case_tag_suggester.html' %}
 						</div>
 						<div class="col">
 							<div class="row float-right">

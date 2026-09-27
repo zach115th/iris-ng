@@ -111,6 +111,7 @@ def export_case_for_portability(case_id: int) -> dict:
         notes_block.append({
             'title': note.note_title,
             'content': note.note_content or '',
+            'tags': note.note_tags,
             'directory_path': _build_directory_path(note.directory, dir_cache),
             'creation_date': _iso(note.note_creationdate),
             'custom_attributes': note.custom_attributes,
@@ -512,7 +513,7 @@ def import_case_from_portability_dict(payload: dict) -> dict:
         directory_id = directory.id if directory else None
         now = datetime.datetime.utcnow()
         try:
-            add_note(title, now, user_id, case_id, directory_id, content)
+            add_note(title, now, user_id, case_id, directory_id, content, note_tags=note.get('tags'))
             counts['notes'] += 1
         except Exception as e:
             warnings.append(f"Failed to import note '{title}': {e}")

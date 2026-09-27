@@ -413,6 +413,8 @@ async function note_detail(id) {
             note_editor.setValue(data.data.note_content, -1);
             $('#currentNoteTitle').text(data.data.note_title);
             previousNoteTitle = data.data.note_title;
+            iris_nt_set_tags(data.data.note_tags);
+            iris_nt_bind_suggester(data.data.note_id);
             $('#currentNoteIDLabel').text(`#${data.data.note_id} - ${data.data.note_uuid}`)
                 .data('note_id', data.data.note_id);
 
@@ -523,6 +525,7 @@ function save_note() {
     data_sent['note_title'] = currentNoteTitle;
     data_sent['csrf_token'] = $('#csrf_token').val();
     data_sent['note_content'] = $('#note_content').val();
+    data_sent['note_tags'] = iris_nt_read_tags();
     let ret = get_custom_attributes_fields();
     let has_error = ret[0].length > 0;
     let attributes = ret[1];
@@ -547,7 +550,10 @@ function save_note() {
 
         collaborator.save(n_id);
 
-        if (previousNoteTitle !== currentNoteTitle) {
+        // null = the server looked and the note has no tags; undefined = the payload did not say
+        let savedTags = (data.data && ('note_tags' in data.data)) ? (data.data.note_tags || '') : undefined;
+        let tagsChanged = savedTags !== undefined && iris_nt_split_tags(savedTags).join(',') !== iris_nt_tree_tags(n_id).join(',');
+        if (previousNoteTitle !== currentNoteTitle || tagsChanged) {
             load_directories().then(function() {
                 $('.note').removeClass('note-highlight');
                 $('#note-' + n_id).addClass('note-highlight');
@@ -555,6 +561,121 @@ function save_note() {
             previousNoteTitle = currentNoteTitle;
         }
     });
+}
+
+/* --- iris-ng #129: note tags ------------------------------------------
+ * Manual tags: the same amsifySuggestags widget every object modal uses,
+ * fed by /manage/tags/suggest; AI tags: the shared suggester partial with
+ * object_type=note (its pill reads data-iris-tagsuggest-id at click time).
+ * Tags save with the note (POST /case/notes/update carries note_tags) and
+ * a widget add/remove saves immediately. The tree shows each note's tags as
+ * chips; clicking one filters the tree client-side. */
+var iris_nt_active_tag = null;
+
+function iris_nt_split_tags(csv) {
+    let out = [];
+    String(csv || '').split(',').forEach(function (t) {
+        t = t.trim();
+        if (t && out.indexOf(t) === -1) out.push(t);
+    });
+    return out;
+}
+
+function iris_nt_set_tags(csv) {
+    let $in = $('#note_tags');
+    if (!$in.length) return;
+    // the widget hides the input and renders a sibling area: tear it down per note
+    $in.next('.amsify-suggestags-area').remove();
+    $in.off('suggestags.change');
+    $in.val(iris_nt_split_tags(csv).join(',')).show();
+    if (window.jQuery && $.fn.amsifySuggestags && typeof set_suggest_tags === 'function') {
+        set_suggest_tags('note_tags');
+        $in.on('suggestags.change', function () { iris_nt_tags_changed(); });
+    } else {
+        $in.on('change', function () { iris_nt_tags_changed(); });
+    }
+    $('#iris-tagsuggest-results').hide();
+    $('#iris-tagsuggest-status').text('');
+}
+
+function iris_nt_read_tags() {
+    let el = document.getElementById('note_tags');
+    if (!el) return '';
+    let parts = String(el.value || '').split(',');
+    let area = el.nextElementSibling;
+    let pending = (area && area.classList && area.classList.contains('amsify-suggestags-area'))
+        ? area.querySelector('.amsify-suggestags-input') : null;
+    if (pending && pending.value) parts = parts.concat(pending.value.split(','));
+    return iris_nt_split_tags(parts.join(',')).join(',');
+}
+
+function iris_nt_tags_changed() {
+    $('#last_saved').addClass('btn-danger').removeClass('btn-success');
+    $('#last_saved > i').attr('class', "fa-solid fa-file-circle-exclamation");
+    if ($('#currentNoteIDLabel').data('note_id')) save_note();
+}
+
+function iris_nt_bind_suggester(noteId) {
+    let pill = document.getElementById('iris-tagsuggest-pill');
+    if (pill) pill.setAttribute('data-iris-tagsuggest-id', String(noteId));
+}
+
+function iris_nt_tree_tags(noteId) {
+    let li = $('#note-' + noteId);
+    return li.length ? (li.data('tags') || []) : [];
+}
+
+function iris_nt_render_chips(noteListItem, noteLink, tags) {
+    noteListItem.data('tags', tags);
+    if (!tags || !tags.length) return;
+    let chips = $('<span></span>').addClass('iris-nt-chips');
+    tags.forEach(function (tag) {
+        let chip = $('<span></span>').addClass('iris-nt-chip').attr('data-tag', tag).attr('title', 'Filter notes tagged ' + tag).text(tag);
+        chip.on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            iris_nt_filter_tag(tag);
+        });
+        chips.append(chip);
+    });
+    noteLink.append(chips);
+}
+
+function iris_nt_apply_tag_filter() {
+    let tag = iris_nt_active_tag;
+    let bar = $('#iris-nt-tagfilter');
+    if (!tag) {
+        $('.directory-container').find('li').show();
+        $('.directory').show();
+        $('.note').show();
+        bar.hide();
+        return;
+    }
+    $('#iris-nt-tagfilter-tag').text(tag);
+    bar.show();
+    $('.directory-container').find('li').hide();
+    $('.directory').hide();
+    $('.note').each(function () {
+        let li = $(this);
+        if ((li.data('tags') || []).indexOf(tag) === -1) { li.hide(); return; }
+        li.show();
+        let parentDirectory = li.parents('.directory').first();
+        while (parentDirectory.length > 0) {
+            parentDirectory.show();
+            parentDirectory.children('.directory-container').show();
+            parentDirectory = parentDirectory.parents('.directory').first();
+        }
+    });
+}
+
+function iris_nt_filter_tag(tag) {
+    iris_nt_active_tag = tag || null;
+    iris_nt_apply_tag_filter();
+}
+
+function iris_nt_clear_tag_filter() {
+    iris_nt_active_tag = null;
+    iris_nt_apply_tag_filter();
 }
 
 /* Span for note edition */
@@ -598,6 +719,7 @@ async function load_directories() {
             directories.forEach(function(directory) {
                 directoriesListing.append(createDirectoryListItem(directory, directoryMap));
             });
+            if (iris_nt_active_tag) iris_nt_apply_tag_filter();
         });
 }
 
@@ -1000,6 +1122,7 @@ function createDirectoryListItem(directory, directoryMap) {
 
             noteLink.append($('<i></i>').addClass('fa-regular fa-file'));
             noteLink.append($('<span>').text(note.title));
+            iris_nt_render_chips(noteListItem, noteLink, note.tags || []);
 
             // Add a click event listener to the note link that calls note_detail with the note ID
             noteLink.on('click', function(e) {

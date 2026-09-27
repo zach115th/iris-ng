@@ -448,6 +448,45 @@ class CaseNoteSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
         unknown = EXCLUDE
 
+    @pre_load
+    def normalise_note_tags(self, data: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
+        """Normalise `note_tags` (iris-ng #129).
+
+        Absent key = untouched (partial saves); `null` / `""` = cleared. A list
+        or a comma-separated string becomes a deduplicated, trimmed CSV in the
+        order given, and every tag is registered in the `tags` table so the
+        autocomplete offers it — the same contract as the IOC / asset / task /
+        event schemas.
+        """
+        if not isinstance(data, dict) or 'note_tags' not in data:
+            return data
+        raw = data.get('note_tags')
+        if raw is None:
+            return data
+        if isinstance(raw, str):
+            items = raw.split(',')
+        elif isinstance(raw, list):
+            items = raw
+        else:
+            raise marshmallow.exceptions.ValidationError("note_tags must be a string or a list of strings",
+                                                         field_name="note_tags")
+        tags: list = []
+        for tag in items:
+            if not isinstance(tag, str):
+                raise marshmallow.exceptions.ValidationError("All items in list must be strings",
+                                                             field_name="note_tags")
+            tag = tag.strip()
+            if not tag or tag in tags:
+                continue
+            if len(tag) > 255:
+                raise marshmallow.exceptions.ValidationError("A tag must be at most 255 characters",
+                                                             field_name="note_tags")
+            tags.append(tag)
+        for tag in tags:
+            add_db_tag(tag)
+        data['note_tags'] = ','.join(tags) if tags else None
+        return data
+
     def verify_directory_id(self, data: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
         """Verifies that the directory ID is valid.
 
@@ -517,6 +556,7 @@ class CaseAddNoteSchema(ma.Schema):
     note_id: int = fields.Integer(required=False)
     note_title: str = fields.String(required=True, validate=Length(min=1, max=154), allow_none=False)
     note_content: str = fields.String(required=False)
+    note_tags: str = fields.String(required=False, allow_none=True)
     custom_attributes: Dict[str, Any] = fields.Dict(required=False)
 
 

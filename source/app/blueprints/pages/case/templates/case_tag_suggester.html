@@ -74,7 +74,12 @@
 
     var targetInputId = pill.getAttribute('data-iris-tagsuggest-target');
     var objectType    = pill.getAttribute('data-iris-tagsuggest-type');
-    var objectId      = parseInt(pill.getAttribute('data-iris-tagsuggest-id'), 10);
+    /* Read the object id at CLICK time: a page that swaps objects without a
+     * reload (the notes page, iris-ng #129) renders the pill once with a
+     * placeholder id and rewrites data-iris-tagsuggest-id per selected note. */
+    function currentObjectId() {
+        return parseInt(pill.getAttribute('data-iris-tagsuggest-id'), 10);
+    }
 
     function escapeHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -170,6 +175,11 @@
         var caseId = getCaseId();
         if (!caseId) {
             if (statusEl) statusEl.textContent = 'No case id in URL.';
+            return;
+        }
+        var objectId = currentObjectId();
+        if (isNaN(objectId)) {
+            if (statusEl) statusEl.textContent = 'Select or save the object first.';
             return;
         }
         pill.disabled = true;

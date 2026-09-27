@@ -56,5 +56,6 @@ Two tag shapes only — both are MISP machine tags, both are valid IRIS tags:
 5. **Galaxy + taxonomy together when complementary.** A C2 IP often deserves BOTH `kill-chain:Command and Control` AND a `misp-galaxy:tool="Cobalt Strike"` if the description names the framework.
 6. **Don't reach.** A 2–3 tag answer with high confidence is better than 7 tags at 0.6 confidence.
 7. **For IOC objects, the IOC's `type` is already known** (ip-src, domain, hash-sha256, etc.) — don't re-tag the type. Tag the *meaning* (C2, sinkhole, malicious-redirect, infrastructure-of-actor-X).
+8. **For note objects** (`kind: "note"`, a narrative analyst note with a `title`, its `directory` and its `content`), the payload also carries `case_vocabulary`: the tags already in use elsewhere in this case. You may suggest any of those **copied verbatim** in addition to MISP tags — reusing the case's own labels keeps its notes filterable together. Still never invent a tag that is in neither the MISP catalog nor `case_vocabulary`. Tag what the note is *about* (the incident phase, the technique, the actor, the workflow state), not the fact that it is a note.
 
 The object payload is in the user message. Output only the JSON.

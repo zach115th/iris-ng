@@ -25,17 +25,28 @@ from pathlib import Path
 from typing import Any
 
 from app import app
+from app import db
 from app.iris_engine import misp_tag_catalog
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
 
 
-TAG_SUGGESTER_PROMPT_ID = "TagSuggesterSystemPrompt-v1"
+TAG_SUGGESTER_PROMPT_ID = "TagSuggesterSystemPrompt-v2"
 PROMPT_PATH = Path(__file__).parent.parent.parent / "resources" / "ai_prompts" / "tag_suggester.md"
 
-VALID_OBJECT_TYPES = ("ioc", "asset", "task", "case", "event")
+VALID_OBJECT_TYPES = ("ioc", "asset", "task", "case", "event", "note")
 DEFAULT_CONFIDENCE_FLOOR = 0.5
 MAX_SUGGESTIONS = 7
+CASE_VOCABULARY_CAP = 80
+# A reasoning model spends tokens before its first visible character: seen
+# live 2026-09-27 (lfm-2.5-2.6b), the old 1200 cap was consumed entirely by
+# reasoning tokens and the reply was empty at finish_reason=length. Same
+# budget as the case chat / task suggester / ICS draft (6000).
+TAG_SUGGESTER_MAX_TOKENS = 6000
+COMPACT_RETRY_SUFFIX = (
+    "\n\nBe compact: answer with the JSON immediately, reasons at most ten words each, "
+    "no deliberation before the answer."
+)
 
 
 class TagSuggesterError(Exception):
@@ -110,8 +121,61 @@ def _case_payload(case) -> dict[str, Any]:
         "description": _truncate(case.description, 6000),
         "soc_id": _truncate(case.soc_id, 200),
         "classification": classification,
-        "current_tags": _current_tags_csv(getattr(case, "case_tags", None)),
+        # Cases carry Tag rows on `.tags` (there is no `case_tags` attribute —
+        # the old read returned [] for every case, so nothing was excluded).
+        "current_tags": _current_tags_objects(getattr(case, "tags", None)),
     }
+
+
+def _note_payload(note) -> dict[str, Any]:
+    """iris-ng #129. Notes are narrative, so besides the catalog the model may
+    reuse the labels already in use across this case (`case_vocabulary`)."""
+    directory = getattr(getattr(note, "directory", None), "name", None)
+    return {
+        "kind": "note",
+        "title": _truncate(note.note_title, 400),
+        "directory": directory,
+        "content": _truncate(note.note_content, 6000),
+        "current_tags": _current_tags_csv(getattr(note, "note_tags", None)),
+        "case_vocabulary": case_vocabulary(note.note_case_id),
+    }
+
+
+def case_vocabulary(case_id: int, cap: int = CASE_VOCABULARY_CAP) -> list[str]:
+    """Every tag already used somewhere in this case — the case itself, its
+    notes, IOCs, assets, tasks and timeline events — first-seen order, deduped
+    case-insensitively, capped. `[]` = the case has no tags anywhere."""
+    from app.models.cases import Cases, CasesEvent
+    from app.models.models import CaseAssets, CaseTasks, Ioc, Notes
+
+    seen: set[str] = set()
+    out: list[str] = []
+
+    def take(tags: list[str]) -> None:
+        for t in tags:
+            key = t.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(t)
+
+    case = Cases.query.filter_by(case_id=case_id).first()
+    if case is not None:
+        take(_current_tags_objects(getattr(case, "tags", None)))
+    sources = (
+        (Notes.note_tags, Notes.note_case_id == case_id),
+        (Ioc.ioc_tags, Ioc.case_id == case_id),
+        (CaseAssets.asset_tags, CaseAssets.case_id == case_id),
+        (CaseTasks.task_tags, CaseTasks.task_case_id == case_id),
+        (CasesEvent.event_tags, CasesEvent.case_id == case_id),
+    )
+    for column, predicate in sources:
+        rows = db.session.query(column).filter(predicate, column.isnot(None), column != "").all()
+        for (value,) in rows:
+            take(_current_tags_csv(value))
+        if len(out) >= cap:
+            break
+    return out[:cap]
 
 
 def _event_payload(event) -> dict[str, Any]:
@@ -139,14 +203,16 @@ def _current_tags_csv(value) -> list[str]:
 
 
 def _current_tags_objects(value) -> list[str]:
-    """A few IRIS objects (assets) carry tags as Tag-model relationships."""
+    """Cases carry tags as Tag-model rows (`Cases.tags`). A row without a title
+    is skipped — the old `str(t)` fallback leaked the ORM repr (`<Tags 6>`)
+    into the vocabulary offered to the model (seen live 2026-09-27)."""
     if not value:
         return []
     out = []
     for t in value:
-        title = getattr(t, "tag_title", None) or str(t)
-        if title:
-            out.append(title)
+        title = getattr(t, "tag_title", None)
+        if isinstance(title, str) and title.strip():
+            out.append(title.strip())
     return out
 
 
@@ -171,7 +237,11 @@ def _build_lookups() -> tuple[dict[str, dict], dict[str, dict]]:
     return by_exact, by_syn
 
 
-def _validate_suggestion(item: Any, by_exact: dict, by_syn: dict) -> dict[str, Any] | None:
+def _validate_suggestion(item: Any, by_exact: dict, by_syn: dict,
+                         vocabulary: dict[str, str] | None = None) -> dict[str, Any] | None:
+    """`vocabulary` maps lower-cased tag -> canonical spelling of tags already
+    used in the case; a suggestion equal to one of them (case-insensitively) is
+    accepted with kind 'case' even when it is not a MISP catalog tag."""
     if not isinstance(item, dict):
         return None
     raw_tag = item.get("tag")
@@ -207,6 +277,20 @@ def _validate_suggestion(item: Any, by_exact: dict, by_syn: dict) -> dict[str, A
                    m.group(1).split(":", 1)[1] == syn_record.get("galaxy_type"):
                     record = syn_record
                     matched_synonym = m.group(3)
+
+    if record is None and vocabulary:
+        canonical = vocabulary.get(raw_tag.lower())
+        if canonical:
+            reason = item.get("reason")
+            return {
+                "tag": canonical,
+                "kind": "case",
+                "expanded": None,
+                "description": "Already used in this case",
+                "reason": reason if isinstance(reason, str) else None,
+                "confidence": confidence,
+                "matched_synonym": None,
+            }
 
     if record is None:
         return None
@@ -249,6 +333,9 @@ def _load_object(case_id: int, object_type: str, object_id: int):
     if object_type == "event":
         from app.models.cases import CasesEvent
         return CasesEvent.query.filter_by(event_id=object_id, case_id=case_id).first()
+    if object_type == "note":
+        from app.models.models import Notes
+        return Notes.query.filter_by(note_id=object_id, note_case_id=case_id).first()
     return None
 
 
@@ -263,6 +350,8 @@ def _build_object_payload(obj, object_type: str) -> dict[str, Any]:
         return _case_payload(obj)
     if object_type == "event":
         return _event_payload(obj)
+    if object_type == "note":
+        return _note_payload(obj)
     raise TagSuggesterError(f"Unknown object_type: {object_type!r}")
 
 
@@ -287,7 +376,8 @@ def suggest_tags(*, case_id: int, object_type: str, object_id: int) -> dict[str,
             f"object_type must be one of {VALID_OBJECT_TYPES}, got {object_type!r}"
         )
 
-    client = build_default_client(timeout=180.0, default_max_tokens=1200, feature='tag_suggester')
+    client = build_default_client(timeout=180.0, default_max_tokens=TAG_SUGGESTER_MAX_TOKENS,
+                                  feature='tag_suggester')
     if client is None:
         raise TagSuggesterError(
             "AI backend is not configured (set AI_BACKEND_URL / AI_BACKEND_MODEL "
@@ -304,10 +394,16 @@ def suggest_tags(*, case_id: int, object_type: str, object_id: int) -> dict[str,
     by_exact, by_syn = _build_lookups()
 
     system_prompt = load_system_prompt()
+    vocabulary: dict[str, str] = {}
+    if object_type == "note":
+        vocabulary = {t.lower(): t for t in payload.get("case_vocabulary") or [] if isinstance(t, str)}
     user_prompt = (
         "## Object\n\n"
         f"```json\n{json.dumps(payload, indent=2, ensure_ascii=False)}\n```\n\n"
-        "Suggest 3-7 MISP machine tags for this object. Return JSON only."
+        + ("Suggest 3-7 tags for this note: MISP machine tags, or any `case_vocabulary` "
+           "entry copied verbatim. Return JSON only."
+           if object_type == "note" else
+           "Suggest 3-7 MISP machine tags for this object. Return JSON only.")
     )
 
     app.logger.info(
@@ -316,24 +412,46 @@ def suggest_tags(*, case_id: int, object_type: str, object_id: int) -> dict[str,
         f"catalog_size={len(by_exact)})"
     )
 
-    try:
-        response = client.chat([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ])
-    except AIClientError as exc:
-        raise TagSuggesterError(f"AI backend call failed: {exc}") from exc
+    def _ask(prompt: str):
+        try:
+            resp = client.chat([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ])
+        except AIClientError as exc:
+            raise TagSuggesterError(f"AI backend call failed: {exc}") from exc
+        return resp, client.extract_content(resp).strip(), resp.get("choices", [{}])[0].get("finish_reason")
 
-    raw = client.extract_content(response).strip()
+    response, raw, finish = _ask(user_prompt)
+    if not raw and finish == "length":
+        # The whole budget went to the thinking step (no visible output). One
+        # retry asking for the answer first; the budget is unchanged on purpose
+        # — the instruction, not the cap, is what moves a reasoning model.
+        app.logger.warning(
+            f"TagSuggester: empty reply at finish_reason=length for {object_type}#{object_id} "
+            f"(usage={json.dumps(response.get('usage'))}); retrying with a compact instruction"
+        )
+        response, raw, finish = _ask(user_prompt + COMPACT_RETRY_SUFFIX)
+
     if not raw:
-        finish = response.get("choices", [{}])[0].get("finish_reason")
+        if finish == "length":
+            raise TagSuggesterError(
+                "AI backend exhausted its output budget before answering (finish_reason=length, "
+                "twice): the model spent the whole budget reasoning. Raise the tag suggester's "
+                "budget or point its Settings override at a non-reasoning model."
+            )
         raise TagSuggesterError(f"AI backend returned empty response (finish_reason={finish})")
 
     try:
         parsed = json.loads(_extract_json_block(raw))
     except json.JSONDecodeError as exc:
-        app.logger.warning(f"TagSuggester: model returned non-JSON: {raw[:300]}")
+        app.logger.warning(f"TagSuggester: model returned non-JSON (finish_reason={finish}): {raw[:300]}")
         _detail = ' '.join((raw or '').split())[:200] or '<empty response>'
+        if finish == "length":
+            raise TagSuggesterError(
+                f"AI backend reply was truncated (finish_reason=length) before the JSON closed. "
+                f"Reply began: {_detail}"
+            ) from exc
         raise TagSuggesterError(
             f"AI backend did not return JSON. Backend said: {_detail}"
         ) from exc
@@ -348,7 +466,7 @@ def suggest_tags(*, case_id: int, object_type: str, object_id: int) -> dict[str,
 
     validated: list[dict[str, Any]] = []
     for item in items:
-        v = _validate_suggestion(item, by_exact, by_syn)
+        v = _validate_suggestion(item, by_exact, by_syn, vocabulary or None)
         if v is None:
             continue
         if v["tag"] in seen or v["tag"] in current:

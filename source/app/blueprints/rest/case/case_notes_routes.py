@@ -325,7 +325,8 @@ def case_search_notes(caseid):
     notes = Notes.query.filter(
         and_(Notes.note_case_id == caseid,
              or_(Notes.note_title.ilike(f'%{search_input}%'),
-                 Notes.note_content.ilike(f'%{search_input}%')))
+                 Notes.note_content.ilike(f'%{search_input}%'),
+                 Notes.note_tags.ilike(f'%{search_input}%')))  # iris-ng #129: tags are searchable
     ).all()
 
     note_schema = CaseNoteSchema(many=True)
