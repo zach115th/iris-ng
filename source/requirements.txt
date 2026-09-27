@@ -16,10 +16,10 @@ psycopg2-binary==2.9.13
 pyunpack==0.3
 packaging==26.3
 requests==2.34.2
-SQLAlchemy==2.0.52
+SQLAlchemy==2.0.54
 SQLAlchemy-ImageAttach==1.1.0
 SQLAlchemy-Utils==0.42.1
-urllib3==2.7.0
+urllib3==2.8.0
 Werkzeug==3.1.8
 WTForms==3.2.2
 Flask-SocketIO==5.6.1
@@ -29,7 +29,7 @@ python-dateutil==2.9.0.post0
 python-gnupg==0.5.6
 pyminizip~=0.2.6
 # ICS form export: fills the bundled FEMA PDFs (business/war_room_ics_pdf.py)
-pypdf==6.16.1
+pypdf==6.19.0
 PyJWT==2.14.0
 cryptography>=50.0.1
 ldap3==2.9.1

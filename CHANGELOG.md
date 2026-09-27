@@ -36,6 +36,23 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
   which parses identically on 17.4.2 and 18.0.1 — same keys, same values, including quoted,
   `#`-bearing, `export`-prefixed and multi-line entries. The e2e job is disabled in CI, so
   nothing installable changes.
+- Python: urllib3 2.8.0 — a security release closing three advisories against 2.7.0: the
+  TLS settings meant for an HTTPS forwarding proxy could be ignored or replaced by the
+  target server's (GHSA-8988-9cw3-xx77), the streaming reader buffered an unbounded
+  chunk-size line from a malicious server (GHSA-vxq7-64xx-v4gw), and a chunked Deflate
+  body with trailing bytes could loop forever (GHSA-gh4c-6fx4-qh6g). IRIS reaches urllib3
+  through `requests` for the MISP modules, the AI backends, the update check and the
+  sponsor tab; the first needs an HTTPS proxy configured in Server settings, the other two
+  need a hostile server at one of those configured endpoints. Buffered and streamed
+  responses (gzip and deflate, chunked) read back identically before and after. Also
+  SQLAlchemy 2.0.54 (2.0.53 fixes for `aliased()` on an existing alias, chained
+  `CTE.alias()`, a mapped-class memory leak, unclosed connections when a pool connect
+  event raises, and the PostgreSQL schema-exclusion query treating `_` as a wildcard;
+  2.0.54 is packaging only) — boot, migrations, the ORM read paths, a create-and-delete
+  case round and the RETURNING-backed bulk update all behave identically; and pypdf 6.19.0
+  (four more crafted-PDF resource-exhaustion advisories, unreachable because IRIS only
+  opens its own bundled FEMA forms; all seven ICS exports read back field-for-field
+  identical and slightly smaller).
 
 ## [IRIS-NG-v2.2.0] — 2026-09-18
 
