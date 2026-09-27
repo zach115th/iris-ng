@@ -11,7 +11,61 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
-## [Unreleased]
+## [IRIS-NG-v2.2.1] — 2026-09-26
+
+An AI task suggester on the Tasks page, follow-up question chips in every case chat,
+SitRep drafts that describe only what changed, a leadership channel for published SitReps,
+and two security dependency updates (moment, urllib3). **No schema change** — the database
+head stays at `d6a2f8c47b19` from 2.2.0. **An image rebuild is required:** Python
+dependencies moved and the task-suggester panel ships as a static asset in the app image.
+
+### Added
+- **AI task suggester.** A sparkle button on the Tasks toolbar opens a review panel of
+  tasks the assistant proposes from the case material — existing tasks and their links,
+  the notes, timeline, IOCs, assets and evidence, and the skill catalog. The AI only
+  proposes: every card is editable, and a task exists only after Accept or Accept all.
+  Each accepted task is created through the normal path (activity log, hooks, the
+  task-assigned notification), tagged `ai-suggested`, with its dependencies recorded as
+  task links. The model never sees an analyst's name: it tags the skills a task needs and
+  the server picks the assignee among active users with full access to the case by skill
+  overlap, then by fewest open tasks, at the moment the panel is read — so a cached run
+  never carries a stale name; with no overlap the task goes to whoever accepts it.
+  Duplicates of existing tasks, unknown skills and circular dependencies are dropped
+  server-side; a reply that is not the contract (prose, a refusal, the wrong shape) is
+  reported as an error and never stored, so it cannot read as "nothing to do". Suggestions
+  that have since become tasks are withheld from cached reads, which also report whether
+  the case changed since the run. `GET/POST /api/v2/cases/<id>/ai/task-suggestions` and
+  `POST .../task-suggestions/accept`; read needs read access, generate and accept need
+  full access; no new permission bit.
+- **Follow-up question chips in case chat.** Every case-tab assistant (notes, timeline,
+  IOC, assets, tasks, evidence and the default) now offers up to three follow-up questions
+  under its newest answer, as the same pills as the starter suggestions; one click asks.
+  Questions already asked in the conversation are never offered back.
+- **Published SitReps reach leadership in full.** Publishing a SitRep now sends the
+  members of the room's `@leadership` team (or, without one, the room leads) a new
+  notification event, `sitrep_published_leadership`, carrying the full text, with an
+  organisation default of in-app plus email; the rest of the room keeps the ordinary
+  event with the short teaser. Nobody is told twice, the publisher is not told, and only
+  the draft-to-published transition fires it. The notification catalog now lists 13
+  events.
+
+### Changed
+- **SitRep drafts are deltas.** After a room's first published SitRep, the AI draft
+  receives the previous report in full and is asked to write only what changed: no
+  re-narration, decisions the material does not show as made carried forward as
+  "(still open)", next steps shown as done dropped. The "Delta since SitRep … (vN,
+  published …)" reference line is written by the server from the stored report, and the
+  server counts draft lines that repeat the previous SitRep verbatim and shows the count
+  in the editor's status line so the reviewer knows what to cut. Bullet sections a
+  smaller model returns as JSON arrays are rendered one bullet per item instead of as a
+  Python list.
+- **Case chat answers are no longer cut off by reasoning models.** The chat budget rose
+  from 2,000 to 6,000 tokens (a reasoning model spent almost all of 2,000 thinking and
+  the visible answer stopped mid-sentence). A reply that still hits the limit is flagged:
+  the bubble says so and offers a Continue chip.
+- **War-room Notes and SitRep bodies fill the window.** The Notes view and editor and the
+  SitRep editor, preview and read view now reach the bottom edge of the window and scroll
+  inside, instead of a fixed 16-row box or a card that ended wherever the text did.
 
 ### Dependencies
 - UI build: moment 2.31.0 — a security release (CVE-2026-17495: a crafted non-string
@@ -1647,6 +1701,7 @@ Pristine import of DFIR-IRIS v2.5.0-beta.1 (upstream commit `a4bfeda`).
 Tagged `baseline-v2.5.0-beta.1` on `main` as the reference point for upstream
 cherry-picks.
 
+[IRIS-NG-v2.2.1]: https://github.com/zach115th/iris-ng/releases/tag/IRIS-NG-v2.2.1
 [IRIS-NG-v2.2.0]: https://github.com/zach115th/iris-ng/releases/tag/IRIS-NG-v2.2.0
 [Unreleased]: https://github.com/zach115th/iris-ng/compare/v2.5.0-beta.1+iris-next.3...HEAD
 [v2.5.0-beta.1+iris-next.3]: https://github.com/zach115th/iris-ng/releases/tag/v2.5.0-beta.1%2Biris-next.3
