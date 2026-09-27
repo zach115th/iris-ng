@@ -11,6 +11,27 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [Unreleased]
+
+### Dependencies
+- UI build: moment 2.31.0 — a security release (CVE-2026-17495: a crafted non-string
+  value passed to `moment.locale()` could bypass the locale-name validation and load a
+  file from an arbitrary path). That code path exists only in the Node build of moment;
+  IRIS ships the browser bundle and none of its own code calls moment at all — the global
+  is consumed by the vis timeline, the date-time picker and the DataTables date filters,
+  whose parse/format calls were verified identical between 2.30.1 and 2.31.0. 2.31.0 also
+  stops a prototype-property name such as `constructor` from being honoured as a format
+  token and `locale("__proto__")` from blanking the global locale. dropzone 6.3.4 (the
+  pipelines upload modal behaves identically — same options, queue, preview and multipart
+  fields; the 6.3.2–6.3.4 fixes concern `destroy()` evicting the wrong instance, `cancelUpload`
+  on parallel chunks, `emit` skipping a listener that removes itself, and the form
+  `enctype` — none of which the modal exercises), autoprefixer 10.6.1, eslint 10.11.0,
+  svelte 5.57.1 (with its compiler-side dependencies devalue 5.9.4 — closing an npm audit
+  finding, GHSA-9rgm-9g3h-6x36, on a build-time package — esrap, acorn, acorn-typescript,
+  sourcemap-codec, @types/node, undici-types; the compiled bundle is byte-identical);
+  e2e: @types/node 24.13.6. The built static tree differs from the previous one in exactly
+  the vendored moment and dropzone files.
+
 ## [IRIS-NG-v2.2.0] — 2026-09-18
 
 The full ICS packet with official FEMA PDF export, IOC deduplication, @mention
