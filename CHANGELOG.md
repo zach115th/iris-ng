@@ -31,6 +31,11 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
   sourcemap-codec, @types/node, undici-types; the compiled bundle is byte-identical);
   e2e: @types/node 24.13.6. The built static tree differs from the previous one in exactly
   the vendored moment and dropzone files.
+- e2e: dotenv 18.0.1 (major: preloading, `.env.vault` support and the tips are removed and
+  a CLI is added). The end-to-end tests only call `dotenv.parse()` on the stack's `.env`,
+  which parses identically on 17.4.2 and 18.0.1 — same keys, same values, including quoted,
+  `#`-bearing, `export`-prefixed and multi-line entries. The e2e job is disabled in CI, so
+  nothing installable changes.
 
 ## [IRIS-NG-v2.2.0] — 2026-09-18
 
