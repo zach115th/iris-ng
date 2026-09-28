@@ -48,6 +48,7 @@ from app.business.ioc_correlation import (
     build_correlation_report,
     get_ioc_cross_case_context,
 )
+from app import app as _app
 from app import db
 from app.datamgmt.case.case_db import get_case, save_case_tags, get_case_tags
 from app.iris_engine.access_control.utils import ac_get_fast_user_cases_access
@@ -251,7 +252,6 @@ def cluster_narrative():
     except AIClientError as exc:
         return response_api_error(str(exc), 503)
     except Exception as exc:
-        from app import app as _app
         _app.logger.exception("cluster_narrative endpoint error")
         return response_api_error(f"Narrative generation failed: {exc}", 500)
 
@@ -600,7 +600,6 @@ def cluster_misp_push(cluster_id: str):
         IrisMISPClusterError,
         IrisMISPClusterHandler,
     )
-    from app import app as _app
 
     handler = IrisMISPClusterHandler(
         mod_config=_misp_cluster_module_config(),
