@@ -97,6 +97,7 @@ function iris_ci_load() {
         .then(function (r) { return r.json(); })
         .then(function (d) {
             IRIS_CI.rows = (d && d.data) || [];
+            iris_ci_apply_shared_once();
             iris_ci_render_list();
             iris_ci_render_detail();
             done();
@@ -112,6 +113,30 @@ function iris_ci_load() {
             iris_ci_render_detail();
         })
         .catch(function () { IRIS_CI.links = {}; });
+}
+
+/* iris-ng #130: a `?shared=<ioc_id>` link (the MD links notes carry, the
+ * Copy-link button) lands on that indicator: select it exactly as a row click
+ * does, then scroll its card into view. Consumed ONCE — a later reload must
+ * not snap the selection back (lesson 125). */
+var IRIS_CI_SHARED_APPLIED = false;
+function iris_ci_apply_shared_once() {
+    if (IRIS_CI_SHARED_APPLIED) return;
+    IRIS_CI_SHARED_APPLIED = true;
+    var m = (window.location.search || '').match(/[?&]shared=(\d+)/);
+    if (!m) return;
+    var id = parseInt(m[1], 10);
+    if (!IRIS_CI.rows.some(function (x) { return x.ioc_id === id; })) return;
+    IRIS_CI.sel = id;
+    IRIS_CI.tab = 'details';
+    IRIS_CI.editing = false;
+    IRIS_CI.tagSugg = null;
+    IRIS_CI.noteOpen = null;
+    IRIS_CI.caseOpen = null;
+    setTimeout(function () {
+        var el = document.querySelector('.iris-ci-row[data-ioc-id="' + id + '"]');
+        if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({block: 'center'});
+    }, 0);
 }
 
 function iris_ci_links_for(row) {

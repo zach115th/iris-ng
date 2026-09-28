@@ -474,7 +474,10 @@ $(document).ready(function(){
     setInterval(function() { check_update('/case/ioc/state'); }, 3000);
 
     shared_id = getSharedLink();
-    if (shared_id) {
+    /* iris-ng #130: on the v3 IOC page the shared id selects the card and
+     * opens its side panel (case_iocs_v3.js); the legacy edit modal would
+     * pop on top of it. Only the legacy page (no v3 list) still opens it. */
+    if (shared_id && !document.getElementById('iris-ci-list')) {
         edit_ioc(shared_id);
     }
 });

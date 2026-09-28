@@ -122,19 +122,26 @@ def _resolve_default_tlp_id() -> int | None:
     return row.tlp_id if row else None
 
 
-def _build_existing_set(case_id: int | None) -> set[tuple[int, str]]:
-    """Existing case IOCs as {(type_id, value)} so we can flag duplicates.
+def _build_existing_map(case_id: int | None) -> dict[tuple[int, str], int]:
+    """Existing case IOCs as {(type_id, value): ioc_id} so we can flag
+    duplicates AND hand the client the existing row's id (iris-ng #130: an
+    extracted mention of an IOC already in the case still gets linked).
 
     Matches the dedup key used by case_iocs_db.case_iocs_db_exists, which is
     case-sensitive on ioc_value. If `case_id` is None (caller is the bare
-    orchestrator from a script), return an empty set — no dedup is fine.
+    orchestrator from a script), return an empty map — no dedup is fine.
     """
     if case_id is None:
-        return set()
-    rows = Ioc.query.with_entities(Ioc.ioc_type_id, Ioc.ioc_value).filter(
+        return {}
+    rows = Ioc.query.with_entities(Ioc.ioc_type_id, Ioc.ioc_value, Ioc.ioc_id).filter(
         Ioc.case_id == case_id
     ).all()
-    return {(int(t), v) for t, v in rows if t is not None and v is not None}
+    return {(int(t), v): int(i) for t, v, i in rows if t is not None and v is not None}
+
+
+def _build_existing_set(case_id: int | None) -> set[tuple[int, str]]:
+    """Kept for callers that only need the dedup key set."""
+    return set(_build_existing_map(case_id))
 
 
 def _validate_ioc(item: Any, type_index: dict[str, int]) -> dict[str, Any] | None:
@@ -303,7 +310,8 @@ def extract_iocs(text: str, case_id: int | None = None) -> dict[str, Any]:
 
     type_index = _build_type_index()
     default_tlp_id = _resolve_default_tlp_id()
-    existing = _build_existing_set(case_id)
+    existing_map = _build_existing_map(case_id)
+    existing = set(existing_map)
 
     raw_iocs = parsed.get("iocs") if isinstance(parsed, dict) else None
     iocs: list[dict[str, Any]] = []
@@ -324,6 +332,9 @@ def extract_iocs(text: str, case_id: int | None = None) -> dict[str, Any]:
             validated["already_in_case"] = (
                 (validated["type_id"], validated["value"]) in existing
             )
+            # None = not in the case (the client must add it first); an int =
+            # the row to link this note's mentions to (#130).
+            validated["existing_ioc_id"] = existing_map.get((validated["type_id"], validated["value"]))
             iocs.append(validated)
 
     iocs.sort(key=lambda i: i["confidence"], reverse=True)

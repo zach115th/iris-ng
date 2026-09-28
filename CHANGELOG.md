@@ -14,6 +14,23 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 ## [Unreleased]
 
 ### Added
+- **IOC mentions in notes become links to the IOC**
+  ([#130](https://github.com/zach115th/iris-ng/issues/130)). When an IOC extracted from a
+  note is added to the case, every mention of it in the note text is rewritten as the
+  "Copy MD link" shape with the value as the link text — a tag glyph followed by the value,
+  pointing at that IOC on the IOC tab — and the note is saved. Extracted IOCs the case
+  already holds get a **link** action instead of "in case" (Accept all links them too), and
+  a **Link known IOCs** button beside Extract IOCs does the same for every IOC already on
+  the case without calling the model. Defanged spellings in the note (`hxxp`, `[.]`, `(.)`,
+  `[dot]`, `[at]`, `[:]`) are recognised and kept as the link text, so the note stays
+  defanged; matching is case-insensitive and bounded, so a value inside a longer hostname or
+  hash is not a mention; a mention already inside a link, a code span, a fenced block or an
+  HTML tag is left alone; longer values win, so a URL links as the URL and the domain inside
+  it is not linked again; running it twice changes nothing. Each linked IOC records the note
+  as a source (provenance `note_link`, or `ai_extractor` when the link came with the add).
+  On the IOC tab a `?shared=<id>` link now selects that indicator and opens its side panel,
+  as a row click does, and the legacy edit modal no longer pops on top of it.
+
 - **Tags on case notes, manual and AI-suggested** ([#129](https://github.com/zach115th/iris-ng/issues/129)).
   Every note now carries tags the same way IOCs, assets, tasks and timeline events do: a tag
   input under the note title with the usual autocomplete, saved with the note and on every

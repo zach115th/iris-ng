@@ -167,6 +167,13 @@
 										&#x2728; Extract IOCs
 									</button>
 									<span id="iris-ioc-extract-status" style="font-size: 11px; color: #9ca3af; margin-left: 6px;"></span>
+									{# iris-ng #130: link every case IOC mentioned in this note, no model call #}
+									<button type="button" id="iris-nil-link-btn"
+										title="Turn every mention of an IOC already in this case into a link to it (no AI call)"
+										style="background: rgba(139, 92, 246, 0.10); border: 1px solid rgba(139, 92, 246, 0.35); color: #d4c4ff; font-size: 11px; line-height: 1; padding: 4px 10px; border-radius: 999px; cursor: pointer; margin-left: 4px;">
+										<i class="fa-solid fa-link" style="font-size: 10px;"></i> Link known IOCs
+									</button>
+									<span id="iris-nil-link-status" style="font-size: 11px; color: #9ca3af; margin-left: 6px;"></span>
 							</div>
 							<div class="col">
 								<button type="button" class="float-right icon-note btn btn-light btn-circle btn-sm mr-2" onclick="edit_innote();"></button>
@@ -304,6 +311,7 @@
 <script src="/static/assets/js/plugin/sortable/sortable.js "></script>
 <script src="/static/assets/js/core/socket.io.js"></script>
 <script src="/static/assets/js/iris/case.notes.js "></script>
+<script src="/static/assets/js/iris/note_ioc_links.js"></script>
 
 <script>
 /* AI IOC extraction — Tier-1 feature (inline notes editor variant).
@@ -341,6 +349,25 @@
     /* Accept-all needs to drive each row sequentially. Track each (ioc,
      * addBtn) pair so the loop can call postIoc() and await the Promise. */
     var pendingRows = [];
+    /* #130: rows whose IOC is already in the case — Accept all links them. */
+    var linkRows = [];
+
+    /* #130: rewrite the note so every mention of `ioc` links to the IOC row.
+     * `provenance` false = the caller already wrote the source-note link. */
+    function linkMentions(iocId, ioc, provenance) {
+        if (!window.IrisNoteIocLinks || !iocId) { return {total: 0, linked: []}; }
+        return window.IrisNoteIocLinks.applyToEditor(
+            [{ ioc_id: iocId, value: ioc.value, type: ioc.type }],
+            { provenance: provenance, source: 'ai_extractor' });
+    }
+
+    function linkExisting(ioc, btn) {
+        btn.disabled = true;
+        var res = linkMentions(ioc.existing_ioc_id, ioc, true);
+        btn.textContent = res.total ? 'linked ' + res.total : 'no mention';
+        btn.style.opacity = '0.5';
+        btn.title = res.total ? '' : 'The canonical value (or a defanged spelling of it) does not appear in the note text, or every mention is already a link.';
+    }
 
     function renderRow(ioc) {
         var row = document.createElement('div');
@@ -374,7 +401,14 @@
         var addBtn = document.createElement('button');
         addBtn.type = 'button';
         addBtn.style.cssText = 'background: transparent; border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; padding: 2px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; flex-shrink: 0; align-self: center;';
-        if (ioc.already_in_case) {
+        if (ioc.already_in_case && ioc.existing_ioc_id) {
+            /* #130: already on the case — offer to link this note's mentions
+             * to the existing row instead of re-adding it. */
+            addBtn.textContent = 'link';
+            addBtn.title = 'This IOC is already on the case — link its mentions in this note to it.';
+            addBtn.addEventListener('click', function () { linkExisting(ioc, addBtn); });
+            linkRows.push({ ioc: ioc, addBtn: addBtn });
+        } else if (ioc.already_in_case) {
             addBtn.textContent = 'in case';
             addBtn.disabled = true;
             addBtn.title = 'This IOC is already on the case — not re-adding.';
@@ -460,6 +494,9 @@
             addBtn.style.opacity = '0.5';
             bumpCounter();
             var newIocId = resp.json && (resp.json.ioc_id || resp.json.id);
+            /* #130: the provenance row is written below; link the mentions now */
+            var linkRes = linkMentions(newIocId, ioc, false);
+            if (linkRes.total) { addBtn.textContent = 'added · linked ' + linkRes.total; }
             return recordSourceNote(caseId, newIocId, csrf);
         })
         .catch(function (err) {
@@ -544,9 +581,41 @@
             acceptAllBtn.textContent = 'adding ' + (i + 1) + '/' + queue.length + '…';
             try { await postIoc(queue[i].ioc, queue[i].addBtn); } catch (e) {}
         }
+        /* #130: rows already in the case get their mentions linked too */
+        linkRows.filter(function (p) { return !p.addBtn.disabled; })
+                .forEach(function (p) { linkExisting(p.ioc, p.addBtn); });
         acceptAllBtn.disabled = false;
         acceptAllBtn.textContent = prevText;
     });
+
+    /* #130: "Link known IOCs" — every IOC already on the case, no model call. */
+    var linkBtn = document.getElementById('iris-nil-link-btn');
+    var linkStatus = document.getElementById('iris-nil-link-status');
+    if (linkBtn) {
+        linkBtn.addEventListener('click', function () {
+            if (!caseId || !window.IrisNoteIocLinks) { return; }
+            if (!getCurrentNoteId()) { linkStatus.textContent = 'Select a note first.'; return; }
+            linkBtn.disabled = true;
+            linkStatus.textContent = 'reading the case IOCs…';
+            linkStatus.style.color = '#a78bfa';
+            fetch('/api/v2/cases/' + caseId + '/iocs?per_page=1000',
+                  { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                var iocs = window.IrisNoteIocLinks.fromApiRows((d && d.data) || []);
+                var res = window.IrisNoteIocLinks.applyToEditor(iocs, { provenance: true, source: 'note_link' });
+                linkStatus.style.color = '#9ca3af';
+                linkStatus.textContent = res.total
+                    ? 'linked ' + res.total + ' mention' + (res.total === 1 ? '' : 's') + ' of ' + res.linked.length + ' IOC' + (res.linked.length === 1 ? '' : 's')
+                    : (iocs.length ? 'no unlinked mention of the ' + iocs.length + ' case IOCs' : 'the case has no IOCs yet');
+            })
+            .catch(function (err) {
+                linkStatus.textContent = 'error: ' + (err.message || err);
+                linkStatus.style.color = '#fca5a5';
+            })
+            .finally(function () { linkBtn.disabled = false; });
+        });
+    }
 
     dismissBtn.addEventListener('click', function () {
         panel.style.display = 'none';
