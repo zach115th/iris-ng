@@ -11,7 +11,14 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
-## [Unreleased]
+## [IRIS-NG-v2.3.0] — 2026-09-27
+
+Two additions to case notes: tags on notes, manual and AI-suggested, and IOC mentions that
+become links to the IOC. **One schema change:** the `notes.note_tags` column (migration
+`f1c4e7a92b38`, guarded add-column) — back the database up before upgrading, migrations are
+one-way. **An image rebuild is required:** three page scripts changed and one is new. Also
+in this release: the tag suggester's budget for reasoning models, which was silently empty
+for every object type on such a backend.
 
 ### Added
 - **IOC mentions in notes become links to the IOC**
@@ -1736,6 +1743,7 @@ Pristine import of DFIR-IRIS v2.5.0-beta.1 (upstream commit `a4bfeda`).
 Tagged `baseline-v2.5.0-beta.1` on `main` as the reference point for upstream
 cherry-picks.
 
+[IRIS-NG-v2.3.0]: https://github.com/zach115th/iris-ng/releases/tag/IRIS-NG-v2.3.0
 [IRIS-NG-v2.2.1]: https://github.com/zach115th/iris-ng/releases/tag/IRIS-NG-v2.2.1
 [IRIS-NG-v2.2.0]: https://github.com/zach115th/iris-ng/releases/tag/IRIS-NG-v2.2.0
 [Unreleased]: https://github.com/zach115th/iris-ng/compare/v2.5.0-beta.1+iris-next.3...HEAD
