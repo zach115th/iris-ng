@@ -1587,6 +1587,8 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     mail_imap_folder: Optional[str] = fields.String(required=False, allow_none=True)
     mail_poll_interval_minutes: Optional[int] = fields.Integer(required=False, allow_none=True)
     mail_smtp_host: Optional[str] = fields.String(required=False, allow_none=True)
+    # iris-ng guests: public base URL of the guest portal used in invitation links
+    portal_public_url: Optional[str] = fields.String(required=False, allow_none=True)
     mail_smtp_port: Optional[int] = fields.Integer(required=False, allow_none=True)
     mail_smtp_security: Optional[str] = fields.String(required=False, allow_none=True,
                                                       validate=validate.OneOf(['tls', 'starttls', 'none']))

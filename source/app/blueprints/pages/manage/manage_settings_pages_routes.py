@@ -103,6 +103,17 @@ def manage_banners_view_route(caseid, url_redir) -> Union[str, Response]:
     return render_template('manage_banners.html', form=FlaskForm())
 
 
+@manage_settings_pages_blueprint.route('/manage/guest-portal', methods=['GET'])
+@ac_requires(Permissions.server_administrator, no_cid_required=True)
+def manage_guest_portal_view_route(caseid, url_redir) -> Union[str, Response]:
+    """iris-ng guests: tunnel mode (quick / named), public hostname, tunnel
+    token (write-only) and the portal agent's live status."""
+    if url_redir:
+        return redirect(url_for('manage_settings_pages.manage_guest_portal_view_route', cid=caseid))
+
+    return render_template('manage_guest_portal.html', form=FlaskForm())
+
+
 @manage_settings_pages_blueprint.route('/manage/war-room-teams', methods=['GET'])
 @ac_requires(Permissions.server_administrator, no_cid_required=True)
 def manage_war_room_teams_view_route(caseid, url_redir) -> Union[str, Response]:

@@ -1391,6 +1391,9 @@ class WarRoom(db.Model):
     room_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4,
                        server_default=text("gen_random_uuid()"), nullable=False)
     name = Column(Text, nullable=False)
+    # iris-ng guests: URL slug for the guest portal (rooms.example.com/<slug>);
+    # derived from the name at creation, lead-editable, unique when set.
+    slug = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     # Analyst-owned room summary; seeded from the analyst-edited cluster
     # narrative (display_content) on promote, editable afterwards.
@@ -1411,6 +1414,7 @@ class WarRoom(db.Model):
     creator = relationship('User', foreign_keys=[created_by])
 
     __table_args__ = (
+        UniqueConstraint('slug', name='uq_war_room_slug'),
         CheckConstraint("status IN ('open', 'active', 'standby', 'closed')",
                         name='ck_war_room_status'),
         CheckConstraint("severity IN ('low', 'medium', 'high', 'critical')",
@@ -1441,6 +1445,55 @@ class WarRoomMember(db.Model):
         CheckConstraint("role IN ('lead', 'responder', 'observer')",
                         name='ck_war_room_member_role'),
     )
+
+
+class WarRoomGuest(db.Model):
+    """iris-ng: a GUEST participant of one war room (maintainer decision
+    2026-09-30). Guests are NOT users: they never have a `user` row, never
+    log in at /login, hold no permissions and no case access, and cannot
+    reach any route outside the room they were invited to. They enter
+    through the guest portal with a signed, single-room invitation link
+    (`token_hash` = sha256 of the secret; the secret is shown once) and get a
+    portal session bound to (guest_id, room_id). Authorship on room objects
+    is recorded through nullable `*guest_id` columns beside the user FKs.
+
+    Lifetime: `expires_at` (default 14 days, extendable), `revoked_at`
+    (lead), and the room's `closed` status — any of the three ends access
+    on the next request."""
+    __tablename__ = 'war_room_guest'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(ForeignKey('war_room.id', ondelete='CASCADE'),
+                     nullable=False, index=True)
+    email = Column(Text, nullable=False)
+    display_name = Column(Text, nullable=False)
+    organisation = Column(Text, nullable=True)
+    token_hash = Column(String(64), nullable=False, unique=True)
+    invited_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, server_default=text('now()'), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+    invite_sent_at = Column(DateTime, nullable=True)
+    first_seen_at = Column(DateTime, nullable=True)
+    last_seen_at = Column(DateTime, nullable=True)
+    # Password (bcrypt, same routine as users): email + password are the
+    # credential; the link only pre-fills the sign-in. Lockout after
+    # LOCKOUT_ATTEMPTS failures for LOCKOUT_MINUTES (business layer).
+    password_hash = Column(Text, nullable=True)
+    password_set_at = Column(DateTime, nullable=True)
+    failed_logins = Column(Integer, nullable=False, default=0, server_default=text('0'))
+    locked_until = Column(DateTime, nullable=True)
+
+    inviter = relationship('User', foreign_keys=[invited_by])
+
+    __table_args__ = (
+        UniqueConstraint('room_id', 'email', name='uq_war_room_guest_room_email'),
+    )
+
+    @property
+    def label(self) -> str:
+        return (f'{self.display_name} ({self.organisation})'
+                if self.organisation else self.display_name)
 
 
 class WarRoomCaseLink(db.Model):
@@ -1514,6 +1567,9 @@ class WarRoomMessage(db.Model):
     room_id = Column(ForeignKey('war_room.id', ondelete='CASCADE'),
                      nullable=False)
     user_id = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    # iris-ng guests: a guest-authored message carries guest_id and NULL
+    # user_id (see WarRoomGuest).
+    guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
     content = Column(Text, nullable=False)
     topic = Column(String(64), nullable=False, default='main',
                    server_default=text("'main'"))
@@ -1527,6 +1583,7 @@ class WarRoomMessage(db.Model):
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
 
     user = relationship('User')
+    guest = relationship('WarRoomGuest')
 
     __table_args__ = (
         Index('idx_war_room_message_room_id_id', 'room_id', 'id'),
@@ -1562,8 +1619,12 @@ class WarRoomTask(db.Model):
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
     done_at = Column(DateTime, nullable=True)
     done_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    # iris-ng guests: creator when a guest opened the task (created_by NULL).
+    created_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                                 nullable=True)
 
     assignee = relationship('User', foreign_keys=[assignee_id])
+    created_by_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
     creator = relationship('User', foreign_keys=[created_by])
 
     __table_args__ = (
@@ -1670,15 +1731,25 @@ class WarRoomPollVote(db.Model):
                      nullable=False, index=True)
     option_id = Column(ForeignKey('war_room_poll_option.id',
                                   ondelete='CASCADE'), nullable=False)
+    # iris-ng guests: a vote is cast by a user OR a guest (exactly one set).
     user_id = Column(ForeignKey('user.id', ondelete='CASCADE'),
-                     nullable=False)
+                     nullable=True)
+    guest_id = Column(ForeignKey('war_room_guest.id', ondelete='CASCADE'),
+                      nullable=True)
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
 
     user = relationship('User')
+    guest = relationship('WarRoomGuest')
 
     __table_args__ = (
         UniqueConstraint('option_id', 'user_id',
                          name='uq_war_room_poll_vote_option_user'),
+        # NULLs are distinct under UNIQUE, so guest double-votes need their
+        # own partial index (mirrored in the migration).
+        Index('uq_war_room_poll_vote_option_guest', 'option_id', 'guest_id',
+              unique=True, postgresql_where=text('guest_id IS NOT NULL')),
+        CheckConstraint('(user_id IS NOT NULL) OR (guest_id IS NOT NULL)',
+                        name='ck_war_room_poll_vote_voter'),
     )
 
 
@@ -1759,8 +1830,16 @@ class WarRoomNote(db.Model):
     updated_by = Column(ForeignKey('user.id', ondelete='SET NULL'),
                         nullable=True)
 
+    # iris-ng guests: authorship when a guest created / last edited the note.
+    created_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                                 nullable=True)
+    updated_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                                 nullable=True)
+
     creator = relationship('User', foreign_keys=[created_by])
     editor = relationship('User', foreign_keys=[updated_by])
+    creator_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
+    editor_guest = relationship('WarRoomGuest', foreign_keys=[updated_by_guest_id])
     folder = relationship('WarRoomNoteFolder')
 
 
@@ -1844,6 +1923,16 @@ class ServerSettings(db.Model):
     # OFF by default — management asked for it but it must not add overhead
     # unless an admin opts in. Queried per page-load; no restart to flip.
     time_tracking_nudge_enabled = Column(Boolean, default=False, nullable=False, server_default=text('false'))
+    # iris-ng guests: public base URL of the guest portal (the tunnel hostname)
+    # used in invitation links; empty = the request's own origin.
+    portal_public_url = Column(Text, nullable=True)
+    # iris-ng guests: tunnel mode the portal agent runs ('quick' = anonymous
+    # trycloudflare test tunnel, 'named' = the account's tunnel by token),
+    # the write-only tunnel token, and the agent's last reported status.
+    portal_tunnel_mode = Column(String(16), nullable=False, default='quick',
+                                server_default=text("'quick'"))
+    portal_tunnel_token = Column(Text, nullable=True)
+    portal_tunnel_status = Column(JSONB, nullable=True)
 
     # iris-next: physical evidence-drive retention policy. NULL = no policy.
     # Drives with status='in_use' and date_assigned older than (retention_months × 30)

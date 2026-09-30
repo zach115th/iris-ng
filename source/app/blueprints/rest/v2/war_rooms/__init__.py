@@ -35,7 +35,11 @@ from flask import request
 from flask_login import current_user
 
 from app import db
-from app.blueprints.access_controls import ac_api_requires
+from app.blueprints.access_controls import ac_api_requires  # noqa: F401 (non-room routes)
+from app.blueprints.access_controls import ac_room_api_requires
+from app.blueprints.access_controls import current_room_principal
+from app.blueprints.responses import response_error
+from app.business.war_room_guests import GUEST_ROLE
 from app.blueprints.rest.endpoints import response
 from app.blueprints.rest.endpoints import response_api_error
 from app.blueprints.rest.endpoints import response_api_not_found
@@ -86,13 +90,51 @@ def _iso(dt):
     return dt.isoformat() + ('Z' if dt.tzinfo is None else '')
 
 
-def _resolve(room_id, min_role):
+def _principal():
+    return current_room_principal()
+
+
+def _uid():
+    """The acting USER id — None when the principal is a guest (authorship
+    columns then carry the guest id instead)."""
+    p = _principal()
+    return p.user_id if p is not None else current_user.id
+
+
+def _gid():
+    p = _principal()
+    return p.guest_id if p is not None else None
+
+
+def _is_guest():
+    p = _principal()
+    return p is not None and p.is_guest
+
+
+def _my_role(room):
+    return 'guest' if _is_guest() else user_room_role(room.id, current_user.id)
+
+
+def _resolve(room_id, min_role, guests=False):
     """(room, effective_role, error_response). Non-members 404 — existence is
     data; members below min_role get a 400 with the reason (the v2 error
-    helper is 400-only by design)."""
+    helper is 400-only by design).
+
+    iris-ng guests: a portal session is admitted ONLY when the route passes
+    `guests=True` (deny by default), only for the room it is bound to, and
+    always as a `responder`-level participant — never a lead."""
     room = get_room(room_id)
     if room is None:
         return None, None, response_api_not_found()
+    p = _principal()
+    if p is not None and p.is_guest:
+        if p.guest is None or p.guest.room_id != room.id:
+            return None, None, response_api_not_found()
+        if not guests:
+            return None, None, response_error('Guests cannot do this in the room', status=403)
+        if not role_at_least(GUEST_ROLE, min_role):
+            return None, None, response_api_error('Insufficient room role')
+        return room, GUEST_ROLE, None
     role = user_room_role(room_id, current_user.id)
     if role is None:
         if ac_current_user_has_permission(Permissions.server_administrator):
@@ -105,8 +147,19 @@ def _resolve(room_id, min_role):
 
 
 def _room_row(room, role=None):
+    from app.business.war_room_guests import portal_base
+    from app.business.war_rooms import room_slug
+    slug = room_slug(room)
+    base, source = portal_base(request.url_root)
     return {
         'id': room.id, 'uuid': str(room.room_uuid), 'name': room.name,
+        'slug': slug,
+        # Guest-portal addresses: the always-valid form and, when the base is a
+        # real portal hostname (Settings or a running tunnel), the short form
+        # the portal nginx block rewrites (rooms.example.com/<slug>).
+        'portal_room_url': f'{base}/portal/r/{slug}',
+        'portal_room_short': (f'{base}/{slug}' if source != 'browser' else None),
+        'portal_base_source': source,
         'description': room.description, 'summary': room.summary,
         'status': room.status, 'severity': room.severity,
         'source_cluster_id': room.source_cluster_id,
@@ -131,9 +184,11 @@ def _member_row(m):
 
 
 def _message_row(m):
+    from app.business.war_rooms import actor_label
     return {
         'id': m.id, 'user_id': m.user_id,
-        'user_name': m.user.name if m.user else 'deleted user',
+        'user_name': actor_label(m.user, m.guest),
+        'guest_id': m.guest_id, 'is_guest': m.guest_id is not None,
         'content': m.content, 'created_at': _iso(m.created_at),
         'topic': m.topic, 'msg_kind': m.kind, 'parent_id': m.parent_id,
         'thread_title': m.thread_title, 'pinned': m.pinned,
@@ -143,7 +198,7 @@ def _message_row(m):
 # ------------------------------------------------------------------- rooms
 
 @war_rooms_blueprint.route('/war-rooms', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def list_war_rooms():
     # Every status is returned; the page filters client-side via the v3
     # chips (All / Open / Active / Standby / Closed).
@@ -155,7 +210,7 @@ def list_war_rooms():
 
 
 @war_rooms_blueprint.route('/war-rooms', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def create_war_room():
     data = request.get_json(silent=True) or {}
     try:
@@ -167,21 +222,25 @@ def create_war_room():
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def get_war_room(room_id):
-    room, role, err = _resolve(room_id, 'observer')
+    room, role, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     out = _room_row(room, role)
-    out['viewer_id'] = current_user.id
+    out['viewer_id'] = _uid()
     out['members'] = [_member_row(m) for m in
                       WarRoomMember.query.filter_by(room_id=room.id).all()]
-    out['cases'] = _case_rows(room)
+    # Guests never see case identity — the Cases tab does not exist for them.
+    out['cases'] = [] if _is_guest() else _case_rows(room)
+    out['guests'] = [serialize_guest(gst, room) for gst in list_guests(room)]
+    out['viewer_guest'] = (serialize_guest(_principal().guest, room)
+                           if _is_guest() else None)
     return response_api_success(out)
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>', methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def update_war_room(room_id):
     room, role, err = _resolve(room_id, 'lead')
     if err:
@@ -191,6 +250,7 @@ def update_war_room(room_id):
         update_room(room, name=data.get('name'),
                     description=data.get('description'),
                     summary=data.get('summary'),
+                    slug=data.get('slug'),
                     severity=data.get('severity'))
     except BusinessProcessingError as e:
         return response_api_error(str(e))
@@ -198,7 +258,7 @@ def update_war_room(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/status', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def set_war_room_status(room_id):
     """Lead sets the room status (open/active/standby/closed — the v3
     four-state model). Closing is the read-only state and frees a promoted
@@ -215,7 +275,7 @@ def set_war_room_status(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/delete', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def delete_war_room(room_id):
     """Lead-only hard delete for an accidentally created room. Deliberately
     works on a CLOSED room too — the closed-room write guard protects room
@@ -244,7 +304,7 @@ def _parse_iso_date(value):
 
 
 @war_rooms_blueprint.route('/war-rooms/promote-cluster', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def promote_cluster():
     """Promote a computed correlation cluster into a war room — explicit
     click only, never automatic (user rule). The report is recomputed
@@ -278,7 +338,7 @@ def promote_cluster():
 
 
 @war_rooms_blueprint.route('/war-rooms/promoted-clusters', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def promoted_clusters():
     """{cluster_id: room_id} for ACTIVE promoted rooms — lets the Discovery
     panel mark clusters that already have a room. Exposes only the room id;
@@ -293,9 +353,9 @@ def promoted_clusters():
 # ----------------------------------------------------------------- members
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/members', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def list_war_room_members(room_id):
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     members = WarRoomMember.query.filter_by(room_id=room.id).all()
@@ -303,7 +363,7 @@ def list_war_room_members(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/members', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def add_war_room_member(room_id):
     room, _, err = _resolve(room_id, 'lead')
     if err:
@@ -319,7 +379,7 @@ def add_war_room_member(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/members/<int:user_id>',
                            methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def set_war_room_member_role(room_id, user_id):
     room, _, err = _resolve(room_id, 'lead')
     if err:
@@ -334,7 +394,7 @@ def set_war_room_member_role(room_id, user_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/members/<int:user_id>',
                            methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def remove_war_room_member(room_id, user_id):
     # Self-leave needs only membership; removing someone else needs lead.
     min_role = 'observer' if user_id == current_user.id else 'lead'
@@ -351,17 +411,17 @@ def remove_war_room_member(room_id, user_id):
 # ------------------------------------------------------------------- teams
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/teams', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def list_war_room_teams(room_id):
     from app.business.war_rooms import list_teams
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     return response_api_success({'teams': list_teams(room)})
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/teams', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def create_war_room_team(room_id):
     from app.business.war_rooms import create_team
     from app.business.war_rooms import list_teams
@@ -380,7 +440,7 @@ def create_war_room_team(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/teams/<int:team_id>',
                            methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def delete_war_room_team(room_id, team_id):
     from app.business.war_rooms import delete_team
     room, _, err = _resolve(room_id, 'responder')
@@ -395,7 +455,7 @@ def delete_war_room_team(room_id, team_id):
 
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/teams/<int:team_id>/members', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def add_war_room_team_member(room_id, team_id):
     from app.business.war_rooms import add_team_member
     from app.business.war_rooms import list_teams
@@ -415,7 +475,7 @@ def add_war_room_team_member(room_id, team_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/teams/<int:team_id>/members/<int:user_id>',
     methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def remove_war_room_team_member(room_id, team_id, user_id):
     from app.business.war_rooms import list_teams
     from app.business.war_rooms import remove_team_member
@@ -482,7 +542,7 @@ def _case_rows(room):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/cases', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def list_war_room_cases(room_id):
     room, _, err = _resolve(room_id, 'observer')
     if err:
@@ -491,7 +551,7 @@ def list_war_room_cases(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/cases', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def attach_war_room_case(room_id):
     room, _, err = _resolve(room_id, 'responder')
     if err:
@@ -533,7 +593,7 @@ def attach_war_room_case(room_id):
 
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/cases/<int:case_id>/note', methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def set_war_room_case_note(room_id, case_id):
     from app.business.war_rooms import set_case_link_note
     room, _, err = _resolve(room_id, 'responder')
@@ -549,7 +609,7 @@ def set_war_room_case_note(room_id, case_id):
 
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/cases/<int:case_id>/peek', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def peek_war_room_case(room_id, case_id):
     from app.business.war_rooms import case_peek
     room, _, err = _resolve(room_id, 'observer')
@@ -567,7 +627,7 @@ def peek_war_room_case(room_id, case_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/cases/<int:case_id>',
                            methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def detach_war_room_case(room_id, case_id):
     room, _, err = _resolve(room_id, 'responder')
     if err:
@@ -582,9 +642,9 @@ def detach_war_room_case(room_id, case_id):
 # ---------------------------------------------------------------- messages
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/messages', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def list_war_room_messages(room_id):
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     msgs = list_messages(room, before_id=request.args.get('before_id'),
@@ -593,22 +653,23 @@ def list_war_room_messages(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/messages', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def post_war_room_message(room_id):
     """Post to the stream. Optional chat-machinery fields: topic, kind
     (message|note|decision), parent_id (reply — anchors to the thread
     root), thread_title (names a new thread), pinned."""
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
-        msg = add_message(room, current_user.id, data.get('content'),
+        msg = add_message(room, _uid(), data.get('content'),
                           topic=data.get('topic') or 'main',
                           kind=data.get('kind') or 'message',
                           parent_id=data.get('parent_id'),
                           thread_title=data.get('thread_title'),
-                          pinned=bool(data.get('pinned')))
+                          pinned=bool(data.get('pinned')),
+                          guest_id=_gid())
     except (BusinessProcessingError, ValueError, TypeError) as e:
         return response_api_error(str(e))
     return response_api_success(_message_row(msg))
@@ -617,10 +678,10 @@ def post_war_room_message(room_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/messages/<int:message_id>/pin',
     methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def pin_war_room_message(room_id, message_id):
     from app.business.war_rooms import set_message_pinned
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
@@ -636,13 +697,13 @@ def pin_war_room_message(room_id, message_id):
 
 def _poll_response(poll):
     from app.business.war_rooms import serialize_poll
-    out = serialize_poll(poll, current_user.id)
+    out = serialize_poll(poll, _uid(), _gid())
     out['closes_at'] = _iso(out['closes_at'])
     return out
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/polls', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def create_war_room_poll(room_id):
     from app.business.war_rooms import create_poll
     room, _, err = _resolve(room_id, 'responder')
@@ -663,17 +724,17 @@ def create_war_room_poll(room_id):
 
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/polls/<int:poll_id>/vote', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def vote_war_room_poll(room_id, poll_id):
     """Everyone with room access can vote (v3 wording) — observers included."""
     from app.business.war_rooms import vote_poll
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
-        poll = vote_poll(room, poll_id, current_user.id,
-                         int(data.get('option_id') or 0))
+        poll = vote_poll(room, poll_id, _uid(),
+                         int(data.get('option_id') or 0), guest_id=_gid())
     except (BusinessProcessingError, ValueError, TypeError) as e:
         return response_api_error(str(e))
     return response_api_success(_poll_response(poll))
@@ -681,7 +742,7 @@ def vote_war_room_poll(room_id, poll_id):
 
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/polls/<int:poll_id>/close', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def close_war_room_poll(room_id, poll_id):
     from app.business.war_rooms import close_poll
     room, role, err = _resolve(room_id, 'observer')
@@ -711,10 +772,10 @@ def _room_task_row(t):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/room-tasks',
                            methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def list_war_room_room_tasks(room_id):
     from app.business.war_rooms import list_room_tasks
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     return response_api_success({
@@ -723,21 +784,21 @@ def list_war_room_room_tasks(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/room-tasks',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def create_war_room_room_task(room_id):
     from app.business.war_rooms import add_room_task
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
-        t = add_room_task(room, data.get('title'), current_user.id,
+        t = add_room_task(room, data.get('title'), _uid(),
                           assignee_id=data.get('assignee_id'),
                           description=data.get('description'),
                           status=data.get('status') or 'no_status',
                           due_date=_parse_iso_date(data.get('due_date')),
                           tags=data.get('tags'),
-                          parent_task_id=data.get('parent_task_id'))
+                          parent_task_id=data.get('parent_task_id'), created_by_guest_id=_gid())
     except (BusinessProcessingError, ValueError, TypeError) as e:
         return response_api_error(str(e))
     return response_api_success(_room_task_row(t))
@@ -745,10 +806,10 @@ def create_war_room_room_task(room_id):
 
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/room-tasks/<int:task_id>', methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def update_war_room_room_task(room_id, task_id):
     from app.business.war_rooms import set_room_task
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
@@ -765,7 +826,7 @@ def update_war_room_room_task(room_id, task_id):
         else:
             kwargs['clear_due'] = True
     try:
-        t = set_room_task(room, task_id, current_user.id, **kwargs)
+        t = set_room_task(room, task_id, _uid(), **kwargs)
     except (BusinessProcessingError, ValueError, TypeError) as e:
         return response_api_error(str(e))
     return response_api_success(_room_task_row(t))
@@ -773,7 +834,7 @@ def update_war_room_room_task(room_id, task_id):
 
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/room-tasks/<int:task_id>', methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def delete_war_room_room_task(room_id, task_id):
     from app.business.war_rooms import delete_room_task
     room, _, err = _resolve(room_id, 'responder')
@@ -810,7 +871,7 @@ def _sitrep_row(s, with_content=True):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/sitreps/preview',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def preview_war_room_sitrep(room_id):
     """Stateless markdown preview for the SitRep editor (safe renderer)."""
     from app.iris_engine.safe_markdown import render_markdown_safe
@@ -823,9 +884,9 @@ def preview_war_room_sitrep(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/sitreps', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def list_war_room_sitreps(room_id):
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     return response_api_success({
@@ -834,7 +895,7 @@ def list_war_room_sitreps(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/sitreps', methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def create_war_room_sitrep(room_id):
     room, _, err = _resolve(room_id, 'responder')
     if err:
@@ -850,9 +911,9 @@ def create_war_room_sitrep(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/sitreps/<int:sitrep_id>',
                            methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def get_war_room_sitrep(room_id, sitrep_id):
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     s = get_sitrep(room, sitrep_id)
@@ -863,7 +924,7 @@ def get_war_room_sitrep(room_id, sitrep_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/sitreps/<int:sitrep_id>',
                            methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def update_war_room_sitrep(room_id, sitrep_id):
     room, _, err = _resolve(room_id, 'responder')
     if err:
@@ -882,7 +943,7 @@ def update_war_room_sitrep(room_id, sitrep_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/sitreps/<int:sitrep_id>',
                            methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def delete_war_room_sitrep(room_id, sitrep_id):
     room, _, err = _resolve(room_id, 'lead')
     if err:
@@ -900,7 +961,7 @@ def delete_war_room_sitrep(room_id, sitrep_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/sitreps/<int:sitrep_id>/publish',
     methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def publish_war_room_sitrep(room_id, sitrep_id):
     # Publishing is a lead action — a SitRep is the room's outward report.
     room, _, err = _resolve(room_id, 'lead')
@@ -919,7 +980,7 @@ def publish_war_room_sitrep(room_id, sitrep_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/sitreps/<int:sitrep_id>/revisions',
     methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_sitrep_revisions(room_id, sitrep_id):
     room, _, err = _resolve(room_id, 'observer')
     if err:
@@ -939,7 +1000,7 @@ def war_room_sitrep_revisions(room_id, sitrep_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/correlation',
                            methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_correlation(room_id):
     """Shared-IOC view scoped to the room's attached cases — the correlation
     ENGINE reused via its additive case_ids filter, never reimplemented.
@@ -973,7 +1034,7 @@ def war_room_correlation(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/stix', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_stix(room_id):
     """STIX 2.1 bundle for the room's attached cases — same outbound TLP
     gate as the cluster export (only shareable TLPs; withheld count in the
@@ -1029,7 +1090,7 @@ def war_room_stix(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/misp-push',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_misp_push(room_id):
     """Publish the room to MISP as a single campaign event — the MISP push
     REBASED onto the room's durable id (war_room_misp_link supersedes
@@ -1160,7 +1221,7 @@ def war_room_misp_push(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/sitreps/ai-draft',
                            methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def get_sitrep_ai_draft(room_id):
     from app.iris_engine.ai.sitrep_draft import SitrepDraftError
     from app.iris_engine.ai.sitrep_draft import artifact_to_result
@@ -1179,7 +1240,7 @@ def get_sitrep_ai_draft(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/sitreps/ai-draft',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def generate_sitrep_ai_draft(room_id):
     """Draft a SitRep with AI. Async by default (202 + task_id, poll
     /api/v2/ai/jobs/<task_id>); ?sync=true runs inline for scripts. The
@@ -1234,16 +1295,16 @@ def _summary_payload(room, art, *, cached=True):
         'esf': derive_esfs(room_sector_slugs(room)),
         'esf_list': load_esf_map()['list'],
         'auto_refresh': auto_refresh_state(room, art),
-        'my_role': user_room_role(room.id, current_user.id),
+        'my_role': _my_role(room),
     }
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/summary', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def get_room_operational_summary(room_id):
     from app.iris_engine.ai.room_summary import RoomSummaryError
     from app.iris_engine.ai.room_summary import get_latest
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     try:
@@ -1254,7 +1315,7 @@ def get_room_operational_summary(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/summary/ai/generate',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def generate_room_operational_summary(room_id):
     """Generate or regenerate. Async by default (202 + task_id, poll
     /api/v2/ai/jobs/<task_id>); ?sync=true runs inline for scripts. The
@@ -1303,7 +1364,7 @@ def generate_room_operational_summary(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/summary', methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def edit_room_operational_summary(room_id):
     from app.iris_engine.ai.room_summary import RoomSummaryError
     from app.iris_engine.ai.room_summary import set_manual_edit
@@ -1322,7 +1383,7 @@ def edit_room_operational_summary(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/summary/revert',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def revert_room_operational_summary(room_id):
     from app.iris_engine.ai.room_summary import RoomSummaryError
     from app.iris_engine.ai.room_summary import revert_edit
@@ -1338,19 +1399,181 @@ def revert_room_operational_summary(room_id):
         return response_api_error(str(e))
 
 
+# ------------------------------------------------------------------- guests
+#
+# iris-ng: guest participants (business/war_room_guests.py). Management is
+# lead-only and users-only; the guest's own view of the room comes from the
+# room GET (`guests`, `viewer_guest`). The invitation secret is returned ONCE
+# (create / rotate) — it is never stored in clear.
+
+from app.business.war_room_guests import create_guest
+from app.business.war_room_guests import delete_guest
+from app.business.war_room_guests import extend_guest
+from app.business.war_room_guests import invite_url
+from app.business.war_room_guests import list_guests
+from app.business.war_room_guests import portal_base_url
+from app.business.war_room_guests import portal_base_is_configured
+from app.business.war_room_guests import portal_base
+from app.business.war_room_guests import queue_invite_email
+from app.business.war_room_guests import reset_guest_password
+from app.business.war_room_guests import revoke_guest
+from app.business.war_room_guests import rotate_secret
+from app.business.war_room_guests import serialize_guest
+from app.business.war_room_guests import smtp_configured
+
+
+def _room_portal_address(room):
+    row = _room_row(room)
+    return row.get('portal_room_short') or row.get('portal_room_url')
+
+
+def _guest_invite_payload(room, gst, secret, emailed, password=None):
+    url = invite_url(secret, request.url_root) if secret else None
+    return {
+        'guest': serialize_guest(gst, room, manage=True),
+        'invite_url': url,
+        # Shown ONCE (create / reset); never retrievable afterwards.
+        'password': password,
+        'room_url': _room_portal_address(room),
+        'portal_base': portal_base_url(request.url_root),
+        'portal_base_source': portal_base(request.url_root)[1],
+        'portal_base_configured': portal_base_is_configured(),
+        'email_queued': bool(emailed),
+        'smtp_configured': smtp_configured(),
+    }
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/guests', methods=['GET'])
+@ac_room_api_requires()
+def list_war_room_guests(room_id):
+    room, _, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    return response_api_success({
+        'guests': [serialize_guest(gst, room, manage=True) for gst in list_guests(room)],
+        'portal_base': portal_base_url(request.url_root),
+        'smtp_configured': smtp_configured(),
+    })
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/guests', methods=['POST'])
+@ac_room_api_requires()
+def invite_war_room_guest(room_id):
+    """Invite a guest: create the row, email the link when SMTP is configured
+    and ALWAYS return the link to the lead (shown once)."""
+    room, _, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    try:
+        gst, secret, password = create_guest(room, current_user.id, data.get('email'),
+                                             data.get('display_name'), data.get('organisation'),
+                                             days=data.get('days'), password=data.get('password'))
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    url = invite_url(secret, request.url_root)
+    emailed = (queue_invite_email(gst, room, url, current_user.name, password=password,
+                                  room_url=_room_portal_address(room))
+               if data.get('send_email', True) else False)
+    return response_api_success(_guest_invite_payload(room, gst, secret, emailed, password=password))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/guests/<int:guest_id>/reset-password',
+                           methods=['POST'])
+@ac_room_api_requires()
+def reset_war_room_guest_password(room_id, guest_id):
+    """Lead-only reset: a new password (generated unless one is given,
+    policy-checked when given), emailed, and shown to the lead once."""
+    room, _, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    try:
+        gst, password = reset_guest_password(room, guest_id, data.get('password'))
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    emailed = (queue_invite_email(gst, room, '', current_user.name, password=password,
+                                  room_url=_room_portal_address(room), kind='reset')
+               if data.get('send_email', True) else False)
+    return response_api_success(_guest_invite_payload(room, gst, None, emailed, password=password))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/guests/<int:guest_id>/rotate',
+                           methods=['POST'])
+@ac_room_api_requires()
+def rotate_war_room_guest(room_id, guest_id):
+    """New link: the previous secret stops working immediately."""
+    room, _, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    try:
+        gst, secret = rotate_secret(room, guest_id)
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    url = invite_url(secret, request.url_root)
+    emailed = (queue_invite_email(gst, room, url, current_user.name,
+                                  room_url=_room_portal_address(room))
+               if data.get('send_email', True) else False)
+    return response_api_success(_guest_invite_payload(room, gst, secret, emailed))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/guests/<int:guest_id>/revoke',
+                           methods=['POST'])
+@ac_room_api_requires()
+def revoke_war_room_guest(room_id, guest_id):
+    room, _, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    try:
+        gst = revoke_guest(room, guest_id)
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    return response_api_success(serialize_guest(gst, room, manage=True))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/guests/<int:guest_id>/extend',
+                           methods=['POST'])
+@ac_room_api_requires()
+def extend_war_room_guest(room_id, guest_id):
+    room, _, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    try:
+        gst = extend_guest(room, guest_id, days=data.get('days'))
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    return response_api_success(serialize_guest(gst, room, manage=True))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/guests/<int:guest_id>',
+                           methods=['DELETE'])
+@ac_room_api_requires()
+def delete_war_room_guest(room_id, guest_id):
+    room, _, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    try:
+        delete_guest(room, guest_id)
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    return response(204)
+
+
 # ------------------------------------- read-only tab aggregations (v3 tabs)
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/timeline', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_timeline(room_id):
     """Timelines tab payload: read-only CASE events (viewer-ACL) merged with
     the room's own timelines. The case-page timelines are only READ
     (invariant); room timelines are the read-write layer."""
     from app.business.war_rooms import room_timeline
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
-    out = room_timeline(room, current_user.id,
+    out = room_timeline(room, _uid(),
                         limit=request.args.get('limit', 500))
     for r in out['events']:
         r['event_date'] = _iso(r['event_date'])
@@ -1359,7 +1582,7 @@ def war_room_timeline(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/timelines',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def create_war_room_timeline(room_id):
     from app.business.war_rooms import create_room_timeline
     room, _, err = _resolve(room_id, 'responder')
@@ -1378,7 +1601,7 @@ def create_war_room_timeline(room_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/timelines/<int:timeline_id>',
     methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def update_war_room_timeline(room_id, timeline_id):
     from app.business.war_rooms import update_room_timeline
     room, _, err = _resolve(room_id, 'responder')
@@ -1398,7 +1621,7 @@ def update_war_room_timeline(room_id, timeline_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/timelines/<int:timeline_id>',
     methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def delete_war_room_timeline(room_id, timeline_id):
     from app.business.war_rooms import delete_room_timeline
     room, _, err = _resolve(room_id, 'lead')
@@ -1421,7 +1644,7 @@ def _timeline_event_row(ev):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/timelines/<int:timeline_id>/events',
     methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def create_war_room_timeline_event(room_id, timeline_id):
     from app.business.war_rooms import add_timeline_event
     room, _, err = _resolve(room_id, 'responder')
@@ -1442,7 +1665,7 @@ def create_war_room_timeline_event(room_id, timeline_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/timelines/<int:timeline_id>/events/<int:event_id>',
     methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def update_war_room_timeline_event(room_id, timeline_id, event_id):
     from app.business.war_rooms import update_timeline_event
     room, _, err = _resolve(room_id, 'responder')
@@ -1465,7 +1688,7 @@ def update_war_room_timeline_event(room_id, timeline_id, event_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/timelines/<int:timeline_id>/events/<int:event_id>',
     methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def delete_war_room_timeline_event(room_id, timeline_id, event_id):
     from app.business.war_rooms import delete_timeline_event
     room, _, err = _resolve(room_id, 'responder')
@@ -1479,13 +1702,13 @@ def delete_war_room_timeline_event(room_id, timeline_id, event_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/tasks', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_tasks(room_id):
     from app.business.war_rooms import room_tasks
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
-    rows = room_tasks(room, current_user.id,
+    rows = room_tasks(room, _uid(),
                       limit=request.args.get('limit', 200))
     for r in rows:
         r['task_last_update'] = _iso(r['task_last_update'])
@@ -1493,13 +1716,13 @@ def war_room_tasks(room_id):
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_notes(room_id):
     from app.business.war_rooms import room_notes
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
-    out = room_notes(room, current_user.id,
+    out = room_notes(room, _uid(),
                      limit=request.args.get('limit', 200))
     for r in out['case_notes']:
         r['note_lastupdate'] = _iso(r['note_lastupdate'])
@@ -1510,15 +1733,15 @@ def war_room_notes(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/folders',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def create_war_room_note_folder(room_id):
     from app.business.war_rooms import create_note_folder
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
-        f = create_note_folder(room, data.get('name'), current_user.id)
+        f = create_note_folder(room, data.get('name'), _uid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success({'id': f.id, 'name': f.name})
@@ -1527,7 +1750,7 @@ def create_war_room_note_folder(room_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/notes/folders/<int:folder_id>',
     methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def rename_war_room_note_folder(room_id, folder_id):
     from app.business.war_rooms import rename_note_folder
     room, _, err = _resolve(room_id, 'responder')
@@ -1544,7 +1767,7 @@ def rename_war_room_note_folder(room_id, folder_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/notes/folders/<int:folder_id>',
     methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def delete_war_room_note_folder(room_id, folder_id):
     from app.business.war_rooms import delete_note_folder
     room, _, err = _resolve(room_id, 'responder')
@@ -1559,12 +1782,12 @@ def delete_war_room_note_folder(room_id, folder_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/ics',
                            methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_ics_state(room_id):
     """Which ICS forms (201/202/203/204/205A/209/214) exist in this room,
     by title."""
     from app.business.war_room_ics import ics_state
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     st = ics_state(room)
@@ -1574,7 +1797,7 @@ def war_room_ics_state(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/ics/seed',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def seed_war_room_ics(room_id):
     """Create the missing ICS forms for this room (idempotent by title — an
     existing form is never touched). The same seeding runs automatically on
@@ -1597,7 +1820,7 @@ def seed_war_room_ics(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/ics/ai-draft',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def ai_draft_war_room_ics(room_id):
     """AI pass over the ICS forms: fills ONLY the fields still at their
     seeded `—` from the attached cases' material and marks every fill;
@@ -1641,7 +1864,7 @@ def ai_draft_war_room_ics(room_id):
 
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/notes/room/<int:note_id>/ics-pdf', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_note_ics_pdf(room_id, note_id):
     """The official FEMA ICS form, filled from this room note (the note
     title names the form: "ICS 201 - ...", any folder). Read access, like
@@ -1683,17 +1906,17 @@ def war_room_note_ics_pdf(room_id, note_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/room',
                            methods=['POST'])
-@ac_api_requires()
+@ac_room_api_requires()
 def create_war_room_note(room_id):
     from app.business.war_rooms import create_room_note
     from app.business.war_rooms import serialize_room_note
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
-        n = create_room_note(room, current_user.id, title=data.get('title'),
-                             folder_id=data.get('folder_id'))
+        n = create_room_note(room, _uid(), title=data.get('title'),
+                             folder_id=data.get('folder_id'), guest_id=_gid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     out = serialize_room_note(n)
@@ -1703,11 +1926,11 @@ def create_war_room_note(room_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/room/<int:note_id>',
                            methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def get_war_room_note(room_id, note_id):
     from app.business.war_rooms import _get_room_note
     from app.business.war_rooms import serialize_room_note
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     try:
@@ -1721,18 +1944,18 @@ def get_war_room_note(room_id, note_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/room/<int:note_id>',
                            methods=['PUT'])
-@ac_api_requires()
+@ac_room_api_requires()
 def update_war_room_note(room_id, note_id):
     from app.business.war_rooms import serialize_room_note
     from app.business.war_rooms import update_room_note
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     fields = {k: data.get(k) for k in ('title', 'content', 'folder_id')
               if k in data}
     try:
-        n = update_room_note(room, note_id, current_user.id, **fields)
+        n = update_room_note(room, note_id, _uid(), guest_id=_gid(), **fields)
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     out = serialize_room_note(n)
@@ -1742,7 +1965,7 @@ def update_war_room_note(room_id, note_id):
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/notes/room/<int:note_id>',
                            methods=['DELETE'])
-@ac_api_requires()
+@ac_room_api_requires()
 def delete_war_room_note(room_id, note_id):
     from app.business.war_rooms import delete_room_note
     room, _, err = _resolve(room_id, 'responder')
@@ -1758,7 +1981,7 @@ def delete_war_room_note(room_id, note_id):
 @war_rooms_blueprint.route(
     '/war-rooms/<int:room_id>/notes/case/<int:case_id>/<int:note_id>',
     methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def get_war_room_case_note(room_id, case_id, note_id):
     from app.business.war_rooms import get_case_note_for_room
     room, _, err = _resolve(room_id, 'observer')
@@ -1775,13 +1998,13 @@ def get_war_room_case_note(room_id, case_id, note_id):
 # ------------------------------------------------------------------ stream
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/stream', methods=['GET'])
-@ac_api_requires()
+@ac_room_api_requires()
 def war_room_stream(room_id):
     from app.business.war_rooms import room_topics
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
-    items = room_stream(room, current_user.id,
+    items = room_stream(room, _uid(), viewer_guest_id=_gid(),
                         limit=request.args.get('limit', 50))
     for i in items:
         i['created_at'] = _iso(i['created_at'])

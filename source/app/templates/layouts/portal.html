@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<title>IRIS-NG guest portal - {% block title %}Room{% endblock %}</title>
+	<meta content='width=device-width, initial-scale=1.0, shrink-to-fit=no' name='viewport' />
+	<meta name="robots" content="noindex, nofollow" />
+	<link rel="icon" href="/static/assets/img/logo.ico" type="image/x-icon"/>
+	<script src="/static/assets/js/plugin/webfont/webfont.min.js"></script>
+	<script>
+		WebFont.load({
+			custom: {"families":["Lato:300,400,700,900", "Flaticon", "Font Awesome 5 Solid", "Font Awesome 5 Regular", "Font Awesome 5 Brands", "simple-line-icons"],
+			urls: ['/static/assets/css/fonts.css']},
+			active: function() { sessionStorage.fonts = true; }
+		});
+	</script>
+	<link rel="stylesheet" href="/static/assets/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/static/assets/css/atlantis.css">
+	<link rel="stylesheet" href="/static/assets/css/bootstrap-select.min.css">
+	<link rel="stylesheet" href="/static/assets/css/suggestags.css">
+    {% block stylesheets %}{% endblock stylesheets %}
+	<link rel="stylesheet" href="/static/assets/css/dark-theme.css">
+	<style>
+		/* iris-ng guest portal: no sidebar, no top navigation, one banner. The
+		   room page renders exactly as for members; what a guest may DO is
+		   decided by the room API (deny by default). The rules below only hide
+		   the controls the API would refuse anyway. */
+		body.iris-portal { background: #101014; }
+		body.iris-portal .iris-portal-bar { display:flex; align-items:center; gap:12px; padding:10px 24px;
+			background:#17171d; border-bottom:1px solid #2a2a35; color:#c8c8d0; font-size:0.85rem; }
+		body.iris-portal .iris-portal-bar .brand { font-weight:700; letter-spacing:0.5px; color:#e8e8ee; }
+		body.iris-portal .iris-portal-bar .guest { margin-left:auto; }
+		body.iris-portal .iris-portal-bar a { color:#9aa4ff; }
+		body.iris-portal .main-panel { width:100%; margin:0; }
+		body.iris-portal .iris-wr-tab[data-pane="cases"],
+		body.iris-portal .iris-wr-tab[data-pane="correlation"],
+		body.iris-portal .iris-wr-tab[data-pane="teams"],
+		body.iris-portal #iris-wr-sitrep-new, body.iris-portal #iris-wr-sitrep-ai,
+		body.iris-portal #iris-wr-sr-editbtn, body.iris-portal #iris-wr-sr-publishbtn, body.iris-portal #iris-wr-sr-del,
+		body.iris-portal #iris-wr-nt-seedics, body.iris-portal #iris-wr-nt-aiics, body.iris-portal #iris-wr-nt-del,
+		body.iris-portal #iris-wr-os-generate, body.iris-portal #iris-wr-os-edit, body.iris-portal #iris-wr-os-revert,
+		body.iris-portal #iris-wr-tl-add, body.iris-portal #iris-wr-tl-addevent,
+		body.iris-portal #iris-wr-rtask-f-delete,
+		body.iris-portal #iris-wr-member-addbtn, body.iris-portal .iris-wr-member-remove,
+		body.iris-portal #iris-wr-case-attachbtn, body.iris-portal #iris-wr-corr-tag,
+		body.iris-portal #iris-wr-corr-stix, body.iris-portal #iris-wr-corr-misp,
+		body.iris-portal .iris-wr-res-chip { display:none !important; }
+	</style>
+</head>
+<body class="iris-portal">
+	<div class="iris-portal-bar">
+		<span class="brand">IRIS-NG</span>
+		<span>Guest portal</span>
+		{% if guest %}
+		<span class="guest">{{ guest.display_name }}{% if guest.organisation %} ({{ guest.organisation }}){% endif %}
+			&middot; guest &middot; <a href="/portal/leave">Leave</a></span>
+		{% endif %}
+	</div>
+	<div class="wrapper">
+		<div class="main-panel">
+			<div class="content">
+				{% block content %}{% endblock content %}
+			</div>
+		</div>
+	</div>
+	<script src="/static/assets/js/core/jquery.3.2.1.min.js"></script>
+	<script src="/static/assets/js/core/popper.min.js"></script>
+	<script src="/static/assets/js/core/bootstrap.min.js"></script>
+	<script src="/static/assets/js/plugin/tagsinput/suggesttag.js"></script>
+	<script src="/static/assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+	<script src="/static/assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>
+	<script src="/static/assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js"></script>
+	<script src="/static/assets/js/plugin/sweetalert/sweetalert.min.js"></script>
+	<script src="/static/assets/js/plugin/select/bootstrap-select.min.js"></script>
+	<script src="/static/assets/js/atlantis.min.js"></script>
+	<script src="/static/assets/js/plugin/ace/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/static/assets/js/plugin/ace/src-noconflict/ext-language_tools.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/static/assets/js/plugin/xss/xss.js"></script>
+	<script src="/static/assets/js/plugin/marked/marked.min.js" type="text/javascript" charset="utf-8"></script>
+    {% block javascripts %}{% endblock javascripts %}
+</body>
+</html>

@@ -91,7 +91,11 @@ done
 # literal "${ANALYTICS_ORIGIN}" inside the Content-Security-Policy header, which
 # browsers may reject wholesale -- disabling CSP entirely while nginx starts
 # cleanly and every page still looks correct.
-envsubst '${INTERFACE_HTTPS_PORT} ${IRIS_UPSTREAM_SERVER} ${IRIS_UPSTREAM_PORT} ${SERVER_NAME} ${KEY_FILENAME} ${CERT_FILENAME} ${IRIS_FRONTEND_SERVER} ${IRIS_FRONTEND_PORT} ${ANALYTICS_ORIGIN}' < /etc/nginx/nginx.conf > /tmp/nginx.conf
+# iris-ng: the guest-portal server block listens on PORTAL_PORT (docker-network
+# only; a tunnel points at it). Defaulted here so an unset variable never yields
+# an empty `listen`.
+export PORTAL_PORT="${PORTAL_PORT:-8081}"
+envsubst '${INTERFACE_HTTPS_PORT} ${IRIS_UPSTREAM_SERVER} ${IRIS_UPSTREAM_PORT} ${SERVER_NAME} ${KEY_FILENAME} ${CERT_FILENAME} ${IRIS_FRONTEND_SERVER} ${IRIS_FRONTEND_PORT} ${ANALYTICS_ORIGIN} ${PORTAL_PORT}' < /etc/nginx/nginx.conf > /tmp/nginx.conf
 cp /tmp/nginx.conf /etc/nginx/nginx.conf
 rm /tmp/nginx.conf
 

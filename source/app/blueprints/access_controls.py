@@ -27,6 +27,7 @@ import requests
 
 from flask import Request
 from flask import url_for
+from flask import g
 from flask import request
 from flask import render_template
 from flask import session
@@ -337,6 +338,94 @@ def ac_api_requires(*permissions):
             if not _user_has_at_least_a_required_permission(permissions):
                 return response_error('Permission denied', status=403)
 
+            return f(*args, **kwargs)
+        return wrap
+    return inner_wrap
+
+
+# --------------------------------------------------------------- room guests
+#
+# iris-ng: a war-room GUEST is a portal session, never a `user` row (see
+# business/war_room_guests.py). `ac_room_api_requires` is the decorator for
+# the war-rooms REST blueprint: it accepts EITHER an authenticated user (the
+# normal path, identical to ac_api_requires) OR a portal session whose guest
+# is active and bound to the `room_id` in the URL. The principal lands in
+# flask.g.room_principal; every route reads it through `current_room_principal()`.
+# Routes decide per call whether guests are admitted (`_resolve(guests=True)`
+# in the blueprint) — the default is DENY, so a route nobody thought about
+# stays closed to guests.
+
+class RoomPrincipal:
+    __slots__ = ('user_id', 'guest_id', 'guest', 'name')
+
+    def __init__(self, user_id=None, guest_id=None, guest=None, name=None):
+        self.user_id = user_id
+        self.guest_id = guest_id
+        self.guest = guest
+        self.name = name
+
+    @property
+    def is_guest(self):
+        return self.guest_id is not None
+
+
+PORTAL_HEADER = 'X-IRIS-Portal'
+GUEST_SESSION_KEY = 'iris_guest'
+
+
+def portal_request():
+    """True when nginx's portal server block forwarded this request (the
+    header is stripped on the main server block, so a client cannot fake
+    it from the normal origin)."""
+    return request.headers.get(PORTAL_HEADER) == '1'
+
+
+def load_session_guest(room_id):
+    """The active guest bound to this room from the portal session, or None."""
+    from app.business.war_room_guests import guest_is_active
+    from app.models.models import WarRoomGuest
+    data = session.get(GUEST_SESSION_KEY) or {}
+    try:
+        gid = int(data.get('guest_id'))
+        rid = int(data.get('room_id'))
+    except (TypeError, ValueError):
+        return None
+    if room_id is not None and rid != int(room_id):
+        return None
+    g = WarRoomGuest.query.get(gid)
+    if g is None or g.room_id != rid or not guest_is_active(g):
+        return None
+    return g
+
+
+def current_room_principal():
+    return getattr(g, 'room_principal', None)
+
+
+def ac_room_api_requires(*permissions):
+    def inner_wrap(f):
+        @wraps(f)
+        def wrap(*args, **kwargs):
+            if not _is_csrf_token_valid():
+                return response_error('Invalid CSRF token')
+
+            if is_user_authenticated(request):
+                if portal_request():
+                    # The tunnel serves guests only: a user session or an
+                    # API key arriving through it is refused outright.
+                    return response_error('Not available through the guest portal', status=403)
+                if 'permissions' not in session:
+                    session['permissions'] = ac_get_effective_permissions_of_user(current_user)
+                if not _user_has_at_least_a_required_permission(permissions):
+                    return response_error('Permission denied', status=403)
+                g.room_principal = RoomPrincipal(user_id=current_user.id, name=current_user.name)
+                return f(*args, **kwargs)
+
+            room_id = kwargs.get('room_id')
+            guest = load_session_guest(room_id) if room_id is not None else None
+            if guest is None:
+                return response_error('Authentication required', status=401)
+            g.room_principal = RoomPrincipal(guest_id=guest.id, guest=guest, name=guest.label)
             return f(*args, **kwargs)
         return wrap
     return inner_wrap

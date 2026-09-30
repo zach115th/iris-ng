@@ -24,6 +24,8 @@ from app.blueprints.pages.correlation.correlation_routes import correlation_page
 from app.blueprints.pages.customer_assets.customer_assets_routes import customer_assets_page_blueprint
 from app.blueprints.pages.home.home_routes import home_blueprint
 from app.blueprints.pages.war_rooms.war_rooms_routes import war_rooms_page_blueprint
+from app.blueprints.pages.portal.portal_routes import portal_page_blueprint
+from app.blueprints.rest.v2.portal import portal_rest_blueprint
 from app.blueprints.pages.case.case_routes import case_blueprint
 from app.blueprints.pages.case.case_assets_routes import case_assets_blueprint
 from app.blueprints.pages.case.case_graphs_routes import case_graph_blueprint
@@ -200,6 +202,8 @@ def register_blusprints(app):
     app.register_blueprint(customer_assets_page_blueprint)
     app.register_blueprint(home_blueprint)
     app.register_blueprint(war_rooms_page_blueprint)
+    app.register_blueprint(portal_page_blueprint)
+    app.register_blueprint(portal_rest_blueprint)
     app.register_blueprint(alerts_rest_blueprint)
 
     app.register_blueprint(rest_api_blueprint)

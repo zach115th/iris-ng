@@ -122,6 +122,9 @@ services:
       # unless set, which allowlists nothing. Keep it pointing at the same host
       # as the app's ANALYTICS_SCRIPT_URL or the browser will block the script.
       - ANALYTICS_ORIGIN
+      # iris-ng: guest-portal server block port (docker network only; never
+      # published here: docker-compose.portal.yml's tunnel is what reaches it).
+      - PORTAL_PORT
     networks:
       - iris_frontend
     ports:

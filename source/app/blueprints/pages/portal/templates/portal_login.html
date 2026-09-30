@@ -1,0 +1,29 @@
+{% extends "layouts/portal.html" %}
+{% block title %}Guest sign-in{% endblock %}
+{% block content %}
+{# iris-ng guests: email + password are the credential; the invitation link
+   only pre-fills the email and pins the room. Nothing about the room (not
+   even its name) is shown before sign-in. #}
+<div class="page-inner" style="max-width:460px; margin:60px auto;">
+    <div class="card"><div class="card-body" style="padding:28px;">
+        <h4 style="color:#e8e8ee; font-weight:600; margin-bottom:4px;">Guest sign-in</h4>
+        <div class="text-muted" style="font-size:0.85rem; margin-bottom:18px;">Use the email address you were invited with and the password from your invitation.</div>
+        {% if error %}<div class="alert alert-danger" style="font-size:0.85rem;">{{ error }}</div>{% endif %}
+        <form method="post" action="/portal/login" autocomplete="off">
+            {{ form.hidden_tag() }}
+            {% if secret %}<input type="hidden" name="secret" value="{{ secret }}">{% endif %}
+            {% if slug %}<input type="hidden" name="slug" value="{{ slug }}">{% endif %}
+            <div class="form-group">
+                <label for="portal-email">Email</label>
+                <input type="email" class="form-control" id="portal-email" name="email" value="{{ email or '' }}" required autocomplete="username" {% if not email %}autofocus{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="portal-password">Password</label>
+                <input type="password" class="form-control" id="portal-password" name="password" required autocomplete="current-password" {% if email %}autofocus{% endif %}>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Enter the room</button>
+        </form>
+        <div class="text-muted" style="font-size:0.78rem; margin-top:14px;">Lost the password? Ask the room lead for a reset; it is emailed to the invited address.</div>
+    </div></div>
+</div>
+{% endblock %}

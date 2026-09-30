@@ -1,0 +1,33 @@
+# iris-ng: guest-portal exposure overlay. Runs the portal tunnel AGENT
+# (docker/tunnel: cloudflared + a loop that asks IRIS-NG which mode to run and
+# reports status back — Settings -> Guest Portal). It reaches ONLY nginx's
+# portal-only server block (PORTAL_PORT, docker network), so nothing but the
+# guest portal, the war-rooms API it uses and static assets is ever exposed.
+#
+#   docker compose -f docker-compose.dev.yml -f docker-compose.portal.yml up -d --build tunnel
+#
+# Modes (chosen in Settings -> Guest Portal, applied within ~15 s):
+#   quick  trycloudflare.com, no account, random hostname per start (testing)
+#   named  your Cloudflare tunnel by token; public hostname -> http://nginx:PORTAL_PORT
+#          set in Zero Trust; add Cloudflare Access in front for production.
+#
+# PORTAL_TUNNEL_AGENT_KEY in .env is the shared secret between the agent and
+# the app (the app reads .env through env_file).
+services:
+  tunnel:
+    build:
+      context: ./docker/tunnel
+    image: iriswebapp_tunnel:develop
+    container_name: iriswebapp_tunnel
+    restart: unless-stopped
+    environment:
+      - PORTAL_TUNNEL_AGENT_KEY
+      - PORTAL_PORT=${PORTAL_PORT:-8081}
+      - IRIS_UPSTREAM_SERVER=${IRIS_UPSTREAM_SERVER:-app}
+      - IRIS_UPSTREAM_PORT=${IRIS_UPSTREAM_PORT:-8000}
+    depends_on:
+      - nginx
+      - app
+    networks:
+      - iris_frontend
+      - iris_backend

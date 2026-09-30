@@ -1,0 +1,165 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Guest Portal {% endblock title %}
+
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+{# iris-ng guests: how outside participants reach war rooms. The portal agent
+   (docker/tunnel) polls this instance for the tunnel mode and reports back;
+   everything here is stored in server_settings (the token write-only). #}
+<div class="page-inner">
+    <form style="display:none;">{{ form.hidden_tag() }}</form>
+    <div class="d-flex" style="gap:18px; align-items:flex-start;">
+{% set settings_active = 'guest_portal' %}
+{% include 'includes/manage_settings_rail.html' %}
+        <div style="flex:1 1 auto; min-width:0;">
+            <div class="card">
+                <div class="card-header d-flex align-items-center" style="gap:10px;">
+                    <div>
+                        <h4 class="card-title mb-0">Guest Portal</h4>
+                        <div class="text-muted" style="font-size:0.8rem;">How war-room guests reach this instance from outside. The portal agent container runs the Cloudflare tunnel in the mode chosen here and reports its status; only the guest portal is ever exposed through it.</div>
+                    </div>
+                    <span class="ml-auto"></span>
+                    <button class="btn btn-sm btn-primary" id="iris-gp-save">Save</button>
+                </div>
+                <div class="card-body">
+                    <div id="iris-gp-error" class="alert alert-danger" style="display:none;"></div>
+                    <div id="iris-gp-nokey" class="alert alert-warning" style="display:none;">
+                        <strong>Agent key not configured.</strong> Set <code>PORTAL_TUNNEL_AGENT_KEY</code> in <code>.env</code> (the same value the tunnel container gets) and recreate <code>app</code>; until then the agent cannot read these settings and links fall back to this instance's own address.
+                    </div>
+
+                    <h5 style="color:#e8e8ee; font-weight:600;">Tunnel mode</h5>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="iris-gp-mode" id="iris-gp-mode-quick" value="quick">
+                        <label class="form-check-label" for="iris-gp-mode-quick">
+                            <strong>Quick tunnel</strong> <span class="badge badge-warning ml-1">testing only</span>
+                            <div class="text-muted" style="font-size:0.8rem;">Anonymous trycloudflare.com tunnel, no account. The hostname is random and changes every time the agent restarts, so invitation links stop working after a restart; there is no Cloudflare Access in front of it.</div>
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="iris-gp-mode" id="iris-gp-mode-named" value="named">
+                        <label class="form-check-label" for="iris-gp-mode-named">
+                            <strong>Named tunnel</strong> (your Cloudflare account)
+                            <div class="text-muted" style="font-size:0.8rem;">A tunnel you created in Zero Trust. Fixed hostname, survives restarts, and can sit behind Cloudflare Access.</div>
+                        </label>
+                    </div>
+
+                    <div id="iris-gp-named-help" class="mb-3" style="display:none; border:1px solid rgba(139,92,246,0.35); border-radius:6px; padding:12px; font-size:0.82rem;">
+                        <div style="font-weight:600; margin-bottom:6px;">Setting up the named tunnel in Cloudflare Zero Trust</div>
+                        <ol class="mb-1" style="padding-left:18px;">
+                            <li>Networks &rarr; Tunnels &rarr; <em>Create a tunnel</em> &rarr; Cloudflared. Name it (for example <code>iris-guest-portal</code>) and copy the <strong>token</strong> from the install command (the long string after <code>--token</code>).</li>
+                            <li>On the tunnel's <em>Public Hostname</em> tab add your hostname (for example <code>rooms.example.com</code>) with service <code>HTTP</code> &rarr; <code>nginx:<span id="iris-gp-port">8081</span></code>. That is the portal-only server block; nothing else in IRIS-NG is reachable through it.</li>
+                            <li>Paste the token and the public URL below and save. The agent switches within about 15 seconds; the status card confirms the connection.</li>
+                            <li>Recommended: Access &rarr; Applications &rarr; self-hosted application on that hostname with a one-time-PIN policy for the domains you invite. Guests then confirm their email before the portal even loads.</li>
+                        </ol>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="iris-gp-url">Public URL</label>
+                            <input type="text" class="form-control" id="iris-gp-url" placeholder="https://rooms.example.com" autocomplete="off">
+                            <small class="form-text text-muted">Base URL guests use. Required for a named tunnel; leave empty for a quick tunnel (the agent reports the random hostname). Invitation links and room addresses are built from it.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="iris-gp-token">Tunnel token <span class="text-muted" id="iris-gp-token-state"></span></label>
+                            <input type="password" class="form-control" id="iris-gp-token" placeholder="eyJh..." autocomplete="new-password">
+                            <small class="form-text text-muted">Write-only: never shown again. Leave blank to keep the stored token; type <code>clear</code> to remove it.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <h4 class="card-title mb-0">Tunnel status</h4>
+                    <span class="ml-auto text-muted" style="font-size:0.78rem;" id="iris-gp-status-when"></span>
+                </div>
+                <div class="card-body" style="font-size:0.88rem;">
+                    <div id="iris-gp-status-none" class="text-muted">No report from the portal agent yet. Start it with
+                        <code>docker compose -f docker-compose.dev.yml -f docker-compose.portal.yml up -d --build tunnel</code>.</div>
+                    <table class="table table-sm mb-2" id="iris-gp-status-table" style="display:none; max-width:720px;">
+                        <tbody>
+                            <tr><th style="width:180px;">Agent</th><td id="iris-gp-st-agent"></td></tr>
+                            <tr><th>Running mode</th><td id="iris-gp-st-mode"></td></tr>
+                            <tr><th>Connected</th><td id="iris-gp-st-connected"></td></tr>
+                            <tr><th>Hostname</th><td id="iris-gp-st-host"></td></tr>
+                            <tr><th>cloudflared</th><td id="iris-gp-st-version"></td></tr>
+                            <tr><th>Last error</th><td id="iris-gp-st-error" class="text-muted"></td></tr>
+                        </tbody>
+                    </table>
+                    <div class="text-muted" style="font-size:0.78rem;">Switching modes changes the hostname: existing guest links stop working. Use <em>New link</em> on each room's Members tab afterwards. Room addresses are <code>&lt;public URL&gt;/&lt;room slug&gt;</code>; the slug is set in the room's Edit dialog.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+(function () {
+    'use strict';
+    var csrf = function () { var el = document.getElementById('csrf_token'); return el ? el.value : ''; };
+    var api = function (method, body) {
+        var opts = {method: method, headers: {'Accept': 'application/json'}};
+        if (body) { body.csrf_token = csrf(); opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+        return fetch('/api/v2/portal/tunnel', opts).then(function (r) {
+            return r.json().then(function (j) { return {ok: r.ok, status: r.status, j: j}; });
+        });
+    };
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]; }); };
+    var stamp = function (iso) { return iso ? iso.replace('T', ' ').slice(0, 19) + ' UTC' : ''; };
+
+    function render(j) {
+        var s = j.settings || {}, st = j.status || {};
+        document.getElementById('iris-gp-mode-' + (s.mode || 'quick')).checked = true;
+        document.getElementById('iris-gp-url').value = s.public_url || '';
+        document.getElementById('iris-gp-token-state').textContent = s.token_set ? '(a token is stored)' : '(no token stored)';
+        document.getElementById('iris-gp-nokey').style.display = s.agent_key_configured ? 'none' : '';
+        toggleHelp();
+        var has = !!st.reported_at;
+        document.getElementById('iris-gp-status-none').style.display = has ? 'none' : '';
+        document.getElementById('iris-gp-status-table').style.display = has ? '' : 'none';
+        if (has) {
+            document.getElementById('iris-gp-st-agent').innerHTML = st.agent_seen
+                ? '<span class="badge badge-success">reporting</span>'
+                : '<span class="badge badge-secondary">silent</span> <span class="text-muted">no report in the last two minutes</span>';
+            document.getElementById('iris-gp-st-mode').textContent = st.mode || '';
+            document.getElementById('iris-gp-st-connected').innerHTML = st.connected
+                ? '<span class="badge badge-success">connected</span>' : '<span class="badge badge-danger">not connected</span>';
+            document.getElementById('iris-gp-st-host').innerHTML = st.hostname
+                ? '<a href="https://' + esc(st.hostname) + '/portal" target="_blank" rel="noopener">' + esc(st.hostname) + '</a>' : '<span class="text-muted">from the public URL above</span>';
+            document.getElementById('iris-gp-st-version').textContent = st.version || '';
+            document.getElementById('iris-gp-st-error').textContent = st.error || 'none';
+            document.getElementById('iris-gp-status-when').textContent = 'reported ' + stamp(st.reported_at);
+        }
+    }
+    function toggleHelp() {
+        var named = document.getElementById('iris-gp-mode-named').checked;
+        document.getElementById('iris-gp-named-help').style.display = named ? '' : 'none';
+    }
+    function load() {
+        api('GET').then(function (res) { if (res.ok) render(res.j); });
+    }
+    document.querySelectorAll('input[name="iris-gp-mode"]').forEach(function (r) { r.addEventListener('change', toggleHelp); });
+    document.getElementById('iris-gp-save').addEventListener('click', function () {
+        var err = document.getElementById('iris-gp-error');
+        err.style.display = 'none';
+        api('POST', {
+            mode: document.querySelector('input[name="iris-gp-mode"]:checked').value,
+            public_url: document.getElementById('iris-gp-url').value,
+            token: document.getElementById('iris-gp-token').value
+        }).then(function (res) {
+            if (!res.ok) { err.textContent = (res.j && res.j.message) || 'Save failed'; err.style.display = ''; return; }
+            document.getElementById('iris-gp-token').value = '';
+            render(res.j);
+        });
+    });
+    load();
+    setInterval(load, 10000);
+})();
+</script>
+{% endblock javascripts %}

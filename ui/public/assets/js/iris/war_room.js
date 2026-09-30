@@ -249,6 +249,7 @@ function iris_wroom_render_members() {
                       '</a>'
                     : '') + '</div>';
         }).join('');
+    iris_wroom_render_guests();
 }
 
 /* ------------------------------------------------------------------ teams */
@@ -703,6 +704,7 @@ function iris_wroom_render_chat() {
             if (i.msg_kind === 'note') div.className += ' iris-wr-kind-note';
             if (i.parent_id) div.className += ' iris-wr-reply';
             var head = '<strong>' + iris_wroom_esc(i.user_name) + '</strong>' +
+                (i.is_guest ? ' <span class="iris-wr-thread-badge" title="Guest participant (portal)">guest</span>' : '') +
                 '<span class="iris-wr-msg-time">' + time + '</span>' +
                 (i.pinned ? ' <span title="Pinned">&#128204;</span>' : '') +
                 (i.msg_kind === 'decision'
@@ -2673,12 +2675,16 @@ document.addEventListener('DOMContentLoaded', function () {
        keeps the tainted string and taint tracking does not credit it. */
     IRIS_WROOM._rid = /^\d+$/.test(ridRaw || '')
         ? String(parseInt(ridRaw, 10)) : '0';
+    /* iris-ng guests: the same page inside the portal layout. The server
+       denies whatever a guest may not do; this flag only skips the loads a
+       guest session cannot make (user list, correlation). */
+    IRIS_WROOM._guest = !!document.getElementById('iris-wr-guest-mode');
 
     iris_wroom_load_room().then(function (room) {
         if (!room) return;
         iris_wroom_load_stream();
         iris_wroom_load_sitreps();
-        iris_wroom_load_correlation();
+        if (!IRIS_WROOM._guest) iris_wroom_load_correlation();
         iris_wroom_load_room_tasks();
         /* Teams used to load lazily on the Teams tab; the @-mention palette
          * needs the slugs at composer time, so load them at boot too. */
@@ -3657,6 +3663,9 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('iris-wr-edit-desc').value = r.description || '';
             document.getElementById('iris-wr-edit-severity').value = r.severity || '';
             document.getElementById('iris-wr-edit-summary').value = r.summary || '';
+            document.getElementById('iris-wr-edit-slug').value = r.slug || '';
+            document.getElementById('iris-wr-edit-slug-hint').textContent =
+                r.portal_room_short ? 'Guests: ' + r.portal_room_short : 'Guests: ' + (r.portal_room_url || '');
             document.getElementById('iris-wr-edit-error').style.display = 'none';
             $('#iris-wr-edit-modal').modal('show');
         });
@@ -3667,7 +3676,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 name: document.getElementById('iris-wr-edit-name').value,
                 description: document.getElementById('iris-wr-edit-desc').value,
                 severity: document.getElementById('iris-wr-edit-severity').value,
-                summary: document.getElementById('iris-wr-edit-summary').value
+                summary: document.getElementById('iris-wr-edit-summary').value,
+                slug: document.getElementById('iris-wr-edit-slug').value
             }).then(function (res) {
                 if (!res.ok) {
                     var err = document.getElementById('iris-wr-edit-error');
@@ -3880,6 +3890,7 @@ document.addEventListener('DOMContentLoaded', function () {
             mbaddSel = null;
             document.getElementById('iris-wr-mbadd-search').value = '';
             document.getElementById('iris-wr-mbadd-role').value = 'responder';
+            iris_wroom_mbadd_set_mode('user');
             mbaddRender();
             $('#iris-wr-mbadd-modal').modal('show');
             setTimeout(function () {
@@ -3897,6 +3908,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     document.getElementById('iris-wr-mbadd-go')
         .addEventListener('click', function () {
+            if (IRIS_WROOM_GUESTS.mode === 'guest') { iris_wroom_guest_invite(); return; }
             if (!mbaddSel) return;
             iris_wroom_api('POST', '/members', {
                 user_id: mbaddSel,
@@ -4151,8 +4163,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* Pickers: users (any authenticated user may call analyst-skills) and
      * cases (legacy endpoint — {status,data} envelope, unlike v2). */
-    fetch('/api/v2/teams/analyst-skills', {headers: {'Accept': 'application/json'}})
-        .then(function (r) { return r.json(); })
+    (IRIS_WROOM._guest ? Promise.resolve([])
+        : fetch('/api/v2/teams/analyst-skills', {headers: {'Accept': 'application/json'}})
+            .then(function (r) { return r.json(); }))
         .then(function (data) {
             var users = (Array.isArray(data) ? data : [])
                 .filter(function (u) { return !u.is_service_account; });
@@ -4353,3 +4366,202 @@ function iris_wroom_os_bind() {
 }
 
 document.addEventListener('DOMContentLoaded', iris_wroom_os_bind);
+
+
+/* ================================================================= Guests
+ * iris-ng war-room guests: outside participants invited by link, never IRIS
+ * users. Members tab section + the "Guest" mode of the add-member modal.
+ * The invitation link is shown ONCE (create / new link). */
+
+var IRIS_WROOM_GUESTS = {mode: 'user'};
+
+function iris_wroom_guest_stamp(iso) {
+    return iso ? iso.replace('T', ' ').slice(0, 16) + ' UTC' : '';
+}
+
+function iris_wroom_render_guests() {
+    var wrap = document.getElementById('iris-wr-guests-wrap');
+    var list = document.getElementById('iris-wr-guest-list');
+    if (!wrap || !list) return;
+    var guests = (IRIS_WROOM._room && IRIS_WROOM._room.guests) || [];
+    var lead = iris_wroom_can('lead') && iris_wroom_active() && !IRIS_WROOM._guest;
+    wrap.style.display = guests.length ? '' : 'none';
+    var room = IRIS_WROOM._room || {};
+    var addr = room.portal_room_short || room.portal_room_url || '';
+    var addrRow = addr
+        ? '<div class="iris-wr-rail-hint" style="margin-bottom:6px;">Room address for guests: <code>' + iris_wroom_esc(addr) + '</code>' +
+          (room.portal_base_source === 'browser'
+              ? ' <span title="No tunnel reported and no public URL in Settings -> Guest Portal">(this instance\'s own address)</span>' : '') +
+          '</div>'
+        : '';
+    list.innerHTML = addrRow + guests.map(function (g) {
+        var st = g.status || 'active';
+        var until = g.expires_at ? ' \u00b7 until ' + iris_wroom_guest_stamp(g.expires_at) : '';
+        var seen = g.last_seen_at ? 'seen ' + iris_wroom_guest_stamp(g.last_seen_at) : 'never joined';
+        var acts = '';
+        if (lead) {
+            acts = '<span style="margin-left:auto; display:flex; gap:10px; font-size:0.78rem;">' +
+                (st === 'active'
+                    ? '<a href="#" class="iris-wr-guest-act" data-act="extend" data-guest-id="' + g.id + '" title="Extend by 14 days">+14d</a>' : '') +
+                '<a href="#" class="iris-wr-guest-act" data-act="rotate" data-guest-id="' + g.id + '" title="Issue a new invitation link (the previous one stops working)">New link</a>' +
+                (st === 'active'
+                    ? '<a href="#" class="iris-wr-guest-act" data-act="reset" data-guest-id="' + g.id + '" title="New random password, emailed and shown once">Reset password</a>' : '') +
+                (st !== 'revoked'
+                    ? '<a href="#" class="iris-wr-guest-act" data-act="revoke" data-guest-id="' + g.id + '" title="Revoke access now" style="color:#a04a52;">Revoke</a>' : '') +
+                '<a href="#" class="iris-wr-guest-act" data-act="delete" data-guest-id="' + g.id + '" title="Remove the guest and the invitation" style="color:#a04a52;">Remove</a>' +
+                '</span>';
+        }
+        return '<div class="iris-wr-mb-row">' +
+            '<span class="iris-wr-mb-name">' + iris_wroom_esc(g.display_name || '') + '</span>' +
+            (g.organisation ? '<span class="iris-wr-mb-login">' + iris_wroom_esc(g.organisation) + '</span>' : '') +
+            '<span class="iris-wr-mb-chip">guest</span>' +
+            (g.locked ? '<span class="iris-wr-mb-chip" title="Too many failed sign-ins; clears after 15 minutes or a password reset">locked</span>' : '') +
+            '<span class="iris-wr-rail-hint" style="margin-left:6px;">' + iris_wroom_esc(st) + until + ' \u00b7 ' + seen + '</span>' +
+            acts + '</div>';
+    }).join('');
+}
+
+function iris_wroom_mbadd_set_mode(mode) {
+    IRIS_WROOM_GUESTS.mode = mode;
+    var user = document.getElementById('iris-wr-mbadd-user-fields');
+    var guest = document.getElementById('iris-wr-mbadd-guest-fields');
+    var result = document.getElementById('iris-wr-mbadd-result');
+    var go = document.getElementById('iris-wr-mbadd-go');
+    if (!user || !guest) return;
+    result.style.display = 'none';
+    user.style.display = mode === 'user' ? '' : 'none';
+    guest.style.display = mode === 'guest' ? '' : 'none';
+    go.style.display = '';
+    go.textContent = mode === 'guest' ? 'Invite' : 'Add';
+    document.getElementById('iris-wr-mbadd-g-status').textContent = '';
+    ['user', 'guest'].forEach(function (m) {
+        var b = document.getElementById('iris-wr-mbadd-mode-' + m);
+        if (!b) return;
+        b.classList.toggle('btn-secondary', m === mode);
+        b.classList.toggle('btn-outline-secondary', m !== mode);
+        b.classList.toggle('active', m === mode);
+    });
+}
+
+function iris_wroom_guest_show_link(j) {
+    /* The one and only time the secret is visible. */
+    var result = document.getElementById('iris-wr-mbadd-result');
+    document.getElementById('iris-wr-mbadd-user-fields').style.display = 'none';
+    document.getElementById('iris-wr-mbadd-guest-fields').style.display = 'none';
+    document.getElementById('iris-wr-mbadd-go').style.display = 'none';
+    var g = j.guest || {};
+    var msg = 'Invitation for ' + iris_wroom_esc(g.display_name || '') +
+        (g.organisation ? ' (' + iris_wroom_esc(g.organisation) + ')' : '') +
+        (g.expires_at ? ', valid until ' + iris_wroom_guest_stamp(g.expires_at) : '') + '. ';
+    var what = j.password ? (j.invite_url ? 'link and password were' : 'password was') : 'link was';
+    if (j.email_queued) {
+        msg += 'The ' + what + ' emailed to ' + iris_wroom_esc(g.email || 'the guest') + '.';
+    } else if (j.smtp_configured === false) {
+        msg += 'SMTP is not configured: relay the ' + what.replace(/ (were|was)$/, '') + ' yourself.';
+    } else {
+        msg += 'Relay the ' + what.replace(/ (were|was)$/, '') + ' to the guest.';
+    }
+    if (j.room_url) {
+        msg += ' Room address: <code>' + iris_wroom_esc(j.room_url) + '</code>.';
+    }
+    if (j.portal_base_source === 'tunnel') {
+        msg += ' <span class="iris-wr-rail-hint">Link built from the running Cloudflare quick tunnel.</span>';
+    } else if (j.portal_base_source === 'browser') {
+        msg += ' <span class="iris-wr-rail-hint">No tunnel detected and no "Guest portal public URL" in Settings: the link uses this instance\'s own address, which outside guests cannot reach.</span>';
+    }
+    document.getElementById('iris-wr-mbadd-result-msg').innerHTML = msg;
+    document.getElementById('iris-wr-mbadd-result-link').value = j.invite_url || '';
+    document.getElementById('iris-wr-mbadd-result-linkrow').style.display = j.invite_url ? 'flex' : 'none';
+    document.getElementById('iris-wr-mbadd-result-pw').value = j.password || '';
+    document.getElementById('iris-wr-mbadd-result-pwrow').style.display = j.password ? 'flex' : 'none';
+    result.style.display = '';
+    $('#iris-wr-mbadd-modal').modal('show');
+}
+
+function iris_wroom_guest_invite() {
+    var status = document.getElementById('iris-wr-mbadd-g-status');
+    var body = {
+        display_name: document.getElementById('iris-wr-mbadd-g-name').value.trim(),
+        organisation: document.getElementById('iris-wr-mbadd-g-org').value.trim(),
+        email: document.getElementById('iris-wr-mbadd-g-email').value.trim(),
+        days: parseInt(document.getElementById('iris-wr-mbadd-g-days').value, 10) || 14,
+        password: document.getElementById('iris-wr-mbadd-g-password').value,
+        send_email: document.getElementById('iris-wr-mbadd-g-mail').checked
+    };
+    if (!body.display_name || !body.email) {
+        status.textContent = 'Name and email are required.';
+        return;
+    }
+    status.textContent = 'Inviting\u2026';
+    iris_wroom_api('POST', '/guests', body).then(function (res) {
+        if (!res.ok) {
+            status.textContent = (res.j && res.j.message) || 'Invitation failed';
+            return;
+        }
+        status.textContent = '';
+        iris_wroom_guest_show_link(res.j);
+        iris_wroom_load_room();
+    });
+}
+
+function iris_wroom_guests_bind() {
+    var mode = document.getElementById('iris-wr-mbadd-mode');
+    if (!mode) return;
+    mode.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-mode]');
+        if (b) iris_wroom_mbadd_set_mode(b.getAttribute('data-mode'));
+    });
+    document.getElementById('iris-wr-mbadd-result-copypw').addEventListener('click', function () {
+        var inp = document.getElementById('iris-wr-mbadd-result-pw');
+        inp.select();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(inp.value).catch(function () {});
+        }
+        this.textContent = 'Copied';
+        var btn = this;
+        setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+    });
+    document.getElementById('iris-wr-mbadd-result-copy').addEventListener('click', function () {
+        var inp = document.getElementById('iris-wr-mbadd-result-link');
+        inp.select();
+        try { document.execCommand('copy'); } catch (copyErr) { void copyErr; /* clipboard API below */ }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(inp.value).catch(function () {});
+        }
+        this.textContent = 'Copied';
+        var btn = this;
+        setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+    });
+    document.getElementById('iris-wr-guest-list').addEventListener('click', function (e) {
+        var a = e.target.closest('.iris-wr-guest-act');
+        if (!a) return;
+        e.preventDefault();
+        var act = a.getAttribute('data-act');
+        var gid = a.getAttribute('data-guest-id');
+        if (act === 'extend') {
+            iris_wroom_api('POST', '/guests/' + gid + '/extend', {days: 14}).then(function () { iris_wroom_load_room(); });
+        } else if (act === 'rotate') {
+            if (!window.confirm('Issue a new invitation link? The previous link stops working immediately.')) return;
+            iris_wroom_api('POST', '/guests/' + gid + '/rotate', {send_email: true}).then(function (res) {
+                if (!res.ok) return;
+                iris_wroom_guest_show_link(res.j);
+                iris_wroom_load_room();
+            });
+        } else if (act === 'reset') {
+            if (!window.confirm('Issue a new random password for this guest? The current one stops working immediately.')) return;
+            iris_wroom_api('POST', '/guests/' + gid + '/reset-password', {send_email: true}).then(function (res) {
+                if (!res.ok) return;
+                iris_wroom_guest_show_link(res.j);
+                iris_wroom_load_room();
+            });
+        } else if (act === 'revoke') {
+            if (!window.confirm('Revoke this guest\'s access now?')) return;
+            iris_wroom_api('POST', '/guests/' + gid + '/revoke', {}).then(function () { iris_wroom_load_room(); });
+        } else if (act === 'delete') {
+            if (!window.confirm('Remove this guest and their invitation? Their messages stay in the stream.')) return;
+            iris_wroom_api('DELETE', '/guests/' + gid).then(function () { iris_wroom_load_room(); });
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', iris_wroom_guests_bind);

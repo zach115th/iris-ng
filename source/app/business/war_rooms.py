@@ -35,6 +35,8 @@ from datetime import datetime
 from sqlalchemy import desc
 from sqlalchemy import func
 
+import re
+
 import app
 from app import db
 from app.business.errors import BusinessProcessingError
@@ -46,6 +48,7 @@ from app.models.models import AiArtifact
 from app.models.models import SitRep
 from app.models.models import SitRepRevision
 from app.models.models import UserActivity
+from app.models.models import WarRoomGuest
 from app.models.models import WarRoom
 from app.models.models import WarRoomCaseLink
 from app.models.models import WarRoomMember
@@ -72,8 +75,57 @@ ROOM_STATUSES = ('open', 'active', 'standby', 'closed')
 ROOM_SEVERITIES = ('low', 'medium', 'high', 'critical')
 
 
+def actor_label(user=None, guest=None, fallback='deleted user'):
+    """Display name of whoever authored a room object: the user, else the
+    guest ("Name (Organisation)"), else the fallback."""
+    if user is not None:
+        return user.name
+    if guest is not None:
+        return guest.label
+    return fallback
+
+
 def get_room(room_id):
     return db.session.get(WarRoom, room_id)
+
+
+SLUG_RE = re.compile(r'^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$')
+
+
+def slugify(name):
+    s = re.sub(r'[^a-z0-9]+', '-', (name or '').lower()).strip('-')
+    s = re.sub(r'-{2,}', '-', s)[:63].strip('-')
+    return s or 'room'
+
+
+def assign_slug(room, wanted=None):
+    """Give the room a unique slug (derived from its name unless `wanted`).
+    Session-only: the caller commits. A taken slug gets -2, -3, ..."""
+    base = slugify(wanted or room.name)
+    candidate = base
+    n = 2
+    while True:
+        clash = (WarRoom.query.filter(WarRoom.slug == candidate,
+                                      WarRoom.id != (room.id or -1)).first())
+        if clash is None:
+            room.slug = candidate
+            return candidate
+        candidate = f'{base[:60]}-{n}'
+        n += 1
+
+
+def room_slug(room):
+    """The slug, minted on first read for rooms that predate the column."""
+    if not room.slug:
+        assign_slug(room)
+        db.session.commit()
+    return room.slug
+
+
+def get_room_by_slug(slug):
+    if not slug or not SLUG_RE.match(slug):
+        return None
+    return WarRoom.query.filter_by(slug=slug).first()
 
 
 def user_room_role(room_id, user_id):
@@ -110,6 +162,7 @@ def create_room(name, description, creator_id):
                    created_by=creator_id)
     db.session.add(room)
     db.session.flush()
+    assign_slug(room)
     db.session.add(WarRoomMember(room_id=room.id, user_id=creator_id,
                                  role='lead', added_by=creator_id))
     # #115: default teams ride in the SAME transaction as the room.
@@ -119,12 +172,25 @@ def create_room(name, description, creator_id):
 
 
 def update_room(room, name=None, description=None, summary=None,
-                severity=None):
+                severity=None, slug=None):
     if name is not None:
         name = name.strip()
         if not name:
             raise BusinessProcessingError('Room name cannot be empty')
         room.name = name
+    if slug is not None:
+        s = (slug or '').strip().lower()
+        if not s:
+            assign_slug(room)  # blank = derive from the (possibly new) name
+        else:
+            if not SLUG_RE.match(s):
+                raise BusinessProcessingError(
+                    'Slug: lowercase letters, digits and hyphens, 1-63 characters, '
+                    'no leading or trailing hyphen')
+            clash = WarRoom.query.filter(WarRoom.slug == s, WarRoom.id != room.id).first()
+            if clash is not None:
+                raise BusinessProcessingError('Slug already used by another room')
+            room.slug = s
     if description is not None:
         room.description = description or None
     if summary is not None:
@@ -570,11 +636,14 @@ MESSAGE_KINDS = ('message', 'note', 'decision')
 
 
 def add_message(room, user_id, content, topic='main', kind='message',
-                parent_id=None, thread_title=None, pinned=False):
+                parent_id=None, thread_title=None, pinned=False,
+                guest_id=None):
     _assert_writable(room)
     content = (content or '').strip()
     if not content:
         raise BusinessProcessingError('Empty message')
+    if len(content) > 20000:
+        raise BusinessProcessingError('Message is too long')
     if kind not in MESSAGE_KINDS:
         raise BusinessProcessingError('Invalid message kind')
     topic = (topic or 'main').strip()[:64] or 'main'
@@ -587,7 +656,8 @@ def add_message(room, user_id, content, topic='main', kind='message',
         if parent is None or parent.room_id != room.id:
             raise BusinessProcessingError('Invalid reply target')
         root_id = parent.parent_id or parent.id
-    msg = WarRoomMessage(room_id=room.id, user_id=user_id, content=content,
+    msg = WarRoomMessage(room_id=room.id, user_id=user_id, guest_id=guest_id,
+                         content=content,
                          topic=topic, kind=kind, parent_id=root_id,
                          thread_title=(thread_title or '').strip() or None,
                          pinned=bool(pinned))
@@ -598,8 +668,9 @@ def add_message(room, user_id, content, topic='main', kind='message',
     # emitting on every message is safe — only opted-in members get rows.
     # Mentions ride the normal 'mention' event, restricted to members.
     members = member_user_ids(room.id)
-    author = db.session.get(User, user_id)
-    author_name = author.name if author else 'someone'
+    author = db.session.get(User, user_id) if user_id else None
+    guest = db.session.get(WarRoomGuest, guest_id) if guest_id else None
+    author_name = actor_label(author, guest, 'someone')
     notify('war_room_message', members,
            f'{author_name} in war room "{room.name}"',
            body=content[:280], object_type='war_room', object_id=room.id,
@@ -648,7 +719,7 @@ def _check_assignee(assignee_id):
 
 def add_room_task(room, title, actor_id, assignee_id=None, description=None,
                   status='no_status', due_date=None, tags=None,
-                  parent_task_id=None):
+                  parent_task_id=None, created_by_guest_id=None):
     _assert_writable(room)
     title = (title or '').strip()
     if not title:
@@ -669,13 +740,14 @@ def add_room_task(room, title, actor_id, assignee_id=None, description=None,
                        assignee_id=assignee_id, status=status,
                        due_date=due_date,
                        tags=(tags or '').strip() or None,
-                       parent_task_id=parent_task_id, created_by=actor_id)
+                       parent_task_id=parent_task_id, created_by=actor_id,
+                       created_by_guest_id=created_by_guest_id)
     if status == 'done':
         task.done_at = datetime.utcnow()
         task.done_by = actor_id
     db.session.add(task)
     db.session.commit()
-    if assignee_id and int(assignee_id) != int(actor_id):
+    if assignee_id and (actor_id is None or int(assignee_id) != int(actor_id)):
         # Room tasks ride the existing task_assigned event (post-commit,
         # fail-soft by notify()'s contract).
         notify('task_assigned', [assignee_id],
@@ -776,7 +848,7 @@ def _get_room_poll(room, poll_id):
     return poll
 
 
-def vote_poll(room, poll_id, user_id, option_id):
+def vote_poll(room, poll_id, user_id, option_id, guest_id=None):
     """Toggle a vote. Everyone with room access may vote (v3 wording), so
     the endpoint gates at observer. Single-choice polls replace the voter's
     previous vote."""
@@ -787,16 +859,17 @@ def vote_poll(room, poll_id, user_id, option_id):
     opt = db.session.get(WarRoomPollOption, int(option_id))
     if opt is None or opt.poll_id != poll.id:
         raise BusinessProcessingError('Invalid option')
-    existing = WarRoomPollVote.query.filter_by(
-        option_id=opt.id, user_id=user_id).first()
+    if user_id is None and guest_id is None:
+        raise BusinessProcessingError('Invalid voter')
+    voter = ({'user_id': user_id} if user_id is not None
+             else {'guest_id': guest_id})
+    existing = WarRoomPollVote.query.filter_by(option_id=opt.id, **voter).first()
     if existing is not None:
         db.session.delete(existing)
     else:
         if not poll.multiple:
-            WarRoomPollVote.query.filter_by(
-                poll_id=poll.id, user_id=user_id).delete()
-        db.session.add(WarRoomPollVote(poll_id=poll.id, option_id=opt.id,
-                                       user_id=user_id))
+            WarRoomPollVote.query.filter_by(poll_id=poll.id, **voter).delete()
+        db.session.add(WarRoomPollVote(poll_id=poll.id, option_id=opt.id, **voter))
     db.session.commit()
     return poll
 
@@ -811,12 +884,17 @@ def close_poll(room, poll_id, user_id, is_lead):
     return poll
 
 
-def serialize_poll(poll, viewer_id):
+def _voter_key(v):
+    return ('u', v.user_id) if v.user_id is not None else ('g', v.guest_id)
+
+
+def serialize_poll(poll, viewer_id, viewer_guest_id=None):
     votes = WarRoomPollVote.query.filter_by(poll_id=poll.id).all()
     by_opt = {}
     for v in votes:
         by_opt.setdefault(v.option_id, []).append(v)
-    voters_total = len({v.user_id for v in votes})
+    voters_total = len({_voter_key(v) for v in votes})
+    me = (('u', viewer_id) if viewer_id is not None else ('g', viewer_guest_id))
     return {
         'id': poll.id, 'question': poll.question,
         'multiple': poll.multiple, 'anonymous': poll.anonymous,
@@ -828,12 +906,12 @@ def serialize_poll(poll, viewer_id):
         'options': [{
             'id': o.id, 'text': o.text,
             'count': len(by_opt.get(o.id, [])),
-            'voted': any(v.user_id == viewer_id
+            'voted': any(_voter_key(v) == me
                          for v in by_opt.get(o.id, [])),
             # Voter names are withheld on anonymous polls BY THE SERVER —
             # never rely on the client to hide them.
             'voters': ([] if poll.anonymous else
-                       [v.user.name if v.user else 'deleted user'
+                       [actor_label(v.user, v.guest)
                         for v in by_opt.get(o.id, [])]),
         } for o in poll.options],
     }
@@ -923,6 +1001,7 @@ def promote_cluster_to_room(cluster_id, user_id, min_shared=2,
         created_by=user_id)
     db.session.add(room)
     db.session.flush()
+    assign_slug(room)
     db.session.add(WarRoomMember(room_id=room.id, user_id=user_id,
                                  role='lead', added_by=user_id))
     # #115: a promoted room is a new room — same default teams.
@@ -1035,7 +1114,7 @@ def sitrep_revisions(sitrep):
             .order_by(desc(SitRepRevision.revision_number)).all())
 
 
-def room_stream(room, viewer_id, limit=50):
+def room_stream(room, viewer_id, limit=50, viewer_guest_id=None):
     """The unified stream. Kinds (matching the v3 stream lanes):
 
       message       chat (incl. /note + /decision via `kind` sub-field,
@@ -1058,16 +1137,15 @@ def room_stream(room, viewer_id, limit=50):
     for m in msgs:
         items.append({
             'kind': 'message', 'id': m.id, 'user_id': m.user_id,
-            'user_name': m.user.name if m.user else 'deleted user',
+            'user_name': actor_label(m.user, m.guest),
+            'guest_id': m.guest_id, 'is_guest': m.guest_id is not None,
             'content': m.content, 'created_at': m.created_at,
             'topic': m.topic, 'msg_kind': m.kind,
             'parent_id': m.parent_id,
             'parent_snippet': root_snippets.get(m.parent_id),
             'thread_title': m.thread_title, 'pinned': m.pinned,
         })
-    linked = room_case_ids(room.id)
-    acl = set(ac_get_fast_user_cases_access(viewer_id) or [])
-    visible = [c for c in linked if c in acl]
+    visible = room_visible_case_ids(room.id, viewer_id)
     if visible:
         acts = (UserActivity.query.filter(
                     UserActivity.case_id.in_(visible),
@@ -1102,6 +1180,24 @@ def room_stream(room, viewer_id, limit=50):
                         f'as {m.role}'),
             'created_at': m.added_at,
         })
+    for gst in WarRoomGuest.query.filter_by(room_id=room.id).all():
+        items.append({
+            'kind': 'system',
+            'content': f'{_uname(gst.invited_by)} invited guest {gst.label}',
+            'created_at': gst.created_at,
+        })
+        if gst.first_seen_at:
+            items.append({
+                'kind': 'system',
+                'content': f'Guest {gst.label} joined through the portal',
+                'created_at': gst.first_seen_at,
+            })
+        if gst.revoked_at:
+            items.append({
+                'kind': 'system',
+                'content': f'Guest {gst.label} was revoked',
+                'created_at': gst.revoked_at,
+            })
     for s in SitRep.query.filter(SitRep.room_id == room.id,
                                  SitRep.status == 'published').all():
         items.append({
@@ -1114,13 +1210,15 @@ def room_stream(room, viewer_id, limit=50):
         items.append({
             'kind': 'poll', 'content': p.question,
             'created_at': p.created_at,
-            'poll': serialize_poll(p, viewer_id),
+            'poll': serialize_poll(p, viewer_id, viewer_guest_id),
         })
     for t in WarRoomTask.query.filter_by(room_id=room.id).all():
         assignee = f' → {t.assignee.name}' if t.assignee else ''
+        creator = (t.created_by_guest.label if t.created_by_guest
+                   else _uname(t.created_by))
         items.append({
             'kind': 'task_event',
-            'content': (f'{_uname(t.created_by)} created task '
+            'content': (f'{creator} created task '
                         f'"{t.title}"{assignee}'),
             'created_at': t.created_at,
         })
@@ -1137,6 +1235,10 @@ def room_stream(room, viewer_id, limit=50):
 # --------------------------------------------- read-only tab aggregations
 
 def room_visible_case_ids(room_id, viewer_id):
+    # A guest viewer has no user id and therefore no case access at all:
+    # room membership never grants case access, and guests are not users.
+    if viewer_id is None:
+        return []
     linked = room_case_ids(room_id)
     acl = set(ac_get_fast_user_cases_access(viewer_id) or [])
     return [c for c in linked if c in acl]
@@ -1356,8 +1458,7 @@ def room_notes(room, viewer_id, limit=200):
     own = [{
         'id': n.id, 'title': n.title, 'folder_id': n.folder_id,
         'updated_at': n.updated_at or n.created_at,
-        'updated_by_name': (n.editor.name if n.editor
-                            else (n.creator.name if n.creator else None)),
+        'updated_by_name': _note_author(n),
     } for n in (WarRoomNote.query.filter_by(room_id=room.id)
                 .order_by(WarRoomNote.title).all())]
     visible = room_visible_case_ids(room.id, viewer_id)
@@ -1436,14 +1537,14 @@ def delete_note_folder(room, folder_id):
     db.session.commit()
 
 
-def create_room_note(room, user_id, title=None, folder_id=None):
+def create_room_note(room, user_id, title=None, folder_id=None, guest_id=None):
     _assert_writable(room)
     title = (title or '').strip() or 'New note'
     if folder_id:
         _get_note_folder(room, folder_id)
     n = WarRoomNote(room_id=room.id, title=title[:255],
                     folder_id=folder_id or None, content='',
-                    created_by=user_id)
+                    created_by=user_id, created_by_guest_id=guest_id)
     db.session.add(n)
     db.session.commit()
     return n
@@ -1454,6 +1555,18 @@ def _get_room_note(room, note_id):
     if n is None or n.room_id != room.id:
         raise BusinessProcessingError('Invalid note')
     return n
+
+
+def _note_author(n):
+    if n.editor:
+        return n.editor.name
+    if getattr(n, 'editor_guest', None):
+        return n.editor_guest.label
+    if n.creator:
+        return n.creator.name
+    if getattr(n, 'creator_guest', None):
+        return n.creator_guest.label
+    return None
 
 
 def serialize_room_note(n):
@@ -1467,12 +1580,11 @@ def serialize_room_note(n):
         # export offers itself on those notes); None otherwise.
         'ics_form': form_number(n.title),
         'updated_at': n.updated_at or n.created_at,
-        'updated_by_name': (n.editor.name if n.editor
-                            else (n.creator.name if n.creator else None)),
+        'updated_by_name': _note_author(n),
     }
 
 
-def update_room_note(room, note_id, user_id, **fields):
+def update_room_note(room, note_id, user_id, guest_id=None, **fields):
     _assert_writable(room)
     n = _get_room_note(room, note_id)
     if 'title' in fields and fields['title'] is not None:
@@ -1489,6 +1601,7 @@ def update_room_note(room, note_id, user_id, **fields):
         n.folder_id = fid or None
     n.updated_at = datetime.utcnow()
     n.updated_by = user_id
+    n.updated_by_guest_id = guest_id if user_id is None else None
     db.session.commit()
     from app.business.war_room_ics import form_number
     if form_number(n.title):

@@ -1,4 +1,7 @@
-{% extends "layouts/default.html" %}
+{# iris-ng guests: the SAME page renders inside the minimal portal layout
+   for a guest session (blueprints/pages/portal); the room API decides what
+   the guest may do. #}
+{% extends layout|default("layouts/default.html") %}
 
 {% block title %} War Room {% endblock title %}
 
@@ -631,11 +634,12 @@
 <div class="page-inner">
     <form style="display:none;">{{ form.hidden_tag() }}</form>
     <input type="hidden" id="iris-wr-room-id" value="{{ room_id }}">
+    {% if guest_mode %}<input type="hidden" id="iris-wr-guest-mode" value="1">{% endif %}
 
     {# ---- v3-shaped header ---- #}
     <div class="card">
         <div class="card-body d-flex align-items-center" style="padding: 14px 20px; gap: 14px;">
-            <a href="/war-rooms?cid={{ caseid }}" class="text-muted" title="Back to War Rooms" style="font-size: 1.1rem;">&larr;</a>
+            <a href="{% if guest_mode %}/portal/leave{% else %}/war-rooms?cid={{ caseid }}{% endif %}" class="text-muted" title="{% if guest_mode %}Leave the room{% else %}Back to War Rooms{% endif %}" style="font-size: 1.1rem;">&larr;</a>
             <div class="iris-wr-shieldbox">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
             </div>
@@ -1086,6 +1090,11 @@
                 <button class="btn btn-sm btn-primary" id="iris-wr-member-addbtn" style="display:none; flex-shrink:0;">+ Add member</button>
             </div>
             <div class="mt-2" id="iris-wr-mb-list"></div>
+            <div class="mt-3" id="iris-wr-guests-wrap" style="display:none;">
+                <h6 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Guests</h6>
+                <div class="text-muted" style="font-size:0.78rem;">Outside participants invited by link. They exist only in this room, hold no IRIS-NG account and no case access; access ends at expiry, on revoke, or when the room closes.</div>
+                <div class="mt-2" id="iris-wr-guest-list"></div>
+            </div>
         </div></div>
     </div>
 
@@ -1120,6 +1129,12 @@
                 <div class="form-group">
                     <label for="iris-wr-edit-name">Name</label>
                     <input type="text" class="form-control" id="iris-wr-edit-name" maxlength="255">
+                </div>
+                <div class="form-group">
+                    <label for="iris-wr-edit-slug">Portal address (slug)</label>
+                    <input type="text" class="form-control" id="iris-wr-edit-slug" maxlength="63" placeholder="valley-water" autocomplete="off"
+                           title="Lowercase letters, digits and hyphens. Guests reach the room at <portal URL>/<slug>. Leave blank to derive it from the name.">
+                    <small class="form-text text-muted" id="iris-wr-edit-slug-hint"></small>
                 </div>
                 <div class="form-group">
                     <label for="iris-wr-edit-desc">Description</label>
@@ -1345,21 +1360,58 @@
                 <button type="button" class="close" data-dismiss="modal" style="float:right;"><span>&times;</span></button>
                 <h5 class="modal-title">Add member</h5>
                 <div class="text-muted" style="font-size:0.78rem;">Adding a member grants them access to the war room. Case access stays governed by each case's own ACL.</div>
+                <div class="btn-group btn-group-sm mt-2" role="group" id="iris-wr-mbadd-mode">
+                    <button type="button" class="btn btn-secondary active" data-mode="user" id="iris-wr-mbadd-mode-user">IRIS-NG user</button>
+                    <button type="button" class="btn btn-outline-secondary" data-mode="guest" id="iris-wr-mbadd-mode-guest" title="An outside participant who exists only in this room">Guest</button>
+                </div>
             </div>
             <div class="modal-body">
-                <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-mbadd-search" placeholder="Search by login or name" autocomplete="off">
-                <div id="iris-wr-mbadd-list" style="max-height:240px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:4px;"></div>
-                <div class="mt-2">
-                    <label class="text-muted" for="iris-wr-mbadd-role" style="font-size:0.72rem;">Role</label>
-                    <select class="form-control form-control-sm" id="iris-wr-mbadd-role" style="max-width:200px;">
-                        <option value="responder">Responder</option>
-                        <option value="observer">Observer</option>
-                        <option value="lead">Lead</option>
-                    </select>
+                <div id="iris-wr-mbadd-user-fields">
+                    <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-mbadd-search" placeholder="Search by login or name" autocomplete="off">
+                    <div id="iris-wr-mbadd-list" style="max-height:240px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:4px;"></div>
+                    <div class="mt-2">
+                        <label class="text-muted" for="iris-wr-mbadd-role" style="font-size:0.72rem;">Role</label>
+                        <select class="form-control form-control-sm" id="iris-wr-mbadd-role" style="max-width:200px;">
+                            <option value="responder">Responder</option>
+                            <option value="observer">Observer</option>
+                            <option value="lead">Lead</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="iris-wr-mbadd-guest-fields" style="display:none;">
+                    <div class="text-muted mb-2" style="font-size:0.78rem;">The guest gets a personal link to this room only. No account, no password, nothing outside the room. Access ends at expiry, on revoke, or when the room closes.</div>
+                    <label class="text-muted" for="iris-wr-mbadd-g-name" style="font-size:0.72rem;">Name</label>
+                    <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-mbadd-g-name" placeholder="Jane Doe" autocomplete="off" maxlength="120">
+                    <label class="text-muted" for="iris-wr-mbadd-g-org" style="font-size:0.72rem;">Organisation</label>
+                    <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-mbadd-g-org" placeholder="Valley County Water District" autocomplete="off" maxlength="120">
+                    <label class="text-muted" for="iris-wr-mbadd-g-email" style="font-size:0.72rem;">Email</label>
+                    <input type="email" class="form-control form-control-sm mb-2" id="iris-wr-mbadd-g-email" placeholder="jane@example.org" autocomplete="off">
+                    <label class="text-muted" for="iris-wr-mbadd-g-password" style="font-size:0.72rem;">Password <span style="opacity:0.7;">(blank = random 16 characters; a typed one must meet the instance password policy)</span></label>
+                    <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-mbadd-g-password" placeholder="leave blank to generate" autocomplete="off" maxlength="128">
+                    <div class="d-flex align-items-center" style="gap:12px;">
+                        <div>
+                            <label class="text-muted" for="iris-wr-mbadd-g-days" style="font-size:0.72rem;">Valid for (days)</label>
+                            <input type="number" class="form-control form-control-sm" id="iris-wr-mbadd-g-days" value="14" min="1" max="90" style="width:90px;">
+                        </div>
+                        <label class="text-muted" style="font-size:0.78rem; margin-top:18px;"><input type="checkbox" id="iris-wr-mbadd-g-mail" checked> Email the link (needs SMTP in Settings)</label>
+                    </div>
+                    <div id="iris-wr-mbadd-g-status" class="iris-wr-rail-hint mt-2"></div>
+                </div>
+                <div id="iris-wr-mbadd-result" style="display:none;">
+                    <div id="iris-wr-mbadd-result-msg" class="mb-2" style="font-size:0.85rem;"></div>
+                    <div class="d-flex" id="iris-wr-mbadd-result-linkrow" style="gap:6px;">
+                        <input type="text" class="form-control form-control-sm" id="iris-wr-mbadd-result-link" readonly title="Invitation link">
+                        <button type="button" class="btn btn-sm btn-secondary" id="iris-wr-mbadd-result-copy">Copy</button>
+                    </div>
+                    <div class="d-flex mt-2" id="iris-wr-mbadd-result-pwrow" style="gap:6px; display:none;">
+                        <input type="text" class="form-control form-control-sm" id="iris-wr-mbadd-result-pw" readonly title="Password" style="font-family:monospace;">
+                        <button type="button" class="btn btn-sm btn-secondary" id="iris-wr-mbadd-result-copypw">Copy</button>
+                    </div>
+                    <div class="iris-wr-rail-hint mt-2">Shown once. "New link" issues another link (same password); "Reset password" issues a new password (same link).</div>
                 </div>
             </div>
             <div class="modal-footer" style="border-top:0;">
-                <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-dark" data-dismiss="modal" id="iris-wr-mbadd-cancel">Cancel</button>
                 <button type="button" class="btn btn-primary" id="iris-wr-mbadd-go">Add</button>
             </div>
         </div>
