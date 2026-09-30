@@ -11,6 +11,70 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.4.0] — 2026-09-30
+
+War rooms open to outside participants: guests who are not IRIS-NG users take part in one
+room through a guest portal exposed by a Cloudflare tunnel; an ongoing, analyst-editable
+operational summary on every room; a one-command update script for clone-based installs;
+and a fix for the correlation STIX export. **Four schema changes** (migrations
+`a8c3d5e7f912`, `b9d4e6f0a123`, `c1e5f7a2b348`, `d2f6a8c4e957`, all guarded add-table /
+add-column) — back the database up before upgrading, migrations are one-way.
+**A full image rebuild is required:** the nginx image gains the portal-only server block
+and the app image carries new templates, page scripts and resources. The guest portal
+stays off until `PORTAL_TUNNEL_AGENT_KEY` is set in `.env` and the tunnel overlay runs;
+nothing else changes for an instance that does not use it.
+
+### Added
+- **Guests in war rooms, and a guest portal.** A room lead invites an outside participant
+  — the affected organisation's incident lead, a partner agency's liaison — by name,
+  organisation and email. The guest is never a user account: no login page, no
+  permissions, no case access of their own, nothing outside the one room. The credential is
+  email + password (a random 16-character one by default, or one the lead sets under the
+  instance's password policy; ten failures lock the guest for fifteen minutes; lead-only
+  reset); the invitation link opens the sign-in with the email pre-filled, and both are
+  shown to the lead once and emailed when SMTP is configured. Expiry (14 days by default),
+  extend, new link, revoke and remove; closing the room ends every guest's access. Inside
+  the room a guest takes part at responder level on the room's own content — stream,
+  polls, room tasks, room notes and folders, SitRep drafts and edits, room timelines and
+  events, teams, ICS forms and their PDF export — and **sees every case attached to the
+  room read-only** (its timeline events, tasks, note titles and content, activity):
+  attaching a case to a room with guests is the sharing decision. Membership, room
+  settings, publishing, correlation, exports and every AI feature stay with the analysts.
+  Guest-authored content is attributed as "Name (Organisation)" with a `guest` badge.
+- **Exposure through a Cloudflare tunnel, and nothing else.** nginx serves a second,
+  portal-only server block on `PORTAL_PORT` (default 8081, Docker network only): the
+  portal pages, the war-rooms API the portal uses and static assets; everything else,
+  including `/login`, answers 404; sign-in and invitation paths are rate-limited; a user
+  session or API key arriving through the portal is refused. A tunnel agent container
+  (`docker-compose.portal.yml`, `docker/tunnel`) runs `cloudflared` against that port and
+  follows **Settings → Guest Portal**: a quick tunnel (testing, no account) or a named
+  tunnel from your own Cloudflare account with a write-only token, a public URL, and a live
+  status card. Rooms carry a lead-editable slug, so a named tunnel serves
+  `rooms.example.com/<slug>`; invitation links are built from the Settings URL, else the
+  running tunnel's hostname, else the instance's own address.
+- **Operational summary on the war room's Summary tab.** An ongoing AI summary of the
+  room's cases at ICS/ESF operational level, in the fixed sections of an ICS 209, with the
+  Emergency Support Functions derived on the server from the attached cases' sector tags
+  (California's ESF list; ESF 18 Cybersecurity on every room). It refreshes on room events
+  (attach, detach, status, SitRep publish, ICS note save) while nobody has edited it, is
+  frozen once an analyst edits it, shows a *stale* badge when the room moved on, and can
+  be reverted to the AI text. It never reads the SitReps and the SitRep drafter never reads
+  it. The room's short export description stays a separate field.
+- **`scripts/update.sh`: one-command update for clone-based installs.** Prints the plan
+  (commits, migrations, changed images, versions), backs the database up with `pg_dump`
+  into `backups/`, resets the checkout (`--ref` for a tag), rebuilds and recreates every
+  changed image including nginx, starts the tunnel agent when the key is set
+  (`--enable-portal` generates it), and waits for the app's ready line. On an older
+  checkout: `git fetch origin && git show origin/main:scripts/update.sh > scripts/update.sh`.
+
+### Fixed
+- **Correlation STIX export failed with a 500** on any cluster holding a shared IOC whose
+  TLP does not permit redistribution (the withheld-count branch referenced a name it never
+  imported). Present since v2.0.0; the export now completes and reports the withheld count
+  in `X-IRIS-TLP-Withheld` as documented.
+- A guest calling the member-removal route crashed the request; a guest assigning a room
+  task hit a comparison against a missing actor id.
+
 ## [IRIS-NG-v2.3.0] — 2026-09-27
 
 Two additions to case notes: tags on notes, manual and AI-suggested, and IOC mentions that
