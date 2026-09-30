@@ -60,6 +60,7 @@ from app.models.models import WarRoomNote
 from app.models.models import WarRoomNoteFolder
 from app.models.models import WarRoomTask
 from app.models.models import WarRoomTeam
+from app.models.models import WarRoomTeamGuest
 from app.models.models import WarRoomTeamMember
 from app.models.models import WarRoomTeamTemplate
 from app.models.models import WarRoomTimeline
@@ -399,6 +400,17 @@ def sitrep_leadership_user_ids(room_id):
     return ids
 
 
+def sitrep_leadership_guests(room_id):
+    """Guests placed in the @leadership team by a lead (maintainer decision
+    2026-09-30): they get the FULL SitRep by email on publish. No fallback —
+    a guest is on the list only when someone put them there."""
+    team = (WarRoomTeam.query
+            .filter(WarRoomTeam.room_id == room_id,
+                    func.lower(WarRoomTeam.name) == LEADERSHIP_TEAM_NAME)
+            .first())
+    return team_guests(team) if team is not None else []
+
+
 # ------------------------------------------------------------------- teams
 
 # The team name is what people type after @ — same charset as the mention
@@ -421,9 +433,12 @@ def list_teams(room):
         out.append({
             'id': t.id, 'name': t.name, 'description': t.description,
             'color': t.color,
-            'members': [{'user_id': m.user_id,
-                         'user_name': m.user.name if m.user else 'deleted user'}
-                        for m in t.members],
+            'members': ([{'user_id': m.user_id, 'guest_id': None, 'is_guest': False,
+                          'user_name': m.user.name if m.user else 'deleted user'}
+                         for m in t.members]
+                        + [{'user_id': None, 'guest_id': gm.guest_id, 'is_guest': True,
+                            'user_name': gm.guest.label if gm.guest else 'removed guest'}
+                           for gm in t.guest_members]),
         })
     return out
 
@@ -478,6 +493,35 @@ def remove_team_member(room, team_id, user_id):
     t = _get_team(room, team_id)
     WarRoomTeamMember.query.filter_by(team_id=t.id, user_id=user_id).delete()
     db.session.commit()
+
+
+def add_team_guest(room, team_id, guest_id):
+    """Guests of THIS room only (active ones) — grouping grants nothing."""
+    from app.business.war_room_guests import get_guest
+    from app.business.war_room_guests import guest_is_active
+    _assert_writable(room)
+    t = _get_team(room, team_id)
+    g = get_guest(room, guest_id)
+    if not guest_is_active(g, room):
+        raise BusinessProcessingError('Guest is not active in this room')
+    if not WarRoomTeamGuest.query.filter_by(team_id=t.id, guest_id=g.id).first():
+        db.session.add(WarRoomTeamGuest(team_id=t.id, guest_id=g.id))
+        db.session.commit()
+    return t
+
+
+def remove_team_guest(room, team_id, guest_id):
+    _assert_writable(room)
+    t = _get_team(room, team_id)
+    WarRoomTeamGuest.query.filter_by(team_id=t.id, guest_id=int(guest_id)).delete()
+    db.session.commit()
+
+
+def team_guests(team):
+    """The team's ACTIVE guest rows (a revoked or expired guest is skipped)."""
+    from app.business.war_room_guests import guest_is_active
+    return [gm.guest for gm in team.guest_members
+            if gm.guest is not None and guest_is_active(gm.guest)]
 
 
 # ---- team templates (#115, Settings > War Room Teams) --------------------
@@ -604,6 +648,33 @@ def seed_default_teams(room, user_id):
     return out
 
 
+def _notify_guest_mentions(room, content, title, body, actor_guest_id=None):
+    """@handle in a message emails that guest (guests have no in-app bell;
+    maintainer decision 2026-09-30). Active guests only; a guest mentioning
+    themself is skipped; trailing punctuation on the token is tolerated.
+    Fail-soft."""
+    try:
+        import re as _re
+        from app.business import war_room_guests as _wg
+        by_handle = _wg.active_guests_by_handle(room)
+        if not by_handle:
+            return
+        tokens = set()
+        for tok in _re.findall(r'@([A-Za-z0-9][A-Za-z0-9._-]{0,63})', content or ''):
+            tokens.add(tok.lower())
+            tokens.add(tok.lower().rstrip('._-'))
+        hit = [g for h, g in by_handle.items() if h in tokens and g.id != actor_guest_id]
+        if not hit:
+            return
+        addr = _wg.room_portal_address(room)
+        for g in hit:
+            _wg.queue_guest_email(
+                g, f'[IRIS-NG] {title}',
+                f'{title}\n\n{body}\n\n' + (f'Room address: {addr}\n' if addr else ''))
+    except Exception:
+        app.app.logger.exception('guest mention notify failed')
+
+
 def _notify_team_mentions(room, content, title, body, actor_id):
     """@team-name in a message notifies every member of that team (v3).
     Recipients are intersected with CURRENT room members at send time —
@@ -620,15 +691,25 @@ def _notify_team_mentions(room, content, title, body, actor_id):
             return
         members = set(member_user_ids(room.id))
         recipients = set()
+        guests = {}
         for t in teams:
             if t.name.lower() in tokens:
                 recipients |= {m.user_id for m in t.members}
+                for g in team_guests(t):
+                    guests[g.id] = g
         recipients &= members
         if recipients:
             notify('mention', list(recipients), title, body=body,
                    object_type='war_room', object_id=room.id,
                    url=f'/war-rooms/{room.id}', actor_id=actor_id,
                    keep_actor=True)
+        if guests:
+            from app.business import war_room_guests as _wg
+            addr = _wg.room_portal_address(room)
+            for g in guests.values():
+                _wg.queue_guest_email(
+                    g, f'[IRIS-NG] {title}',
+                    f'{title}\n\n{body}\n\n' + (f'Room address: {addr}\n' if addr else ''))
     except Exception:
         app.app.logger.exception('team mention notify failed')
 
@@ -685,6 +766,10 @@ def add_message(room, user_id, content, topic='main', kind='message',
         room, content,
         f'{author_name} mentioned your team in war room "{room.name}"',
         content[:280], user_id)
+    _notify_guest_mentions(
+        room, content,
+        f'{author_name} mentioned you in war room "{room.name}"',
+        content[:500], actor_guest_id=guest_id)
     return msg
 
 
@@ -718,9 +803,35 @@ def _check_assignee(assignee_id):
     return int(assignee_id)
 
 
+def _check_assignee_guest(room, guest_id):
+    """An ACTIVE guest of THIS room, else an error (maintainer 2026-09-30:
+    room tasks may be assigned to guests)."""
+    if guest_id is None:
+        return None
+    from app.business.war_room_guests import guest_is_active
+    g = db.session.get(WarRoomGuest, int(guest_id))
+    if g is None or g.room_id != room.id or not guest_is_active(g, room):
+        raise BusinessProcessingError('Invalid assignee (not an active guest of this room)')
+    return g.id
+
+
+def _email_task_to_guest(room, task, guest_id):
+    from app.business import war_room_guests as _wg
+    g = db.session.get(WarRoomGuest, int(guest_id)) if guest_id else None
+    if g is None:
+        return
+    addr = _wg.room_portal_address(room)
+    _wg.queue_guest_email(
+        g, f'[IRIS-NG] Task "{task.title}" assigned to you in "{room.name}"',
+        f'You were assigned the task "{task.title}" in the incident coordination room '
+        f'"{room.name}".\n\n' + (f'{task.description}\n\n' if task.description else '')
+        + (f'Room address: {addr}\n' if addr else ''))
+
+
 def add_room_task(room, title, actor_id, assignee_id=None, description=None,
                   status='no_status', due_date=None, tags=None,
-                  parent_task_id=None, created_by_guest_id=None):
+                  parent_task_id=None, created_by_guest_id=None,
+                  assignee_guest_id=None):
     _assert_writable(room)
     title = (title or '').strip()
     if not title:
@@ -728,7 +839,10 @@ def add_room_task(room, title, actor_id, assignee_id=None, description=None,
     status = status or 'no_status'
     if status not in ROOM_TASK_STATUSES:
         raise BusinessProcessingError('Invalid status')
+    if assignee_id and assignee_guest_id:
+        raise BusinessProcessingError('A task has one assignee: a user or a guest')
     assignee_id = _check_assignee(assignee_id)
+    assignee_guest_id = _check_assignee_guest(room, assignee_guest_id)
     if parent_task_id:
         parent = db.session.get(WarRoomTask, int(parent_task_id))
         # One-level subtasks: parent must be a top-level task in this room.
@@ -739,6 +853,7 @@ def add_room_task(room, title, actor_id, assignee_id=None, description=None,
     task = WarRoomTask(room_id=room.id, title=title,
                        description=(description or '').strip() or None,
                        assignee_id=assignee_id, status=status,
+                       assignee_guest_id=assignee_guest_id,
                        due_date=due_date,
                        tags=(tags or '').strip() or None,
                        parent_task_id=parent_task_id, created_by=actor_id,
@@ -756,12 +871,14 @@ def add_room_task(room, title, actor_id, assignee_id=None, description=None,
                f'Task "{title}" assigned to you in war room "{room.name}"',
                object_type='war_room', object_id=room.id,
                url=f'/war-rooms/{room.id}', actor_id=actor_id)
+    if assignee_guest_id:
+        _email_task_to_guest(room, task, assignee_guest_id)
     return task
 
 
 def set_room_task(room, task_id, actor_id, status=None, assignee_id=None,
                   title=None, description=None, due_date=None, tags=None,
-                  clear_due=False, guest_id=None):
+                  clear_due=False, guest_id=None, assignee_guest_id=None):
     _assert_writable(room)
     task = db.session.get(WarRoomTask, int(task_id))
     if task is None or task.room_id != room.id:
@@ -786,10 +903,23 @@ def set_room_task(room, task_id, actor_id, status=None, assignee_id=None,
             task.done_at = None
             task.done_by = None
             task.done_by_guest_id = None
+    if assignee_guest_id is not None:
+        # Assigning a guest replaces a user assignee and vice versa (one
+        # assignee per task); 0 / '' clears the guest assignee.
+        new_guest = _check_assignee_guest(room, assignee_guest_id) if assignee_guest_id else None
+        changed_guest = new_guest != task.assignee_guest_id
+        task.assignee_guest_id = new_guest
+        if new_guest:
+            task.assignee_id = None
+            if changed_guest:
+                db.session.flush()
+                _email_task_to_guest(room, task, new_guest)
     if assignee_id is not None:
         new_assignee = _check_assignee(assignee_id) if assignee_id else None
         changed = new_assignee != task.assignee_id
         task.assignee_id = new_assignee
+        if new_assignee:
+            task.assignee_guest_id = None
         # A guest actor has no user id: every assignment by a guest is to
         # someone else, so it always notifies.
         if (changed and new_assignee
@@ -1105,6 +1235,15 @@ def publish_sitrep(room, sitrep, user_id):
            body=(sitrep.content or '')[:280],
            object_type='war_room', object_id=room.id,
            url=f'/war-rooms/{room.id}', actor_id=user_id)
+    # Leadership GUESTS get the full report by email (they have no in-app
+    # notifications). Fail-soft by the email helper's contract.
+    from app.business import war_room_guests as _wg
+    addr = _wg.room_portal_address(room)
+    for g in sitrep_leadership_guests(room.id):
+        _wg.queue_guest_email(
+            g, f'[IRIS-NG] {title}',
+            f'{title}\n\n{sitrep.content or ""}\n\n'
+            + (f'Room address: {addr}\n' if addr else ''))
     # The summary never READS SitReps (circular reporting); a publish is
     # still a room event that moves the operational picture on.
     _room_summary_refresh(room, user_id, 'sitrep_published')
@@ -1225,7 +1364,8 @@ def room_stream(room, viewer_id, limit=50, viewer_guest_id=None):
             'poll': serialize_poll(p, viewer_id, viewer_guest_id),
         })
     for t in WarRoomTask.query.filter_by(room_id=room.id).all():
-        assignee = f' → {t.assignee.name}' if t.assignee else ''
+        assignee = (f' → {actor_label(t.assignee, t.assignee_guest, "")}'
+                    if (t.assignee or t.assignee_guest) else '')
         creator = (t.created_by_guest.label if t.created_by_guest
                    else _uname(t.created_by))
         items.append({

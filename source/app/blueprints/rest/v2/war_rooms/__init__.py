@@ -499,6 +499,43 @@ def remove_war_room_team_member(room_id, team_id, user_id):
     return response_api_success({'teams': list_teams(room)})
 
 
+@war_rooms_blueprint.route(
+    '/war-rooms/<int:room_id>/teams/<int:team_id>/guests', methods=['POST'])
+@ac_room_api_requires()
+def add_war_room_team_guest(room_id, team_id):
+    """iris-ng guests in teams (maintainer 2026-09-30): body {guest_id}."""
+    from app.business.war_rooms import add_team_guest
+    from app.business.war_rooms import list_teams
+    room, _, err = _resolve(room_id, 'responder', guests=True)
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    try:
+        add_team_guest(room, team_id, int(data.get('guest_id') or 0))
+    except (ValueError, TypeError):
+        return response_api_error('Invalid guest_id')
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    return response_api_success({'teams': list_teams(room)})
+
+
+@war_rooms_blueprint.route(
+    '/war-rooms/<int:room_id>/teams/<int:team_id>/guests/<int:guest_id>',
+    methods=['DELETE'])
+@ac_room_api_requires()
+def remove_war_room_team_guest(room_id, team_id, guest_id):
+    from app.business.war_rooms import list_teams
+    from app.business.war_rooms import remove_team_guest
+    room, _, err = _resolve(room_id, 'responder', guests=True)
+    if err:
+        return err
+    try:
+        remove_team_guest(room, team_id, guest_id)
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    return response_api_success({'teams': list_teams(room)})
+
+
 # ------------------------------------------------------------------- cases
 
 def _case_rows(room):
@@ -794,7 +831,8 @@ def _room_task_row(t):
         'description': t.description, 'due_date': _iso(t.due_date),
         'tags': t.tags, 'parent_task_id': t.parent_task_id,
         'assignee_id': t.assignee_id,
-        'assignee_name': t.assignee.name if t.assignee else None,
+        'assignee_guest_id': t.assignee_guest_id,
+        'assignee_name': actor_label(t.assignee, t.assignee_guest, None),
         'created_by_name': actor_label(t.creator, t.created_by_guest, None),
         'created_at': _iso(t.created_at), 'done_at': _iso(t.done_at),
     }
@@ -824,6 +862,7 @@ def create_war_room_room_task(room_id):
     try:
         t = add_room_task(room, data.get('title'), _uid(),
                           assignee_id=data.get('assignee_id'),
+                          assignee_guest_id=data.get('assignee_guest_id'),
                           description=data.get('description'),
                           status=data.get('status') or 'no_status',
                           due_date=_parse_iso_date(data.get('due_date')),
@@ -846,6 +885,8 @@ def update_war_room_room_task(room_id, task_id):
     kwargs = {'status': data.get('status')}
     if 'assignee_id' in data:
         kwargs['assignee_id'] = data.get('assignee_id') or 0
+    if 'assignee_guest_id' in data:
+        kwargs['assignee_guest_id'] = data.get('assignee_guest_id') or 0
     for k in ('title', 'description', 'tags'):
         if k in data:
             kwargs[k] = data.get(k)
@@ -1450,6 +1491,7 @@ from app.business.war_room_guests import reset_guest_password
 from app.business.war_room_guests import revoke_guest
 from app.business.war_room_guests import rotate_secret
 from app.business.war_room_guests import serialize_guest
+from app.business.war_room_guests import set_guest_handle
 from app.business.war_room_guests import smtp_configured
 
 
@@ -1547,6 +1589,22 @@ def rotate_war_room_guest(room_id, guest_id):
                                   room_url=_room_portal_address(room))
                if data.get('send_email', True) else False)
     return response_api_success(_guest_invite_payload(room, gst, secret, emailed))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/guests/<int:guest_id>',
+                           methods=['PUT'])
+@ac_room_api_requires()
+def update_war_room_guest(room_id, guest_id):
+    """Lead edit of the @-mention handle (blank = derive it again)."""
+    room, _, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    try:
+        gst = set_guest_handle(room, guest_id, data.get('handle'))
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    return response_api_success(serialize_guest(gst, room, manage=True))
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/guests/<int:guest_id>/revoke',

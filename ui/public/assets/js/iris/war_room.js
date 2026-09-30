@@ -280,26 +280,38 @@ function iris_wroom_tm_render() {
             var hidden = s.hidden[t.id];
             var chips = '';
             if (!hidden) {
+                /* Members are users OR guests (is_guest); a guest chip removes
+                   through the guests route and carries the guest marker. */
                 chips = t.members.map(function (m) {
                     return '<span class="iris-wr-tm-chip">' +
                         iris_wroom_esc(m.user_name) +
+                        (m.is_guest ? ' <span class="text-muted" style="font-size:0.7rem;">guest</span>' : '') +
                         (canEdit
                             ? '<a href="#" class="iris-wr-tm-rmmember" ' +
-                              'data-team-id="' + t.id + '" data-user-id="' +
-                              m.user_id + '" title="Remove from team">' +
+                              'data-team-id="' + t.id + '"' +
+                              (m.is_guest ? ' data-guest-id="' + m.guest_id + '"'
+                                          : ' data-user-id="' + m.user_id + '"') +
+                              ' title="Remove from team">' +
                               trash11 + '</a>'
                             : '') + '</span>';
                 }).join('');
                 if (s.addFor === t.id) {
-                    var inTeam = {};
+                    var inTeam = {}, guestInTeam = {};
                     t.members.forEach(function (m) {
-                        inTeam[m.user_id] = true; });
+                        if (m.is_guest) { guestInTeam[m.guest_id] = true; }
+                        else { inTeam[m.user_id] = true; } });
                     var opts = ((IRIS_WROOM._room
                         && IRIS_WROOM._room.members) || [])
                         .filter(function (m) { return !inTeam[m.user_id]; })
                         .map(function (m) {
                             return '<option value="' + m.user_id + '">' +
                                 iris_wroom_esc(m.user_name) + '</option>';
+                        }).join('');
+                    opts += ((IRIS_WROOM._room && IRIS_WROOM._room.guests) || [])
+                        .filter(function (g) { return !guestInTeam[g.id] && (g.status || 'active') === 'active'; })
+                        .map(function (g) {
+                            return '<option value="g:' + g.id + '">' +
+                                iris_wroom_esc(g.label || g.display_name) + ' (guest)</option>';
                         }).join('');
                     chips += '<span class="iris-wr-tm-chip" style="padding:1px 6px;">' +
                         '<select class="iris-wr-tm-addsel" data-team-id="' +
@@ -993,6 +1005,15 @@ function iris_wroom_post(fields, keepTarget) {
     });
 }
 
+function iris_wroom_resolve_guest(handle) {
+    var h = (handle || '').replace(/^@/, '').toLowerCase();
+    var g = (((IRIS_WROOM._room || {}).guests) || []).find(function (x) {
+        return (x.handle || '').toLowerCase() === h
+            && (x.status || 'active') === 'active';
+    });
+    return g ? g.id : null;
+}
+
 function iris_wroom_resolve_user(login) {
     var l = (login || '').replace(/^@/, '').toLowerCase();
     var u = IRIS_WROOM._users.find(function (x) {
@@ -1017,6 +1038,14 @@ function iris_wroom_mention_candidates() {
         if (m.user_login) {
             out.push({login: m.user_login, label: m.user_name || '',
                       kind: 'member'});
+        }
+    });
+    /* Guests carry a per-room @handle (maintainer 2026-09-30); a mention
+       reaches them by email. Active guests only, like the server. */
+    (((IRIS_WROOM._room || {}).guests) || []).forEach(function (g) {
+        if (g.handle && (g.status || 'active') === 'active') {
+            out.push({login: g.handle, label: g.label || g.display_name || '',
+                      kind: 'guest'});
         }
     });
     ((IRIS_WROOM_TM || {}).teams || []).forEach(function (t) {
@@ -1051,7 +1080,8 @@ function iris_wroom_mention_render() {
         return '<div class="iris-wr-cmd-opt' + (i === s.idx ? ' active' : '')
             + '" data-i="' + i + '"><code>@' + iris_wroom_esc(it.login)
             + '</code> <span class="text-muted">' + iris_wroom_esc(it.label)
-            + (it.kind === 'team' ? ' · team' : '') + '</span></div>';
+            + (it.kind === 'team' ? ' · team' : (it.kind === 'guest' ? ' · guest' : ''))
+            + '</span></div>';
     }).join('');
     pop.style.display = '';
 }
@@ -1147,10 +1177,14 @@ function iris_wroom_run_command(line) {
     case 'assign': {
         var am = arg.match(/^@(\S+)\s+(.+)$/);
         var assignee = null, title = arg;
+        var assigneeGuest = null;
         if (am) {
             assignee = iris_wroom_resolve_user(am[1]);
             if (assignee === null) {
-                return iris_wroom_cmd_status('Unknown user @' + am[1]);
+                assigneeGuest = iris_wroom_resolve_guest(am[1]);
+            }
+            if (assignee === null && assigneeGuest === null) {
+                return iris_wroom_cmd_status('Unknown user or guest @' + am[1]);
             }
             title = am[2];
         } else if (cmd === 'assign') {
@@ -1158,7 +1192,8 @@ function iris_wroom_run_command(line) {
         }
         if (!title) return need('/task [@user] <title>');
         return iris_wroom_api('POST', '/room-tasks',
-                              {title: title, assignee_id: assignee})
+                              {title: title, assignee_id: assignee,
+                               assignee_guest_id: assigneeGuest})
             .then(function (res) {
                 iris_wroom_cmd_status(res.ok ? 'Room task created'
                     : (res.j.message || 'Task failed'));
@@ -1288,7 +1323,8 @@ function iris_wroom_rt_visible() {
     var s = IRIS_WROOM_RT;
     return s.tasks.filter(function (t) {
         if (s.fStatus && t.status !== s.fStatus) return false;
-        if (s.fAssignee && String(t.assignee_id || '') !== s.fAssignee)
+        if (s.fAssignee && (t.assignee_guest_id ? 'g:' + t.assignee_guest_id
+                            : String(t.assignee_id || '')) !== s.fAssignee)
             return false;
         if (s.q) {
             var hay = ((t.title || '') + ' ' + (t.description || '') + ' ' +
@@ -1479,7 +1515,8 @@ function iris_wroom_rt_open_modal(editing, parentFor) {
     document.getElementById('iris-wr-rtask-f-due').value =
         (t && t.due_date) ? t.due_date.slice(0, 10) : '';
     document.getElementById('iris-wr-rtask-f-assignee').value =
-        (t && t.assignee_id) ? String(t.assignee_id) : '';
+        (t && t.assignee_guest_id) ? 'g:' + t.assignee_guest_id
+        : ((t && t.assignee_id) ? String(t.assignee_id) : '');
     document.getElementById('iris-wr-rtask-f-tags').value =
         t ? (t.tags || '') : '';
     $('#iris-wr-rtask-modal').modal('show');
@@ -3167,9 +3204,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 description: document.getElementById('iris-wr-rtask-f-desc').value,
                 status: document.getElementById('iris-wr-rtask-f-status').value,
                 due_date: document.getElementById('iris-wr-rtask-f-due').value || null,
+                /* One assignee: a user (numeric value) or a guest ('g:<id>'). */
                 assignee_id: (function () {
                     var v = document.getElementById('iris-wr-rtask-f-assignee').value;
-                    return v ? parseInt(v, 10) : null;
+                    return (v && v.indexOf('g:') !== 0) ? parseInt(v, 10) : null;
+                })(),
+                assignee_guest_id: (function () {
+                    var v = document.getElementById('iris-wr-rtask-f-assignee').value;
+                    return (v && v.indexOf('g:') === 0) ? parseInt(v.slice(2), 10) : null;
                 })(),
                 tags: document.getElementById('iris-wr-rtask-f-tags').value
             };
@@ -4012,7 +4054,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 e.preventDefault();
                 iris_wroom_api('DELETE',
                     '/teams/' + rm.getAttribute('data-team-id') +
-                    '/members/' + rm.getAttribute('data-user-id'))
+                    (rm.getAttribute('data-guest-id')
+                        ? '/guests/' + rm.getAttribute('data-guest-id')
+                        : '/members/' + rm.getAttribute('data-user-id')))
                     .then(function (res) {
                         if (!res.ok) return;
                         IRIS_WROOM_TM.teams = res.j.teams || [];
@@ -4024,9 +4068,11 @@ document.addEventListener('DOMContentLoaded', function () {
         .addEventListener('change', function (e) {
             var sel = e.target.closest('.iris-wr-tm-addsel');
             if (!sel || !sel.value) return;
+            var isGuest = sel.value.indexOf('g:') === 0;
             iris_wroom_api('POST',
-                '/teams/' + sel.getAttribute('data-team-id') + '/members',
-                {user_id: parseInt(sel.value, 10)})
+                '/teams/' + sel.getAttribute('data-team-id') + (isGuest ? '/guests' : '/members'),
+                isGuest ? {guest_id: parseInt(sel.value.slice(2), 10)}
+                        : {user_id: parseInt(sel.value, 10)})
                 .then(function (res) {
                     if (!res.ok) return;
                     IRIS_WROOM_TM.teams = res.j.teams || [];
@@ -4405,6 +4451,22 @@ function iris_wroom_render_guests() {
               ? ' <span title="No tunnel reported and no public URL in Settings -> Guest Portal">(this instance\'s own address)</span>' : '') +
           '</div>'
         : '';
+    /* Guests are assignable: refresh the 'g:<id>' options on both task
+       assignee selects (users arrive from the analyst-skills fetch). */
+    ['iris-wr-rtask-f-assignee', 'iris-wr-rt-fassignee'].forEach(function (id) {
+        var sel = document.getElementById(id);
+        if (!sel) return;
+        Array.prototype.slice.call(sel.options).forEach(function (o) {
+            if (o.value.indexOf('g:') === 0) sel.removeChild(o);
+        });
+        guests.forEach(function (g) {
+            if ((g.status || 'active') !== 'active') return;
+            var opt = document.createElement('option');
+            opt.value = 'g:' + g.id;
+            opt.textContent = (g.label || g.display_name) + ' (guest)';
+            sel.appendChild(opt);
+        });
+    });
     list.innerHTML = addrRow + guests.map(function (g) {
         var st = g.status || 'active';
         var until = g.expires_at ? ' \u00b7 until ' + iris_wroom_guest_stamp(g.expires_at) : '';
@@ -4414,6 +4476,7 @@ function iris_wroom_render_guests() {
             acts = '<span style="margin-left:auto; display:flex; gap:10px; font-size:0.78rem;">' +
                 (st === 'active'
                     ? '<a href="#" class="iris-wr-guest-act" data-act="extend" data-guest-id="' + g.id + '" title="Extend by 14 days">+14d</a>' : '') +
+                '<a href="#" class="iris-wr-guest-act" data-act="handle" data-guest-id="' + g.id + '" data-handle="' + iris_wroom_esc(g.handle || '') + '" title="Change the @-mention handle">Handle</a>' +
                 '<a href="#" class="iris-wr-guest-act" data-act="rotate" data-guest-id="' + g.id + '" title="Issue a new invitation link (the previous one stops working)">New link</a>' +
                 (st === 'active'
                     ? '<a href="#" class="iris-wr-guest-act" data-act="reset" data-guest-id="' + g.id + '" title="New random password, emailed and shown once">Reset password</a>' : '') +
@@ -4424,6 +4487,7 @@ function iris_wroom_render_guests() {
         }
         return '<div class="iris-wr-mb-row">' +
             '<span class="iris-wr-mb-name">' + iris_wroom_esc(g.display_name || '') + '</span>' +
+            (g.handle ? '<span class="iris-wr-mb-login" title="Mention this guest with @' + iris_wroom_esc(g.handle) + '">@' + iris_wroom_esc(g.handle) + '</span>' : '') +
             (g.organisation ? '<span class="iris-wr-mb-login">' + iris_wroom_esc(g.organisation) + '</span>' : '') +
             '<span class="iris-wr-mb-chip">guest</span>' +
             (g.locked ? '<span class="iris-wr-mb-chip" title="Too many failed sign-ins; clears after 15 minutes or a password reset">locked</span>' : '') +
@@ -4549,7 +4613,15 @@ function iris_wroom_guests_bind() {
         e.preventDefault();
         var act = a.getAttribute('data-act');
         var gid = a.getAttribute('data-guest-id');
-        if (act === 'extend') {
+        if (act === 'handle') {
+            var cur = a.getAttribute('data-handle') || '';
+            var nh = window.prompt('@-mention handle for this guest (letters, digits, dots, hyphens; blank derives it from the name):', cur);
+            if (nh === null) return;
+            iris_wroom_api('PUT', '/guests/' + gid, {handle: nh}).then(function (res) {
+                if (!res.ok) { window.alert(res.j.message || 'Handle refused'); return; }
+                iris_wroom_load_room();
+            });
+        } else if (act === 'extend') {
             iris_wroom_api('POST', '/guests/' + gid + '/extend', {days: 14}).then(function () { iris_wroom_load_room(); });
         } else if (act === 'rotate') {
             if (!window.confirm('Issue a new invitation link? The previous link stops working immediately.')) return;

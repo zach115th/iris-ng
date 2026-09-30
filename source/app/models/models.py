@@ -1483,11 +1483,15 @@ class WarRoomGuest(db.Model):
     password_set_at = Column(DateTime, nullable=True)
     failed_logins = Column(Integer, nullable=False, default=0, server_default=text('0'))
     locked_until = Column(DateTime, nullable=True)
+    # iris-ng: the @-mention handle (unique per room; minted from the display
+    # name, lead-editable). NULL on rows from before the column: minted on read.
+    handle = Column(String(64), nullable=True)
 
     inviter = relationship('User', foreign_keys=[invited_by])
 
     __table_args__ = (
         UniqueConstraint('room_id', 'email', name='uq_war_room_guest_room_email'),
+        UniqueConstraint('room_id', 'handle', name='uq_war_room_guest_room_handle'),
     )
 
     @property
@@ -1535,6 +1539,9 @@ class WarRoomTeam(db.Model):
     creator_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
     members = relationship('WarRoomTeamMember', back_populates='team',
                            cascade='all, delete-orphan')
+    # iris-ng guests: guests grouped into the team beside the users.
+    guest_members = relationship('WarRoomTeamGuest', back_populates='team',
+                                 cascade='all, delete-orphan')
 
     __table_args__ = (
         UniqueConstraint('room_id', 'name', name='uq_war_room_team_name'),
@@ -1552,6 +1559,23 @@ class WarRoomTeamMember(db.Model):
 
     team = relationship('WarRoomTeam', back_populates='members')
     user = relationship('User')
+
+
+class WarRoomTeamGuest(db.Model):
+    """iris-ng guests in an @-mention team. Its own link table (the user
+    link's primary key is (team, user), which a nullable user column cannot
+    join). A team mention emails its guest members; @leadership guests get
+    the full SitRep on publish. Grouping only, like the user link."""
+    __tablename__ = 'war_room_team_guest'
+
+    team_id = Column(ForeignKey('war_room_team.id', ondelete='CASCADE'),
+                     primary_key=True)
+    guest_id = Column(ForeignKey('war_room_guest.id', ondelete='CASCADE'),
+                      primary_key=True)
+    added_at = Column(DateTime, server_default=text('now()'), nullable=False)
+
+    team = relationship('WarRoomTeam', back_populates='guest_members')
+    guest = relationship('WarRoomGuest')
 
 
 class WarRoomMessage(db.Model):
@@ -1630,7 +1654,13 @@ class WarRoomTask(db.Model):
     done_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
                               nullable=True)
 
+    # iris-ng guests: a room task may be assigned to a guest INSTEAD of a user
+    # (the CHECK below keeps at most one of the two set).
+    assignee_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                               nullable=True)
+
     assignee = relationship('User', foreign_keys=[assignee_id])
+    assignee_guest = relationship('WarRoomGuest', foreign_keys=[assignee_guest_id])
     created_by_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
     done_by_guest = relationship('WarRoomGuest', foreign_keys=[done_by_guest_id])
     creator = relationship('User', foreign_keys=[created_by])
@@ -1639,6 +1669,8 @@ class WarRoomTask(db.Model):
         CheckConstraint("status IN ('no_status', 'todo', 'in_progress', "
                         "'on_hold', 'done', 'cancelled')",
                         name='ck_war_room_task_status'),
+        CheckConstraint('assignee_id IS NULL OR assignee_guest_id IS NULL',
+                        name='ck_war_room_task_one_assignee'),
     )
 
 

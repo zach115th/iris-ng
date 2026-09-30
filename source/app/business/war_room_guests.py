@@ -121,6 +121,70 @@ def guest_from_secret(secret: str) -> WarRoomGuest | None:
     return WarRoomGuest.query.filter_by(token_hash=_hash(secret)).first()
 
 
+# ------------------------------------------------------------------- handles
+#
+# The @-mention handle (maintainer decision 2026-09-30): minted from the display
+# name ("Zach C" -> zach-c, a clash gets -2, -3, ...), unique per room, editable
+# by a lead. Same charset as user logins and team names so the palette, the
+# highlighter and the mention scanners share one token shape.
+
+HANDLE_RE = re.compile(r'^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$')
+
+
+def slugify_handle(name: str) -> str:
+    s = re.sub(r'[^a-z0-9]+', '-', (name or '').lower()).strip('-')
+    s = re.sub(r'-{2,}', '-', s)[:60].strip('-')
+    return s or 'guest'
+
+
+def assign_handle(g: WarRoomGuest, wanted: str | None = None) -> str:
+    """Give the guest a unique handle in its room (session only — the caller
+    commits). `wanted` must already be a valid handle; None derives one."""
+    base = wanted or slugify_handle(g.display_name)
+    candidate = base
+    n = 2
+    while True:
+        clash = (WarRoomGuest.query.filter(WarRoomGuest.room_id == g.room_id,
+                                           WarRoomGuest.handle == candidate,
+                                           WarRoomGuest.id != (g.id or -1)).first())
+        if clash is None:
+            g.handle = candidate
+            return candidate
+        if wanted:
+            raise BusinessProcessingError('That handle is already used in this room')
+        candidate = f'{base[:58]}-{n}'
+        n += 1
+
+
+def guest_handle(g: WarRoomGuest) -> str:
+    """The handle, minted on first read for guests that predate the column."""
+    if not g.handle:
+        assign_handle(g)
+        db.session.commit()
+    return g.handle
+
+
+def set_guest_handle(room: WarRoom, guest_id, handle: str | None) -> WarRoomGuest:
+    """Lead edit. Blank derives it again from the display name."""
+    g = get_guest(room, guest_id)
+    h = (handle or '').strip().lower().lstrip('@')
+    if h and not HANDLE_RE.match(h):
+        raise BusinessProcessingError(
+            'Handle: letters, digits, dots, hyphens and underscores; no spaces (e.g. jane-doe)')
+    assign_handle(g, h or None)
+    db.session.commit()
+    return g
+
+
+def active_guests_by_handle(room: WarRoom) -> dict:
+    """{handle: guest} for the room's ACTIVE guests — what a mention may reach."""
+    out = {}
+    for g in list_guests(room):
+        if guest_is_active(g, room):
+            out[guest_handle(g)] = g
+    return out
+
+
 def create_guest(room: WarRoom, actor_id: int, email: str, display_name: str,
                  organisation: str | None = None, days=None,
                  password: str | None = None) -> tuple[WarRoomGuest, str, str]:
@@ -141,6 +205,7 @@ def create_guest(room: WarRoom, actor_id: int, email: str, display_name: str,
                      expires_at=datetime.utcnow() + timedelta(days=_ttl_days(days)))
     db.session.add(g)
     db.session.flush()
+    assign_handle(g)
     plain = set_guest_password(g, password)
     db.session.commit()
     return g, secret, plain
@@ -505,6 +570,7 @@ def serialize_guest(g: WarRoomGuest, room: WarRoom | None = None, *, manage: boo
         'display_name': g.display_name,
         'organisation': g.organisation,
         'label': g.label,
+        'handle': guest_handle(g),
         'status': guest_status(g, room),
         'expires_at': g.expires_at.isoformat() if g.expires_at else None,
         'first_seen_at': g.first_seen_at.isoformat() if g.first_seen_at else None,
@@ -546,6 +612,53 @@ def queue_invite_email(g: WarRoomGuest, room: WarRoom, url: str, inviter_name: s
         db.session.rollback()
         log.exception('guest invite enqueue failed (guest=%s)', g.id)
         return False
+
+
+def room_portal_address(room: WarRoom) -> str:
+    """The room's portal address for an email body, from the configured base
+    when there is one (Settings, a connected agent, discovery); '' otherwise —
+    business code may run without a request, so the browser origin is never
+    used here."""
+    from app.business.war_rooms import room_slug
+    try:
+        base, source = portal_base(None)
+    except Exception:  # noqa: BLE001
+        return ''
+    if not base or source == 'browser':
+        return ''
+    return f'{base}/portal/r/{room_slug(room)}'
+
+
+def queue_guest_email(g: WarRoomGuest, subject: str, body: str) -> bool:
+    """Enqueue a plain notification email to one guest (mention, team mention,
+    task assignment, leadership SitRep). Best-effort; False when SMTP is not
+    configured or the broker refuses. Never raises."""
+    if not smtp_configured():
+        return False
+    try:
+        task_send_guest_email.delay(g.id, subject, body)
+        return True
+    except Exception:  # noqa: BLE001
+        log.exception('guest email enqueue failed (guest=%s)', g.id)
+        return False
+
+
+@celery.task(bind=True)
+def task_send_guest_email(self, guest_id, subject, body):
+    with app.app.app_context():
+        try:
+            settings = ServerSettings.query.first()
+            if not settings or not settings.mail_smtp_host:
+                return 'smtp not configured'
+            g = db.session.get(WarRoomGuest, int(guest_id))
+            if g is None:
+                return 'guest gone'
+            from app.iris_engine.mail.mail_sender import send_email
+            send_email(settings, g.email, subject, body)
+            return f'sent to guest {guest_id}'
+        except Exception:  # noqa: BLE001
+            log.exception('guest email failed (guest=%s)', guest_id)
+            return 'failed'
 
 
 @celery.task(bind=True)
