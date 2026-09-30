@@ -25,6 +25,12 @@ No new permission bits (project rule); roles are row-level.
 Case attach requires the ACTOR to have access to that case; the room stream
 filters case activity per VIEWER by case ACL (membership does not grant case
 access — v1 decision).
+
+iris-ng guests (maintainer decisions 2026-09-30): a guest takes part at full
+responder level on everything that belongs to the room, and every case
+attached to the room is shared with its guests read-only (attaching is the
+sharing act). Guests never manage membership, room settings, correlation,
+exports or any AI feature — those routes keep the default deny.
 """
 
 import json
@@ -47,6 +53,7 @@ from app.blueprints.rest.endpoints import response_api_success
 from app.business.errors import BusinessProcessingError
 from app.business.war_rooms import ClusterAlreadyPromoted
 from app.business.war_rooms import add_member
+from app.business.war_rooms import actor_label
 from app.business.war_rooms import add_message
 from app.business.war_rooms import set_room_status
 from app.business.war_rooms import promote_cluster_to_room
@@ -231,8 +238,9 @@ def get_war_room(room_id):
     out['viewer_id'] = _uid()
     out['members'] = [_member_row(m) for m in
                       WarRoomMember.query.filter_by(room_id=room.id).all()]
-    # Guests never see case identity — the Cases tab does not exist for them.
-    out['cases'] = [] if _is_guest() else _case_rows(room)
+    # Guests get the read-only view of every attached case (no customer, no
+    # owner, no counts, no deep link); members get the ACL-shaped rows.
+    out['cases'] = _guest_case_rows(room) if _is_guest() else _case_rows(room)
     out['guests'] = [serialize_guest(gst, room) for gst in list_guests(room)]
     out['viewer_guest'] = (serialize_guest(_principal().guest, room)
                            if _is_guest() else None)
@@ -397,7 +405,9 @@ def set_war_room_member_role(room_id, user_id):
 @ac_room_api_requires()
 def remove_war_room_member(room_id, user_id):
     # Self-leave needs only membership; removing someone else needs lead.
-    min_role = 'observer' if user_id == current_user.id else 'lead'
+    # A guest session has no current_user id (anonymous): it resolves to
+    # 'lead' and is refused by _resolve like every membership route.
+    min_role = 'observer' if user_id == getattr(current_user, 'id', None) else 'lead'
     room, _, err = _resolve(room_id, min_role)
     if err:
         return err
@@ -425,14 +435,14 @@ def list_war_room_teams(room_id):
 def create_war_room_team(room_id):
     from app.business.war_rooms import create_team
     from app.business.war_rooms import list_teams
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
-        create_team(room, data.get('name'), current_user.id,
+        create_team(room, data.get('name'), _uid(),
                     description=data.get('description'),
-                    color=data.get('color'))
+                    color=data.get('color'), guest_id=_gid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success({'teams': list_teams(room)})
@@ -443,7 +453,7 @@ def create_war_room_team(room_id):
 @ac_room_api_requires()
 def delete_war_room_team(room_id, team_id):
     from app.business.war_rooms import delete_team
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     try:
@@ -459,7 +469,7 @@ def delete_war_room_team(room_id, team_id):
 def add_war_room_team_member(room_id, team_id):
     from app.business.war_rooms import add_team_member
     from app.business.war_rooms import list_teams
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
@@ -479,7 +489,7 @@ def add_war_room_team_member(room_id, team_id):
 def remove_war_room_team_member(room_id, team_id, user_id):
     from app.business.war_rooms import list_teams
     from app.business.war_rooms import remove_team_member
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     try:
@@ -541,13 +551,33 @@ def _case_rows(room):
     return out
 
 
+def _guest_case_rows(room):
+    """The Cases tab as a GUEST sees it: every attached case, read-only —
+    id, name, state, open date and the attachment note. Never the customer,
+    the owner, task counts or a deep link into the case pages (a guest has
+    no session there). `accessible` is True so the tab renderers list the
+    case; `guest_view` tells the page which shape it holds."""
+    links = (db.session.query(WarRoomCaseLink, Cases)
+             .join(Cases, Cases.case_id == WarRoomCaseLink.case_id)
+             .filter(WarRoomCaseLink.room_id == room.id).all())
+    return [{
+        'case_id': c.case_id, 'case_name': c.name,
+        'closed': c.close_date is not None,
+        'state_name': c.state.state_name if c.state else None,
+        'open_date': c.open_date.isoformat() if c.open_date else None,
+        'added_at': _iso(link.added_at),
+        'accessible': True, 'guest_view': True, 'note': link.note,
+    } for link, c in links]
+
+
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/cases', methods=['GET'])
 @ac_room_api_requires()
 def list_war_room_cases(room_id):
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
-    return response_api_success({'cases': _case_rows(room)})
+    rows = _guest_case_rows(room) if _is_guest() else _case_rows(room)
+    return response_api_success({'cases': rows})
 
 
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/cases', methods=['POST'])
@@ -706,17 +736,17 @@ def _poll_response(poll):
 @ac_room_api_requires()
 def create_war_room_poll(room_id):
     from app.business.war_rooms import create_poll
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     closes_at = _parse_iso_date(data.get('closes_at'))
     try:
-        poll = create_poll(room, current_user.id, data.get('question'),
+        poll = create_poll(room, _uid(), data.get('question'),
                            data.get('options'),
                            multiple=bool(data.get('multiple')),
                            anonymous=bool(data.get('anonymous')),
-                           closes_at=closes_at)
+                           closes_at=closes_at, guest_id=_gid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success(_poll_response(poll))
@@ -745,12 +775,12 @@ def vote_war_room_poll(room_id, poll_id):
 @ac_room_api_requires()
 def close_war_room_poll(room_id, poll_id):
     from app.business.war_rooms import close_poll
-    room, role, err = _resolve(room_id, 'observer')
+    room, role, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     try:
-        poll = close_poll(room, poll_id, current_user.id,
-                          is_lead=(role == 'lead'))
+        poll = close_poll(room, poll_id, _uid(),
+                          is_lead=(role == 'lead'), guest_id=_gid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success(_poll_response(poll))
@@ -765,7 +795,7 @@ def _room_task_row(t):
         'tags': t.tags, 'parent_task_id': t.parent_task_id,
         'assignee_id': t.assignee_id,
         'assignee_name': t.assignee.name if t.assignee else None,
-        'created_by_name': t.creator.name if t.creator else None,
+        'created_by_name': actor_label(t.creator, t.created_by_guest, None),
         'created_at': _iso(t.created_at), 'done_at': _iso(t.done_at),
     }
 
@@ -826,7 +856,7 @@ def update_war_room_room_task(room_id, task_id):
         else:
             kwargs['clear_due'] = True
     try:
-        t = set_room_task(room, task_id, _uid(), **kwargs)
+        t = set_room_task(room, task_id, _uid(), guest_id=_gid(), **kwargs)
     except (BusinessProcessingError, ValueError, TypeError) as e:
         return response_api_error(str(e))
     return response_api_success(_room_task_row(t))
@@ -837,7 +867,7 @@ def update_war_room_room_task(room_id, task_id):
 @ac_room_api_requires()
 def delete_war_room_room_task(room_id, task_id):
     from app.business.war_rooms import delete_room_task
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     try:
@@ -854,7 +884,7 @@ def _sitrep_row(s, with_content=True):
         'id': s.id, 'room_id': s.room_id, 'title': s.title,
         'status': s.status,
         'created_by': s.created_by,
-        'created_by_name': s.creator.name if s.creator else None,
+        'created_by_name': actor_label(s.creator, s.creator_guest, None),
         'created_at': _iso(s.created_at), 'updated_at': _iso(s.updated_at),
         'published_at': _iso(s.published_at),
         'published_by_name': s.publisher.name if s.publisher else None,
@@ -875,7 +905,7 @@ def _sitrep_row(s, with_content=True):
 def preview_war_room_sitrep(room_id):
     """Stateless markdown preview for the SitRep editor (safe renderer)."""
     from app.iris_engine.safe_markdown import render_markdown_safe
-    _, _, err = _resolve(room_id, 'responder')
+    _, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
@@ -897,13 +927,13 @@ def list_war_room_sitreps(room_id):
 @war_rooms_blueprint.route('/war-rooms/<int:room_id>/sitreps', methods=['POST'])
 @ac_room_api_requires()
 def create_war_room_sitrep(room_id):
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
         s = create_sitrep(room, data.get('title'), data.get('content'),
-                          current_user.id)
+                          _uid(), guest_id=_gid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success(_sitrep_row(s))
@@ -926,7 +956,7 @@ def get_war_room_sitrep(room_id, sitrep_id):
                            methods=['PUT'])
 @ac_room_api_requires()
 def update_war_room_sitrep(room_id, sitrep_id):
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     s = get_sitrep(room, sitrep_id)
@@ -935,7 +965,8 @@ def update_war_room_sitrep(room_id, sitrep_id):
     data = request.get_json(silent=True) or {}
     try:
         update_sitrep(room, s, title=data.get('title'),
-                      content=data.get('content'), user_id=current_user.id)
+                      content=data.get('content'), user_id=_uid(),
+                      guest_id=_gid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success(_sitrep_row(s))
@@ -982,7 +1013,7 @@ def publish_war_room_sitrep(room_id, sitrep_id):
     methods=['GET'])
 @ac_room_api_requires()
 def war_room_sitrep_revisions(room_id, sitrep_id):
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     s = get_sitrep(room, sitrep_id)
@@ -991,7 +1022,7 @@ def war_room_sitrep_revisions(room_id, sitrep_id):
     return response_api_success({'revisions': [{
         'revision_number': r.revision_number, 'title': r.title,
         'content': r.content,
-        'user_name': r.user.name if r.user else None,
+        'user_name': actor_label(r.user, r.guest, None),
         'revision_timestamp': _iso(r.revision_timestamp),
     } for r in sitrep_revisions(s)]})
 
@@ -1573,7 +1604,7 @@ def war_room_timeline(room_id):
     room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
-    out = room_timeline(room, _uid(),
+    out = room_timeline(room, _uid(), guest=_is_guest(),
                         limit=request.args.get('limit', 500))
     for r in out['events']:
         r['event_date'] = _iso(r['event_date'])
@@ -1585,13 +1616,13 @@ def war_room_timeline(room_id):
 @ac_room_api_requires()
 def create_war_room_timeline(room_id):
     from app.business.war_rooms import create_room_timeline
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
-        tl = create_room_timeline(room, data.get('name'), current_user.id,
-                                  color=data.get('color'))
+        tl = create_room_timeline(room, data.get('name'), _uid(),
+                                  color=data.get('color'), guest_id=_gid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success({'id': tl.id, 'name': tl.name,
@@ -1604,7 +1635,7 @@ def create_war_room_timeline(room_id):
 @ac_room_api_requires()
 def update_war_room_timeline(room_id, timeline_id):
     from app.business.war_rooms import update_room_timeline
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
@@ -1647,16 +1678,16 @@ def _timeline_event_row(ev):
 @ac_room_api_requires()
 def create_war_room_timeline_event(room_id, timeline_id):
     from app.business.war_rooms import add_timeline_event
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
         ev = add_timeline_event(
-            room, timeline_id, current_user.id, data.get('title'),
+            room, timeline_id, _uid(), data.get('title'),
             _parse_iso_date(data.get('event_date')),
             content=data.get('content'), category=data.get('category'),
-            color=data.get('color'), tags=data.get('tags'))
+            color=data.get('color'), tags=data.get('tags'), guest_id=_gid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success(_timeline_event_row(ev))
@@ -1668,7 +1699,7 @@ def create_war_room_timeline_event(room_id, timeline_id):
 @ac_room_api_requires()
 def update_war_room_timeline_event(room_id, timeline_id, event_id):
     from app.business.war_rooms import update_timeline_event
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
@@ -1691,7 +1722,7 @@ def update_war_room_timeline_event(room_id, timeline_id, event_id):
 @ac_room_api_requires()
 def delete_war_room_timeline_event(room_id, timeline_id, event_id):
     from app.business.war_rooms import delete_timeline_event
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     try:
@@ -1708,7 +1739,7 @@ def war_room_tasks(room_id):
     room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
-    rows = room_tasks(room, _uid(),
+    rows = room_tasks(room, _uid(), guest=_is_guest(),
                       limit=request.args.get('limit', 200))
     for r in rows:
         r['task_last_update'] = _iso(r['task_last_update'])
@@ -1722,7 +1753,7 @@ def war_room_notes(room_id):
     room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
-    out = room_notes(room, _uid(),
+    out = room_notes(room, _uid(), guest=_is_guest(),
                      limit=request.args.get('limit', 200))
     for r in out['case_notes']:
         r['note_lastupdate'] = _iso(r['note_lastupdate'])
@@ -1753,7 +1784,7 @@ def create_war_room_note_folder(room_id):
 @ac_room_api_requires()
 def rename_war_room_note_folder(room_id, folder_id):
     from app.business.war_rooms import rename_note_folder
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
@@ -1770,7 +1801,7 @@ def rename_war_room_note_folder(room_id, folder_id):
 @ac_room_api_requires()
 def delete_war_room_note_folder(room_id, folder_id):
     from app.business.war_rooms import delete_note_folder
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     try:
@@ -1804,15 +1835,17 @@ def seed_war_room_ics(room_id):
     the first case attach; this is the manual path for rooms that predate
     it or where a form was deleted."""
     from app.business.war_room_ics import seed_ics_notes
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     try:
-        out = seed_ics_notes(room, current_user.id)
+        out = seed_ics_notes(room, _uid(), guest_id=_gid())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     out['ai_task_id'] = None
-    if out.get('created'):
+    # A guest seeds the forms but never triggers the AI pass (guests get no
+    # AI feature, maintainer decision) — the analysts run it from theirs.
+    if out.get('created') and not _is_guest():
         from app.iris_engine.ai.ics_draft import enqueue_ics_draft_soft
         out['ai_task_id'] = enqueue_ics_draft_soft(room, current_user.id)
     return response_api_success(out)
@@ -1878,7 +1911,7 @@ def war_room_note_ics_pdf(room_id, note_id):
     from app.business.war_room_ics_pdf import build_field_values
     from app.business.war_room_ics_pdf import render_ics_pdf
     from app.business.war_rooms import _get_room_note
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     try:
@@ -1968,7 +2001,7 @@ def update_war_room_note(room_id, note_id):
 @ac_room_api_requires()
 def delete_war_room_note(room_id, note_id):
     from app.business.war_rooms import delete_room_note
-    room, _, err = _resolve(room_id, 'responder')
+    room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     try:
@@ -1984,11 +2017,12 @@ def delete_war_room_note(room_id, note_id):
 @ac_room_api_requires()
 def get_war_room_case_note(room_id, case_id, note_id):
     from app.business.war_rooms import get_case_note_for_room
-    room, _, err = _resolve(room_id, 'observer')
+    room, _, err = _resolve(room_id, 'observer', guests=True)
     if err:
         return err
     try:
-        out = get_case_note_for_room(room, current_user.id, case_id, note_id)
+        out = get_case_note_for_room(room, _uid(), case_id, note_id,
+                                     guest=_is_guest())
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     out['updated_at'] = _iso(out['updated_at'])

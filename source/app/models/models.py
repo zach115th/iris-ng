@@ -1527,8 +1527,12 @@ class WarRoomTeam(db.Model):
     created_by = Column(ForeignKey('user.id', ondelete='SET NULL'),
                         nullable=True)
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
+    # iris-ng guests: creator when a guest made the team (created_by NULL).
+    created_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                                 nullable=True)
 
     creator = relationship('User')
+    creator_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
     members = relationship('WarRoomTeamMember', back_populates='team',
                            cascade='all, delete-orphan')
 
@@ -1619,12 +1623,16 @@ class WarRoomTask(db.Model):
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
     done_at = Column(DateTime, nullable=True)
     done_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
-    # iris-ng guests: creator when a guest opened the task (created_by NULL).
+    # iris-ng guests: creator when a guest opened the task (created_by NULL);
+    # done_by_guest_id when a guest completed it.
     created_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
                                  nullable=True)
+    done_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                              nullable=True)
 
     assignee = relationship('User', foreign_keys=[assignee_id])
     created_by_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
+    done_by_guest = relationship('WarRoomGuest', foreign_keys=[done_by_guest_id])
     creator = relationship('User', foreign_keys=[created_by])
 
     __table_args__ = (
@@ -1653,8 +1661,13 @@ class SitRep(db.Model):
     updated_at = Column(DateTime, nullable=True)
     published_at = Column(DateTime, nullable=True)
     published_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    # iris-ng guests: creator when a guest drafted it (created_by NULL).
+    # Publishing stays a lead action, so there is no published_by_guest_id.
+    created_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                                 nullable=True)
 
     creator = relationship('User', foreign_keys=[created_by])
+    creator_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
     publisher = relationship('User', foreign_keys=[published_by])
     revisions = relationship('SitRepRevision', back_populates='sitrep',
                              cascade='all, delete-orphan')
@@ -1676,10 +1689,13 @@ class SitRepRevision(db.Model):
     title = Column(Text)
     content = Column(Text)
     user_id = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    # iris-ng guests: the editor when a guest saved the edit (user_id NULL).
+    guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
     revision_timestamp = Column(DateTime, server_default=text('now()'),
                                 nullable=False)
 
     user = relationship('User')
+    guest = relationship('WarRoomGuest')
     sitrep = relationship('SitRep', back_populates='revisions')
 
 
@@ -1702,8 +1718,12 @@ class WarRoomPoll(db.Model):
     created_by = Column(ForeignKey('user.id', ondelete='SET NULL'),
                         nullable=True)
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
+    # iris-ng guests: creator when a guest opened the poll (created_by NULL).
+    created_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                                 nullable=True)
 
     creator = relationship('User', foreign_keys=[created_by])
+    creator_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
     options = relationship('WarRoomPollOption', back_populates='poll',
                            cascade='all, delete-orphan',
                            order_by='WarRoomPollOption.position')
@@ -1767,8 +1787,12 @@ class WarRoomTimeline(db.Model):
     created_by = Column(ForeignKey('user.id', ondelete='SET NULL'),
                         nullable=True)
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
+    # iris-ng guests: creator when a guest made the timeline (created_by NULL).
+    created_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                                 nullable=True)
 
     creator = relationship('User')
+    creator_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
     events = relationship('WarRoomTimelineEvent', back_populates='timeline',
                           cascade='all, delete-orphan')
 
@@ -1790,8 +1814,12 @@ class WarRoomTimelineEvent(db.Model):
                         nullable=True)
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
     updated_at = Column(DateTime, nullable=True)
+    # iris-ng guests: creator when a guest added the event (created_by NULL).
+    created_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'),
+                                 nullable=True)
 
     creator = relationship('User')
+    creator_guest = relationship('WarRoomGuest', foreign_keys=[created_by_guest_id])
     timeline = relationship('WarRoomTimeline', back_populates='events')
 
 

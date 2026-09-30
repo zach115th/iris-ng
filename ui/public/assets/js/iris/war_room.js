@@ -362,7 +362,11 @@ function iris_wroom_render_cases() {
     var cases = (IRIS_WROOM._room && IRIS_WROOM._room.cases) || [];
     document.getElementById('iris-wr-case-count').textContent =
         '(' + cases.length + ')';
-    var responder = iris_wroom_can('responder') && iris_wroom_active();
+    /* A guest reads the attached cases but never attaches, detaches, notes
+       or opens one: the room API refuses those, and there is no case
+       session behind a deep link. */
+    var responder = iris_wroom_can('responder') && iris_wroom_active()
+        && !IRIS_WROOM._guest;
     document.getElementById('iris-wr-case-attachbtn').style.display =
         responder ? '' : 'none';
     var visible = iris_wroom_cs_visible();
@@ -417,7 +421,7 @@ function iris_wroom_render_cases() {
                 '<div class="iris-wr-cs-meta">' + meta.join(' · ') + '</div>' +
                 noteLine + '</div>' +
                 '<span class="iris-wr-cs-acts">' +
-                (c.accessible
+                (c.accessible && !IRIS_WROOM._guest
                     ? '<a href="/case?cid=' + c.case_id +
                       '" class="iris-wr-nt-toolbtn" title="Open case" ' +
                       'style="margin-left:0;">' + extIco + '</a>'
@@ -1834,14 +1838,17 @@ function iris_wroom_load_tasks() {
             return;
         }
         empty.style.display = 'none';
+        /* Guests see the case tasks but hold no case session: titles and
+           case ids render as text, not as links into the case pages. */
+        var link = !IRIS_WROOM._guest;
         rows.forEach(function (t) {
             var tr = document.createElement('tr');
             tr.innerHTML =
-                '<td><a href="/case/tasks?cid=' + t.case_id + '">' +
-                iris_wroom_esc(t.task_title) + '</a></td>' +
+                '<td>' + (link ? '<a href="/case/tasks?cid=' + t.case_id + '">' : '') +
+                iris_wroom_esc(t.task_title) + (link ? '</a>' : '') + '</td>' +
                 '<td>' + iris_wroom_esc(t.status_name || '') + '</td>' +
-                '<td><a href="/case?cid=' + t.case_id + '">#' + t.case_id +
-                '</a></td>' +
+                '<td>' + (link ? '<a href="/case?cid=' + t.case_id + '">' : '') +
+                '#' + t.case_id + (link ? '</a>' : '') + '</td>' +
                 '<td class="text-muted" style="font-size:0.78rem;">' +
                 iris_wroom_rel(t.task_last_update) + '</td>';
             tb.appendChild(tr);
@@ -2676,8 +2683,10 @@ document.addEventListener('DOMContentLoaded', function () {
     IRIS_WROOM._rid = /^\d+$/.test(ridRaw || '')
         ? String(parseInt(ridRaw, 10)) : '0';
     /* iris-ng guests: the same page inside the portal layout. The server
-       denies whatever a guest may not do; this flag only skips the loads a
-       guest session cannot make (user list, correlation). */
+       denies whatever a guest may not do (membership, room settings,
+       correlation, exports, AI); this flag skips the loads a guest session
+       cannot make (user list, correlation, the case picker) and turns the
+       case deep links into text. */
     IRIS_WROOM._guest = !!document.getElementById('iris-wr-guest-mode');
 
     iris_wroom_load_room().then(function (room) {
@@ -4116,7 +4125,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
             var row = e.target.closest('.iris-wr-cs-row');
-            if (row && row.getAttribute('data-accessible') === '1') {
+            if (row && row.getAttribute('data-accessible') === '1'
+                    && !IRIS_WROOM._guest) {
                 iris_wroom_cs_peek(
                     parseInt(row.getAttribute('data-case-id'), 10));
             }
@@ -4181,9 +4191,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 fsel.appendChild(opt.cloneNode(true));
             });
         });
-    fetch('/manage/cases/list?cid=' + IRIS_WROOM._cid,
-          {headers: {'Accept': 'application/json'}})
-        .then(function (r) { return r.json(); })
+    (IRIS_WROOM._guest ? Promise.resolve({data: []})
+        : fetch('/manage/cases/list?cid=' + IRIS_WROOM._cid,
+                {headers: {'Accept': 'application/json'}})
+            .then(function (r) { return r.json(); }))
         .then(function (resp) {
             /* Feeds the v3 Attach-cases modal; the list is already scoped
                to cases the actor can see (legacy endpoint enforces ACL). */

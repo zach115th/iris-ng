@@ -361,7 +361,7 @@ def _ics_folder(room, actor_id):
     return f
 
 
-def seed_ics_notes(room, actor_id) -> dict:
+def seed_ics_notes(room, actor_id, guest_id=None) -> dict:
     """Create the missing ICS forms for a room. Idempotent by title.
 
     Returns {'created': [titles], 'skipped': [titles], 'folder_id': int|None,
@@ -385,7 +385,8 @@ def seed_ics_notes(room, actor_id) -> dict:
             continue
         content = render_ics(load_template(filename), ctx)
         n = WarRoomNote(room_id=room.id, title=title, folder_id=folder.id,
-                        content=content, created_by=actor_id)
+                        content=content, created_by=actor_id,
+                        created_by_guest_id=guest_id)
         db.session.add(n)
         db.session.flush()
         note_ids[title] = n.id

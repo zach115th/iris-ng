@@ -24,7 +24,10 @@
 		/* iris-ng guest portal: no sidebar, no top navigation, one banner. The
 		   room page renders exactly as for members; what a guest may DO is
 		   decided by the room API (deny by default). The rules below only hide
-		   the controls the API would refuse anyway. */
+		   the controls the API would refuse anyway: membership and room
+		   settings, publishing, correlation / exports, and every AI feature
+		   (maintainer decisions 2026-09-30: guests take part at full responder
+		   level otherwise, and see every attached case read-only). */
 		body.iris-portal { background: #101014; }
 		body.iris-portal .iris-portal-bar { display:flex; align-items:center; gap:12px; padding:10px 24px;
 			background:#17171d; border-bottom:1px solid #2a2a35; color:#c8c8d0; font-size:0.85rem; }
@@ -32,15 +35,11 @@
 		body.iris-portal .iris-portal-bar .guest { margin-left:auto; }
 		body.iris-portal .iris-portal-bar a { color:#9aa4ff; }
 		body.iris-portal .main-panel { width:100%; margin:0; }
-		body.iris-portal .iris-wr-tab[data-pane="cases"],
 		body.iris-portal .iris-wr-tab[data-pane="correlation"],
-		body.iris-portal .iris-wr-tab[data-pane="teams"],
-		body.iris-portal #iris-wr-sitrep-new, body.iris-portal #iris-wr-sitrep-ai,
-		body.iris-portal #iris-wr-sr-editbtn, body.iris-portal #iris-wr-sr-publishbtn, body.iris-portal #iris-wr-sr-del,
-		body.iris-portal #iris-wr-nt-seedics, body.iris-portal #iris-wr-nt-aiics, body.iris-portal #iris-wr-nt-del,
+		body.iris-portal #iris-wr-sitrep-ai,
+		body.iris-portal #iris-wr-sr-publishbtn, body.iris-portal #iris-wr-sr-del,
+		body.iris-portal #iris-wr-nt-aiics,
 		body.iris-portal #iris-wr-os-generate, body.iris-portal #iris-wr-os-edit, body.iris-portal #iris-wr-os-revert,
-		body.iris-portal #iris-wr-tl-add, body.iris-portal #iris-wr-tl-addevent,
-		body.iris-portal #iris-wr-rtask-f-delete,
 		body.iris-portal #iris-wr-member-addbtn, body.iris-portal .iris-wr-member-remove,
 		body.iris-portal #iris-wr-case-attachbtn, body.iris-portal #iris-wr-corr-tag,
 		body.iris-portal #iris-wr-corr-stix, body.iris-portal #iris-wr-corr-misp,

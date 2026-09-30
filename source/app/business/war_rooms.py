@@ -428,7 +428,8 @@ def list_teams(room):
     return out
 
 
-def create_team(room, name, user_id, description=None, color=None):
+def create_team(room, name, user_id, description=None, color=None,
+                guest_id=None):
     _assert_writable(room)
     name = (name or '').strip().lstrip('@').lower()
     if not _valid_team_name(name):
@@ -439,7 +440,7 @@ def create_team(room, name, user_id, description=None, color=None):
     t = WarRoomTeam(room_id=room.id, name=name,
                     description=(description or '').strip()[:500] or None,
                     color=color if _valid_color(color) else None,
-                    created_by=user_id)
+                    created_by=user_id, created_by_guest_id=guest_id)
     db.session.add(t)
     db.session.commit()
     return t
@@ -745,6 +746,7 @@ def add_room_task(room, title, actor_id, assignee_id=None, description=None,
     if status == 'done':
         task.done_at = datetime.utcnow()
         task.done_by = actor_id
+        task.done_by_guest_id = created_by_guest_id
     db.session.add(task)
     db.session.commit()
     if assignee_id and (actor_id is None or int(assignee_id) != int(actor_id)):
@@ -759,7 +761,7 @@ def add_room_task(room, title, actor_id, assignee_id=None, description=None,
 
 def set_room_task(room, task_id, actor_id, status=None, assignee_id=None,
                   title=None, description=None, due_date=None, tags=None,
-                  clear_due=False):
+                  clear_due=False, guest_id=None):
     _assert_writable(room)
     task = db.session.get(WarRoomTask, int(task_id))
     if task is None or task.room_id != room.id:
@@ -779,15 +781,19 @@ def set_room_task(room, task_id, actor_id, status=None, assignee_id=None,
         if status == 'done' and not was_done:
             task.done_at = datetime.utcnow()
             task.done_by = actor_id
+            task.done_by_guest_id = guest_id
         elif status != 'done':
             task.done_at = None
             task.done_by = None
+            task.done_by_guest_id = None
     if assignee_id is not None:
         new_assignee = _check_assignee(assignee_id) if assignee_id else None
         changed = new_assignee != task.assignee_id
         task.assignee_id = new_assignee
+        # A guest actor has no user id: every assignment by a guest is to
+        # someone else, so it always notifies.
         if (changed and new_assignee
-                and int(new_assignee) != int(actor_id)):
+                and (actor_id is None or int(new_assignee) != int(actor_id))):
             notify('task_assigned', [new_assignee],
                    f'Task "{task.title}" assigned to you in war room '
                    f'"{room.name}"',
@@ -821,7 +827,7 @@ def poll_is_closed(poll):
 
 
 def create_poll(room, user_id, question, options, multiple=False,
-                anonymous=False, closes_at=None):
+                anonymous=False, closes_at=None, guest_id=None):
     _assert_writable(room)
     question = (question or '').strip()
     if not question:
@@ -831,7 +837,8 @@ def create_poll(room, user_id, question, options, multiple=False,
         raise BusinessProcessingError('A poll needs 2 to 20 options')
     poll = WarRoomPoll(room_id=room.id, question=question,
                        multiple=bool(multiple), anonymous=bool(anonymous),
-                       closes_at=closes_at, created_by=user_id)
+                       closes_at=closes_at, created_by=user_id,
+                       created_by_guest_id=guest_id)
     db.session.add(poll)
     db.session.flush()
     for pos, txt in enumerate(texts):
@@ -874,9 +881,11 @@ def vote_poll(room, poll_id, user_id, option_id, guest_id=None):
     return poll
 
 
-def close_poll(room, poll_id, user_id, is_lead):
+def close_poll(room, poll_id, user_id, is_lead, guest_id=None):
     poll = _get_room_poll(room, poll_id)
-    if poll.created_by != user_id and not is_lead:
+    mine = ((user_id is not None and poll.created_by == user_id)
+            or (guest_id is not None and poll.created_by_guest_id == guest_id))
+    if not mine and not is_lead:
         raise BusinessProcessingError(
             'Only the poll creator or a lead can close a poll')
     poll.closed = True
@@ -901,7 +910,7 @@ def serialize_poll(poll, viewer_id, viewer_guest_id=None):
         'closed': poll_is_closed(poll),
         'closes_at': poll.closes_at,
         'created_by': poll.created_by,
-        'created_by_name': poll.creator.name if poll.creator else None,
+        'created_by_name': actor_label(poll.creator, poll.creator_guest, None),
         'total_voters': voters_total,
         'options': [{
             'id': o.id, 'text': o.text,
@@ -1032,19 +1041,20 @@ def get_sitrep(room, sitrep_id):
     return s
 
 
-def create_sitrep(room, title, content, user_id):
+def create_sitrep(room, title, content, user_id, guest_id=None):
     _assert_writable(room)
     title = (title or '').strip()
     if not title:
         raise BusinessProcessingError('SitRep title is required')
     s = SitRep(room_id=room.id, title=title, content=content or None,
-               created_by=user_id)
+               created_by=user_id, created_by_guest_id=guest_id)
     db.session.add(s)
     db.session.commit()
     return s
 
 
-def update_sitrep(room, sitrep, title=None, content=None, user_id=None):
+def update_sitrep(room, sitrep, title=None, content=None, user_id=None,
+                  guest_id=None):
     """Snapshot the CURRENT state as a revision, then apply the edit
     (NoteRevisions pattern). Published sitreps stay editable — the revision
     trail is what makes that safe."""
@@ -1056,7 +1066,8 @@ def update_sitrep(room, sitrep, title=None, content=None, user_id=None):
     db.session.add(SitRepRevision(
         sitrep_id=sitrep.id,
         revision_number=(last.revision_number + 1) if last else 1,
-        title=sitrep.title, content=sitrep.content, user_id=user_id))
+        title=sitrep.title, content=sitrep.content, user_id=user_id,
+        guest_id=guest_id))
     if title is not None:
         sitrep.title = title.strip()
     if content is not None:
@@ -1145,7 +1156,8 @@ def room_stream(room, viewer_id, limit=50, viewer_guest_id=None):
             'parent_snippet': root_snippets.get(m.parent_id),
             'thread_title': m.thread_title, 'pinned': m.pinned,
         })
-    visible = room_visible_case_ids(room.id, viewer_id)
+    visible = room_visible_case_ids(room.id, viewer_id,
+                                    guest=viewer_guest_id is not None)
     if visible:
         acts = (UserActivity.query.filter(
                     UserActivity.case_id.in_(visible),
@@ -1225,7 +1237,8 @@ def room_stream(room, viewer_id, limit=50, viewer_guest_id=None):
         if t.status == 'done' and t.done_at:
             items.append({
                 'kind': 'task_event',
-                'content': f'{_uname(t.done_by)} completed task "{t.title}"',
+                'content': (f'{t.done_by_guest.label if t.done_by_guest else _uname(t.done_by)} '
+                            f'completed task "{t.title}"'),
                 'created_at': t.done_at,
             })
     items.sort(key=lambda i: (i['created_at'] or datetime.min), reverse=True)
@@ -1234,17 +1247,22 @@ def room_stream(room, viewer_id, limit=50, viewer_guest_id=None):
 
 # --------------------------------------------- read-only tab aggregations
 
-def room_visible_case_ids(room_id, viewer_id):
-    # A guest viewer has no user id and therefore no case access at all:
-    # room membership never grants case access, and guests are not users.
+def room_visible_case_ids(room_id, viewer_id, guest=False):
+    """Linked cases THIS viewer may read through the room. A user is bound
+    by their case ACL (membership never grants case access). A guest has no
+    ACL at all: by maintainer decision (2026-09-30) every case attached to
+    the room is shared with its guests, so attaching IS the sharing act.
+    A caller that does not say `guest=True` gets nothing for a guest."""
+    linked = room_case_ids(room_id)
+    if guest:
+        return linked
     if viewer_id is None:
         return []
-    linked = room_case_ids(room_id)
     acl = set(ac_get_fast_user_cases_access(viewer_id) or [])
     return [c for c in linked if c in acl]
 
 
-def room_timeline(room, viewer_id, limit=500):
+def room_timeline(room, viewer_id, limit=500, guest=False):
     """The Timelines tab payload: read-only CASE events (linked cases the
     VIEWER can access — the case-page timelines are only READ, invariant)
     merged with the room's OWN timelines (read-write coordination
@@ -1257,7 +1275,7 @@ def room_timeline(room, viewer_id, limit=500):
     from app.models.models import CaseEventsAssets
     from app.models.models import CaseEventsIoc
     from app.models.models import EventCategory
-    visible = room_visible_case_ids(room.id, viewer_id)
+    visible = room_visible_case_ids(room.id, viewer_id, guest=guest)
     events = []
     if visible:
         rows = (CasesEvent.query
@@ -1329,14 +1347,14 @@ def _valid_color(color):
     return bool(color) and bool(_COLOR_RE.match(color))
 
 
-def create_room_timeline(room, name, user_id, color=None):
+def create_room_timeline(room, name, user_id, color=None, guest_id=None):
     _assert_writable(room)
     name = (name or '').strip()
     if not name:
         raise BusinessProcessingError('Timeline name is required')
     tl = WarRoomTimeline(room_id=room.id, name=name[:120],
                          color=color if _valid_color(color) else None,
-                         created_by=user_id)
+                         created_by=user_id, created_by_guest_id=guest_id)
     db.session.add(tl)
     db.session.commit()
     return tl
@@ -1371,7 +1389,8 @@ def delete_room_timeline(room, timeline_id):
 
 
 def add_timeline_event(room, timeline_id, user_id, title, event_date,
-                       content=None, category=None, color=None, tags=None):
+                       content=None, category=None, color=None, tags=None,
+                       guest_id=None):
     _assert_writable(room)
     tl = _get_room_timeline(room, timeline_id)
     title = (title or '').strip()
@@ -1383,7 +1402,8 @@ def add_timeline_event(room, timeline_id, user_id, title, event_date,
         timeline_id=tl.id, event_date=event_date, title=title,
         content=content or None, category=(category or '').strip()[:64] or None,
         color=color if _valid_color(color) else None,
-        tags=(tags or '').strip() or None, created_by=user_id)
+        tags=(tags or '').strip() or None, created_by=user_id,
+        created_by_guest_id=guest_id)
     db.session.add(ev)
     db.session.commit()
     return ev
@@ -1427,11 +1447,11 @@ def delete_timeline_event(room, timeline_id, event_id):
     db.session.commit()
 
 
-def room_tasks(room, viewer_id, limit=200):
+def room_tasks(room, viewer_id, limit=200, guest=False):
     """Aggregated case tasks across linked, viewer-accessible cases."""
     from app.models.models import CaseTasks
     from app.models.models import TaskStatus
-    visible = room_visible_case_ids(room.id, viewer_id)
+    visible = room_visible_case_ids(room.id, viewer_id, guest=guest)
     if not visible:
         return []
     rows = (db.session.query(CaseTasks, TaskStatus.status_name)
@@ -1446,7 +1466,7 @@ def room_tasks(room, viewer_id, limit=200):
     } for t, status_name in rows]
 
 
-def room_notes(room, viewer_id, limit=200):
+def room_notes(room, viewer_id, limit=200, guest=False):
     """The Notes tab payload: read-write ROOM notes + folders, plus
     read-only note titles across linked, viewer-accessible cases (the
     case-page notes are only READ by the room — invariant)."""
@@ -1461,7 +1481,7 @@ def room_notes(room, viewer_id, limit=200):
         'updated_by_name': _note_author(n),
     } for n in (WarRoomNote.query.filter_by(room_id=room.id)
                 .order_by(WarRoomNote.title).all())]
-    visible = room_visible_case_ids(room.id, viewer_id)
+    visible = room_visible_case_ids(room.id, viewer_id, guest=guest)
     case_rows = []
     if visible:
         rows = (Notes.query
@@ -1476,13 +1496,13 @@ def room_notes(room, viewer_id, limit=200):
     return {'folders': folders, 'room_notes': own, 'case_notes': case_rows}
 
 
-def get_case_note_for_room(room, viewer_id, case_id, note_id):
+def get_case_note_for_room(room, viewer_id, case_id, note_id, guest=False):
     """One linked-case note, read-only, ACL-checked against the VIEWER.
     Content is returned server-rendered (render_markdown_safe) only —
     the room never edits case notes."""
     from app.iris_engine.safe_markdown import render_markdown_safe
     from app.models.models import Notes
-    visible = room_visible_case_ids(room.id, viewer_id)
+    visible = room_visible_case_ids(room.id, viewer_id, guest=guest)
     if int(case_id) not in visible:
         raise BusinessProcessingError('Invalid note')
     n = db.session.get(Notes, int(note_id))
