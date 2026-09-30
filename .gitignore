@@ -33,3 +33,6 @@ certificates/web_certificates/*.pem
 
 # Track the env template (the .env* rule above would otherwise hide it)
 !.env.model
+
+# Database dumps written by scripts/update.sh before an upgrade
+backups/
