@@ -781,8 +781,37 @@
     </div>
 
     {# ================= Summary pane ================= #}
+    {# Operational summary: the room's ongoing ICS/ESF-level AI summary (own
+       artifact, analyst-editable, event-driven refresh while untouched). The
+       short export blurb (room.summary, STIX/MISP campaign text) stays below
+       it, edited via the room Edit modal as before. #}
     <div class="iris-wr-pane" id="iris-wr-pane-summary">
         <div class="card"><div class="card-body">
+            <div class="d-flex align-items-center flex-wrap" style="gap:8px;">
+                <div style="font-weight:600;">Operational summary</div>
+                <span class="iris-wr-rail-hint" title="ICS 209 shape; Emergency Support Functions derived from the attached cases' sectors">ICS 209 &middot; <span id="iris-wr-os-esflist">ESF</span></span>
+                <span id="iris-wr-os-esf"></span>
+                <span class="ml-auto"></span>
+                <span id="iris-wr-os-stale" class="badge badge-warning" style="display:none;"
+                      title="The cases, tasks, ICS forms or stream changed after this summary was written">Inputs changed since this summary</span>
+                <button type="button" class="btn btn-sm btn-primary" id="iris-wr-os-generate" style="display:none;">&#10024; Generate</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="iris-wr-os-edit" style="display:none;">Edit</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="iris-wr-os-revert" style="display:none;"
+                        title="Discard the analyst edit and show the AI text again">Revert to AI</button>
+            </div>
+            <div id="iris-wr-os-status" class="iris-wr-rail-hint" style="margin-top:4px;"></div>
+            <div id="iris-wr-os-empty" class="text-muted" style="margin-top:10px;">No operational summary yet. Generate one from the room's cases, tasks, ICS forms and stream, or write it by hand.</div>
+            <div id="iris-wr-os-view" class="iris-wr-sr-md" style="margin-top:10px; display:none;"></div>
+            <div id="iris-wr-os-editor" style="margin-top:10px; display:none;">
+                <textarea class="form-control" id="iris-wr-os-text" rows="18" spellcheck="true"></textarea>
+                <div style="margin-top:6px; display:flex; gap:6px;">
+                    <button type="button" class="btn btn-sm btn-primary" id="iris-wr-os-save">Save</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="iris-wr-os-cancel">Cancel</button>
+                    <span class="iris-wr-rail-hint" style="align-self:center;">Markdown. Saving pauses automatic refresh until you revert.</span>
+                </div>
+            </div>
+            <hr style="border-color:#2a2a35;">
+            <div class="iris-wr-rail-hint" title="room.summary: the campaign description on STIX export and MISP push; edit it from the room's Edit button">Export description (STIX / MISP)</div>
             <div id="iris-wr-summary-view" class="text-muted">No summary yet.</div>
         </div></div>
     </div>

@@ -2658,6 +2658,7 @@ function iris_wroom_show_pane(name) {
         if (name === 'tasks') iris_wroom_load_tasks();
         if (name === 'notes') iris_wroom_load_notes();
         if (name === 'teams') iris_wroom_load_teams();
+        if (name === 'summary') iris_wroom_os_load();
     }
 }
 
@@ -4176,3 +4177,179 @@ document.addEventListener('DOMContentLoaded', function () {
             IRIS_WROOM._allCases = (resp && resp.data) || [];
         });
 });
+
+
+/* ================================================================ Summary
+ * Operational summary (Summary tab): the room's ongoing ICS/ESF-level AI
+ * summary: its own artifact, analyst-editable, regenerated on room events
+ * while untouched. Server-rendered markdown (safe renderer); the 409 guard
+ * for regenerating over an edit lives on the server, the confirm is here. */
+
+var IRIS_WROOM_OS = {data: null, editing: false};
+
+function iris_wroom_os_status(txt) {
+    document.getElementById('iris-wr-os-status').textContent = txt || '';
+}
+
+function iris_wroom_os_stamp(iso) {
+    return iso ? iso.replace('T', ' ').slice(0, 16) + ' UTC' : '';
+}
+
+function iris_wroom_os_render(d) {
+    IRIS_WROOM_OS.data = d;
+    var art = d.artifact;
+    var canWrite = iris_wroom_can('responder') && iris_wroom_active();
+    var esf = document.getElementById('iris-wr-os-esf');
+    document.getElementById('iris-wr-os-esflist').textContent = d.esf_list || 'ESF';
+    esf.innerHTML = (d.esf || []).map(function (e) {
+        return '<span class="iris-wr-cs-chip" title="' +
+            iris_wroom_esc((e.from_sectors && e.from_sectors.length)
+                ? 'from sector: ' + e.from_sectors.join(', ') : 'applies to every room') +
+            '">' + iris_wroom_esc(e.label + ' ' + e.name) + '</span>';
+    }).join(' ');
+
+    var view = document.getElementById('iris-wr-os-view');
+    var empty = document.getElementById('iris-wr-os-empty');
+    var gen = document.getElementById('iris-wr-os-generate');
+    var edit = document.getElementById('iris-wr-os-edit');
+    var revert = document.getElementById('iris-wr-os-revert');
+    var stale = document.getElementById('iris-wr-os-stale');
+    document.getElementById('iris-wr-os-editor').style.display = 'none';
+    IRIS_WROOM_OS.editing = false;
+
+    if (art) {
+        view.innerHTML = art.content_html || '';
+        view.style.display = '';
+        empty.style.display = 'none';
+        gen.innerHTML = '&#10024; Regenerate';
+        var parts = [];
+        if (art.manual) {
+            parts.push('Written by hand');
+        } else {
+            parts.push('Generated ' + iris_wroom_os_stamp(art.generated_at) +
+                (art.model ? ' \u00b7 ' + art.model : ''));
+        }
+        if (art.edited) {
+            parts.push('edited by ' + (art.edited_by_name || 'an analyst') +
+                ' ' + iris_wroom_os_stamp(art.edited_at));
+        }
+        var auto = {active: 'auto-refresh on room events: on',
+                    paused_edited: 'auto-refresh paused (analyst edit); revert to resume',
+                    off_closed: 'room closed: no refresh',
+                    off_never_generated: ''}[d.auto_refresh] || '';
+        if (auto) parts.push(auto);
+        iris_wroom_os_status(parts.join(' \u00b7 '));
+        stale.style.display = d.stale ? '' : 'none';
+        revert.style.display = (canWrite && art.edited && !art.manual) ? '' : 'none';
+    } else {
+        view.style.display = 'none';
+        empty.style.display = '';
+        gen.innerHTML = '&#10024; Generate';
+        iris_wroom_os_status('');
+        stale.style.display = 'none';
+        revert.style.display = 'none';
+    }
+    gen.style.display = canWrite ? '' : 'none';
+    edit.style.display = canWrite ? '' : 'none';
+    iris_wroom_os_buttons(true);
+    iris_wroom_fit_doc();
+}
+
+function iris_wroom_os_load() {
+    return iris_wroom_api('GET', '/summary').then(function (res) {
+        if (!res.ok) {
+            iris_wroom_os_status((res.j && res.j.message) || 'Summary unavailable');
+            return;
+        }
+        iris_wroom_os_render(res.j);
+    });
+}
+
+function iris_wroom_os_poll(taskId, tries) {
+    if (tries > 240) { iris_wroom_os_status('Summary generation timed out.'); return; }
+    fetch('/api/v2/ai/jobs/' + taskId, {headers: {'Accept': 'application/json'}})
+        .then(function (r) { return r.json(); })
+        .then(function (job) {
+            if (job.state === 'done') {
+                iris_wroom_os_load();
+            } else if (job.state === 'error' || job.state === 'cancelled') {
+                iris_wroom_os_status('Summary generation failed: ' + (job.error || job.state));
+                iris_wroom_os_buttons(true);
+            } else {
+                iris_wroom_os_status('Generating\u2026 (' + job.state + ')');
+                setTimeout(function () { iris_wroom_os_poll(taskId, tries + 1); }, 2500);
+            }
+        });
+}
+
+function iris_wroom_os_buttons(enabled) {
+    ['iris-wr-os-generate', 'iris-wr-os-edit', 'iris-wr-os-revert'].forEach(function (id) {
+        document.getElementById(id).disabled = !enabled;
+    });
+}
+
+function iris_wroom_os_generate(discard) {
+    iris_wroom_os_buttons(false);
+    iris_wroom_os_status('Generation queued\u2026');
+    iris_wroom_api('POST', '/summary/ai/generate', {force: true, discard_edit: !!discard})
+        .then(function (res) {
+            if (res.status === 409 && res.j && res.j.reason === 'manual_edit_present') {
+                iris_wroom_os_buttons(true);
+                iris_wroom_os_status('');
+                var who = res.j.edited_by_name ? ' by ' + res.j.edited_by_name : '';
+                if (window.confirm('This summary was edited' + who + '. Regenerating discards that edit. Continue?')) {
+                    iris_wroom_os_generate(true);
+                }
+                return;
+            }
+            if (!res.ok) {
+                iris_wroom_os_buttons(true);
+                iris_wroom_os_status('Generation refused: ' + ((res.j && res.j.message) || res.status));
+                return;
+            }
+            if (res.j && res.j.task_id) { iris_wroom_os_poll(res.j.task_id, 0); }
+            else { iris_wroom_os_load(); }
+        });
+}
+
+function iris_wroom_os_bind() {
+    var gen = document.getElementById('iris-wr-os-generate');
+    if (!gen) return;
+    gen.addEventListener('click', function () { iris_wroom_os_generate(false); });
+    document.getElementById('iris-wr-os-edit').addEventListener('click', function () {
+        var d = IRIS_WROOM_OS.data || {};
+        var ta = document.getElementById('iris-wr-os-text');
+        ta.value = (d.artifact && d.artifact.markdown) || '';
+        document.getElementById('iris-wr-os-editor').style.display = '';
+        document.getElementById('iris-wr-os-view').style.display = 'none';
+        document.getElementById('iris-wr-os-empty').style.display = 'none';
+        IRIS_WROOM_OS.editing = true;
+        ta.focus();
+        iris_wroom_fit_doc();
+    });
+    document.getElementById('iris-wr-os-cancel').addEventListener('click', function () {
+        iris_wroom_os_render(IRIS_WROOM_OS.data || {artifact: null, esf: []});
+    });
+    document.getElementById('iris-wr-os-save').addEventListener('click', function () {
+        var text = document.getElementById('iris-wr-os-text').value;
+        iris_wroom_api('PUT', '/summary', {content: text}).then(function (res) {
+            if (!res.ok) {
+                iris_wroom_os_status('Save failed: ' + ((res.j && res.j.message) || res.status));
+                return;
+            }
+            iris_wroom_os_render(res.j);
+        });
+    });
+    document.getElementById('iris-wr-os-revert').addEventListener('click', function () {
+        if (!window.confirm('Discard the analyst edit and show the AI text again?')) return;
+        iris_wroom_api('POST', '/summary/revert', {}).then(function (res) {
+            if (!res.ok) {
+                iris_wroom_os_status('Revert failed: ' + ((res.j && res.j.message) || res.status));
+                return;
+            }
+            iris_wroom_os_render(res.j);
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', iris_wroom_os_bind);

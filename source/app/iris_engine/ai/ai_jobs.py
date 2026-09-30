@@ -78,6 +78,13 @@ def _run_ioc_dedup(case_id: int, params: dict[str, Any]):
     return suggest_ioc_duplicates(int(case_id))
 
 
+def _run_room_summary(case_id: int, params: dict[str, Any]):
+    # case_id is None — the anchor is the war-room id carried in params.
+    from app.iris_engine.ai.room_summary import generate_room_summary
+    return generate_room_summary(int(params['room_id']),
+                                 force=bool(params.get('force', False)))
+
+
 def _run_ics_draft(case_id: int, params: dict[str, Any]):
     # case_id is None — the anchor is the war-room id carried in params.
     from app.iris_engine.ai.ics_draft import run_ics_draft
@@ -106,6 +113,10 @@ FEATURES: dict[str, dict[str, Any]] = {
     # (title + markdown content) the editor pre-fills; artifact row is a
     # pure cache managed by the orchestrator.
     'sitrep_draft': {'runner': _run_sitrep_draft, 'kind': 'dict', 'priority': 5},
+    # Summary tab: the room's ICS/ESF operational summary (own artifact;
+    # event-driven refreshes queue through here with force=False, so an
+    # unchanged room is an input-hash cache hit and spends nothing).
+    'room_summary': {'runner': _run_room_summary, 'kind': 'dict', 'priority': 5},
     # War-room ICS forms AI pass — result_json carries what was filled per
     # form; the merge itself is written into the room notes by the runner.
     'ics_draft': {'runner': _run_ics_draft, 'kind': 'dict', 'priority': 5},

@@ -208,7 +208,7 @@ def set_war_room_status(room_id):
         return err
     data = request.get_json(silent=True) or {}
     try:
-        set_room_status(room, data.get('status'))
+        set_room_status(room, data.get('status'), actor_id=current_user.id)
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success(_room_row(room, role))
@@ -573,7 +573,7 @@ def detach_war_room_case(room_id, case_id):
     if err:
         return err
     try:
-        detach_case(room, case_id)
+        detach_case(room, case_id, actor_id=current_user.id)
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success({'removed': case_id})
@@ -1208,6 +1208,134 @@ def generate_sitrep_ai_draft(room_id):
                          user_id=current_user.id,
                          params={'room_id': room.id, 'force': force})
     return response(202, data={'task_id': job.task_id, 'state': 'queued'})
+
+
+# ------------------------------------------ operational summary (Summary tab)
+#
+# The room's ongoing ICS/ESF operational summary: its own AiArtifact
+# (kind='room_summary'), NOT `room.summary` (the short export blurb). Read
+# needs observer; generate / edit / revert need responder. Regeneration over
+# an analyst edit answers 409 `manual_edit_present` unless `discard_edit`.
+
+def _summary_payload(room, art, *, cached=True):
+    from app.iris_engine.ai.room_summary import artifact_to_result
+    from app.iris_engine.ai.room_summary import auto_refresh_state
+    from app.iris_engine.ai.room_summary import derive_esfs
+    from app.iris_engine.ai.room_summary import is_stale
+    from app.iris_engine.ai.room_summary import load_esf_map
+    from app.iris_engine.ai.room_summary import room_sector_slugs
+    stale = is_stale(room, art)
+    return {
+        'artifact': (artifact_to_result(room, art, cached=cached, stale=stale)
+                     if art is not None else None),
+        'stale': stale,
+        # Derived NOW (not from the stored artifact) so the chips reflect the
+        # cases currently attached even before the first generation.
+        'esf': derive_esfs(room_sector_slugs(room)),
+        'esf_list': load_esf_map()['list'],
+        'auto_refresh': auto_refresh_state(room, art),
+        'my_role': user_room_role(room.id, current_user.id),
+    }
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/summary', methods=['GET'])
+@ac_api_requires()
+def get_room_operational_summary(room_id):
+    from app.iris_engine.ai.room_summary import RoomSummaryError
+    from app.iris_engine.ai.room_summary import get_latest
+    room, _, err = _resolve(room_id, 'observer')
+    if err:
+        return err
+    try:
+        return response_api_success(_summary_payload(room, get_latest(room.id)))
+    except RoomSummaryError as e:
+        return response_api_error(str(e))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/summary/ai/generate',
+                           methods=['POST'])
+@ac_api_requires()
+def generate_room_operational_summary(room_id):
+    """Generate or regenerate. Async by default (202 + task_id, poll
+    /api/v2/ai/jobs/<task_id>); ?sync=true runs inline for scripts. The
+    path carries `/ai/` on purpose: nginx exempts `^/api/v2/.+/ai/` from
+    its 90 s proxy timeout (a reasoning model needs minutes), so the sync
+    form works through the proxy too. 409 when an analyst edit exists and
+    the caller did not pass discard_edit — the guard lives HERE, never
+    client-side."""
+    from app.iris_engine.ai.room_summary import RoomSummaryError
+    from app.iris_engine.ai.room_summary import generate_room_summary
+    from app.iris_engine.ai.room_summary import get_latest
+    room, _, err = _resolve(room_id, 'responder')
+    if err:
+        return err
+    if room.status == 'closed':
+        return response_api_error('Room is closed')
+    data = request.get_json(silent=True) or {}
+    force = bool(data.get('force', True))
+    discard_edit = bool(data.get('discard_edit', False))
+
+    latest = get_latest(room.id)
+    if latest is not None and latest.is_edited and not discard_edit:
+        return response(409, data={
+            'message': 'This summary carries an analyst edit. Regenerating would '
+                       'discard it — retry with discard_edit=true to confirm.',
+            'reason': 'manual_edit_present',
+            'edited_by_name': latest.edited_by.name if latest.edited_by else None,
+            'edited_at': _iso(latest.edited_at),
+        })
+
+    if request.args.get('sync') == 'true':
+        try:
+            res = generate_room_summary(room.id, force=force)
+            # `cached` is the generator's verdict (input-hash hit or fresh
+            # call) — the payload builder must not overwrite it.
+            return response_api_success(
+                _summary_payload(room, get_latest(room.id), cached=bool(res.get('cached'))))
+        except RoomSummaryError as e:
+            return response_api_error(str(e))
+
+    from app.iris_engine.ai.ai_jobs import enqueue_ai_job
+    job = enqueue_ai_job(feature='room_summary', case_id=None,
+                         user_id=current_user.id,
+                         params={'room_id': room.id, 'force': force, 'reason': 'manual'})
+    return response(202, data={'task_id': job.task_id, 'state': 'queued'})
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/summary', methods=['PUT'])
+@ac_api_requires()
+def edit_room_operational_summary(room_id):
+    from app.iris_engine.ai.room_summary import RoomSummaryError
+    from app.iris_engine.ai.room_summary import set_manual_edit
+    room, _, err = _resolve(room_id, 'responder')
+    if err:
+        return err
+    if room.status == 'closed':
+        return response_api_error('Room is closed')
+    data = request.get_json(silent=True) or {}
+    try:
+        art = set_manual_edit(room, data.get('content'), current_user.id)
+        return response_api_success(_summary_payload(room, art))
+    except RoomSummaryError as e:
+        return response_api_error(str(e))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/summary/revert',
+                           methods=['POST'])
+@ac_api_requires()
+def revert_room_operational_summary(room_id):
+    from app.iris_engine.ai.room_summary import RoomSummaryError
+    from app.iris_engine.ai.room_summary import revert_edit
+    room, _, err = _resolve(room_id, 'responder')
+    if err:
+        return err
+    if room.status == 'closed':
+        return response_api_error('Room is closed')
+    try:
+        art = revert_edit(room)
+        return response_api_success(_summary_payload(room, art))
+    except RoomSummaryError as e:
+        return response_api_error(str(e))
 
 
 # ------------------------------------- read-only tab aggregations (v3 tabs)

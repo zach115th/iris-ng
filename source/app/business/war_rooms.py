@@ -141,12 +141,13 @@ def update_room(room, name=None, description=None, summary=None,
     return room
 
 
-def set_room_status(room, status):
+def set_room_status(room, status, actor_id=None):
     if status not in ROOM_STATUSES:
         raise BusinessProcessingError('Invalid status')
     room.status = status
     room.archived_at = datetime.utcnow() if status == 'closed' else None
     db.session.commit()
+    _room_summary_refresh(room, actor_id, f'status:{status}')
     return room
 
 
@@ -169,6 +170,18 @@ def delete_room(room):
                                anchor_id=room.id).delete()
     WarRoom.query.filter_by(id=room.id).delete()
     db.session.commit()
+
+
+def _room_summary_refresh(room, actor_id, reason):
+    """Post-commit, fail-soft: the Summary tab's operational summary
+    regenerates itself on room events while it is untouched (never after an
+    analyst edit, never on a closed room, never before the first Generate).
+    The module decides; this is only the call site."""
+    try:
+        from app.iris_engine.ai.room_summary import auto_refresh
+        auto_refresh(room, actor_id, reason)
+    except Exception:  # noqa: BLE001 — a hook never breaks the write it follows
+        app.app.logger.exception('room summary auto-refresh hook failed')
 
 
 def _assert_writable(room):
@@ -249,13 +262,15 @@ def attach_case(room, case_id, actor_id):
                            added_by=actor_id)
     db.session.add(link)
     db.session.commit()
+    _room_summary_refresh(room, actor_id, 'case_attached')
     return link
 
 
-def detach_case(room, case_id):
+def detach_case(room, case_id, actor_id=None):
     _assert_writable(room)
     WarRoomCaseLink.query.filter_by(room_id=room.id, case_id=case_id).delete()
     db.session.commit()
+    _room_summary_refresh(room, actor_id, 'case_detached')
 
 
 def set_case_link_note(room, case_id, note):
@@ -1000,6 +1015,9 @@ def publish_sitrep(room, sitrep, user_id):
            body=(sitrep.content or '')[:280],
            object_type='war_room', object_id=room.id,
            url=f'/war-rooms/{room.id}', actor_id=user_id)
+    # The summary never READS SitReps (circular reporting); a publish is
+    # still a room event that moves the operational picture on.
+    _room_summary_refresh(room, user_id, 'sitrep_published')
     return sitrep
 
 
@@ -1472,6 +1490,9 @@ def update_room_note(room, note_id, user_id, **fields):
     n.updated_at = datetime.utcnow()
     n.updated_by = user_id
     db.session.commit()
+    from app.business.war_room_ics import form_number
+    if form_number(n.title):
+        _room_summary_refresh(room, user_id, f'ics_note:{form_number(n.title)}')
     return n
 
 
