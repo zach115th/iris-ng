@@ -11,6 +11,44 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.4.1] — 2026-10-01
+
+A fix for case summaries that never reached webhooks, guests who can be mentioned, placed in
+teams and assigned room tasks, and two security dependency updates. **One schema change**
+(migration `e3a7c5d9f261`, guarded add-column / add-table) — back the database up before
+upgrading, migrations are one-way. **An image rebuild is required** (Python dependencies and
+page scripts moved); the nginx and database images are unchanged.
+
+### Fixed
+- **Editing a case Summary now fires `on_postload_case_update`** (#128). The summary route
+  committed the new text and returned without calling the module layer, so a webhook — for
+  example n8n syncing the case to Jira — only saw a summary change when a later rename, close
+  or reopen happened to fire the hook. The hook now fires after the commit, like the
+  case-edit, close and reopen paths, and only when the stored text actually changed: the
+  Summary editor autosaves and an API client may write the same text back, and an unchanged
+  summary has nothing to sync.
+
+### Added
+- **Guests can be @-mentioned, placed in teams and assigned room tasks.** Every war-room
+  guest carries a per-room `@handle` (minted from the name, unique in the room, editable by a
+  lead); the composer's palette offers guests beside members and teams; guests join @-mention
+  teams; a room task can be assigned to a guest. Every reach to a guest is an email — a
+  mention, a team mention, a task assignment, a leadership SitRep — since a guest has no
+  in-app notification feed.
+
+### Dependencies
+- **Werkzeug 3.1.9** (security release: `safe_join` device-name guard, stricter Basic-auth
+  parsing, the invalid `Range: bytes=-0` suffix rejected with 416, an over-long `int` URL
+  value answers 404) and **PyJWT 2.15.0** (security release: a deeply nested token payload
+  raises `DecodeError` instead of escaping as a `RecursionError` on the JWKS pre-verification
+  path the `oidc_proxy` signature mode uses; OKP key consistency check).
+- **axios 1.20.0** in the end-to-end test tooling (a transitive dependency of `wait-on`;
+  closes twelve advisories, none reachable outside the test runner).
+- **SQLAlchemy stays at 2.0.x.** SQLAlchemy 2.1 installs but the app cannot boot under it:
+  SQLAlchemy-Utils has no release that imports against 2.1, and graphene-sqlalchemy's
+  unconditional asyncio import needs the `greenlet` package 2.1 no longer installs by default.
+  Dependabot now ignores `sqlalchemy >= 2.1.0` until a SQLAlchemy-Utils release supports it.
+
 ## [IRIS-NG-v2.4.0] — 2026-09-30
 
 War rooms open to outside participants: guests who are not IRIS-NG users take part in one
