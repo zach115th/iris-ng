@@ -67,6 +67,18 @@ updates:
         versions: [">=1.5.0"]
       - dependency-name: "marshmallow"
         update-types: ["version-update:semver-major"]
+      # SQLAlchemy 2.1 is UNBOOTABLE here, not merely risky: SQLAlchemy-Utils
+      # (latest 0.42.1) subclasses orm.attributes.ScalarAttributeImpl, which
+      # 2.1 made private, so `import sqlalchemy_utils` -- reached from
+      # post_init (create_database / database_exists) and from
+      # graphene-sqlalchemy's converter -- dies with AttributeError before the
+      # app serves a request. Fix in progress: kvesteri/sqlalchemy-utils#829 /
+      # PR #831, unreleased. 2.1 also stops installing greenlet by default while
+      # graphene-sqlalchemy 3.0.0rc1 imports sqlalchemy.ext.asyncio
+      # unconditionally (needs the SQLAlchemy[asyncio] extra). Lift this once a
+      # SQLAlchemy-Utils release supports 2.1; move the two together.
+      - dependency-name: "sqlalchemy"
+        versions: [">=2.1.0"]
     groups:
       python-minor-patch:
         patterns:
