@@ -42,6 +42,7 @@ from app.datamgmt.manage.manage_users_db import set_user_case_access
 from app.business.cases import cases_export_to_json
 from app.iris_engine.access_control.utils import ac_fast_check_user_has_case_access
 from app.iris_engine.access_control.utils import ac_set_case_access_for_users
+from app.iris_engine.module_handler.module_handler import call_modules_hook
 from app.iris_engine.utils.tracker import track_activity
 from app.models.models import CaseStatus
 from app.models.models import ReviewStatusList
@@ -83,10 +84,19 @@ def desc_fetch(caseid):
     if not case:
         return response_error('Invalid case ID')
 
+    previous_description = case.description
     case.description = js_data.get('case_description')
     crc = binascii.crc32(case.description.encode('utf-8'))
     db.session.commit()
     track_activity('updated summary', caseid)
+
+    # iris-ng #128: a summary edit is a case update. Fire the same hook the
+    # case-edit, close and reopen paths fire, AFTER the commit so a module
+    # (webhooks -> n8n -> Jira) reads the stored text. Only when the text
+    # actually changed: the editor autosaves and an API client may write the
+    # same summary back, and an unchanged summary has nothing to sync.
+    if case.description != previous_description:
+        case = call_modules_hook('on_postload_case_update', data=case, caseid=caseid)
 
     if not request.cookies.get('session'):
         # API call so we propagate the message to everyone
