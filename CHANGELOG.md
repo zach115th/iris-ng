@@ -11,6 +11,21 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.4.2] — 2026-10-01
+
+One fix on the Assets page. **No schema change** — the database head stays at
+`e3a7c5d9f261`. **An app image rebuild is required**: the fix is a baked page script,
+so a clone install that only pulls the source keeps serving the old file until it rebuilds.
+
+### Fixed
+- **Assets page: *Save Changes* silently dropped a changed Compromise Status** on any asset
+  that already had one. The save helper merged the edit form's values into the update and
+  then wrote the asset's existing status back over them — a default meant for the IOC and
+  evidence link paths, which send no status. The request succeeded, the list re-read from
+  the server and the old value came back, while description, analysis status, IP, domain
+  and tags saved normally. Present in every v2 release since `IRIS-NG-v2.0.0`. The existing
+  status is now a default only; linking an IOC or evidence item still carries it unchanged.
+
 ## [IRIS-NG-v2.4.1] — 2026-10-01
 
 A fix for case summaries that never reached webhooks, guests who can be mentioned, placed in
