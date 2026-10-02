@@ -71,6 +71,11 @@ def get_client_api(client_id: str) -> Client:
         Client.client_uuid.label('customer_uuid'),
         Client.description.label('customer_description'),
         Client.sla.label('customer_sla'),
+        # iris-ng: the detail payload must carry the same columns as the list
+        # row -- the Customers page's Details pane reads sectors from here and
+        # showed "--" for every customer while the list (and the edit modal,
+        # rendered from the ORM) had them.
+        Client.dhs_sectors.label('customer_dhs_sectors'),
         Client.custom_attributes
     ).filter(Client.client_id == client_id).first()
 
