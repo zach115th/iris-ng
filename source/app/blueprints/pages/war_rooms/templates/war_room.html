@@ -843,9 +843,9 @@
                         <select class="form-control form-control-sm" id="iris-wr-tl-cat" style="width:140px;">
                             <option value="">Category</option>
                         </select>
-                        <label class="mb-0 text-muted" style="font-size:0.75rem;">From</label>
+                        <label class="mb-0 text-muted" style="font-size:0.75rem;">From (UTC)</label>
                         <input type="datetime-local" class="form-control form-control-sm" id="iris-wr-tl-from" style="width:190px;">
-                        <label class="mb-0 text-muted" style="font-size:0.75rem;">To</label>
+                        <label class="mb-0 text-muted" style="font-size:0.75rem;">To (UTC)</label>
                         <input type="datetime-local" class="form-control form-control-sm" id="iris-wr-tl-to" style="width:190px;">
                         <div class="ml-auto d-flex align-items-center" style="gap:8px;">
                             <div class="btn-group btn-group-sm">
@@ -1302,8 +1302,12 @@
                 <div class="form-group mb-2">
                     <input type="text" class="form-control" id="iris-wr-tlev-title" maxlength="255" placeholder="Title" autocomplete="off">
                 </div>
-                <div class="form-group mb-2">
-                    <input type="datetime-local" class="form-control" id="iris-wr-tlev-date" step="1">
+                {# Mirrors the case event modal: date + time + the UTC offset they are
+                   entered in; the timeline itself always shows UTC. #}
+                <div class="d-flex mb-2" style="gap:10px;">
+                    <input type="date" class="form-control" id="iris-wr-tlev-date" title="Date, in the offset on the right" style="flex:1;">
+                    <input type="time" class="form-control" id="iris-wr-tlev-time" step="1" title="Time, in the offset on the right" style="flex:1;">
+                    <input type="text" class="form-control" id="iris-wr-tlev-tz" value="+00:00" maxlength="6" placeholder="+00:00" title="UTC offset the time is entered in (+HH:MM). The timeline displays UTC." style="width:92px; flex:none;" autocomplete="off">
                 </div>
                 <div class="d-flex mb-2" style="gap:10px; align-items:center;">
                     <input type="text" class="form-control" id="iris-wr-tlev-cat" maxlength="64" placeholder="Category (optional)" style="flex:1;">

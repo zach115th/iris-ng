@@ -30,7 +30,7 @@ change) have never worked in this tree, so there is no working precedent to
 extend; a live socket layer is a deliberate later step.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import desc
 from sqlalchemy import func
@@ -1441,6 +1441,7 @@ def room_timeline(room, viewer_id, limit=500, guest=False):
                 'source': 'case', 'event_id': e.event_id,
                 'case_id': e.case_id,
                 'event_date': e.event_date, 'event_title': e.event_title,
+                'event_tz': e.event_tz, 'event_date_wtz': e.event_date_wtz,
                 'event_content': (e.event_content or '')[:400],
                 'category': cats.get(e.event_id),
                 'color': e.event_color,
@@ -1460,6 +1461,8 @@ def room_timeline(room, viewer_id, limit=500, guest=False):
                 'source': 'room', 'event_id': e.id,
                 'timeline_id': tl.id, 'timeline_name': tl.name,
                 'event_date': e.event_date, 'event_title': e.title,
+                'event_tz': e.event_tz or '+00:00',
+                'event_date_wtz': event_local_iso(e),
                 'event_content': (e.content or '')[:400],
                 # Events without their own colour inherit the timeline's
                 # (v3 behaviour — the swatch on the New-timeline modal).
@@ -1528,9 +1531,57 @@ def delete_room_timeline(room, timeline_id):
     db.session.commit()
 
 
+# ------------------------------------------- room event dates (UTC + offset)
+# Mirrors the case timeline: `event_date` is the instant in UTC (naive),
+# `event_tz` the +HH:MM offset the analyst entered it in, so the UI can show
+# UTC everywhere and still re-open the editor with what was typed.
+_TZ_RE = re.compile(r'^[+-]\d{2}:\d{2}$')
+
+
+def _parse_offset(tz):
+    sign = -1 if tz[0] == '-' else 1
+    return sign * timedelta(hours=int(tz[1:3]), minutes=int(tz[4:6]))
+
+
+def _fmt_offset(td):
+    total = int(td.total_seconds())
+    sign = '+' if total >= 0 else '-'
+    total = abs(total)
+    return '%s%02d:%02d' % (sign, total // 3600, (total % 3600) // 60)
+
+
+def parse_event_when(value, tz=None):
+    """ISO date-time (+ optional `tz` offset) -> (naive UTC datetime, offset).
+
+    An aware value (`...Z` or `...+02:00`) carries its own offset and wins; a
+    naive value is read in `tz`, or as UTC when no offset is given (what every
+    API client got before the offset existed). A malformed value or offset is
+    a BusinessProcessingError (-> 400), never a silent default."""
+    if value is None or value == '':
+        return None, None
+    if tz not in (None, '') and not _TZ_RE.match(str(tz)):
+        raise BusinessProcessingError('Invalid time zone offset, use +HH:MM')
+    try:
+        dt = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    except (TypeError, ValueError):
+        raise BusinessProcessingError('Invalid event date')
+    if dt.tzinfo is not None:
+        off = dt.utcoffset() or timedelta(0)
+        return dt.astimezone(timezone.utc).replace(tzinfo=None), _fmt_offset(off)
+    tz = tz or '+00:00'
+    return dt - _parse_offset(tz), tz
+
+
+def event_local_iso(ev):
+    """The event's wall-clock in the offset it was entered in (no suffix)."""
+    if ev.event_date is None:
+        return None
+    return (ev.event_date + _parse_offset(ev.event_tz or '+00:00')).isoformat()
+
+
 def add_timeline_event(room, timeline_id, user_id, title, event_date,
                        content=None, category=None, color=None, tags=None,
-                       guest_id=None):
+                       guest_id=None, event_tz=None):
     _assert_writable(room)
     tl = _get_room_timeline(room, timeline_id)
     title = (title or '').strip()
@@ -1539,7 +1590,7 @@ def add_timeline_event(room, timeline_id, user_id, title, event_date,
     if event_date is None:
         raise BusinessProcessingError('Event date is required')
     ev = WarRoomTimelineEvent(
-        timeline_id=tl.id, event_date=event_date, title=title,
+        timeline_id=tl.id, event_date=event_date, event_tz=event_tz, title=title,
         content=content or None, category=(category or '').strip()[:64] or None,
         color=color if _valid_color(color) else None,
         tags=(tags or '').strip() or None, created_by=user_id,
@@ -1565,8 +1616,19 @@ def update_timeline_event(room, timeline_id, event_id, **fields):
         if not t:
             raise BusinessProcessingError('Event title cannot be empty')
         ev.title = t
-    if 'event_date' in fields and fields['event_date'] is not None:
-        ev.event_date = fields['event_date']
+    # Dates arrive RAW here so the offset rule lives in one place:
+    #  - event_date (+ optional event_tz): re-read -> new instant + offset;
+    #  - event_tz alone: the typed wall-clock stays, the instant moves (the
+    #    "I entered it in the wrong zone" correction).
+    if fields.get('event_date_raw') not in (None, ''):
+        utc, tz = parse_event_when(fields['event_date_raw'], fields.get('event_tz_raw'))
+        ev.event_date, ev.event_tz = utc, tz
+    elif fields.get('event_tz_raw') not in (None, ''):
+        tz = str(fields['event_tz_raw'])
+        if not _TZ_RE.match(tz):
+            raise BusinessProcessingError('Invalid time zone offset, use +HH:MM')
+        local = ev.event_date + _parse_offset(ev.event_tz or '+00:00')
+        ev.event_date, ev.event_tz = local - _parse_offset(tz), tz
     if 'content' in fields:
         ev.content = fields['content'] or None
     if 'category' in fields:

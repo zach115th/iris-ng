@@ -1666,6 +1666,9 @@ def war_room_timeline(room_id):
                         limit=request.args.get('limit', 500))
     for r in out['events']:
         r['event_date'] = _iso(r['event_date'])
+        w = r.get('event_date_wtz')
+        if w is not None and hasattr(w, 'isoformat'):
+            r['event_date_wtz'] = w.isoformat()
     return response_api_success(out)
 
 
@@ -1724,8 +1727,12 @@ def delete_war_room_timeline(room_id, timeline_id):
 
 
 def _timeline_event_row(ev):
+    from app.business.war_rooms import event_local_iso
     return {'id': ev.id, 'timeline_id': ev.timeline_id,
-            'event_date': _iso(ev.event_date), 'title': ev.title,
+            'event_date': _iso(ev.event_date),
+            'event_tz': ev.event_tz or '+00:00',
+            'event_date_wtz': event_local_iso(ev),
+            'title': ev.title,
             'content': ev.content, 'category': ev.category,
             'color': ev.color, 'tags': ev.tags}
 
@@ -1735,17 +1742,18 @@ def _timeline_event_row(ev):
     methods=['POST'])
 @ac_room_api_requires()
 def create_war_room_timeline_event(room_id, timeline_id):
-    from app.business.war_rooms import add_timeline_event
+    from app.business.war_rooms import add_timeline_event, parse_event_when
     room, _, err = _resolve(room_id, 'responder', guests=True)
     if err:
         return err
     data = request.get_json(silent=True) or {}
     try:
+        when, tz = parse_event_when(data.get('event_date'), data.get('event_tz'))
         ev = add_timeline_event(
-            room, timeline_id, _uid(), data.get('title'),
-            _parse_iso_date(data.get('event_date')),
+            room, timeline_id, _uid(), data.get('title'), when,
             content=data.get('content'), category=data.get('category'),
-            color=data.get('color'), tags=data.get('tags'), guest_id=_gid())
+            color=data.get('color'), tags=data.get('tags'), guest_id=_gid(),
+            event_tz=tz)
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success(_timeline_event_row(ev))
@@ -1766,7 +1774,9 @@ def update_war_room_timeline_event(room_id, timeline_id, event_id):
         if k in data:
             fields[k] = data.get(k)
     if 'event_date' in data:
-        fields['event_date'] = _parse_iso_date(data.get('event_date'))
+        fields['event_date_raw'] = data.get('event_date')
+    if 'event_tz' in data:
+        fields['event_tz_raw'] = data.get('event_tz')
     try:
         ev = update_timeline_event(room, timeline_id, event_id, **fields)
     except BusinessProcessingError as e:

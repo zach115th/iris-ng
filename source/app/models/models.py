@@ -1836,7 +1836,11 @@ class WarRoomTimelineEvent(db.Model):
     timeline_id = Column(ForeignKey('war_room_timeline.id',
                                     ondelete='CASCADE'),
                          nullable=False, index=True)
+    # UTC instant (naive); `event_tz` is the +HH:MM offset the analyst
+    # entered it in, like the case timeline's event_tz. NULL = +00:00 (rows
+    # from before the column existed were always declared UTC).
     event_date = Column(DateTime, nullable=False)
+    event_tz = Column(String(6), nullable=True)
     title = Column(Text, nullable=False)
     content = Column(Text, nullable=True)
     category = Column(String(64), nullable=True)

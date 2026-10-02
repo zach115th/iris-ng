@@ -900,7 +900,8 @@ function iris_wroom_res_load() {
                 return e.case_id === cid;
             }).map(function (e) {
                 return {id: e.event_id, title: e.event_title || '(untitled)',
-                        sub: (e.event_date || '').replace('T', ' ')};
+                        sub: (e.event_date || '').replace('T', ' ')
+                            .replace('Z', '').slice(0, 19) + ' UTC'};
             }));
         });
     } else if (tab === 'task') {
@@ -1661,10 +1662,33 @@ function iris_wroom_tl_visible() {
     });
 }
 
+/* Room and case timelines render in UTC, the case page's rule: the digits of
+ * the stored instant (`event_date` ends in Z), never the browser's zone. The
+ * offset an event was ENTERED in travels as event_tz / event_date_wtz and
+ * only feeds the info hint and the edit modal. */
+function iris_wroom_tl_utc_parts(iso) {
+    var m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})/.exec(iso || '');
+    return m ? {day: m[1], time: m[2]} : null;
+}
+
+function iris_wroom_tl_utc_day_label(day) {
+    return new Date(day + 'T00:00:00Z').toLocaleDateString(
+        'en-US', {weekday: 'short', month: 'short', day: 'numeric',
+                  timeZone: 'UTC'});
+}
+
+function iris_wroom_tl_local_hint(e) {
+    if (!e.event_tz || e.event_tz === '+00:00' || !e.event_date_wtz) return '';
+    return '<i class="fas fa-info-circle iris-wr-tl-tzhint ml-1" title="' +
+        iris_wroom_esc('Local time ' +
+            String(e.event_date_wtz).replace('T', ' ').slice(0, 19) +
+            ' ' + e.event_tz) + '"></i>';
+}
+
 function iris_wroom_tl_card(e, isChild) {
     var color = iris_wroom_tl_color(e.color);
-    var d = e.event_date ? new Date(e.event_date) : null;
-    var time = d ? d.toLocaleTimeString([], {hour12: false}) : '';
+    var parts = iris_wroom_tl_utc_parts(e.event_date);
+    var time = parts ? parts.time + ' UTC' : '';
     var srcChip = e.source === 'case'
         ? '<span class="iris-wr-tl-srcchip">Case</span>' +
           '<span class="iris-wr-tl-ref"><a href="/case?cid=' + e.case_id +
@@ -1705,6 +1729,7 @@ function iris_wroom_tl_card(e, isChild) {
         actions +
         '<div class="iris-wr-tl-head">' +
         '<span class="iris-wr-tl-time">' + time + '</span>' +
+        iris_wroom_tl_local_hint(e) +
         (e.category ? '<span>&middot;</span><span class="iris-wr-tl-catname">' +
             iris_wroom_esc(e.category) + '</span>' : '') +
         srcChip + '</div>' +
@@ -1795,16 +1820,39 @@ function iris_wroom_tl_render() {
 }
 
 function iris_wroom_tl_sep(e, lastDate, emit) {
-    var d = e.event_date ? new Date(e.event_date) : null;
-    if (!d) return lastDate;
-    var key = d.toLocaleDateString([], {weekday: 'short', month: 'short',
-                                        day: 'numeric'});
+    var parts = iris_wroom_tl_utc_parts(e.event_date);
+    if (!parts) return lastDate;
+    var key = iris_wroom_tl_utc_day_label(parts.day);
     if (key !== lastDate) {
         emit('<div class="iris-wr-datesep"><span>' + iris_wroom_esc(key) +
              '</span></div>');
         return key;
     }
     return lastDate;
+}
+
+/* The modal mirrors the case event modal: date + time + a +HH:MM offset. It
+ * is filled with the event's LOCAL wall-clock (event_date_wtz) and the offset
+ * it was entered with, so what was typed is what reappears. */
+function iris_wroom_tlev_set_when(localIso, tz) {
+    var m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}(?::\d{2})?)/.exec(localIso || '');
+    document.getElementById('iris-wr-tlev-date').value = m ? m[1] : '';
+    document.getElementById('iris-wr-tlev-time').value =
+        m ? (m[2].length === 5 ? m[2] + ':00' : m[2]) : '';
+    document.getElementById('iris-wr-tlev-tz').value = tz || '+00:00';
+}
+
+function iris_wroom_tlev_read_when() {
+    var d = document.getElementById('iris-wr-tlev-date').value;
+    var t = document.getElementById('iris-wr-tlev-time').value;
+    var tz = (document.getElementById('iris-wr-tlev-tz').value || '').trim()
+        || '+00:00';
+    if (!d || !t) return {error: 'Date and time are required'};
+    if (!/^[+-]\d{2}:\d{2}$/.test(tz)) {
+        return {error: 'Time zone offset must look like +00:00 or -07:00'};
+    }
+    if (t.length === 5) t += ':00';
+    return {event_date: d + 'T' + t, event_tz: tz};
 }
 
 function iris_wroom_tlev_open(editing, preselectTl) {
@@ -1834,8 +1882,8 @@ function iris_wroom_tlev_open(editing, preselectTl) {
         document.getElementById('iris-wr-tlev-timeline-grp').style.display =
             'none';
         document.getElementById('iris-wr-tlev-title').value = ev.event_title;
-        document.getElementById('iris-wr-tlev-date').value =
-            (ev.event_date || '').replace('Z', '').slice(0, 19);
+        iris_wroom_tlev_set_when(ev.event_date_wtz || ev.event_date,
+                                 ev.event_tz || '+00:00');
         document.getElementById('iris-wr-tlev-cat').value = ev.category || '';
         colorEl.value = ev.color ? iris_wroom_tl_color(ev.color)
             : iris_wroom_tl_colorof(ev.timeline_id);
@@ -1850,7 +1898,7 @@ function iris_wroom_tlev_open(editing, preselectTl) {
         document.getElementById('iris-wr-tlev-timeline-grp').style.display =
             (preselectTl || t.data.timelines.length < 2) ? 'none' : '';
         document.getElementById('iris-wr-tlev-title').value = '';
-        document.getElementById('iris-wr-tlev-date').value = '';
+        iris_wroom_tlev_set_when('', '+00:00');
         document.getElementById('iris-wr-tlev-cat').value = '';
         colorEl.value = iris_wroom_tl_colorof(sel.value);
         document.getElementById('iris-wr-tlev-tags').value = '';
@@ -3430,9 +3478,17 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('iris-wr-tlev-save')
         .addEventListener('click', function () {
             var editing = IRIS_WROOM_TL.editing;
+            var when = iris_wroom_tlev_read_when();
+            if (when.error) {
+                var werr = document.getElementById('iris-wr-tlev-error');
+                werr.textContent = when.error;
+                werr.style.display = '';
+                return;
+            }
             var body = {
                 title: document.getElementById('iris-wr-tlev-title').value,
-                event_date: document.getElementById('iris-wr-tlev-date').value,
+                event_date: when.event_date,
+                event_tz: when.event_tz,
                 category: document.getElementById('iris-wr-tlev-cat').value,
                 tags: document.getElementById('iris-wr-tlev-tags').value,
                 content: document.getElementById('iris-wr-tlev-content').value
