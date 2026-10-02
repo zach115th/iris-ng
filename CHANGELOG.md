@@ -11,6 +11,26 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.4.4] — 2026-10-02
+
+War-room timeline entries follow the case timeline's time rule. **One schema change**
+(migration `f4b8d2e6a913`, a guarded nullable column) — back the database up before
+upgrading, migrations are one-way. **An app image rebuild is required** (the war-room page
+script is baked); the nginx and database images are unchanged.
+
+### Added
+- **Room timeline entries take a UTC offset and display in UTC.** The entry modal mirrors
+  the case event modal: date, time and a `+HH:MM` offset (default `+00:00`). The server
+  stores the instant in UTC and remembers the offset you entered; every entry on the room's
+  Timelines tab — the room's own and the linked cases' — shows `HH:MM:SS UTC` under UTC day
+  separators, with an info hint carrying the local time and offset it was entered in, and
+  the editor reopens with exactly what you typed. Before this, the modal had no offset, the
+  typed wall-clock was stored and declared UTC, and the card then shifted it to the browser's
+  zone, so an entry typed at 14:59 showed as 07:59. The API accepts an aware value (`Z` or
+  `+HH:MM`), a plain value plus `event_tz`, or a plain value alone (read as UTC, so existing
+  clients are unchanged); changing only the offset of an entry keeps the typed wall-clock and
+  moves the instant. Entries saved before this release keep their stored value as UTC.
+
 ## [IRIS-NG-v2.4.3] — 2026-10-02
 
 One fix on the Customers page. **No schema change** — the database head stays at
