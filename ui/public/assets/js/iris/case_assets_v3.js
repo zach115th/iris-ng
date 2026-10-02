@@ -181,7 +181,13 @@ function iris_ca_save_asset_links(r, extra, done) {
         csrf_token: iris_ca_csrf()
     };
     Object.keys(extra).forEach(function (k) { payload[k] = extra[k]; });
-    if (r.asset_compromise_status_id !== null
+    /* The row's compromise status is a DEFAULT for callers that do not set
+       one (the IOC / evidence link paths), never an override: the edit form
+       passes its own value in `extra`, and writing the row's value over it
+       here was why a changed Compromise Status re-rendered unchanged after
+       Save (an asset that already had a status could never change it). */
+    if (!('asset_compromise_status_id' in extra)
+            && r.asset_compromise_status_id !== null
             && r.asset_compromise_status_id !== undefined) {
         payload.asset_compromise_status_id = r.asset_compromise_status_id;
     }
