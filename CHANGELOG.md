@@ -11,6 +11,20 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.4.3] — 2026-10-02
+
+One fix on the Customers page. **No schema change** — the database head stays at
+`e3a7c5d9f261`. The fix is Python only: a clone install needs a reset and an app restart;
+the release images are rebuilt as always.
+
+### Fixed
+- **Customers page: the Details pane showed Sectors "—" for every customer**, even when
+  the edit modal showed one. The pane reads the customer's sectors from the per-customer
+  detail endpoint (`GET /manage/customers/<id>`), whose column list never included them,
+  while the list endpoint and the modal did. The detail payload now carries
+  `customer_dhs_sectors` (null when the customer has none) — an additive key, so API clients
+  are unaffected. Present since the two-pane Customers page shipped in `IRIS-NG-v2.0.0`.
+
 ## [IRIS-NG-v2.4.2] — 2026-10-01
 
 One fix on the Assets page. **No schema change** — the database head stays at
