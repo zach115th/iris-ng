@@ -11,6 +11,34 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.4.5] — 2026-10-02
+
+Two dependency updates in the UI build toolchain, both closing published advisories.
+**No schema change** — the database head stays at `f4b8d2e6a913`. **The shipped browser
+bundle is byte-identical to 2.4.4**: neither package reaches the browser or the running
+server, so this release exists to put the patched lockfile into a tagged image. Nothing to
+do on an existing install beyond the normal update.
+
+### Changed
+- **brace-expansion 5.0.9 → 5.0.12** (Dependabot alert #152). Closes GHSA-q2hr-2g5m-vwhr
+  (quadratic-time `{a},b}` rewrite, CVE-2026-102277) and the two sibling advisories on the
+  same version (GHSA-qhr7-859c-m2p7, GHSA-6j4f-fj2g-mc7p — uncontrolled recursion).
+  Reached only through `minimatch` under ESLint's config loader: a lint-time
+  devDependency. A timing probe of the affected path grew ~3.8× per doubling of the input
+  on 5.0.9 and under 2× on 5.0.12.
+- **engine.io 6.6.9 → 6.6.11** (Dependabot #136, alert #149). Closes GHSA-2gc4-cqfq-p2gv /
+  CVE-2026-102599: an Engine.IO server accepted a transport upgrade carrying a different
+  protocol revision than the session had negotiated, and a crafted heartbeat on that
+  transport could end the Node process. engine.io is the socket.io *server* half; IRIS
+  only vendors the prebuilt browser client out of the socket.io tarball and never runs a
+  Node socket server. Verified with a real server per version: 6.6.11 refuses the
+  mismatched upgrade with 400 where 6.6.9 accepted it.
+
+Both validated by rebuilding the UI from scratch in `node:24-alpine` with a strict
+`npm ci`: 716 output files md5-identical to the previous build, ESLint output identical,
+`npm audit` down from 8 high to 6 (the remaining six are the `braces` chain under
+Tailwind CSS 3, which needs a major upgrade rather than a bump).
+
 ## [IRIS-NG-v2.4.4] — 2026-10-02
 
 War-room timeline entries follow the case timeline's time rule. **One schema change**
