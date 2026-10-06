@@ -72,7 +72,7 @@ function iris_wroom_classify(desc) {
 }
 
 var IRIS_WROOM_COMMANDS = [
-    ['/note <text>', 'Create a war-room note'],
+    ['/note <text>', 'Create a room note on the Notes tab (first line = title)'],
     ['/pin <text>', 'Post a pinned note (hover a message to pin it)'],
     ['/decision <text>', 'Log a command decision'],
     ['/attach <case_id>', 'Attach a case'],
@@ -1128,7 +1128,9 @@ function iris_wroom_mention_complete(i) {
 }
 
 function iris_wroom_run_command(line) {
-    var m = line.match(/^\/(\S+)\s*(.*)$/);
+    /* [\s\S]* so a multi-line argument (/note title + body) still parses;
+       `.` stops at a newline and left `m` null. */
+    var m = line.match(/^\/(\S+)[ \t]*([\s\S]*)$/);
     var cmd = m[1].toLowerCase();
     var arg = (m[2] || '').trim();
     var t = IRIS_WROOM._target;
@@ -1139,7 +1141,8 @@ function iris_wroom_run_command(line) {
     switch (cmd) {
     case 'note':
         if (!arg) return need('/note <text>');
-        return iris_wroom_post(Object.assign({content: arg, kind: 'note'}, base), true);
+        /* #137: a Notes-tab note, not a stream message (/pin covers those). */
+        return iris_wroom_nt_create_from_command(arg);
     case 'pin':
         if (!arg) return need('/pin <text> (or hover a message to pin it)');
         return iris_wroom_post(Object.assign(
@@ -2072,6 +2075,259 @@ function iris_wroom_nt_render_rail() {
         chtml ? 'none' : '';
 }
 
+/* ------------------------------------------- notes: context menu (#137)
+   Right-click parity with the case notes tree. A folder: Add note / Rename /
+   Delete (room folders are one level deep, so no "Add directory" or "Move").
+   A note: Open / Rename / Move to... / Copy link / Delete. Empty rail space:
+   Add note / Add folder at the root. Mutating items follow the same rule as
+   the hover icons (responder+, room not closed); an observer or a closed room
+   gets Open and Copy link only. The menu and the icons call the SAME
+   handlers below, so there is one behaviour to test. */
+function iris_wroom_nt_add_note(folderId, extra) {
+    var body = Object.assign({}, extra || {});
+    if (folderId) body.folder_id = folderId;
+    return iris_wroom_api('POST', '/notes/room', body).then(function (res) {
+        if (!res.ok) return res;
+        iris_wroom_load_notes();
+        iris_wroom_nt_open_room(res.j.id);
+        return res;
+    });
+}
+
+function iris_wroom_nt_new_folder() {
+    IRIS_WROOM_NT.folderEdit = {mode: 'new'};
+    iris_wroom_nt_render_rail();
+}
+
+function iris_wroom_nt_rename_folder(folderId) {
+    IRIS_WROOM_NT.folderEdit = {mode: 'rename', id: folderId};
+    iris_wroom_nt_render_rail();
+}
+
+function iris_wroom_nt_delete_folder(folderId) {
+    if (!window.confirm('Delete this folder? Its notes move to the root.')) {
+        return Promise.resolve(null);
+    }
+    return iris_wroom_api('DELETE', '/notes/folders/' + folderId)
+        .then(function (res) { iris_wroom_load_notes(); return res; });
+}
+
+function iris_wroom_nt_rename_note(noteId) {
+    return iris_wroom_nt_open_room(noteId).then(function () {
+        var t = document.getElementById('iris-wr-nt-title');
+        if (t && !t.readOnly) { t.focus(); t.select(); }
+    });
+}
+
+function iris_wroom_nt_move_note(noteId, folderId) {
+    return iris_wroom_api('PUT', '/notes/room/' + noteId,
+                          {folder_id: folderId || null})
+        .then(function (res) {
+            if (!res.ok) { iris_wroom_nt_status('Move failed'); return res; }
+            var row = (IRIS_WROOM_NT.data.room_notes || []).find(function (n) {
+                return n.id === noteId;
+            });
+            if (row) row.folder_id = res.j.folder_id;
+            iris_wroom_nt_render_rail();
+            iris_wroom_nt_status('Note moved');
+            return res;
+        });
+}
+
+function iris_wroom_nt_delete_note(noteId) {
+    if (!window.confirm('Delete this room note?')) return Promise.resolve(null);
+    return iris_wroom_api('DELETE', '/notes/room/' + noteId).then(function (res) {
+        if (!res.ok) return res;
+        var s = IRIS_WROOM_NT;
+        if (s.sel && s.sel.type === 'room' && s.sel.id === noteId) {
+            s.sel = null; s.doc = null; s.dirty = false;
+            document.getElementById('iris-wr-nt-doc').style.display = 'none';
+            document.getElementById('iris-wr-nt-placeholder').style.display = '';
+        }
+        iris_wroom_load_notes();
+        return res;
+    });
+}
+
+/* The room URL plus ?note=<id>; the page opens that note on arrival. */
+function iris_wroom_nt_note_link(noteId) {
+    var p = new URLSearchParams(window.location.search);
+    p.set('note', String(noteId));
+    return window.location.origin + window.location.pathname + '?' + p.toString();
+}
+
+function iris_wroom_nt_copy_link(noteId) {
+    var url = iris_wroom_nt_note_link(noteId);
+    var fallback = function () { window.prompt('Copy the note link', url); };
+    var clip = (typeof navigator !== 'undefined') && navigator.clipboard;
+    if (clip && clip.writeText) {
+        clip.writeText(url).then(function () { iris_wroom_nt_status('Link copied'); }, fallback);
+    } else {
+        fallback();
+    }
+    return url;
+}
+
+function iris_wroom_nt_land_from_url() {
+    var nid = new URLSearchParams(window.location.search).get('note');
+    if (!/^\d+$/.test(nid || '')) return false;
+    iris_wroom_show_pane('notes');
+    iris_wroom_nt_open_room(parseInt(nid, 10));
+    return true;
+}
+
+/* /note <text>: the first line (120 chars) is the title, the whole text the
+   body. The command status names the note and links to it. */
+function iris_wroom_nt_create_from_command(text) {
+    var first = (String(text || '').split(/\r?\n/)[0] || '').trim();
+    var title = first.slice(0, 120) || 'New note';
+    return iris_wroom_api('POST', '/notes/room', {title: title, content: text})
+        .then(function (res) {
+            if (!res.ok) {
+                iris_wroom_cmd_status((res.j && res.j.message) || 'Note failed');
+                return res;
+            }
+            document.getElementById('iris-wr-msg-input').value = '';
+            iris_wroom_load_notes();
+            document.getElementById('iris-wr-cmd-status').innerHTML =
+                'Note "' + iris_wroom_esc(title) + '" created \u2014 ' +
+                '<a href="#" data-open-note="' + res.j.id + '">open it</a>';
+            return res;
+        });
+}
+
+function iris_wroom_nt_folder_menu(folderId) {
+    if (!iris_wroom_nt_can_edit()) return null;
+    return [
+        {key: 'add-note', label: 'Add note', action: function () { iris_wroom_nt_add_note(folderId); }},
+        {divider: true},
+        {key: 'rename', label: 'Rename', action: function () { iris_wroom_nt_rename_folder(folderId); }},
+        {divider: true},
+        {key: 'delete', label: 'Delete', danger: true, action: function () { iris_wroom_nt_delete_folder(folderId); }}
+    ];
+}
+
+function iris_wroom_nt_note_menu(noteId) {
+    var canEdit = iris_wroom_nt_can_edit();
+    var row = (IRIS_WROOM_NT.data.room_notes || []).find(function (n) {
+        return n.id === noteId;
+    }) || {};
+    var items = [
+        {key: 'open', label: 'Open', action: function () { iris_wroom_nt_open_room(noteId); }}
+    ];
+    if (canEdit) {
+        items.push({key: 'rename', label: 'Rename', action: function () { iris_wroom_nt_rename_note(noteId); }});
+        var targets = [{key: 'move-root', label: 'Root', disabled: !row.folder_id,
+                        action: function () { iris_wroom_nt_move_note(noteId, null); }}];
+        (IRIS_WROOM_NT.data.folders || []).forEach(function (f) {
+            targets.push({key: 'move-' + f.id, label: f.name, disabled: row.folder_id === f.id,
+                          action: function () { iris_wroom_nt_move_note(noteId, f.id); }});
+        });
+        items.push({key: 'move', label: 'Move to\u2026', submenu: targets});
+    }
+    items.push({key: 'copy-link', label: 'Copy link', action: function () { iris_wroom_nt_copy_link(noteId); }});
+    if (canEdit) {
+        items.push({divider: true});
+        items.push({key: 'delete', label: 'Delete', danger: true, action: function () { iris_wroom_nt_delete_note(noteId); }});
+    }
+    return items;
+}
+
+function iris_wroom_nt_root_menu() {
+    if (!iris_wroom_nt_can_edit()) return null;
+    return [
+        {key: 'add-note', label: 'Add note', action: function () { iris_wroom_nt_add_note(null); }},
+        {key: 'add-folder', label: 'Add folder', action: function () { iris_wroom_nt_new_folder(); }}
+    ];
+}
+
+/* Which rows a right-click landed on. Linked-case folder heads carry no
+   data-folder-id and get no menu of their own; a linked-case note opens only
+   (read-only content). */
+function iris_wroom_nt_ctx_target(el) {
+    var fh = el.closest('.iris-wr-nt-folderhead[data-folder-id]');
+    if (fh) return {folderId: parseInt(fh.getAttribute('data-folder-id'), 10)};
+    var nr = el.closest('.iris-wr-nt-row[data-note-id]');
+    if (nr) return {noteId: parseInt(nr.getAttribute('data-note-id'), 10)};
+    var cr = el.closest('.iris-wr-nt-row[data-case-note-id]');
+    if (cr) {
+        return {caseId: parseInt(cr.getAttribute('data-case-id'), 10),
+                caseNoteId: parseInt(cr.getAttribute('data-case-note-id'), 10)};
+    }
+    return {};
+}
+
+function iris_wroom_nt_ctx_items_for(target) {
+    if (target.folderId) return iris_wroom_nt_folder_menu(target.folderId);
+    if (target.noteId) return iris_wroom_nt_note_menu(target.noteId);
+    if (target.caseNoteId) {
+        return [{key: 'open', label: 'Open', action: function () {
+            iris_wroom_nt_open_case(target.caseId, target.caseNoteId);
+        }}];
+    }
+    return iris_wroom_nt_root_menu();
+}
+
+function iris_wroom_ctxmenu_close() {
+    var m = document.getElementById('iris-wr-ctxmenu');
+    if (m && m.parentNode) m.parentNode.removeChild(m);
+}
+
+/* One menu at a time, fixed at the pointer, nudged back on screen. A
+   submenu replaces the list (with a Back row) rather than nesting. */
+function iris_wroom_ctxmenu_open(x, y, items, back) {
+    iris_wroom_ctxmenu_close();
+    if (!items || !items.length) return null;
+    var m = document.createElement('div');
+    m.id = 'iris-wr-ctxmenu';
+    m.className = 'dropdown-menu show iris-wr-ctxmenu';
+    m.style.position = 'fixed';
+    m.style.left = x + 'px';
+    m.style.top = y + 'px';
+    var divider = function () {
+        var d = document.createElement('div');
+        d.className = 'dropdown-divider';
+        return d;
+    };
+    if (back) {
+        var b = document.createElement('a');
+        b.href = '#';
+        b.className = 'dropdown-item iris-wr-ctx-back';
+        b.setAttribute('data-ctx', 'back');
+        b.textContent = '\u2039 Back';
+        b.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            iris_wroom_ctxmenu_open(x, y, back);
+        });
+        m.appendChild(b);
+        m.appendChild(divider());
+    }
+    items.forEach(function (it) {
+        if (it.divider) { m.appendChild(divider()); return; }
+        var a = document.createElement('a');
+        a.href = '#';
+        a.className = 'dropdown-item' + (it.danger ? ' text-danger' : '')
+            + (it.disabled ? ' disabled' : '');
+        a.setAttribute('data-ctx', it.key || '');
+        a.textContent = it.label;
+        a.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            if (it.disabled) return;
+            if (it.submenu) { iris_wroom_ctxmenu_open(x, y, it.submenu, items); return; }
+            iris_wroom_ctxmenu_close();
+            it.action();
+        });
+        m.appendChild(a);
+    });
+    document.body.appendChild(m);
+    if (m.getBoundingClientRect && window.innerWidth) {
+        var r = m.getBoundingClientRect();
+        if (r.right > window.innerWidth) m.style.left = Math.max(4, window.innerWidth - r.width - 4) + 'px';
+        if (r.bottom > window.innerHeight) m.style.top = Math.max(4, window.innerHeight - r.height - 4) + 'px';
+    }
+    return m;
+}
+
 function iris_wroom_nt_status(text) {
     document.getElementById('iris-wr-nt-status').textContent = text || '';
 }
@@ -2784,6 +3040,8 @@ document.addEventListener('DOMContentLoaded', function () {
          * needs the slugs at composer time, so load them at boot too. */
         iris_wroom_load_teams();
         IRIS_WROOM._pollTimer = setInterval(iris_wroom_load_stream, 5000);
+        /* ?note=<id> (Copy link on the Notes rail) opens that note. */
+        iris_wroom_nt_land_from_url();
     });
 
     document.getElementById('iris-wr-tabbar')
@@ -3538,17 +3796,12 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('iris-wr-nt-newfolder')
         .addEventListener('click', function (e) {
             e.preventDefault();
-            IRIS_WROOM_NT.folderEdit = {mode: 'new'};
-            iris_wroom_nt_render_rail();
+            iris_wroom_nt_new_folder();
         });
     document.getElementById('iris-wr-nt-newnote')
         .addEventListener('click', function (e) {
             e.preventDefault();
-            iris_wroom_api('POST', '/notes/room', {}).then(function (res) {
-                if (!res.ok) return;
-                iris_wroom_load_notes();
-                iris_wroom_nt_open_room(res.j.id);
-            });
+            iris_wroom_nt_add_note(null);
         });
     // ICS forms: the seed endpoint adds only the forms that are missing and
     // never touches an existing one, so this is safe to click repeatedly.
@@ -3601,33 +3854,19 @@ document.addEventListener('DOMContentLoaded', function () {
             var a = e.target.closest('.iris-wr-nt-addin');
             if (a) {
                 e.preventDefault();
-                iris_wroom_api('POST', '/notes/room',
-                    {folder_id: parseInt(
-                        a.getAttribute('data-folder-id'), 10)})
-                    .then(function (res) {
-                        if (!res.ok) return;
-                        iris_wroom_load_notes();
-                        iris_wroom_nt_open_room(res.j.id);
-                    });
+                iris_wroom_nt_add_note(parseInt(a.getAttribute('data-folder-id'), 10));
                 return;
             }
             var rn = e.target.closest('.iris-wr-nt-ren');
             if (rn) {
                 e.preventDefault();
-                IRIS_WROOM_NT.folderEdit = {mode: 'rename',
-                    id: parseInt(rn.getAttribute('data-folder-id'), 10)};
-                iris_wroom_nt_render_rail();
+                iris_wroom_nt_rename_folder(parseInt(rn.getAttribute('data-folder-id'), 10));
                 return;
             }
             var df = e.target.closest('.iris-wr-nt-delfolder');
             if (df) {
                 e.preventDefault();
-                if (!window.confirm(
-                        'Delete this folder? Its notes move to the root.'))
-                    return;
-                iris_wroom_api('DELETE', '/notes/folders/' +
-                    df.getAttribute('data-folder-id'))
-                    .then(iris_wroom_load_notes);
+                iris_wroom_nt_delete_folder(parseInt(df.getAttribute('data-folder-id'), 10));
                 return;
             }
             var row = e.target.closest('.iris-wr-nt-row[data-note-id]');
@@ -3750,17 +3989,33 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             var s = IRIS_WROOM_NT;
             if (!s.sel || s.sel.type !== 'room') return;
-            if (!window.confirm('Delete this room note?')) return;
-            iris_wroom_api('DELETE', '/notes/room/' + s.sel.id)
-                .then(function (res) {
-                    if (!res.ok) return;
-                    s.sel = null; s.doc = null; s.dirty = false;
-                    document.getElementById('iris-wr-nt-doc')
-                        .style.display = 'none';
-                    document.getElementById('iris-wr-nt-placeholder')
-                        .style.display = '';
-                    iris_wroom_load_notes();
-                });
+            iris_wroom_nt_delete_note(s.sel.id);
+        });
+    /* Right-click menus on the Notes rail (#137); one document-level
+       close for click-away / Escape; the /note command's "open it" link. */
+    var ntRail = document.querySelector('#iris-wr-pane-notes .iris-wr-rail');
+    if (ntRail) {
+        ntRail.addEventListener('contextmenu', function (e) {
+            if (e.target.closest('input, .iris-wr-nt-toolbtn, .iris-wr-nt-inline')) return;
+            var items = iris_wroom_nt_ctx_items_for(iris_wroom_nt_ctx_target(e.target));
+            if (!items) return;
+            e.preventDefault();
+            iris_wroom_ctxmenu_open(e.clientX, e.clientY, items);
+        });
+    }
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest || !e.target.closest('#iris-wr-ctxmenu')) iris_wroom_ctxmenu_close();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') iris_wroom_ctxmenu_close();
+    });
+    document.getElementById('iris-wr-cmd-status')
+        .addEventListener('click', function (e) {
+            var a = e.target.closest && e.target.closest('a[data-open-note]');
+            if (!a) return;
+            e.preventDefault();
+            iris_wroom_show_pane('notes');
+            iris_wroom_nt_open_room(parseInt(a.getAttribute('data-open-note'), 10));
         });
 
     document.getElementById('iris-wr-edit-btn')

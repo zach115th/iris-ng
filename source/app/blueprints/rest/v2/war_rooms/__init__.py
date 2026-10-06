@@ -2017,7 +2017,8 @@ def create_war_room_note(room_id):
     data = request.get_json(silent=True) or {}
     try:
         n = create_room_note(room, _uid(), title=data.get('title'),
-                             folder_id=data.get('folder_id'), guest_id=_gid())
+                             folder_id=data.get('folder_id'), guest_id=_gid(),
+                             content=data.get('content'))
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     out = serialize_room_note(n)

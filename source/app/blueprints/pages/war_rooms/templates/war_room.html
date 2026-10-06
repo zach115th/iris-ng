@@ -396,6 +396,9 @@
     .iris-wr-nt-row .iris-wr-tl-act { margin-left: 0; }
     .iris-wr-nt-sub { margin-left: 18px; }
     .iris-wr-nt-folderhead { color: #9a9aa5; cursor: default; }
+    /* #137: right-click menu on the Notes rail (one menu at a time, fixed at the pointer). */
+    .iris-wr-ctxmenu { min-width: 170px; font-size: 0.85rem; z-index: 1060; }
+    .iris-wr-ctxmenu .dropdown-item.disabled { opacity: 0.45; pointer-events: none; }
     .iris-wr-nt-inline input {
         flex: 1 1 auto; min-width: 0;
         background: rgba(255,255,255,0.04);

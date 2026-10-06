@@ -1759,13 +1759,16 @@ def delete_note_folder(room, folder_id):
     db.session.commit()
 
 
-def create_room_note(room, user_id, title=None, folder_id=None, guest_id=None):
+def create_room_note(room, user_id, title=None, folder_id=None, guest_id=None,
+                     content=None):
+    """`content` (iris-ng #137): the /note slash command creates a note WITH
+    its body in one call; the Notes-tab buttons keep creating an empty one."""
     _assert_writable(room)
     title = (title or '').strip() or 'New note'
     if folder_id:
         _get_note_folder(room, folder_id)
     n = WarRoomNote(room_id=room.id, title=title[:255],
-                    folder_id=folder_id or None, content='',
+                    folder_id=folder_id or None, content=(content or ''),
                     created_by=user_id, created_by_guest_id=guest_id)
     db.session.add(n)
     db.session.commit()
