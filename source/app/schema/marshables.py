@@ -57,6 +57,7 @@ from app.datamgmt.manage.manage_tags_db import add_db_tag
 from app.datamgmt.case.case_iocs_db import get_ioc_links
 from app.iris_engine.access_control.utils import ac_mask_from_val_list
 from app.models.models import AnalysisStatus
+from app.models.models import CaseAiArtifact
 from app.models.models import CaseClassification
 from app.models.models import SectorCatalog
 from app.models.models import SavedFilter
@@ -2712,8 +2713,37 @@ class CaseSchemaForAPIV2(ma.SQLAlchemyAutoSchema):
                                                      field_name="case_customer")
 
 
+def executive_summaries_for(case_ids):
+    """{case_id: displayed executive summary or None} in ONE statement — the
+    newest ``case_summary`` artifact per case, the analyst edit winning (the
+    same choice as ``AiOverrideMixin.display_content``). Backs
+    ``CaseDetailsSchema.executive_summary`` so a ``many=`` dump costs one extra
+    query, not one per case (iris-ng #138)."""
+    ids = sorted({i for i in case_ids if i is not None})
+    out = {i: None for i in ids}
+    if not ids:
+        return out
+    rows = (CaseAiArtifact.query
+            .filter(CaseAiArtifact.case_id.in_(ids),
+                    CaseAiArtifact.kind == 'case_summary')
+            .order_by(CaseAiArtifact.case_id,
+                      CaseAiArtifact.generated_at.desc(),
+                      CaseAiArtifact.id.desc())
+            .distinct(CaseAiArtifact.case_id)
+            .all())
+    for art in rows:
+        out[art.case_id] = art.display_content
+    return out
+
+
 class CaseDetailsSchema(ma.SQLAlchemyAutoSchema):
-    """Schema for serializing and deserializing Case objects in details."""
+    """Schema for serializing and deserializing Case objects in details.
+
+    iris-ng #138: carries ``executive_summary`` — the Executive Case Summary as
+    the card displays it (analyst edit over model text), None when none was
+    generated. Module hooks dump this schema, so a webhook consumer reads the
+    summary from the case payload without a second call. Dump-only, additive.
+    """
     client = ma.Nested(CustomerSchema)
     owner = ma.Nested(UserSchema, only=['id', 'user_name', 'user_login', 'user_email'])
     classification = ma.Nested(CaseClassificationSchema)
@@ -2744,6 +2774,27 @@ class CaseDetailsSchema(ma.SQLAlchemyAutoSchema):
 
     status_name = ma.Method('get_status_name')
     protagonists = ma.Method('get_protagonists')
+    executive_summary = ma.Method('get_executive_summary')
+
+    def get_executive_summary(self, obj):
+        cache = getattr(self, '_executive_summaries', None)
+        if cache is not None:
+            return cache.get(obj.case_id)
+        return executive_summaries_for([obj.case_id]).get(obj.case_id)
+
+    def dump(self, obj, *, many=None):
+        # Prefetch for list dumps (dashboard, manage list, the webhook module's
+        # many=True) — one statement for every case in the batch.
+        many = self.many if many is None else many
+        if not many:
+            return super().dump(obj, many=False)
+        obj = list(obj)
+        self._executive_summaries = executive_summaries_for(
+            [getattr(c, 'case_id', None) for c in obj])
+        try:
+            return super().dump(obj, many=True)
+        finally:
+            self._executive_summaries = None
 
     class Meta:
         model = Cases

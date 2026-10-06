@@ -41,6 +41,7 @@ from app import app
 from app import db
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
+from app.iris_engine.module_handler.module_handler import call_modules_hook
 from app.models.cases import Cases
 from app.models.cases import CasesEvent
 from app.models.models import CaseAiArtifact
@@ -468,6 +469,28 @@ def summary_edit_is_stale(artifact: CaseAiArtifact) -> bool:
     return last is not None and last > artifact.edited_at
 
 
+def _notify_case_update(case_id: int, what: str) -> None:
+    """Fire ``on_postload_case_update`` for the case (iris-ng #138).
+
+    The executive summary is part of the case as hook consumers see it
+    (``CaseDetailsSchema.executive_summary``), so a change to what the card
+    DISPLAYS is a case update: an analyst edit, a revert, a completed
+    generation. Called AFTER the commit so an asynchronous module reads the
+    new text, and fail-soft — a module failure must never undo a saved
+    summary or fail the AI job that produced it. Same rule as the summary
+    text route of #128: fires only when the displayed text actually changed.
+    """
+    case = Cases.query.filter(Cases.case_id == case_id).first()
+    if case is None:
+        return
+    try:
+        call_modules_hook('on_postload_case_update', data=case, caseid=case_id)
+    except Exception:
+        app.logger.exception(
+            f"Case #{case_id}: on_postload_case_update after executive summary {what} failed"
+        )
+
+
 def save_summary_edit(case_id: int, content: str, user_id: int) -> CaseAiArtifact:
     """Store an analyst correction on the case's latest summary artifact.
 
@@ -485,6 +508,7 @@ def save_summary_edit(case_id: int, content: str, user_id: int) -> CaseAiArtifac
     if not text:
         raise CaseSummaryError("Edited summary cannot be empty")
 
+    previous_display = artifact.display_content
     artifact.edited_content = text
     artifact.edited_by_id = user_id
     artifact.edited_at = datetime.utcnow()
@@ -494,6 +518,8 @@ def save_summary_edit(case_id: int, content: str, user_id: int) -> CaseAiArtifac
         f"Case #{case_id}: summary manually edited by user {user_id} "
         f"(artifact_id={artifact.id}, len={len(text)} chars)"
     )
+    if text != previous_display:
+        _notify_case_update(case_id, 'edit')
     return artifact
 
 
@@ -506,6 +532,7 @@ def revert_summary_edit(case_id: int) -> CaseAiArtifact:
     if not artifact.is_edited:
         return artifact
 
+    previous_display = artifact.display_content
     artifact.edited_content = None
     artifact.edited_by_id = None
     artifact.edited_at = None
@@ -515,6 +542,8 @@ def revert_summary_edit(case_id: int) -> CaseAiArtifact:
         f"Case #{case_id}: summary edit reverted to AI original "
         f"(artifact_id={artifact.id})"
     )
+    if artifact.display_content != previous_display:
+        _notify_case_update(case_id, 'revert')
     return artifact
 
 
@@ -891,5 +920,8 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
         f"(artifact_id={artifact.id}, len={len(content)} chars, "
         f"usage={response.get('usage')})"
     )
+    # A NEW final artifact changes what the card shows; a cache hit above
+    # returned early and changed nothing, so it does not fire.
+    _notify_case_update(case_id, 'generation')
 
     return artifact
