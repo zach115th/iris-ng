@@ -11,6 +11,32 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.4.6] — 2026-10-05
+
+One fix for module hooks and webhook consumers. **No schema change** — the database head stays
+at `f4b8d2e6a913`. Python only: a clone install needs a reset and an app restart; the release
+images are rebuilt as always.
+
+### Fixed
+- **Changes to the Executive Case Summary now fire `on_postload_case_update`** (#138). The
+  Summary tab's AI card is a stored artifact with its own save path, and nothing on that path
+  reached the module layer — a webhook consumer (for example n8n syncing a case to Jira) saw
+  an edited executive summary only when a later rename, close or reopen happened to fire the
+  hook. The hook now fires after an analyst saves a correction, after a revert to the AI
+  original, and after a generation completes with a new summary. It fires after the commit,
+  only when the displayed text actually changed (saving identical text, or a generation served
+  from cache, stays silent), and a failing module can never undo a saved summary or fail the
+  AI job that produced it. The right-hand Case Summary card was covered by #128 in 2.4.1.
+- **The case payload carries `executive_summary`.** Case details — what the webhooks module
+  sends on every case hook, and `GET /case/meta` — gain an additive, read-only key with the
+  executive summary as the card displays it (an analyst's correction over the model text,
+  `null` when none was generated). A consumer reads the text from the hook body without a
+  second call. Lists of cases fetch the summaries for the whole page in one statement.
+- **Hooks fired from a background worker no longer fail silently.** The module dispatcher read
+  the signed-in user's name unconditionally; inside a worker there is no signed-in user, so any
+  hook fired from worker context (such as the AI worker finishing a summary) raised before it
+  reached the module. Such tasks are now attributed to `system`.
+
 ## [IRIS-NG-v2.4.5] — 2026-10-02
 
 Two dependency updates in the UI build toolchain, both closing published advisories.
