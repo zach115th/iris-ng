@@ -42,7 +42,21 @@ TASK_SUGGESTIONS_KIND = "task_suggestions"
 PROMPT_PATH = Path(__file__).parent.parent.parent / "resources" / "ai_prompts" / "task_suggester.md"
 
 MAX_SUGGESTIONS = 8
-MAX_TOKENS = 6000            # reasoning models think before they answer (see case_chat)
+# Reasoning models think before they answer (see case_chat). 6 000 was measured
+# short on Bedrock Kimi K3: a 5-task case already spent ~3 700 completion tokens
+# (most of it reasoning) and a 9-task breach case cut the JSON mid-string at the
+# cap. The model stops when the object closes, so the ceiling costs nothing on
+# a model that needs less (2026-10-07).
+MAX_TOKENS = 12000
+
+# Appended to the user prompt on ONE retry when the first reply hit the output
+# limit before its JSON closed: fewer, shorter items and the answer first. The
+# instruction, not the cap, is what moves a reasoning model (tag_suggester).
+COMPACT_RETRY_SUFFIX = (
+    "\n\nYour previous reply was cut off by the output limit before the JSON closed. "
+    "Answer first and think less: return at most 5 suggestions, each description "
+    "at most 2 sentences, and nothing but the JSON object."
+)
 MAX_TITLE = 160
 MAX_DESCRIPTION = 2000
 MAX_RATIONALE = 400
@@ -370,6 +384,16 @@ def get_cached_suggestions(case_id: int) -> dict[str, Any] | None:
 
 # --- generation ----------------------------------------------------------------
 
+def _parse_or_none(raw: str):
+    """The reply's JSON object, or None when it does not parse (truncated or prose)."""
+    if not raw:
+        return None
+    try:
+        return json.loads(_extract_json_block(raw))
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return None
+
+
 def suggest_tasks(case_id: int, *, force: bool = False) -> dict[str, Any]:
     case = Cases.query.filter(Cases.case_id == case_id).first()
     if case is None:
@@ -402,24 +426,42 @@ def suggest_tasks(case_id: int, *, force: bool = False) -> dict[str, Any]:
     )
     app.logger.info(f"TaskSuggester: case #{case_id} requesting suggestions (model={client.model}, "
                     f"existing_tasks={len(payload['existing_tasks'])})")
-    try:
-        response = client.chat([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ], max_tokens=MAX_TOKENS)
-    except AIClientError as exc:
-        raise TaskSuggesterError(f"AI backend call failed: {exc}") from exc
 
-    finish = response.get('choices', [{}])[0].get('finish_reason')
-    raw = client.extract_content(response).strip()
+    def _ask(prompt: str):
+        try:
+            resp = client.chat([
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ], max_tokens=MAX_TOKENS)
+        except AIClientError as exc:
+            raise TaskSuggesterError(f"AI backend call failed: {exc}") from exc
+        text = client.extract_content(resp).strip()
+        return resp, text, resp.get('choices', [{}])[0].get('finish_reason'), _parse_or_none(text)
+
+    response, raw, finish, parsed = _ask(user_prompt)
+    retried = False
+    if finish == "length" and parsed is None:
+        # The output limit cut the reply before (or while) the JSON was written
+        # -- a reasoning model that thought too long, or a long list. One
+        # retry asking for a compact answer first; same budget on purpose.
+        app.logger.warning(
+            f"TaskSuggester: case #{case_id} reply hit the output limit before the JSON closed "
+            f"(visible_chars={len(raw)}, usage={json.dumps(response.get('usage'))}); "
+            f"retrying once with a compact instruction")
+        response, raw, finish, parsed = _ask(user_prompt + COMPACT_RETRY_SUFFIX)
+        retried = True
+
     if not raw:
         raise TaskSuggesterError(f"AI backend returned an empty response (finish_reason={finish})")
-    try:
-        parsed = json.loads(_extract_json_block(raw))
-    except json.JSONDecodeError as exc:
+    if parsed is None:
         detail = ' '.join(raw.split())[:200]
-        hint = " (the reply hit the output limit)" if finish == "length" else ""
-        raise TaskSuggesterError(f"AI backend did not return JSON{hint}. Backend said: {detail}") from exc
+        if finish == "length":
+            hint = (" (the reply hit the output limit twice, even with a compact instruction: point the "
+                    "task suggester's Settings override at a non-reasoning model)" if retried
+                    else " (the reply hit the output limit)")
+        else:
+            hint = ""
+        raise TaskSuggesterError(f"AI backend did not return JSON{hint}. Backend said: {detail}")
 
     suggestions = validate_suggestions(parsed, payload["existing_tasks"],
                                        {s["slug"] for s in payload["skill_catalog"]})
