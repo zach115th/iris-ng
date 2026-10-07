@@ -50,6 +50,8 @@ from datetime import datetime
 from typing import Any
 
 from app import db
+from app.iris_engine.ai.json_reply import ask_json
+from app.iris_engine.ai.json_reply import truncation_hint
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import OpenAIClient
 from app.iris_engine.ai.openai_client import build_default_client
@@ -59,6 +61,16 @@ from app.models.alerts import AlertClusterMember
 from app.models.models import AiArtifact
 
 log = logging.getLogger(__name__)
+
+# Budget = thinking + output (1 500 until 2026-10-07; a reasoning model spends
+# more than that before its first word). The model stops when the object
+# closes. One compact retry when the output limit cuts the JSON (json_reply).
+TRIAGE_MAX_TOKENS = 6000
+TRIAGE_TIMEOUT = 240.0
+COMPACT_RETRY_SUFFIX = (
+    '\n\nAnswer NOW with the JSON object only. Keep the narrative under 150 '
+    'words. No reasoning before the answer.'
+)
 
 PROMPT_ID = 'AlertClusterTriageSystemPrompt-v1'
 FEATURE_KEY = 'alert_cluster_triage'
@@ -254,7 +266,7 @@ def generate_cluster_triage(cluster_id: int, *, force: bool = False) -> dict[str
         raise ClusterTriageError(f'Alert cluster #{cluster_id} not found')
 
     client: OpenAIClient | None = build_default_client(
-        feature=FEATURE_KEY, timeout=120.0, default_max_tokens=1500)
+        feature=FEATURE_KEY, timeout=TRIAGE_TIMEOUT, default_max_tokens=TRIAGE_MAX_TOKENS)
     if client is None:
         raise ClusterTriageError(
             'AI backend is not configured. Enable it in Manage → Settings → AI.')
@@ -279,14 +291,20 @@ def generate_cluster_triage(cluster_id: int, *, force: bool = False) -> dict[str
     ]
 
     try:
-        resp = client.chat(messages, max_tokens=1500)
-        raw = OpenAIClient.extract_content(resp)
+        reply = ask_json(client, messages, max_tokens=TRIAGE_MAX_TOKENS,
+                         compact_suffix=COMPACT_RETRY_SUFFIX, parse=_parse_response,
+                         log=log, label=f'cluster_triage cluster={cluster_id}')
     except AIClientError as exc:
         # Transport/auth/timeout: raise, never persist (project rule).
         log.error('cluster_triage: AI call failed — %s', exc)
         raise ClusterTriageError(str(exc))
+    raw = reply.raw
+    if reply.parsed is None and reply.finish == 'length':
+        raise ClusterTriageError(
+            'AI backend reply was cut by the output limit before the JSON closed'
+            + truncation_hint('alert-cluster triage', reply) + f'. Reply began: {" ".join(raw.split())[:160]}')
 
-    result = _parse_response(raw)
+    result = reply.parsed if reply.parsed is not None else _parse_response(raw)
 
     art = AiArtifact(
         anchor_type=ANCHOR_TYPE,

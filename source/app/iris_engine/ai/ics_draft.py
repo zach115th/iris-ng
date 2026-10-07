@@ -64,6 +64,7 @@ from datetime import datetime
 from typing import Any
 
 from app import db
+from app.iris_engine.ai.json_reply import parse_or_none
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import OpenAIClient
 from app.iris_engine.ai.openai_client import build_default_client
@@ -739,7 +740,11 @@ def apply_ics_draft(room: WarRoom, proposal: dict, actor_id: int | None,
 # -------------------------------------------------------------- orchestration
 
 # Budget = thinking + output: reasoning models spend tokens before the JSON.
-_MAX_TOKENS = 6000
+# 6 000 until 2026-10-07 (Kimi K3 on Bedrock cut sibling surfaces' JSON at
+# that cap); the model stops when the object closes. The client timeout
+# below moved with it.
+_MAX_TOKENS = 12000
+_TIMEOUT = 360.0
 _COMPACT_SUMMARY_CAP = 1500
 _COMPACT_ACTIVITY_CAP = 15
 
@@ -798,7 +803,7 @@ def run_ics_draft(room_id: int, actor_id: int | None, *, force: bool = False) ->
                             + ', '.join(missing_drafted))
 
     client: OpenAIClient | None = build_default_client(
-        feature=FEATURE_KEY, timeout=240.0, default_max_tokens=_MAX_TOKENS)
+        feature=FEATURE_KEY, timeout=_TIMEOUT, default_max_tokens=_MAX_TOKENS)
     if client is None:
         raise IcsDraftError(
             'AI backend is not configured. Enable it in Manage → Settings → AI.')
@@ -817,14 +822,15 @@ def run_ics_draft(room_id: int, actor_id: int | None, *, force: bool = False) ->
     if art is None:
         try:
             raw, finish = _chat(client, system_prompt, payload)
-            if not raw.strip() and finish == 'length':
+            if finish == 'length' and parse_or_none(raw, lambda t: _parse_response(t, payload['candidates'])) is None:
                 # A reasoning model can spend the whole budget thinking and
                 # emit nothing (observed: 3000 reasoning tokens, 0 content on
-                # a 16 KB payload). One retry on a compact payload — the
+                # a 16 KB payload) -- or, since 2026-10-07, start the JSON and
+                # be cut mid-string. One retry on a compact payload — the
                 # material the forms need most, less to reason over.
-                log.warning('ics_draft: empty reply at the token limit from %s '
-                            '(room=%s) — retrying with a compact payload',
-                            client.model, room_id)
+                log.warning('ics_draft: reply hit the token limit before the JSON closed from %s '
+                            '(room=%s, visible_chars=%d) — retrying with a compact payload',
+                            client.model, room_id, len((raw or '').strip()))
                 raw, finish = _chat(client, system_prompt, _compact_payload(payload))
         except AIClientError as exc:
             log.error('ics_draft: AI call failed — %s', exc)

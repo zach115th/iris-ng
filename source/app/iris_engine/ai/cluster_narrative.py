@@ -24,10 +24,21 @@ from datetime import datetime
 from typing import Any
 
 from app import app, db
+from app.iris_engine.ai.json_reply import ask_json, truncation_hint
 from app.iris_engine.ai.openai_client import AIClientError, OpenAIClient, build_default_client
 from app.models.models import CaseAiArtifact
 
 log = logging.getLogger(__name__)
+
+# Budget = thinking + output (800 until 2026-10-07; a reasoning model spends
+# more than that before its first word). The model stops when the object
+# closes. One compact retry when the output limit cuts the JSON (json_reply).
+NARRATIVE_MAX_TOKENS = 4000
+NARRATIVE_TIMEOUT = 240.0
+COMPACT_RETRY_SUFFIX = (
+    "\n\nAnswer NOW with the JSON object only. Keep the narrative under 150 "
+    "words. No reasoning before the answer."
+)
 
 PROMPT_ID = "ClusterNarrativeSystemPrompt-v2"
 _PROMPT_PATH = os.path.join(
@@ -291,8 +302,8 @@ def generate_cluster_narrative(
 
     client: OpenAIClient | None = build_default_client(
         feature="cluster_narrative",
-        timeout=120.0,
-        default_max_tokens=800,
+        timeout=NARRATIVE_TIMEOUT,
+        default_max_tokens=NARRATIVE_MAX_TOKENS,
     )
     if client is None:
         raise AIClientError("AI backend is not configured. Enable it in Manage → Settings → AI.")
@@ -325,13 +336,19 @@ def generate_cluster_narrative(
     ]
 
     try:
-        resp = client.chat(messages, max_tokens=800)
-        raw = OpenAIClient.extract_content(resp)
+        reply = ask_json(client, messages, max_tokens=NARRATIVE_MAX_TOKENS,
+                         compact_suffix=COMPACT_RETRY_SUFFIX, parse=_parse_response,
+                         log=log, label=f"cluster_narrative cluster={cluster_id}")
     except AIClientError as exc:
         log.error("cluster_narrative: AI call failed — %s", exc)
         raise
+    raw = reply.raw
+    if reply.parsed is None and reply.finish == "length":
+        raise AIClientError(
+            "AI backend reply was cut by the output limit before the cluster narrative's JSON closed"
+            + truncation_hint("cluster narrative", reply) + f" (first 160 chars: {' '.join(raw.split())[:160]!r})")
 
-    result = _parse_response(raw)
+    result = reply.parsed if reply.parsed is not None else _parse_response(raw)
 
     # Persist to case_ai_artifact
     art = CaseAiArtifact(

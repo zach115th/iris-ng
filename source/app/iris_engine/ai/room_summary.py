@@ -64,6 +64,8 @@ from typing import Any
 from sqlalchemy import desc
 
 from app import db
+from app.iris_engine.ai.json_reply import ask_json
+from app.iris_engine.ai.json_reply import truncation_hint
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import OpenAIClient
 from app.iris_engine.ai.openai_client import build_default_client
@@ -96,7 +98,13 @@ ESF_MAP_PATH = os.path.join(_RES_DIR, 'ca_esf_map.json')
 
 # Reasoning models spend tokens thinking before the first visible character;
 # the budget covers both (chat / task suggester / tag suggester precedent).
-ROOM_SUMMARY_MAX_TOKENS = 6000
+# 6 000 until 2026-10-07: a reasoning model (Kimi K3 on Bedrock) cut the JSON
+# mid-string on a real room -- "returned no JSON object" -- because the budget
+# covers its thinking too. The model stops when the object closes, so the
+# higher ceiling costs nothing on a model that needs less. The client timeout
+# below moved with it (a 12 000-token reply at ~100 tok/s is ~2 min).
+ROOM_SUMMARY_MAX_TOKENS = 12000
+ROOM_SUMMARY_TIMEOUT = 300.0
 COMPACT_RETRY_SUFFIX = (
     '\n\nAnswer NOW with the JSON object only. Keep every section short (at '
     'most four bullets or two paragraphs). No reasoning before the answer.'
@@ -491,7 +499,7 @@ def generate_room_summary(room_id: int, *, force: bool = False) -> dict[str, Any
         raise RoomSummaryError(f'War room #{room_id} not found')
 
     client: OpenAIClient | None = build_default_client(
-        feature=FEATURE_KEY, timeout=180.0, default_max_tokens=ROOM_SUMMARY_MAX_TOKENS)
+        feature=FEATURE_KEY, timeout=ROOM_SUMMARY_TIMEOUT, default_max_tokens=ROOM_SUMMARY_MAX_TOKENS)
     if client is None:
         raise RoomSummaryError(
             'AI backend is not configured. Enable it in Manage → Settings → AI.')
@@ -509,27 +517,22 @@ def generate_room_summary(room_id: int, *, force: bool = False) -> dict[str, Any
     user_prompt = ('Write the operational summary for the war room above. Output ONLY '
                    'the JSON object — no prose, no markdown fences.')
 
-    def _ask(prompt: str):
-        try:
-            resp = client.chat([
-                {'role': 'system',
-                 'content': system_prompt + '\n\n' + json.dumps(payload, indent=2, default=str)},
-                {'role': 'user', 'content': prompt},
-            ], max_tokens=ROOM_SUMMARY_MAX_TOKENS)
-        except AIClientError as exc:
-            log.error('room_summary: AI call failed — %s', exc)
-            raise RoomSummaryError(str(exc)) from exc
-        finish = (resp.get('choices') or [{}])[0].get('finish_reason')
-        return resp, (OpenAIClient.extract_content(resp) or '').strip(), finish
-
-    resp, raw, finish = _ask(user_prompt)
-    if not raw and finish == 'length':
-        # The whole budget went to the thinking step. One retry asking for
-        # the answer first; the cap stays — the instruction is what moves a
-        # reasoning model.
-        log.warning('room_summary: empty reply at finish_reason=length (room=%s, usage=%s); '
-                    'retrying with a compact instruction', room_id, json.dumps(resp.get('usage')))
-        resp, raw, finish = _ask(user_prompt + COMPACT_RETRY_SUFFIX)
+    # One call, and ONE compact retry when the output limit cut the reply
+    # before its JSON closed -- empty (the whole budget went to thinking) or
+    # truncated mid-string; the cap stays, the instruction is what moves a
+    # reasoning model (json_reply.ask_json).
+    try:
+        reply = ask_json(
+            client,
+            [{'role': 'system',
+              'content': system_prompt + '\n\n' + json.dumps(payload, indent=2, default=str)},
+             {'role': 'user', 'content': user_prompt}],
+            max_tokens=ROOM_SUMMARY_MAX_TOKENS, compact_suffix=COMPACT_RETRY_SUFFIX,
+            parse=_parse_response, log=log, label=f'room_summary room={room_id}')
+    except AIClientError as exc:
+        log.error('room_summary: AI call failed — %s', exc)
+        raise RoomSummaryError(str(exc)) from exc
+    raw, finish = reply.raw, reply.finish
     if not raw:
         if finish == 'length':
             raise RoomSummaryError(
@@ -537,8 +540,14 @@ def generate_room_summary(room_id: int, *, force: bool = False) -> dict[str, Any
                 'twice): the model spent the whole budget reasoning. Point the room summary\'s '
                 'Settings override at a non-reasoning model.')
         raise RoomSummaryError(f'AI backend returned an empty response (finish_reason={finish})')
+    if reply.parsed is None and finish == 'length':
+        raise RoomSummaryError(
+            'AI backend reply was cut by the output limit before the JSON closed'
+            + truncation_hint('room summary', reply) + f'. Reply began: {" ".join(raw.split())[:160]}')
 
-    sections = _parse_response(raw)
+    # A reply at a normal stop that is not the contract raises its own reason
+    # (no JSON object / invalid JSON / empty situation) -- never persisted.
+    sections = reply.parsed if reply.parsed is not None else _parse_response(raw)
     stored = dict(sections)
     stored['esf'] = payload['esf']
     stored['esf_list'] = payload['esf_list']

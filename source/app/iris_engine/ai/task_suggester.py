@@ -32,6 +32,8 @@ from app import app
 from app import db
 from app.iris_engine.ai.case_summary import _hash_inputs
 from app.iris_engine.ai.case_summary import build_case_payload
+from app.iris_engine.ai.json_reply import ask_json
+from app.iris_engine.ai.json_reply import truncation_hint
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
 from app.models.cases import Cases
@@ -384,16 +386,6 @@ def get_cached_suggestions(case_id: int) -> dict[str, Any] | None:
 
 # --- generation ----------------------------------------------------------------
 
-def _parse_or_none(raw: str):
-    """The reply's JSON object, or None when it does not parse (truncated or prose)."""
-    if not raw:
-        return None
-    try:
-        return json.loads(_extract_json_block(raw))
-    except (json.JSONDecodeError, TypeError, ValueError):
-        return None
-
-
 def suggest_tasks(case_id: int, *, force: bool = False) -> dict[str, Any]:
     case = Cases.query.filter(Cases.case_id == case_id).first()
     if case is None:
@@ -427,41 +419,27 @@ def suggest_tasks(case_id: int, *, force: bool = False) -> dict[str, Any]:
     app.logger.info(f"TaskSuggester: case #{case_id} requesting suggestions (model={client.model}, "
                     f"existing_tasks={len(payload['existing_tasks'])})")
 
-    def _ask(prompt: str):
-        try:
-            resp = client.chat([
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ], max_tokens=MAX_TOKENS)
-        except AIClientError as exc:
-            raise TaskSuggesterError(f"AI backend call failed: {exc}") from exc
-        text = client.extract_content(resp).strip()
-        return resp, text, resp.get('choices', [{}])[0].get('finish_reason'), _parse_or_none(text)
-
-    response, raw, finish, parsed = _ask(user_prompt)
-    retried = False
-    if finish == "length" and parsed is None:
-        # The output limit cut the reply before (or while) the JSON was written
-        # -- a reasoning model that thought too long, or a long list. One
-        # retry asking for a compact answer first; same budget on purpose.
-        app.logger.warning(
-            f"TaskSuggester: case #{case_id} reply hit the output limit before the JSON closed "
-            f"(visible_chars={len(raw)}, usage={json.dumps(response.get('usage'))}); "
-            f"retrying once with a compact instruction")
-        response, raw, finish, parsed = _ask(user_prompt + COMPACT_RETRY_SUFFIX)
-        retried = True
+    # One call, and ONE compact retry when the output limit cut the reply
+    # before its JSON closed (json_reply.ask_json): a reasoning model that
+    # thought too long, or a long list. Same budget on purpose.
+    try:
+        reply = ask_json(
+            client,
+            [{"role": "system", "content": system_prompt},
+             {"role": "user", "content": user_prompt}],
+            max_tokens=MAX_TOKENS, compact_suffix=COMPACT_RETRY_SUFFIX,
+            parse=lambda text: json.loads(_extract_json_block(text)),
+            log=app.logger, label=f"TaskSuggester: case #{case_id}")
+    except AIClientError as exc:
+        raise TaskSuggesterError(f"AI backend call failed: {exc}") from exc
+    raw, finish, parsed = reply.raw, reply.finish, reply.parsed
 
     if not raw:
         raise TaskSuggesterError(f"AI backend returned an empty response (finish_reason={finish})")
     if parsed is None:
         detail = ' '.join(raw.split())[:200]
-        if finish == "length":
-            hint = (" (the reply hit the output limit twice, even with a compact instruction: point the "
-                    "task suggester's Settings override at a non-reasoning model)" if retried
-                    else " (the reply hit the output limit)")
-        else:
-            hint = ""
-        raise TaskSuggesterError(f"AI backend did not return JSON{hint}. Backend said: {detail}")
+        raise TaskSuggesterError(
+            f"AI backend did not return JSON{truncation_hint('task suggester', reply)}. Backend said: {detail}")
 
     suggestions = validate_suggestions(parsed, payload["existing_tasks"],
                                        {s["slug"] for s in payload["skill_catalog"]})

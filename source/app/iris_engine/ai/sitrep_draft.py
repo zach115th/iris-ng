@@ -65,6 +65,8 @@ from typing import Any
 from sqlalchemy import desc
 
 from app import db
+from app.iris_engine.ai.json_reply import ask_json
+from app.iris_engine.ai.json_reply import truncation_hint
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import OpenAIClient
 from app.iris_engine.ai.openai_client import build_default_client
@@ -78,6 +80,17 @@ from app.models.models import WarRoomCaseLink
 from app.models.models import WarRoomMessage
 
 log = logging.getLogger(__name__)
+
+# Budget = thinking + output. 2 500 until 2026-10-07: a reasoning model (Kimi
+# K3 on Bedrock) spent it thinking and the draft arrived as "returned no JSON
+# object". The model stops when the object closes, so the ceiling costs
+# nothing on a model that needs less; the client timeout moved with it.
+SITREP_MAX_TOKENS = 8000
+SITREP_TIMEOUT = 300.0
+COMPACT_RETRY_SUFFIX = (
+    '\n\nAnswer NOW with the JSON object only. Keep every section short (at '
+    'most four bullets or two paragraphs). No reasoning before the answer.'
+)
 
 PROMPT_ID = 'SitrepDraftSystemPrompt-v2'
 FEATURE_KEY = 'sitrep_draft'
@@ -394,7 +407,7 @@ def generate_sitrep_draft(room_id: int, *, force: bool = False) -> dict[str, Any
         raise SitrepDraftError(f'War room #{room_id} not found')
 
     client: OpenAIClient | None = build_default_client(
-        feature=FEATURE_KEY, timeout=180.0, default_max_tokens=2500)
+        feature=FEATURE_KEY, timeout=SITREP_TIMEOUT, default_max_tokens=SITREP_MAX_TOKENS)
     if client is None:
         raise SitrepDraftError(
             'AI backend is not configured. Enable it in Manage → Settings → AI.')
@@ -419,14 +432,24 @@ def generate_sitrep_draft(room_id: int, *, force: bool = False) -> dict[str, Any
                     'the JSON object — no prose, no markdown fences.'},
     ]
 
+    # One call, and ONE compact retry when the output limit cut the reply
+    # before its JSON closed (json_reply.ask_json) -- a reasoning model that
+    # thought the budget away. The cap stays; the instruction moves the model.
     try:
-        resp = client.chat(messages, max_tokens=2500)
-        raw = OpenAIClient.extract_content(resp)
+        reply = ask_json(client, messages, max_tokens=SITREP_MAX_TOKENS,
+                         compact_suffix=COMPACT_RETRY_SUFFIX, parse=_parse_response,
+                         log=log, label=f'sitrep_draft room={room_id}')
     except AIClientError as exc:
         log.error('sitrep_draft: AI call failed — %s', exc)
         raise SitrepDraftError(str(exc))
+    raw = reply.raw
+    if reply.parsed is None and reply.finish == 'length':
+        raise SitrepDraftError(
+            'AI backend reply was cut by the output limit before the JSON closed'
+            + truncation_hint('SitRep draft', reply) + f'. Reply began: {" ".join(raw.split())[:160]}')
 
-    result = _parse_response(raw)
+    # Not the contract at a normal stop: _parse_response raises its own reason.
+    result = reply.parsed if reply.parsed is not None else _parse_response(raw)
     # Delta bookkeeping lives INSIDE the artifact so a cached read renders
     # the same reference line and the same repeat count as the fresh one.
     previous = payload.get('last_published_sitrep')
