@@ -1559,17 +1559,38 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     # admins can clear the URL/key/model from the UI without tripping validation.
     # Two-slot design: slot-1 ('primary', the legacy fields) + slot-2 ('alt')
     # + ai_backend_active_slot pointer chosen via the radio in the admin UI.
+    # The API keys are WRITE-ONLY since 2026-10-07 (same contract as the mail
+    # passwords below): load_only keeps them out of every dump, the paired
+    # *_api_key_set booleans tell the UI a key is stored, and the update route
+    # treats an empty submission as "keep the stored value".
+    # Per-slot provider ('openai' | 'bedrock', a7c2d9e4f1b6); null = openai.
     ai_backend_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
     ai_backend_active_slot: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_provider: Optional[str] = fields.String(required=False, allow_none=True,
+                                                       validate=validate.OneOf(['openai', 'bedrock']))
     ai_backend_url: Optional[str] = fields.String(required=False, allow_none=True)
-    ai_backend_api_key: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_api_key: Optional[str] = fields.String(required=False, allow_none=True, load_only=True)
     ai_backend_model: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_label: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_alt_provider: Optional[str] = fields.String(required=False, allow_none=True,
+                                                           validate=validate.OneOf(['openai', 'bedrock']))
     ai_backend_alt_url: Optional[str] = fields.String(required=False, allow_none=True)
-    ai_backend_alt_api_key: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_alt_api_key: Optional[str] = fields.String(required=False, allow_none=True, load_only=True)
     ai_backend_alt_model: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_alt_label: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_confidence_threshold: Optional[float] = fields.Float(required=False, allow_none=True)
+    ai_backend_api_key_set = fields.Method("get_ai_api_key_set", dump_only=True)
+    ai_backend_alt_api_key_set = fields.Method("get_ai_alt_api_key_set", dump_only=True)
+    # Bedrock inference-profile catalogs: written only by the listing endpoint
+    # (POST /manage/settings/ai/bedrock/catalog), never by the settings form.
+    ai_backend_model_catalog = fields.Raw(dump_only=True)
+    ai_backend_alt_model_catalog = fields.Raw(dump_only=True)
+
+    def get_ai_api_key_set(self, obj) -> bool:
+        return bool(getattr(obj, 'ai_backend_api_key', None))
+
+    def get_ai_alt_api_key_set(self, obj) -> bool:
+        return bool(getattr(obj, 'ai_backend_alt_api_key', None))
     # Per-feature slot overrides. {"feature_key": "primary"|"alt"|null}.
     # Missing / null = use global ai_backend_active_slot.
     ai_feature_overrides: Optional[dict] = fields.Dict(required=False, allow_none=True)

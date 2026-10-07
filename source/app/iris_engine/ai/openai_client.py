@@ -16,9 +16,57 @@ import urllib.request
 
 log = logging.getLogger(__name__)
 
+# Backend providers a settings slot can name (ServerSettings.ai_backend_provider /
+# ai_backend_alt_provider). NULL / unknown reads as PROVIDER_OPENAI so rows that
+# predate the column keep their behaviour. The Bedrock adapter lives in
+# bedrock_client.py and subclasses OpenAIClient so every orchestrator keeps
+# consuming the chat-completions envelope.
+PROVIDER_OPENAI = "openai"
+PROVIDER_BEDROCK = "bedrock"
+KNOWN_PROVIDERS = (PROVIDER_OPENAI, PROVIDER_BEDROCK)
+
 
 class AIClientError(Exception):
     """Raised when the AI backend returns an error or unexpected response."""
+
+
+def http_post_json(url: str, headers: dict[str, str], body: bytes, timeout: float) -> dict[str, Any]:
+    """POST a JSON body and return the parsed JSON reply (see http_json)."""
+    return http_json("POST", url, headers, body, timeout)
+
+
+def http_json(method: str, url: str, headers: dict[str, str], body: bytes | None, timeout: float) -> dict[str, Any]:
+    """One JSON round trip and the parsed reply.
+
+    The one place transport errors become AIClientError, shared by the
+    chat-completions client and the Bedrock adapter (Converse POSTs and the
+    inference-profile listing GETs) so every caller sees the same message
+    shapes.
+    """
+    request = urllib.request.Request(url=url, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        try:
+            err_body = exc.read().decode("utf-8")
+        except Exception:
+            err_body = ""
+        raise AIClientError(
+            f"AI backend returned HTTP {exc.code}: {err_body[:500]}"
+        ) from exc
+    except urllib.error.URLError as exc:
+        raise AIClientError(f"AI backend request failed: {exc}") from exc
+    except TimeoutError as exc:
+        # urllib only wraps a connection-establishment timeout as
+        # URLError; a timeout while reading the response (backend
+        # accepted the request but took too long to reply) raises a
+        # bare TimeoutError that would otherwise escape uncaught here,
+        # skip every caller's `except AIClientError`, and crash Flask
+        # into its default HTML error page instead of a JSON error.
+        raise AIClientError(f"AI backend request timed out after {timeout}s") from exc
+    except json.JSONDecodeError as exc:
+        raise AIClientError(f"AI backend returned non-JSON response: {exc}") from exc
 
 
 class OpenAIClient:
@@ -106,41 +154,15 @@ class OpenAIClient:
             "temperature": temperature if temperature is not None else self.default_temperature
         }).encode("utf-8")
 
-        request = urllib.request.Request(
-            url=f"{self.base_url}/chat/completions",
-            data=body,
-            headers={
+        return http_post_json(
+            f"{self.base_url}/chat/completions",
+            {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json"
             },
-            method="POST"
+            body,
+            self.timeout
         )
-
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-        except urllib.error.HTTPError as exc:
-            try:
-                err_body = exc.read().decode("utf-8")
-            except Exception:
-                err_body = ""
-            raise AIClientError(
-                f"AI backend returned HTTP {exc.code}: {err_body[:500]}"
-            ) from exc
-        except urllib.error.URLError as exc:
-            raise AIClientError(f"AI backend request failed: {exc}") from exc
-        except TimeoutError as exc:
-            # urllib only wraps a connection-establishment timeout as
-            # URLError; a timeout while reading the response (backend
-            # accepted the request but took too long to reply) raises a
-            # bare TimeoutError that would otherwise escape uncaught here,
-            # skip every caller's `except AIClientError`, and crash Flask
-            # into its default HTML error page instead of a JSON error.
-            raise AIClientError(f"AI backend request timed out after {self.timeout}s") from exc
-        except json.JSONDecodeError as exc:
-            raise AIClientError(f"AI backend returned non-JSON response: {exc}") from exc
-
-        return payload
 
     def chat(
         self,
@@ -313,10 +335,14 @@ def build_default_client(
 
     Returns None when the AI backend is disabled or the active slot is not
     configured. Caller decides whether that's an error or a graceful skip.
+
+    The slot's provider picks the class: 'openai' (default) builds this
+    chat-completions client, 'bedrock' the Converse adapter. Both expose the
+    same chat()/extract_content() contract and the same envelope.
     """
     from app import app
 
-    enabled, base_url, api_key, model = _read_settings_row(feature=feature)
+    enabled, base_url, api_key, model, provider = _read_settings_row(feature=feature)
 
     if base_url is None or model is None:
         cfg = app.config
@@ -329,7 +355,7 @@ def build_default_client(
     if not enabled or not base_url or not model:
         return None
 
-    return OpenAIClient(
+    return client_class_for(provider)(
         base_url=base_url,
         api_key=api_key or "",
         model=model,
@@ -338,9 +364,26 @@ def build_default_client(
     )
 
 
+def client_class_for(provider: str | None) -> type[OpenAIClient]:
+    """Map a slot's provider value to the client class.
+
+    NULL / empty = the chat-completions client (rows that predate the
+    provider column). An unknown value cannot reach the DB through the
+    schema's OneOf, so it is a hand-edited row: fall back to the default and
+    say so in the log rather than fail every AI surface.
+    """
+    key = (provider or PROVIDER_OPENAI).strip().lower()
+    if key == PROVIDER_BEDROCK:
+        from app.iris_engine.ai.bedrock_client import BedrockConverseClient
+        return BedrockConverseClient
+    if key != PROVIDER_OPENAI:
+        log.warning("Unknown AI backend provider %r; using the OpenAI-compatible client", provider)
+    return OpenAIClient
+
+
 def _read_settings_row(
     feature: str | None = None
-) -> tuple[bool | None, str | None, str | None, str | None]:
+) -> tuple[bool | None, str | None, str | None, str | None, str | None]:
     """Pull AI backend config from the ServerSettings row.
 
     If `feature` is given and ai_feature_overrides[feature] is set to
@@ -349,18 +392,18 @@ def _read_settings_row(
     (e.g. 'case_summary') to a different backend without touching the global
     default.
 
-    Returns (enabled, url, api_key, model). Any field can be None if the row
-    or column doesn't exist yet (covers fresh installs / pre-migration boot)
-    or if the selected slot has empty URL/model.
+    Returns (enabled, url, api_key, model, provider). Any field can be None if
+    the row or column doesn't exist yet (covers fresh installs / pre-migration
+    boot) or if the selected slot has empty URL/model.
     """
     try:
         from app.models.models import ServerSettings
         row = ServerSettings.query.first()
     except Exception:
-        return (None, None, None, None)
+        return (None, None, None, None, None)
 
     if row is None:
-        return (None, None, None, None)
+        return (None, None, None, None, None)
 
     global_slot = (getattr(row, 'ai_backend_active_slot', None) or 'primary').strip().lower()
 
@@ -374,12 +417,14 @@ def _read_settings_row(
             slot = feature_slot
 
     if slot == 'alt':
-        url_attr, key_attr, model_attr = (
+        url_attr, key_attr, model_attr, provider_attr = (
             'ai_backend_alt_url', 'ai_backend_alt_api_key', 'ai_backend_alt_model',
+            'ai_backend_alt_provider',
         )
     else:
-        url_attr, key_attr, model_attr = (
+        url_attr, key_attr, model_attr, provider_attr = (
             'ai_backend_url', 'ai_backend_api_key', 'ai_backend_model',
+            'ai_backend_provider',
         )
 
     return (
@@ -387,4 +432,5 @@ def _read_settings_row(
         (getattr(row, url_attr, None) or '').strip() or None,
         (getattr(row, key_attr, None) or '').strip() or None,
         (getattr(row, model_attr, None) or '').strip() or None,
+        (getattr(row, provider_attr, None) or '').strip().lower() or None,
     )

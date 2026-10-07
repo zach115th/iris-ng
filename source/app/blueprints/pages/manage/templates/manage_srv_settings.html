@@ -174,7 +174,7 @@
                                    ai_backend_alt_{url,api_key,model}. ai_backend_active_slot picks
                                    which one build_default_client() uses. #}
                                 <h2>AI Backend</h2>
-                                <p>OpenAI-compatible chat-completions endpoint used by the Tier-1 AI features (case summary, chat assistant, per-event analysis). Defaults seed from <code>AI_BACKEND_*</code> environment variables on first install; values here take precedence afterwards. Configure two backends (e.g. local LM Studio + a hosted OpenAI-compatible endpoint) and pick the active one with the radio. Anything that exposes <code>/v1/chat/completions</code> works.</p>
+                                <p>Backend used by the Tier-1 AI features (case summary, chat assistant, per-event analysis). Defaults seed from <code>AI_BACKEND_*</code> environment variables on first install; values here take precedence afterwards. Configure two backends and pick the active one with the radio. Each slot names its provider: <strong>OpenAI-compatible</strong> talks to anything that exposes <code>/v1/chat/completions</code> (LM Studio, OpenRouter, OpenAI); <strong>AWS Bedrock</strong> talks to the Converse API with a Bedrock API key — URL is the runtime endpoint (<code>https://bedrock-runtime.&lt;region&gt;.amazonaws.com</code>), Model is an inference profile ARN / ID or a model ID, pasted as the console shows it. No Bedrock Guardrail is applied. Stored API keys are never shown again; leave the field blank to keep the stored key.</p>
                                 <div class="row mb-3">
                                     <div class="col-12">
                                         <div class="form-check">
@@ -188,6 +188,51 @@
                                 </div>
                                 {# Two-slot card grid #}
                                 {% set _active_slot = (settings.ai_backend_active_slot or 'primary') %}
+                                {# iris-ng (2026-10-07): the URL and Model rows of a slot. For the Bedrock
+                                   provider the URL row reads "Region" (the adapter builds the hosts from a
+                                   region; a full https:// URL still works) and the Model row offers the
+                                   slot's cached inference-profile catalog by friendly name -- the hidden
+                                   text input <prefix>_model is what the form submits and holds the chosen
+                                   entry's id (ARN / profile id). "Other" reveals the text input. The
+                                   markup renders the stored state; #iris-ai-provider-hints keeps it in
+                                   step with the Provider select before Save. #}
+                                {% macro ai_slot_rows(prefix, provider, url_value, model_value, catalog, ph_url_openai, ph_model_openai) %}
+                                {% set _cat = catalog or [] %}
+                                {% set _is_bedrock = (provider == 'bedrock') %}
+                                {% set _model = model_value or '' %}
+                                {% set _in_cat = (_cat | selectattr('id', 'equalto', _model) | list | length) > 0 %}
+                                {% set _select_shown = _is_bedrock and (_cat | length) > 0 %}
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text" id="{{ prefix }}_url_label" data-iris-label-openai="URL" data-iris-label-bedrock="Region">{% if _is_bedrock %}Region{% else %}URL{% endif %}</span>
+                                    </div>
+                                    <input class="form-control" id="{{ prefix }}_url" name="{{ prefix }}_url" placeholder="{% if _is_bedrock %}us-west-2{% else %}{{ ph_url_openai }}{% endif %}" data-iris-ph-openai="{{ ph_url_openai }}" data-iris-ph-bedrock="us-west-2" value="{{ url_value or '' }}">
+                                </div>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">Model</span>
+                                    </div>
+                                    <select class="form-control iris-ai-model-select{% if not _select_shown %} d-none{% endif %}" id="{{ prefix }}_model_select" data-iris-slot="{{ prefix }}" aria-label="Bedrock inference profile">
+                                        {% for e in _cat if e.type == 'APPLICATION' %}
+                                        <option value="{{ e.id }}" {% if e.id == _model %}selected{% endif %}>{{ e.name }}{% if e.model %} &middot; {{ e.model }}{% endif %}</option>
+                                        {% endfor %}
+                                        {% set _sys = _cat | selectattr('type', 'equalto', 'SYSTEM_DEFINED') | list %}
+                                        {% if _sys %}
+                                        <optgroup label="Cross-region (system-defined)">
+                                            {% for e in _sys %}
+                                            <option value="{{ e.id }}" {% if e.id == _model %}selected{% endif %}>{{ e.name }}</option>
+                                            {% endfor %}
+                                        </optgroup>
+                                        {% endif %}
+                                        <option value="__custom__" {% if not _in_cat %}selected{% endif %}>Other: paste an ARN or model ID</option>
+                                    </select>
+                                    <input class="form-control{% if _select_shown and _in_cat %} d-none{% endif %}" id="{{ prefix }}_model" name="{{ prefix }}_model" placeholder="{% if _is_bedrock %}inference profile ARN / ID or model ID{% else %}{{ ph_model_openai }}{% endif %}" data-iris-ph-openai="{{ ph_model_openai }}" data-iris-ph-bedrock="inference profile ARN / ID or model ID" value="{{ _model }}">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary iris-ai-bedrock-load{% if not _is_bedrock %} d-none{% endif %}" type="button" id="{{ prefix }}_bedrock_load" data-iris-slot="{{ prefix }}" title="List the inference profiles this region and key can see">Load models</button>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted mt-0 mb-2 iris-ai-bedrock-note{% if not _is_bedrock %} d-none{% endif %}" id="{{ prefix }}_catalog_note">{% if _cat %}{{ _cat | selectattr('type', 'equalto', 'APPLICATION') | list | length }} application + {{ _sys | length if _sys is defined else 0 }} cross-region profiles cached. Load models to refresh.{% else %}Enter the region and API key, then Load models to pick a profile by name.{% endif %}</small>
+                                {% endmacro %}
                                 <div class="row mb-3">
                                     <div class="col-md-6 mb-3">
                                         <div class="card card-stats" style="border: 1px solid rgba(139, 92, 246, 0.25); padding: 14px;">
@@ -200,23 +245,22 @@
                                                 </div>
                                                 <input class="form-control form-control-sm ml-2" id="ai_backend_label" name="ai_backend_label" placeholder="e.g. LM Studio" value="{{ settings.ai_backend_label or 'Primary' }}" style="max-width: 200px;">
                                             </div>
+                                            {% set _p1 = (settings.ai_backend_provider or 'openai') %}
                                             <div class="input-group mb-2">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text">URL</span>
+                                                    <span class="input-group-text">Provider</span>
                                                 </div>
-                                                <input class="form-control" id="ai_backend_url" name="ai_backend_url" placeholder="http://<your-lm-studio-host>:1234/v1" value="{{ settings.ai_backend_url or '' }}">
+                                                <select class="form-control iris-ai-provider" id="ai_backend_provider" name="ai_backend_provider" data-iris-slot="ai_backend">
+                                                    <option value="openai" {% if _p1 == 'openai' %}selected{% endif %}>OpenAI-compatible (/v1/chat/completions)</option>
+                                                    <option value="bedrock" {% if _p1 == 'bedrock' %}selected{% endif %}>AWS Bedrock (Converse API)</option>
+                                                </select>
                                             </div>
-                                            <div class="input-group mb-2">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">Model</span>
-                                                </div>
-                                                <input class="form-control" id="ai_backend_model" name="ai_backend_model" placeholder="openai/gpt-oss-20b" value="{{ settings.ai_backend_model or '' }}">
-                                            </div>
+                                            {{ ai_slot_rows('ai_backend', _p1, settings.ai_backend_url, settings.ai_backend_model, settings.ai_backend_model_catalog, 'http://<your-lm-studio-host>:1234/v1', 'openai/gpt-oss-20b') }}
                                             <div class="input-group mb-0">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text">API Key</span>
+                                                    <span class="input-group-text">API Key {% if settings.ai_backend_api_key %}<span class="badge badge-success ml-1">stored</span>{% endif %}</span>
                                                 </div>
-                                                <input class="form-control" id="ai_backend_api_key" name="ai_backend_api_key" placeholder="Bearer token (or empty)" type="password" autocomplete="off" value="{{ settings.ai_backend_api_key or '' }}">
+                                                <input class="form-control" id="ai_backend_api_key" name="ai_backend_api_key" placeholder="{% if settings.ai_backend_api_key %}Leave blank to keep the stored key{% else %}Bearer token / Bedrock API key (or empty){% endif %}" type="password" autocomplete="new-password" value="">
                                             </div>
                                         </div>
                                     </div>
@@ -231,23 +275,22 @@
                                                 </div>
                                                 <input class="form-control form-control-sm ml-2" id="ai_backend_alt_label" name="ai_backend_alt_label" placeholder="e.g. Hosted backend" value="{{ settings.ai_backend_alt_label or 'Alternate' }}" style="max-width: 200px;">
                                             </div>
+                                            {% set _p2 = (settings.ai_backend_alt_provider or 'openai') %}
                                             <div class="input-group mb-2">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text">URL</span>
+                                                    <span class="input-group-text">Provider</span>
                                                 </div>
-                                                <input class="form-control" id="ai_backend_alt_url" name="ai_backend_alt_url" placeholder="https://api.example.com/v1" value="{{ settings.ai_backend_alt_url or '' }}">
+                                                <select class="form-control iris-ai-provider" id="ai_backend_alt_provider" name="ai_backend_alt_provider" data-iris-slot="ai_backend_alt">
+                                                    <option value="openai" {% if _p2 == 'openai' %}selected{% endif %}>OpenAI-compatible (/v1/chat/completions)</option>
+                                                    <option value="bedrock" {% if _p2 == 'bedrock' %}selected{% endif %}>AWS Bedrock (Converse API)</option>
+                                                </select>
                                             </div>
-                                            <div class="input-group mb-2">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">Model</span>
-                                                </div>
-                                                <input class="form-control" id="ai_backend_alt_model" name="ai_backend_alt_model" placeholder="model-name" value="{{ settings.ai_backend_alt_model or '' }}">
-                                            </div>
+                                            {{ ai_slot_rows('ai_backend_alt', _p2, settings.ai_backend_alt_url, settings.ai_backend_alt_model, settings.ai_backend_alt_model_catalog, 'https://api.example.com/v1', 'model-name') }}
                                             <div class="input-group mb-0">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text">API Key</span>
+                                                    <span class="input-group-text">API Key {% if settings.ai_backend_alt_api_key %}<span class="badge badge-success ml-1">stored</span>{% endif %}</span>
                                                 </div>
-                                                <input class="form-control" id="ai_backend_alt_api_key" name="ai_backend_alt_api_key" placeholder="Bearer token (or empty)" type="password" autocomplete="off" value="{{ settings.ai_backend_alt_api_key or '' }}">
+                                                <input class="form-control" id="ai_backend_alt_api_key" name="ai_backend_alt_api_key" placeholder="{% if settings.ai_backend_alt_api_key %}Leave blank to keep the stored key{% else %}Bearer token / Bedrock API key (or empty){% endif %}" type="password" autocomplete="new-password" value="">
                                             </div>
                                         </div>
                                     </div>
@@ -741,6 +784,127 @@
         function sync() { hidden.value = cb.checked ? 'true' : 'false'; }
         cb.addEventListener('change', sync);
         if (saveBtn) saveBtn.addEventListener('click', sync);
+    });
+})();
+</script>
+<script id="iris-ai-provider-hints">
+// iris-ng (2026-10-07): each AI slot's Provider select drives ITS slot
+// (data-iris-slot = the input id prefix): the URL row's label (URL / Region)
+// and the URL + Model placeholders come from data-iris-* hints on the markup;
+// for Bedrock the Model row shows the cached inference-profile <select> and
+// the "Load models" button, and the submitted <prefix>_model text input
+// mirrors the selected entry's id ("Other" reveals the input). The server
+// renders the stored state; this keeps it in step before Save. "Load models"
+// posts region + the key typed in the form (the server falls back to the
+// stored key and never returns one) and rebuilds the options from the reply.
+(function () {
+    var CUSTOM = '__custom__';
+    function byId(id) { return document.getElementById(id); }
+    function show(el, on) { if (el) el.classList.toggle('d-none', !on); }
+
+    function syncModelRow(prefix, isBedrock) {
+        var sel = byId(prefix + '_model_select');
+        var input = byId(prefix + '_model');
+        if (!sel || !input) return;
+        var hasCatalog = sel.options.length > 1;
+        var selectShown = isBedrock && hasCatalog;
+        show(sel, selectShown);
+        show(input, !selectShown || sel.value === CUSTOM);
+        if (selectShown && sel.value !== CUSTOM) input.value = sel.value;
+    }
+
+    function applyProvider(sel) {
+        var prefix = sel.getAttribute('data-iris-slot');
+        var provider = sel.value || 'openai';
+        var isBedrock = provider === 'bedrock';
+        ['_url', '_model'].forEach(function (suffix) {
+            var input = byId(prefix + suffix);
+            if (!input) return;
+            var hint = input.getAttribute('data-iris-ph-' + provider);
+            if (hint !== null) input.setAttribute('placeholder', hint);
+        });
+        var label = byId(prefix + '_url_label');
+        if (label) {
+            var text = label.getAttribute('data-iris-label-' + provider);
+            if (text !== null) label.textContent = text;
+        }
+        show(byId(prefix + '_bedrock_load'), isBedrock);
+        show(byId(prefix + '_catalog_note'), isBedrock);
+        syncModelRow(prefix, isBedrock);
+    }
+
+    function rebuildOptions(prefix, catalog, current) {
+        var sel = byId(prefix + '_model_select');
+        if (!sel) return;
+        while (sel.options.length) sel.remove(0);
+        var inCatalog = false;
+        var sys = [];
+        catalog.forEach(function (e) {
+            if (e.type !== 'APPLICATION') { sys.push(e); return; }
+            var o = document.createElement('option');
+            o.value = e.id;
+            o.textContent = e.name + (e.model ? ' · ' + e.model : '');
+            if (e.id === current) { o.selected = true; inCatalog = true; }
+            sel.appendChild(o);
+        });
+        if (sys.length) {
+            var grp = document.createElement('optgroup');
+            grp.label = 'Cross-region (system-defined)';
+            sys.forEach(function (e) {
+                var o = document.createElement('option');
+                o.value = e.id;
+                o.textContent = e.name;
+                if (e.id === current) { o.selected = true; inCatalog = true; }
+                grp.appendChild(o);
+            });
+            sel.appendChild(grp);
+        }
+        var other = document.createElement('option');
+        other.value = CUSTOM;
+        other.textContent = 'Other: paste an ARN or model ID';
+        if (!inCatalog) other.selected = true;
+        sel.appendChild(other);
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll('select.iris-ai-provider'), function (sel) {
+        if (!sel.getAttribute('data-iris-slot')) return;
+        sel.addEventListener('change', function () { applyProvider(sel); });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('select.iris-ai-model-select'), function (sel) {
+        var prefix = sel.getAttribute('data-iris-slot');
+        sel.addEventListener('change', function () { syncModelRow(prefix, true); });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('button.iris-ai-bedrock-load'), function (btn) {
+        var prefix = btn.getAttribute('data-iris-slot');
+        btn.addEventListener('click', function () {
+            var note = byId(prefix + '_catalog_note');
+            var csrf = byId('csrf_token');
+            var body = {
+                slot: prefix === 'ai_backend_alt' ? 'alt' : 'primary',
+                region: (byId(prefix + '_url') || {}).value || '',
+                api_key: (byId(prefix + '_api_key') || {}).value || '',
+                csrf_token: csrf ? csrf.value : ''
+            };
+            btn.disabled = true;
+            if (note) note.textContent = 'Listing inference profiles…';
+            post_request_api('/manage/settings/ai/bedrock/catalog', JSON.stringify(body), true)
+            .done(function (data) {
+                var payload = (data && data.data) || {};
+                var catalog = payload.catalog || [];
+                var current = (byId(prefix + '_model') || {}).value || '';
+                rebuildOptions(prefix, catalog, current);
+                syncModelRow(prefix, true);
+                if (note) note.textContent = payload.application + ' application + ' + (payload.count - payload.application)
+                    + ' cross-region profiles loaded. Pick one, then Save.';
+            })
+            .fail(function (xhr) {
+                var msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) || 'Listing failed';
+                if (note) note.textContent = msg;
+            })
+            .always(function () { btn.disabled = false; });
+        });
     });
 })();
 </script>

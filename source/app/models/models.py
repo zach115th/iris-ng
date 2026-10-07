@@ -1966,6 +1966,23 @@ class ServerSettings(db.Model):
     # 'primary' or 'alt'. Read by build_default_client() to pick which slot
     # gets used. Defaults to 'primary' so existing rows keep behaviour.
     ai_backend_active_slot = Column(String(16), nullable=False, server_default=text("'primary'"))
+    # Per-slot transport (a7c2d9e4f1b6): 'openai' = /v1/chat/completions,
+    # 'bedrock' = AWS Bedrock Converse (iris_engine/ai/bedrock_client.py).
+    # NULL reads as 'openai' so rows predating the column keep behaving; the
+    # schema's OneOf is the gate (house style, no CHECK). Both API-key columns
+    # are WRITE-ONLY through the schema since the same slice (load_only +
+    # ai_backend_*_api_key_set booleans; the update route keeps the stored
+    # value on an empty submission, like the mail passwords below).
+    ai_backend_provider = Column(String(32), nullable=True)
+    ai_backend_alt_provider = Column(String(32), nullable=True)
+    # Bedrock only: the last inference-profile listing for the slot
+    # ([{id, name, type, model}], bedrock_client.list_inference_profiles),
+    # written by POST /manage/settings/ai/bedrock/catalog, dump_only through
+    # the schema. Lets the Settings page render the Model dropdown with the
+    # friendly names without an AWS call; ai_backend_model stores the chosen
+    # entry's `id` (ARN / profile id), never the name.
+    ai_backend_model_catalog = Column(JSONB, nullable=True)
+    ai_backend_alt_model_catalog = Column(JSONB, nullable=True)
     ai_backend_confidence_threshold = Column(Float, nullable=True)
     # Per-feature slot overrides. JSONB dict: {"feature_key": "primary"|"alt"}.
     # Missing key / null value = use the global ai_backend_active_slot default.
@@ -2014,7 +2031,7 @@ class ServerSettings(db.Model):
     # ServerSettingsSchema marks them load_only and dumps mail_*_password_set
     # booleans instead, and the settings update route treats empty/masked values
     # as "keep stored" — the settings GET must never return a stored secret
-    # (deliberate deviation from how ai_backend_api_key round-trips).
+    # (the ai_backend_*_api_key columns follow the same rule since 2026-10-07).
     # The mail poller reads them from this ORM row directly, never from the
     # dumped settings dict. Enum-ish columns are validated in the schema
     # (house style — ai_backend_active_slot has no CHECK either).

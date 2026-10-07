@@ -75,7 +75,9 @@ def manage_update_settings():
         # the mailbox, disable mail ingest instead. (The activity-log diff below
         # records only 'change' rows against the dump, which never contains
         # these keys, so a submitted secret cannot reach the log either.)
-        for secret_key in ('mail_imap_password', 'mail_smtp_password'):
+        # The two AI backend API keys joined the write-only set on 2026-10-07.
+        for secret_key in ('mail_imap_password', 'mail_smtp_password',
+                           'ai_backend_api_key', 'ai_backend_alt_api_key'):
             if new_settings.get(secret_key) in (None, '', '********'):
                 new_settings.pop(secret_key, None)
 
@@ -97,3 +99,70 @@ def manage_update_settings():
 
     except marshmallow.exceptions.ValidationError as e:
         return response_error(msg="Data error", data=e.messages)
+
+
+_BEDROCK_SLOTS = {
+    'primary': ('ai_backend_url', 'ai_backend_api_key', 'ai_backend_model_catalog'),
+    'alt': ('ai_backend_alt_url', 'ai_backend_alt_api_key', 'ai_backend_alt_model_catalog'),
+}
+
+
+@manage_server_settings_rest_blueprint.route('/manage/settings/ai/bedrock/catalog', methods=['POST'])
+@ac_api_requires(Permissions.server_administrator)
+def manage_ai_bedrock_catalog():
+    """List the Bedrock inference profiles a slot's key can see and cache them on the slot.
+
+    Body: {slot: 'primary'|'alt', region: <region or endpoint URL>, api_key?: <key>}.
+    The key typed in the (unsaved) form wins when non-empty, else the slot's
+    stored key -- resolved here so the browser never receives a stored key.
+    The listing is persisted into the slot's *_model_catalog column so the
+    Settings page renders the Model dropdown offline; the reply carries the
+    catalog and never the key. Bedrock errors (403 on a bad key, DNS on a
+    bad region) come back as 400 with Bedrock's message.
+    """
+    from app.iris_engine.ai.bedrock_client import list_inference_profiles
+    from app.iris_engine.ai.openai_client import AIClientError
+
+    if not request.is_json:
+        return response_error('Invalid request')
+    body = request.get_json() or {}
+    slot = (body.get('slot') or 'primary').strip().lower()
+    if slot not in _BEDROCK_SLOTS:
+        return response_error('Unknown backend slot', data={'slot': [slot]})
+    url_attr, key_attr, catalog_attr = _BEDROCK_SLOTS[slot]
+
+    settings = get_srv_settings()
+    region = (body.get('region') or '').strip() or (getattr(settings, url_attr, None) or '').strip()
+    if not region:
+        return response_error('Enter the Bedrock region first', data={'region': ['empty']})
+    api_key = (body.get('api_key') or '').strip() or (getattr(settings, key_attr, None) or '').strip()
+    if not api_key:
+        return response_error('Enter the Bedrock API key first (none stored for this slot)',
+                              data={'api_key': ['empty']})
+
+    try:
+        catalog = list_inference_profiles(region, api_key)
+    except AIClientError as e:
+        msg = str(e)
+        if 'ListInferenceProfiles' in msg and 'not authorized' in msg:
+            # A console-generated long-term key's IAM user has inference rights but
+            # not the control-plane listing. Say what to attach instead of relaying
+            # only the IAM sentence; pasting the ARN under "Other" works meanwhile.
+            return response_error(
+                "Bedrock listing failed: this API key's IAM user lacks bedrock:ListInferenceProfiles. "
+                "Attach a policy allowing bedrock:ListInferenceProfiles and bedrock:GetInferenceProfile "
+                "on resource * (Bedrock console > API keys > Long-term > Manage in IAM Console), or pick "
+                "'Other' and paste the inference profile ARN. AWS said: " + msg)
+        return response_error(f'Bedrock listing failed: {msg}')
+
+    setattr(settings, catalog_attr, catalog)
+    db.session.commit()
+    app.config['SERVER_SETTINGS'] = ServerSettingsSchema().dump(settings)
+    track_activity(f"Bedrock inference-profile catalog refreshed for the {slot} AI backend slot "
+                   f"({len(catalog)} entries)")
+    return response_success('Catalog refreshed', data={
+        'slot': slot,
+        'count': len(catalog),
+        'application': sum(1 for c in catalog if c.get('type') == 'APPLICATION'),
+        'catalog': catalog,
+    })
