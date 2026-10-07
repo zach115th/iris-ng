@@ -11,6 +11,23 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.5.1] — 2026-10-07
+
+One fix for the AI task suggester on reasoning models. **No schema change** — the database
+head stays at `a7c2d9e4f1b6`. Python only: a clone install needs a reset and an app + worker
+restart; the release images are rebuilt as always.
+
+### Fixed
+- **Task suggestions failed with "AI backend did not return JSON (the reply hit the output
+  limit)" on a reasoning model.** The suggester capped replies at 6 000 tokens; a model that
+  reasons before it writes (Kimi K3 on AWS Bedrock, for one) spent most of that thinking, and on
+  a case with several tasks the JSON was cut mid-string. The budget is now 12 000 (the model
+  stops when the object closes, so a model that needs less is unaffected), and a reply that the
+  output limit cuts before its JSON closes is retried once with a compact instruction — answer
+  first, at most 5 suggestions, descriptions at most 2 sentences — before it is reported. A
+  reply that still truncates twice says so and points at the per-feature Settings override to a
+  non-reasoning model. Nothing is cached on either failure.
+
 ## [IRIS-NG-v2.5.0] — 2026-10-07
 
 A new AI backend provider and a war-room usability fix. **One schema change** — migration
