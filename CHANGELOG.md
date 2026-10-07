@@ -11,6 +11,49 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.5.0] — 2026-10-07
+
+A new AI backend provider and a war-room usability fix. **One schema change** — migration
+`a7c2d9e4f1b6` adds four nullable columns to `server_settings` (the database head moves from
+`f4b8d2e6a913`); take a `pg_dump` before updating a production install. The app image is
+rebuilt (Settings template, war-room script); a clone install needs a reset, a rebuild and an
+app + worker restart.
+
+### Added
+- **AWS Bedrock as an AI backend provider.** Each AI backend slot in Settings > AI now names its
+  provider: *OpenAI-compatible* (the existing `/v1/chat/completions` client — LM Studio,
+  OpenRouter, OpenAI) or *AWS Bedrock*, which talks to the Converse API with a Bedrock API key.
+  For a Bedrock slot the URL field takes a region (`us-west-2`; a full endpoint URL still works
+  for private endpoints) and the server builds the hosts; the Model field takes an inference
+  profile ARN (pasted plain or URL-encoded, as the console copies it), a profile id or a model
+  id. **Load models** lists the inference profiles the key can see (your named application
+  profiles first, then the system-defined cross-region ones) and turns the Model field into a
+  dropdown of friendly names; the chosen entry's ARN is what gets stored, and *Other* still takes
+  a pasted value. The listing needs `bedrock:ListInferenceProfiles` on the key's IAM user — a
+  console-generated long-term key does not have it, and the error says what to attach. Every
+  AI surface runs unchanged: the adapter returns the same reply shape the other client does.
+  Reasoning content from thinking models is dropped structurally; a stop caused by a guardrail
+  or the provider's content filter is an error, never cached as an artifact; IRIS applies no
+  Bedrock Guardrail of its own. A model that rejects the `temperature` field (Kimi K3 on
+  Bedrock) is retried once without it and the rejection remembered for the rest of that job.
+- **Right-click menus on the war-room Notes rail** (#137). Folders offer Add note / Rename /
+  Delete; notes offer Open / Rename / Move to… / Copy link / Delete; the empty rail offers Add
+  note / Add folder. Mutating items follow the same rule as the hover icons (responder or above,
+  room not closed). *Copy link* yields the room URL with `?note=<id>`, which opens that note on
+  the Notes tab. `/note <text>` in the stream now creates a note on the Notes tab (first line =
+  title) instead of a stream message; `/pin` keeps the stream note. The command parser accepts
+  multi-line arguments. `POST /war-rooms/<id>/notes/room` accepts an optional `content`.
+
+### Changed
+- **AI backend API keys are write-only.** The two stored keys are no longer returned by the
+  settings API or prefilled into the Settings page; a *stored* badge shows one is set, and
+  leaving the field blank on Save keeps the stored value (the same contract as the mail
+  passwords). The settings payload gains `ai_backend_api_key_set` / `ai_backend_alt_api_key_set`
+  booleans, `ai_backend_provider` / `ai_backend_alt_provider`, and the two read-only
+  `*_model_catalog` lists.
+- **Bedrock usage reporting** folds prompt tokens served from the prompt cache into
+  `prompt_tokens` (Bedrock reports them separately) and details the cached share.
+
 ## [IRIS-NG-v2.4.6] — 2026-10-05
 
 One fix for module hooks and webhook consumers. **No schema change** — the database head stays
