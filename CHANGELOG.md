@@ -11,6 +11,28 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.5.2] — 2026-10-07
+
+Every JSON-contract AI surface now survives a reasoning model on AWS Bedrock. **No schema
+change** — the database head stays at `a7c2d9e4f1b6`. Python only: a clone install needs a
+reset and an app + worker restart; the release images are rebuilt as always.
+
+### Fixed
+- **"AI backend returned no JSON object" on the war-room operational summary, the SitRep AI
+  draft, the correlation cluster narrative, the alert-cluster triage and the ICS AI pass when the
+  backend is a reasoning model.** 2.5.1 fixed the task suggester alone; the same cause — the
+  model's thinking counts against the same output budget as its answer, so the JSON was cut
+  mid-string at caps written for non-thinking models — sat in five more surfaces, three of them
+  budgeting under 2 500 tokens (the cluster narrative 800). The output-limit retry is now one
+  shared routine: a reply that `finish_reason=length` cuts before its JSON parses (empty or
+  truncated) is retried once with a compact instruction on the user turn (answer first, fewer
+  and shorter items), same budget; a `length` stop whose JSON still closes is an answer; non-JSON
+  at a normal stop is still an immediate error. Budgets: operational summary and ICS pass 12 000,
+  SitRep draft 8 000, alert-cluster triage 6 000, cluster narrative 4 000 (the model stops when
+  the object closes, so a model that needs less is unaffected); client timeouts moved with
+  them. A reply that truncates twice says so and points at the per-feature Settings override to
+  a non-reasoning model. Nothing is cached on either failure.
+
 ## [IRIS-NG-v2.5.1] — 2026-10-07
 
 One fix for the AI task suggester on reasoning models. **No schema change** — the database
