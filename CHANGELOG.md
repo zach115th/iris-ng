@@ -30,6 +30,22 @@ worker restart; the release images are rebuilt as always.
   moved to match. The executive case summary's specialists budget 6 000 and its synthesis 8 000
   (budget only). Nothing is cached on either failure.
 
+### Changed
+- **Dependencies (Dependabot #139, npm minor/patch group).** UI: marked 18.0.14 (six parser
+  fixes in the vendored renderer — numeric character references in text are now decoded,
+  `mailto:` autolinks keep the scheme in their text, tabs inside list items are preserved,
+  reference-link labels tolerate surrounding spaces, indented setext headings and empty nested
+  blockquotes), dropzone 6.3.5 (two upload fixes on paths the pipelines modal does not use;
+  the modal's behavioural probe is 18/18 on both builds), socket.io 4.8.4 (server-side fixes;
+  the vendored browser client is the rebuilt 4.8.4 file), vite 8.3.2, rolldown 1.2.12,
+  @sveltejs/vite-plugin-svelte 7.3.1, eslint 10.12.0, globals 17.13.0. The bundled
+  application JavaScript is byte-identical; only the three vendored files differ, each
+  matching its npm tarball. e2e: wait-on 9.5.1, dotenv 18.0.5, @types/node 24.19.1, and
+  **joi 18.2.9 closes GHSA-wr44-6hxh-3jwq** (CVE-2026-90771, moderate: prototype pollution
+  through `__proto__` error codes in custom messages) — joi is a transitive of the e2e
+  readiness poll and the e2e job is disabled, so it was unreachable in a running IRIS; the e2e
+  `npm audit` goes 1 → 0, the UI audit stays at its pre-existing Tailwind 3 chain.
+
 ## [IRIS-NG-v2.5.2] — 2026-10-07
 
 Every JSON-contract AI surface now survives a reasoning model on AWS Bedrock. **No schema
