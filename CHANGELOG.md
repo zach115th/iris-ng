@@ -31,6 +31,18 @@ version string.
   remaining findings are the Tailwind 3 chain, pending that major upgrade). A behaviour probe on
   the library's own indexed fixture resolves the same positions on both versions while 1.2.2
   refuses the out-of-range and malformed offsets 1.2.1 accepted.
+- **Dependencies (Dependabot alert #154, no PR).** postcss-selector-parser is pinned to 7.1.6
+  through an npm `overrides` entry in the UI manifest, closing **GHSA-rj75-hqrm-r3gf**
+  (CVE-2026-104844, medium): a flat selector such as `.a.a.a…` with many class or id indexes
+  parsed in quadratic time, and the fix exists only on the 7.x line. The build held two copies,
+  6.1.4 (what tailwindcss 3.4.x and postcss-nested declare — no 6.x release carries the fix) and
+  7.1.4 (under svelte-eslint-parser); the override resolves both to 7.1.6. Tailwind only runs at
+  build time over the tree's own CSS, and its stylesheet is not reached by any build entry, so
+  nothing in a running IRIS was exposed. Validation: the 716 dist files are md5-identical with the
+  override, compiling the Tailwind stylesheet directly with the forced parser produces a
+  byte-identical result, and a timing probe shows 6.1.4 and 7.1.4 growing about fourfold per
+  doubling of the index count while 7.1.6 grows linearly; the UI `npm audit` goes 8 → 6 (both
+  moderate findings close; the remaining six are the `braces` chain under Tailwind 3).
 
 ## [IRIS-NG-v2.5.3] — 2026-10-08
 

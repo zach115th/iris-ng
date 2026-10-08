@@ -43,5 +43,8 @@
     "vis": "^4.21.0-EOL",
     "webfontloader": "^1.6.16",
     "xss": "^1.0.15"
+  },
+  "overrides": {
+    "postcss-selector-parser": "^7.1.6"
   }
 }
