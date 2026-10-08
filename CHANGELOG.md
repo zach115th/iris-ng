@@ -11,6 +11,25 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.5.3] — 2026-10-08
+
+The output-limit retry reaches every JSON-contract AI surface. **No schema change** — the
+database head stays at `a7c2d9e4f1b6`. Python only: a clone install needs a reset and an app +
+worker restart; the release images are rebuilt as always.
+
+### Fixed
+- **"AI backend did not return JSON" on IOC extraction from notes, the ATT&CK suggester, the
+  evidence-type and case-template suggesters, the IOC deduplication pass and mail triage when
+  the backend is a reasoning model.** 2.5.2 covered five surfaces; the IOC extractor failed the
+  same way on the next click (its reply quoted the opening of the indicator list) at a
+  1 500-token cap, and five more surfaces budgeted 600 to 3 000 tokens. All six now run the
+  shared retry: a reply cut by the output limit before its JSON parses is retried once with a
+  compact instruction, same budget; twice truncated names the limit, the retry and the
+  per-feature Settings override. Budgets: IOC extractor and dedup pass 8 000, ATT&CK suggester
+  and mail triage 6 000, evidence-type and case-template suggesters 4 000, with client timeouts
+  moved to match. The executive case summary's specialists budget 6 000 and its synthesis 8 000
+  (budget only). Nothing is cached on either failure.
+
 ## [IRIS-NG-v2.5.2] — 2026-10-07
 
 Every JSON-contract AI surface now survives a reasoning model on AWS Bedrock. **No schema
