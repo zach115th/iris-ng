@@ -11,6 +11,27 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.5.4] — 2026-10-08
+
+A dependency-only release. **No schema change** — the database head stays at `a7c2d9e4f1b6`.
+The application code is identical to 2.5.3; the only change is a build-stage npm lockfile
+entry, so the browser bundle is byte-for-byte the 2.5.3 bundle and the image-level delta is the
+version string.
+
+### Changed
+- **Dependencies (Dependabot #142).** source-map-js 1.2.1 → 1.2.2 in the UI build closes
+  **GHSA-68fv-2mgg-jv7q** (CVE-2026-93749, high): an indexed source map carrying an arbitrarily
+  large per-section line offset made the library emit one separator per claimed line and block
+  the event loop; 1.2.2 caps the offset at ten million (nested offsets summed), rejects
+  non-integer offsets and builds line gaps as a single string. The package is a devDependency
+  reached only through postcss (vite, tailwindcss, eslint-plugin-svelte) while the Docker node
+  stage compiles the tree's own CSS, and the shipped images run no Node, so nothing in a running
+  IRIS was reachable. Applied verbatim from the PR; baseline and candidate builds produce the
+  same 716 dist files md5-for-md5, lint is identical, and the UI `npm audit` goes 9 → 8 (the
+  remaining findings are the Tailwind 3 chain, pending that major upgrade). A behaviour probe on
+  the library's own indexed fixture resolves the same positions on both versions while 1.2.2
+  refuses the out-of-range and malformed offsets 1.2.1 accepted.
+
 ## [IRIS-NG-v2.5.3] — 2026-10-08
 
 The output-limit retry reaches every JSON-contract AI surface. **No schema change** — the
