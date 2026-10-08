@@ -31,7 +31,7 @@ pyminizip~=0.2.6
 # ICS form export: fills the bundled FEMA PDFs (business/war_room_ics_pdf.py)
 pypdf==6.19.0
 PyJWT==2.15.0
-cryptography>=50.0.1
+cryptography>=50.0.2
 ldap3==2.9.1
 pyintelowl>=5.1.0
 pyotp==2.10.0
