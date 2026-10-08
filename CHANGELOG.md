@@ -45,6 +45,21 @@ worker restart; the release images are rebuilt as always.
   through `__proto__` error codes in custom messages) — joi is a transitive of the e2e
   readiness poll and the e2e job is disabled, so it was unreachable in a running IRIS; the e2e
   `npm audit` goes 1 → 0, the UI audit stays at its pre-existing Tailwind 3 chain.
+- **Dependencies (Dependabot #140, python minor/patch group).** PyJWT 2.15.1 (one change: a
+  JWS segment carrying trailing Base64URL `=` padding, as AWS ALB issues, now decodes instead of
+  raising `Invalid crypto padding`; non-alphabet junk is still rejected — probed per version;
+  reached only by the OIDC `signature` mode), azure-identity 1.26.0 (Arc user-assigned managed
+  identities, a cached-token fix for `AuthorizationCodeCredential`, `x-ms-client-request-id` on
+  every request; msal floor 1.39.0 already met) and azure-keyvault-secrets 4.11.3 (authentication
+  challenge cache verified before token use, backslashes in the authority rejected) — both
+  reached only when `AZURE_KEY_VAULT_NAME` is set — and python-gnupg 0.5.7 (new helper
+  functions; imported only by the retired updater module). Seven unpinned riders re-resolved
+  at patch level (MarkupSafe 3.0.4, amqp 5.4.1, billiard 4.3.1, click-repl 0.4.1, pycryptodomex
+  3.24.0, tzdata 2026.5, wcwidth 0.9.2). Validated by importing every top-level module of the
+  built image before the recreate, then the scripted before/after stack snapshots. Dependabot
+  #141 raises the `cryptography` floor to `>=50.0.2` (OpenSSL 4.0.3 wheels): the image already
+  resolved 50.0.2 under the old floor, so the installed set is unchanged; 50.0.0's PKCS#7
+  decryption-oracle fix (CVE-2026-69247) was already in place.
 
 ## [IRIS-NG-v2.5.2] — 2026-10-07
 
