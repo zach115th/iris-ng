@@ -12,10 +12,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "@types/node": "^24.13.6",
-    "wait-on": "^9.1.0"
+    "@types/node": "^24.19.1",
+    "wait-on": "^9.5.1"
   },
   "dependencies": {
-    "dotenv": "^18.0.1"
+    "dotenv": "^18.0.5"
   }
 }
