@@ -43,7 +43,14 @@ from pathlib import Path
 from typing import Any
 
 from app import app
+from app.iris_engine.ai.json_reply import DEFAULT_COMPACT_SUFFIX
+from app.iris_engine.ai.json_reply import ask_json
+from app.iris_engine.ai.json_reply import truncation_hint
 from app.iris_engine.ai.openai_client import build_default_client
+
+# Budget = thinking + output (1 200 until 2026-10-07). The model stops when the
+# object closes. One compact retry when the limit cuts the JSON (json_reply).
+MAIL_TRIAGE_MAX_TOKENS = 6000
 from app.models.alerts import Severity
 from app.models.models import CaseClassification
 
@@ -124,7 +131,7 @@ def triage_email(subject: str, body: str, from_addr: str) -> dict[str, Any]:
          'iocs': [alert_iocs-shaped dicts],
          'model': str, 'prompt_id': str}
     """
-    client = build_default_client(timeout=90.0, default_max_tokens=1200,
+    client = build_default_client(timeout=180.0, default_max_tokens=MAIL_TRIAGE_MAX_TOKENS,
                                   feature='mail_triage')
     if client is None:
         raise MailTriageError("AI backend is not configured")
@@ -141,15 +148,17 @@ def triage_email(subject: str, body: str, from_addr: str) -> dict[str, Any]:
         f"{(body or '')[:_BODY_CAP]}"
     )
 
-    envelope = client.chat([
-        {"role": "system", "content": load_system_prompt()},
-        {"role": "user", "content": user_message},
-    ])
-    raw = client.extract_content(envelope)
-    try:
-        parsed = json.loads(_extract_json_block(raw))
-    except (json.JSONDecodeError, TypeError) as e:
-        raise MailTriageError(f"AI backend returned non-JSON content ({e})")
+    reply = ask_json(
+        client,
+        [{"role": "system", "content": load_system_prompt()},
+         {"role": "user", "content": user_message}],
+        max_tokens=MAIL_TRIAGE_MAX_TOKENS, compact_suffix=DEFAULT_COMPACT_SUFFIX,
+        parse=lambda t: json.loads(_extract_json_block(t)),
+        log=log, label="mail_triage")
+    parsed = reply.parsed
+    if parsed is None:
+        raise MailTriageError(
+            f"AI backend returned non-JSON content{truncation_hint('mail triage', reply)}")
     if not isinstance(parsed, dict):
         raise MailTriageError("AI backend returned a non-object payload")
 

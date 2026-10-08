@@ -25,8 +25,19 @@ from pathlib import Path
 from typing import Any
 
 from app import app
+from app.iris_engine.ai.json_reply import ask_json
+from app.iris_engine.ai.json_reply import truncation_hint
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
+
+# Budget = thinking + output (3 000 until 2026-10-07). The model stops when the
+# object closes. One compact retry when the limit cuts the JSON (json_reply).
+IOC_DEDUP_MAX_TOKENS = 8000
+COMPACT_RETRY_SUFFIX = (
+    "\n\nYour previous reply was cut off by the output limit before the JSON closed. "
+    "Answer NOW with the JSON object only: list only the pairs you are confident about, "
+    "one short sentence per reason. No reasoning before the answer."
+)
 from app.iris_engine.utils.ioc_normalise import normalise_ioc_value
 
 IOC_DEDUP_PROMPT_ID = "IocDedupSystemPrompt-v1"
@@ -119,7 +130,7 @@ def suggest_ioc_duplicates(case_id: int) -> dict[str, Any]:
         return {"pairs": [], "model": None, "ioc_count": len(iocs), "sent": len(iocs),
                 "truncated": False}
 
-    client = build_default_client(timeout=600.0, default_max_tokens=3000, feature='ioc_dedup')
+    client = build_default_client(timeout=600.0, default_max_tokens=IOC_DEDUP_MAX_TOKENS, feature='ioc_dedup')
     if client is None:
         raise IocDedupError(
             "AI backend is not configured (set AI_BACKEND_URL and AI_BACKEND_MODEL "
@@ -135,23 +146,22 @@ def suggest_ioc_duplicates(case_id: int) -> dict[str, Any]:
     app.logger.info(f"IocDedup: case #{case_id} requesting AI pass "
                     f"(model={client.model}, rows={len(payload)}, truncated={truncated})")
     try:
-        response = client.chat([
-            {"role": "system", "content": load_system_prompt()},
-            {"role": "user", "content": user_prompt},
-        ])
+        reply = ask_json(
+            client,
+            [{"role": "system", "content": load_system_prompt()},
+             {"role": "user", "content": user_prompt}],
+            max_tokens=IOC_DEDUP_MAX_TOKENS, compact_suffix=COMPACT_RETRY_SUFFIX,
+            parse=lambda t: json.loads(_extract_json_block(t)),
+            log=app.logger, label=f"IocDedup: case #{case_id}")
     except AIClientError as exc:
         raise IocDedupError(f"AI backend call failed: {exc}") from exc
 
-    raw = client.extract_content(response).strip()
+    raw, parsed = reply.raw, reply.parsed
     if not raw:
-        raise IocDedupError(
-            "AI backend returned an empty response "
-            f"(finish_reason={response.get('choices', [{}])[0].get('finish_reason')})")
-    try:
-        parsed = json.loads(_extract_json_block(raw))
-    except json.JSONDecodeError as exc:
+        raise IocDedupError(f"AI backend returned an empty response (finish_reason={reply.finish})")
+    if parsed is None:
         detail = ' '.join(raw.split())[:200] or '<empty response>'
-        raise IocDedupError(f"AI backend did not return JSON. Backend said: {detail}") from exc
+        raise IocDedupError(f"AI backend did not return JSON{truncation_hint('IOC dedup pass', reply)}. Backend said: {detail}")
 
     sent_ids = {p["id"] for p in payload}
     pairs = validate_pairs(parsed, [i for i in iocs if int(i.ioc_id) in sent_ids])

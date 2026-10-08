@@ -23,6 +23,8 @@ from pathlib import Path
 from typing import Any
 
 from app import app
+from app.iris_engine.ai.json_reply import ask_json
+from app.iris_engine.ai.json_reply import truncation_hint
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
 from app.iris_engine.ai.sigma_grounding import find_matching_sigma_rules
@@ -32,6 +34,17 @@ from app.models.models import Tlp
 
 
 IOC_EXTRACTOR_PROMPT_ID = "IocExtractorSystemPrompt-v1"
+
+# Budget = thinking + output. 1 500 until 2026-10-07: a reasoning model (Kimi
+# K3 on Bedrock) cut the indicator list mid-string on a real forensic note.
+# The model stops when the object closes, so the ceiling costs nothing on a
+# model that needs less; the client timeout moved with it.
+IOC_EXTRACT_MAX_TOKENS = 8000
+COMPACT_RETRY_SUFFIX = (
+    "\n\nYour previous reply was cut off by the output limit before the JSON closed. "
+    "Answer NOW with the JSON object only: keep each `reason` to one short sentence and "
+    "list only the indicators you are confident about. No reasoning before the answer."
+)
 PROMPT_PATH = Path(__file__).parent.parent.parent / "resources" / "ai_prompts" / "ioc_extractor.md"
 
 # Default TLP for AI-suggested IOCs. Amber matches the IRIS GUI default
@@ -210,7 +223,7 @@ def extract_iocs(text: str, case_id: int | None = None) -> dict[str, Any]:
     if not text:
         raise IocExtractorError("Need note text to extract IOCs from")
 
-    client = build_default_client(timeout=180.0, default_max_tokens=1500, feature='ioc_extractor')
+    client = build_default_client(timeout=300.0, default_max_tokens=IOC_EXTRACT_MAX_TOKENS, feature='ioc_extractor')
     if client is None:
         raise IocExtractorError(
             "AI backend is not configured (set AI_BACKEND_URL and AI_BACKEND_MODEL "
@@ -284,29 +297,30 @@ def extract_iocs(text: str, case_id: int | None = None) -> dict[str, Any]:
         f"sigma_matches={len(sigma_matches)})"
     )
 
+    # One call, ONE compact retry when the output limit cuts the JSON before
+    # it closes (json_reply.ask_json): a note with many indicators on a
+    # reasoning model was cut mid-list at the old 1 500-token cap.
     try:
-        response = client.chat([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ], model=call_model if call_model != client.model else None)
+        reply = ask_json(
+            client,
+            [{"role": "system", "content": system_prompt},
+             {"role": "user", "content": user_prompt}],
+            max_tokens=IOC_EXTRACT_MAX_TOKENS, compact_suffix=COMPACT_RETRY_SUFFIX,
+            parse=lambda t: json.loads(_extract_json_block(t)),
+            log=app.logger, label="IocExtractor",
+            model=call_model if call_model != client.model else None)
     except AIClientError as exc:
         raise IocExtractorError(f"AI backend call failed: {exc}") from exc
 
-    raw = client.extract_content(response).strip()
+    raw, response, parsed = reply.raw, reply.response, reply.parsed
     if not raw:
-        raise IocExtractorError(
-            "AI backend returned an empty response "
-            f"(finish_reason={response.get('choices', [{}])[0].get('finish_reason')})"
-        )
-
-    try:
-        parsed = json.loads(_extract_json_block(raw))
-    except json.JSONDecodeError as exc:
+        raise IocExtractorError(f"AI backend returned an empty response (finish_reason={reply.finish})")
+    if parsed is None:
         app.logger.warning(f"IocExtractor: model returned non-JSON content: {raw[:300]}")
         _detail = ' '.join((raw or '').split())[:200] or '<empty response>'
         raise IocExtractorError(
-            f"AI backend did not return JSON. Backend said: {_detail}"
-        ) from exc
+            f"AI backend did not return JSON{truncation_hint('IOC extractor', reply)}. Backend said: {_detail}"
+        )
 
     type_index = _build_type_index()
     default_tlp_id = _resolve_default_tlp_id()

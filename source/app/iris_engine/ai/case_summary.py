@@ -562,7 +562,9 @@ def _call_domain_specialist(
     cfg = DOMAIN_CONFIG[domain]
     system_prompt = _load_prompt(cfg["prompt_file"])
 
-    client = build_default_client(timeout=600.0, default_max_tokens=2000, feature='case_summary')
+    # Budget = thinking + output (2 000 until 2026-10-07; a reasoning model on
+    # Bedrock spends ~2 800 before its first word). The model stops when done.
+    client = build_default_client(timeout=600.0, default_max_tokens=6000, feature='case_summary')
     if client is None:
         raise CaseSummaryError(
             "AI backend is not configured (set AI_BACKEND_URL and AI_BACKEND_MODEL)"
@@ -727,7 +729,9 @@ def generate_case_summary(case_id: int, *, force: bool = False) -> CaseAiArtifac
     if case is None:
         raise CaseSummaryError(f"Case #{case_id} not found")
 
-    client = build_default_client(timeout=600.0, default_max_tokens=4000, feature='case_summary')
+    # Synthesis budget 4 000 -> 8 000 (2026-10-07): the 7-section summary is
+    # ~4 000 output tokens on its own; a reasoning model thinks first.
+    client = build_default_client(timeout=600.0, default_max_tokens=8000, feature='case_summary')
     if client is None:
         raise CaseSummaryError(
             "AI backend is not configured (set AI_BACKEND_URL and AI_BACKEND_MODEL)"

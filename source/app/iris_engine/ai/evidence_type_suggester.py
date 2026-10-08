@@ -26,8 +26,16 @@ from pathlib import Path
 from typing import Any
 
 from app import app
+from app.iris_engine.ai.json_reply import DEFAULT_COMPACT_SUFFIX
+from app.iris_engine.ai.json_reply import ask_json
+from app.iris_engine.ai.json_reply import truncation_hint
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
+
+# Budget = thinking + output (600 until 2026-10-07: a reasoning model spends
+# several times that before its first word). The model stops when the object
+# closes. One compact retry when the limit cuts the JSON (json_reply.ask_json).
+EVIDENCE_TYPE_MAX_TOKENS = 4000
 from app.models.models import EvidenceTypes
 
 
@@ -136,7 +144,7 @@ def suggest_evidence_type(
     if not filename and not (magic_hex or "").strip():
         raise EvidenceTypeSuggesterError("Need at least a filename or magic bytes to suggest a type")
 
-    client = build_default_client(timeout=180.0, default_max_tokens=600, feature='evidence_type_suggester')
+    client = build_default_client(timeout=240.0, default_max_tokens=EVIDENCE_TYPE_MAX_TOKENS, feature='evidence_type_suggester')
     if client is None:
         raise EvidenceTypeSuggesterError(
             "AI backend is not configured (set AI_BACKEND_URL and AI_BACKEND_MODEL "
@@ -177,28 +185,25 @@ def suggest_evidence_type(
     )
 
     try:
-        response = client.chat([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ])
+        reply = ask_json(
+            client,
+            [{"role": "system", "content": system_prompt},
+             {"role": "user", "content": user_prompt}],
+            max_tokens=EVIDENCE_TYPE_MAX_TOKENS, compact_suffix=DEFAULT_COMPACT_SUFFIX,
+            parse=lambda t: json.loads(_extract_json_block(t)),
+            log=app.logger, label="EvidenceTypeSuggester")
     except AIClientError as exc:
         raise EvidenceTypeSuggesterError(f"AI backend call failed: {exc}") from exc
 
-    raw = client.extract_content(response).strip()
+    raw, response, parsed = reply.raw, reply.response, reply.parsed
     if not raw:
-        raise EvidenceTypeSuggesterError(
-            "AI backend returned an empty response "
-            f"(finish_reason={response.get('choices', [{}])[0].get('finish_reason')})"
-        )
-
-    try:
-        parsed = json.loads(_extract_json_block(raw))
-    except json.JSONDecodeError as exc:
+        raise EvidenceTypeSuggesterError(f"AI backend returned an empty response (finish_reason={reply.finish})")
+    if parsed is None:
         app.logger.warning(f"EvidenceTypeSuggester: model returned non-JSON content: {raw[:300]}")
         _detail = ' '.join((raw or '').split())[:200] or '<empty response>'
         raise EvidenceTypeSuggesterError(
-            f"AI backend did not return JSON. Backend said: {_detail}"
-        ) from exc
+            f"AI backend did not return JSON{truncation_hint('evidence-type suggester', reply)}. Backend said: {_detail}"
+        )
 
     suggestion = _validate_suggestion(parsed, catalog)
 

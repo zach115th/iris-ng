@@ -29,6 +29,14 @@ from app.iris_engine.ai.openai_client import OpenAIClient
 
 ParseFn = Callable[[str], Any]
 
+# The suffix for surfaces whose JSON is small (a pick from a catalog, a few
+# techniques, a severity): nothing to shorten but the thinking.
+DEFAULT_COMPACT_SUFFIX = (
+    "\n\nYour previous reply was cut off by the output limit before the JSON closed. "
+    "Answer NOW with the JSON object only; keep every text field to one sentence. "
+    "No reasoning before the answer."
+)
+
 
 @dataclass
 class JsonReply:
@@ -62,14 +70,19 @@ def ask_json(
     parse: ParseFn,
     log: logging.Logger,
     label: str,
+    model: str | None = None,
 ) -> JsonReply:
     """Call `client.chat(messages, max_tokens=)`; retry ONCE with `compact_suffix`
     appended to the last user message when the output limit cut the reply before
     its JSON parsed (empty or truncated). Transport errors propagate as
-    AIClientError for the caller to wrap in its own error type.
+    AIClientError for the caller to wrap in its own error type. `model` is the
+    per-call override some surfaces route to (a faster sibling); it is passed
+    only when set, so a fake client without that keyword still works.
     """
+    extra = {"model": model} if model else {}
+
     def _ask(msgs: list[dict[str, str]]) -> tuple[dict[str, Any], str, str | None, Any]:
-        resp = client.chat(msgs, max_tokens=max_tokens)
+        resp = client.chat(msgs, max_tokens=max_tokens, **extra)
         # The static method: every client (and every suite's fake) returns the
         # chat-completions envelope, so no instance method is needed to read it.
         raw = (OpenAIClient.extract_content(resp) or "").strip()
@@ -115,4 +128,5 @@ def truncation_hint(surface: str, reply: JsonReply) -> str:
     return " (the reply hit the output limit)"
 
 
-__all__ = ["AIClientError", "JsonReply", "ask_json", "parse_or_none", "truncation_hint", "with_compact_suffix"]
+__all__ = ["AIClientError", "DEFAULT_COMPACT_SUFFIX", "JsonReply", "ask_json", "parse_or_none",
+           "truncation_hint", "with_compact_suffix"]

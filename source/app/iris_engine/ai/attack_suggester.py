@@ -18,8 +18,17 @@ from pathlib import Path
 from typing import Any
 
 from app import app
+from app.iris_engine.ai.json_reply import DEFAULT_COMPACT_SUFFIX
+from app.iris_engine.ai.json_reply import ask_json
+from app.iris_engine.ai.json_reply import truncation_hint
 from app.iris_engine.ai.openai_client import AIClientError
 from app.iris_engine.ai.openai_client import build_default_client
+
+# Budget = thinking + output. 2 000 (2026-09) assumed 500-1 000 reasoning
+# tokens; Kimi K3 on Bedrock spends ~2 800 before its first word. The model
+# stops when the object closes. One compact retry when the limit cuts the
+# JSON (json_reply.ask_json).
+ATTACK_MAX_TOKENS = 6000
 from app.iris_engine.ai.sigma_grounding import aggregate_techniques
 from app.iris_engine.ai.sigma_grounding import find_matching_sigma_rules
 
@@ -162,9 +171,7 @@ def suggest_attack_techniques(
     if not title and not (content or "").strip():
         raise AttackSuggesterError("Need at least a title or description to suggest techniques")
 
-    # 2000 tokens: reasoning models (Gemma-4, DeepSeek R1) burn 500-1000 on
-    # thinking before emitting JSON; the JSON payload itself is ~300-500 tokens.
-    client = build_default_client(timeout=180.0, default_max_tokens=2000, feature='attack_suggester')
+    client = build_default_client(timeout=240.0, default_max_tokens=ATTACK_MAX_TOKENS, feature='attack_suggester')
     if client is None:
         raise AttackSuggesterError(
             "AI backend is not configured (set AI_BACKEND_URL and AI_BACKEND_MODEL "
@@ -238,28 +245,25 @@ def suggest_attack_techniques(
     )
 
     try:
-        response = client.chat([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ])
+        reply = ask_json(
+            client,
+            [{"role": "system", "content": system_prompt},
+             {"role": "user", "content": user_prompt}],
+            max_tokens=ATTACK_MAX_TOKENS, compact_suffix=DEFAULT_COMPACT_SUFFIX,
+            parse=lambda t: json.loads(_extract_json_block(t)),
+            log=app.logger, label="AttackSuggester")
     except AIClientError as exc:
         raise AttackSuggesterError(f"AI backend call failed: {exc}") from exc
 
-    raw = client.extract_content(response).strip()
+    raw, response, parsed = reply.raw, reply.response, reply.parsed
     if not raw:
-        raise AttackSuggesterError(
-            "AI backend returned an empty response "
-            f"(finish_reason={response.get('choices', [{}])[0].get('finish_reason')})"
-        )
-
-    try:
-        parsed = json.loads(_extract_json_block(raw))
-    except json.JSONDecodeError as exc:
+        raise AttackSuggesterError(f"AI backend returned an empty response (finish_reason={reply.finish})")
+    if parsed is None:
         app.logger.warning(f"AttackSuggester: model returned non-JSON content: {raw[:300]}")
         _detail = ' '.join((raw or '').split())[:200] or '<empty response>'
         raise AttackSuggesterError(
-            f"AI backend did not return JSON. Backend said: {_detail}"
-        ) from exc
+            f"AI backend did not return JSON{truncation_hint('ATT&CK suggester', reply)}. Backend said: {_detail}"
+        )
 
     raw_techs = parsed.get("techniques") if isinstance(parsed, dict) else None
     techniques: list[dict[str, Any]] = []
