@@ -11,6 +11,38 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.7.0] — 2026-10-09
+
+Any number of AI backends. **One schema migration (`b8e3f1a7c2d5`)** — take a database dump
+before upgrading (migrations are one-way; `scripts/update.sh` does the dump). Python, one
+template and one settings script; the browser bundle rebuilds for the settings script. A clone
+install needs a reset and an app + worker restart; the release images are rebuilt as always.
+
+### Added
+- **As many AI backends as you want.** Settings → AI shows one card per backend and a
+  **+ Add backend** button; each card saves and deletes on its own, and the "Use this backend"
+  radio (saved with the tab) picks the active one. Backends live in a new `ai_backend` table
+  (label, provider, URL, model, write-only API key, Bedrock catalog); labels are unique, the
+  active backend cannot be deleted, a backend added while none is active becomes active, and
+  deleting a backend that features were pinned to resets those pins to the active backend.
+  "Load models" (Bedrock) works per card once the card is saved. The per-feature override
+  table lists every backend by label.
+- Admin routes `GET /manage/settings/ai/backends/list`, `POST …/add`, `POST …/update/<id>`,
+  `POST …/delete/<id>` and `POST …/<id>/catalog` (the per-backend Bedrock listing). The
+  settings form keeps only the pointers: `ai_backend_active_id` and `ai_feature_overrides`
+  (values are now backend ids); an id that does not exist is a *Data error* naming the field.
+
+### Changed
+- **Upgrade path.** The migration imports the two existing slots once: every slot that had a
+  URL or model becomes a backend (its label kept, a duplicate label suffixed), the active slot
+  becomes the active backend and every per-feature pin is remapped, so nothing needs to be
+  retyped. The old slot columns stay in the database but are no longer read, and the retired
+  settings keys (`ai_backend_url`, `ai_backend_alt_*`, `ai_backend_active_slot`, the slot
+  providers, labels and catalogs) are gone from the settings payload; a submission naming them
+  is ignored. `POST /manage/settings/ai/bedrock/catalog` (added in 2.5.0) is replaced by the
+  per-backend route. `AI_BACKEND_*` environment variables seed the first backend only while no
+  backend exists.
+
 ## [IRIS-NG-v2.6.0] — 2026-10-09
 
 OpenAI's own API as a first-class AI backend, and a chat-completions client that adapts its
