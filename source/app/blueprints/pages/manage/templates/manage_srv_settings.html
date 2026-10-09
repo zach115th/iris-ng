@@ -167,14 +167,15 @@
                                    Reads via OpenAIClient.build_default_client() — DB takes precedence
                                    over env vars at this point.
 
-                                   Two-slot design (Alembic e9d2c5a3f8b1): admins can keep two backends
-                                   configured side-by-side (e.g. LM Studio + a hosted OpenAI-compatible endpoint) and switch
-                                   the active one with a radio click. The 'primary' slot is the legacy
-                                   ai_backend_{url,api_key,model} columns; the 'alt' slot adds
-                                   ai_backend_alt_{url,api_key,model}. ai_backend_active_slot picks
-                                   which one build_default_client() uses. #}
+                                   Any number of backends (Alembic b8e3f1a7c2d5, 2026-10-09): one
+                                   `ai_backend` row per card, saved / deleted through
+                                   /manage/settings/ai/backends/*; ServerSettings.ai_backend_active_id
+                                   (the radio, saved with this tab) picks which one
+                                   build_default_client() uses unless a per-feature override pins a
+                                   surface to another id. The two slots of e9d2c5a3f8b1 were imported
+                                   once; their columns stay unread. #}
                                 <h2>AI Backend</h2>
-                                <p>Backend used by the Tier-1 AI features (case summary, chat assistant, per-event analysis). Defaults seed from <code>AI_BACKEND_*</code> environment variables on first install; values here take precedence afterwards. Configure two backends and pick the active one with the radio. Each slot names its provider: <strong>OpenAI-compatible</strong> talks to anything that exposes <code>/v1/chat/completions</code> with the classic request shape (LM Studio, OpenRouter, vLLM, Ollama); <strong>OpenAI</strong> talks to OpenAI's own API, whose current models want <code>max_completion_tokens</code> and whose reasoning models take no explicit temperature (either shape also adapts itself after one rejected call); <strong>AWS Bedrock</strong> talks to the Converse API with a Bedrock API key — URL is the runtime endpoint (<code>https://bedrock-runtime.&lt;region&gt;.amazonaws.com</code>), Model is an inference profile ARN / ID or a model ID, pasted as the console shows it. No Bedrock Guardrail is applied. Stored API keys are never shown again; leave the field blank to keep the stored key.</p>
+                                <p>Backend used by the Tier-1 AI features (case summary, chat assistant, per-event analysis). Defaults seed from <code>AI_BACKEND_*</code> environment variables on first install; values here take precedence afterwards. Add as many backends as you need with <strong>+ Add backend</strong>; each card saves and deletes on its own, the radio picks the active one and is saved with this tab (the active backend cannot be deleted). Each backend names its provider: <strong>OpenAI-compatible</strong> talks to anything that exposes <code>/v1/chat/completions</code> with the classic request shape (LM Studio, OpenRouter, vLLM, Ollama); <strong>OpenAI</strong> talks to OpenAI's own API, whose current models want <code>max_completion_tokens</code> and whose reasoning models take no explicit temperature (either shape also adapts itself after one rejected call); <strong>AWS Bedrock</strong> talks to the Converse API with a Bedrock API key — URL is the runtime endpoint (<code>https://bedrock-runtime.&lt;region&gt;.amazonaws.com</code>), Model is an inference profile ARN / ID or a model ID, pasted as the console shows it. No Bedrock Guardrail is applied. Stored API keys are never shown again; leave the field blank to keep the stored key.</p>
                                 <div class="row mb-3">
                                     <div class="col-12">
                                         <div class="form-check">
@@ -186,8 +187,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                {# Two-slot card grid #}
-                                {% set _active_slot = (settings.ai_backend_active_slot or 'primary') %}
+                                {# AI backend cards (iris-ng 2026-10-09): one per ai_backend row, plus "+" #}
                                 {# iris-ng (2026-10-07): the URL and Model rows of a slot. For the Bedrock
                                    provider the URL row reads "Region" (the adapter builds the hosts from a
                                    region; a full https:// URL still works) and the Model row offers the
@@ -234,70 +234,62 @@
                                 </div>
                                 <small class="form-text text-muted mt-0 mb-2 iris-ai-bedrock-note{% if not _is_bedrock %} d-none{% endif %}" id="{{ prefix }}_catalog_note">{% if _cat %}{{ _cat | selectattr('type', 'equalto', 'APPLICATION') | list | length }} application + {{ _sys | length if _sys is defined else 0 }} cross-region profiles cached. Load models to refresh.{% else %}Enter the region and API key, then Load models to pick a profile by name.{% endif %}</small>
                                 {% endmacro %}
-                                <div class="row mb-3">
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card card-stats" style="border: 1px solid rgba(139, 92, 246, 0.25); padding: 14px;">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <div class="form-check">
-                                                    <label class="form-check-label">
-                                                        <input class="form-check-input" type="radio" id="ai_backend_active_slot_primary" name="ai_backend_active_slot" value="primary" {% if _active_slot == 'primary' %}checked{% endif %}>
-                                                        <span class="form-check-sign">Use this backend</span>
-                                                    </label>
-                                                </div>
-                                                <input class="form-control form-control-sm ml-2" id="ai_backend_label" name="ai_backend_label" placeholder="e.g. LM Studio" value="{{ settings.ai_backend_label or 'Primary' }}" style="max-width: 200px;">
+                                {# One card per configured backend. The card's inputs carry NO name
+                                   attribute except the active radio: the backend itself is saved and
+                                   deleted through /manage/settings/ai/backends/* by the handlers in
+                                   #iris-ai-provider-hints, never by the settings form (the form keeps
+                                   only the pointers). A new card is cloned from the <template> below
+                                   with the prefix ai_backend_new<n>; its radio stays disabled until
+                                   the backend exists. #}
+                                {% set _active_id = settings.ai_backend_active_id %}
+                                {% macro ai_backend_card(b, prefix) %}
+                                <div class="col-md-6 mb-3 iris-ai-backend-card" data-iris-backend-id="{{ b.id if b else '' }}" data-iris-prefix="{{ prefix }}">
+                                    <div class="card card-stats" style="border: 1px solid rgba(139, 92, 246, 0.25); padding: 14px;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="form-check">
+                                                <label class="form-check-label">
+                                                    <input class="form-check-input" type="radio" id="{{ prefix }}_active" name="ai_backend_active_id" value="{{ b.id if b else '' }}" {% if b and b.id == _active_id %}checked{% endif %} {% if not b %}disabled{% endif %}>
+                                                    <span class="form-check-sign">Use this backend</span>
+                                                </label>
                                             </div>
-                                            {% set _p1 = (settings.ai_backend_provider or 'openai') %}
-                                            <div class="input-group mb-2">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">Provider</span>
-                                                </div>
-                                                <select class="form-control iris-ai-provider" id="ai_backend_provider" name="ai_backend_provider" data-iris-slot="ai_backend">
-                                                    <option value="openai" {% if _p1 == 'openai' %}selected{% endif %}>OpenAI-compatible (LM Studio, OpenRouter, vLLM, Ollama)</option>
-                                                    <option value="openai_api" {% if _p1 == 'openai_api' %}selected{% endif %}>OpenAI (api.openai.com)</option>
-                                                    <option value="bedrock" {% if _p1 == 'bedrock' %}selected{% endif %}>AWS Bedrock (Converse API)</option>
-                                                </select>
-                                            </div>
-                                            {{ ai_slot_rows('ai_backend', _p1, settings.ai_backend_url, settings.ai_backend_model, settings.ai_backend_model_catalog, 'http://<your-lm-studio-host>:1234/v1', 'openai/gpt-oss-20b') }}
-                                            <div class="input-group mb-0">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">API Key {% if settings.ai_backend_api_key %}<span class="badge badge-success ml-1">stored</span>{% endif %}</span>
-                                                </div>
-                                                <input class="form-control" id="ai_backend_api_key" name="ai_backend_api_key" placeholder="{% if settings.ai_backend_api_key %}Leave blank to keep the stored key{% else %}Bearer token / Bedrock API key (or empty){% endif %}" type="password" autocomplete="new-password" value="">
-                                            </div>
+                                            <input class="form-control form-control-sm ml-2" id="{{ prefix }}_label" placeholder="e.g. LM Studio" value="{{ b.label if b else '' }}" maxlength="120" style="max-width: 200px;">
                                         </div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card card-stats" style="border: 1px solid rgba(139, 92, 246, 0.25); padding: 14px;">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <div class="form-check">
-                                                    <label class="form-check-label">
-                                                        <input class="form-check-input" type="radio" id="ai_backend_active_slot_alt" name="ai_backend_active_slot" value="alt" {% if _active_slot == 'alt' %}checked{% endif %}>
-                                                        <span class="form-check-sign">Use this backend</span>
-                                                    </label>
-                                                </div>
-                                                <input class="form-control form-control-sm ml-2" id="ai_backend_alt_label" name="ai_backend_alt_label" placeholder="e.g. Hosted backend" value="{{ settings.ai_backend_alt_label or 'Alternate' }}" style="max-width: 200px;">
+                                        {% set _prov = (b.provider if b else 'openai') or 'openai' %}
+                                        <div class="input-group mb-2">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">Provider</span>
                                             </div>
-                                            {% set _p2 = (settings.ai_backend_alt_provider or 'openai') %}
-                                            <div class="input-group mb-2">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">Provider</span>
-                                                </div>
-                                                <select class="form-control iris-ai-provider" id="ai_backend_alt_provider" name="ai_backend_alt_provider" data-iris-slot="ai_backend_alt">
-                                                    <option value="openai" {% if _p2 == 'openai' %}selected{% endif %}>OpenAI-compatible (LM Studio, OpenRouter, vLLM, Ollama)</option>
-                                                    <option value="openai_api" {% if _p2 == 'openai_api' %}selected{% endif %}>OpenAI (api.openai.com)</option>
-                                                    <option value="bedrock" {% if _p2 == 'bedrock' %}selected{% endif %}>AWS Bedrock (Converse API)</option>
-                                                </select>
+                                            <select class="form-control iris-ai-provider" id="{{ prefix }}_provider" data-iris-slot="{{ prefix }}">
+                                                <option value="openai" {% if _prov == 'openai' %}selected{% endif %}>OpenAI-compatible (LM Studio, OpenRouter, vLLM, Ollama)</option>
+                                                <option value="openai_api" {% if _prov == 'openai_api' %}selected{% endif %}>OpenAI (api.openai.com)</option>
+                                                <option value="bedrock" {% if _prov == 'bedrock' %}selected{% endif %}>AWS Bedrock (Converse API)</option>
+                                            </select>
+                                        </div>
+                                        {{ ai_slot_rows(prefix, _prov, b.url if b else '', b.model if b else '', b.model_catalog if b else none, 'http://<your-lm-studio-host>:1234/v1', 'openai/gpt-oss-20b') }}
+                                        <div class="input-group mb-2">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">API Key {% if b and b.api_key %}<span class="badge badge-success ml-1" id="{{ prefix }}_key_badge">stored</span>{% endif %}</span>
                                             </div>
-                                            {{ ai_slot_rows('ai_backend_alt', _p2, settings.ai_backend_alt_url, settings.ai_backend_alt_model, settings.ai_backend_alt_model_catalog, 'https://api.example.com/v1', 'model-name') }}
-                                            <div class="input-group mb-0">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">API Key {% if settings.ai_backend_alt_api_key %}<span class="badge badge-success ml-1">stored</span>{% endif %}</span>
-                                                </div>
-                                                <input class="form-control" id="ai_backend_alt_api_key" name="ai_backend_alt_api_key" placeholder="{% if settings.ai_backend_alt_api_key %}Leave blank to keep the stored key{% else %}Bearer token / Bedrock API key (or empty){% endif %}" type="password" autocomplete="new-password" value="">
+                                            <input class="form-control" id="{{ prefix }}_api_key" placeholder="{% if b and b.api_key %}Leave blank to keep the stored key{% else %}Bearer token / Bedrock API key (or empty){% endif %}" type="password" autocomplete="new-password" value="">
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="form-text text-muted mt-0 iris-ai-backend-note" id="{{ prefix }}_note">{% if not b %}Not saved yet.{% endif %}</small>
+                                            <div>
+                                                <button class="btn btn-sm btn-outline-danger iris-ai-backend-delete" type="button" id="{{ prefix }}_delete" data-iris-slot="{{ prefix }}" title="Delete this backend">Delete</button>
+                                                <button class="btn btn-sm btn-primary ml-1 iris-ai-backend-save" type="button" id="{{ prefix }}_save" data-iris-slot="{{ prefix }}">Save backend</button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                                {% endmacro %}
+                                <div class="row mb-2" id="iris-ai-backends">
+                                    {% for b in (ai_backends or []) %}{{ ai_backend_card(b, 'ai_backend_' ~ b.id) }}{% endfor %}
+                                </div>
+                                <div class="mb-3">
+                                    <button class="btn btn-sm btn-outline-primary" type="button" id="iris-ai-backend-add" title="Add a backend">+ Add backend</button>
+                                    <small class="form-text text-muted d-inline ml-2" id="iris-ai-backends-empty"{% if ai_backends %} style="display:none"{% endif %}>No backend configured — every AI surface reports "AI backend is not configured" until one is saved and active.</small>
+                                </div>
+                                <template id="iris-ai-backend-card-template">{{ ai_backend_card(none, 'ai_backend_newX') }}</template>
                                 <div class="row mb-4">
                                     <div class="col-md-4">
                                         <div class="input-group mb-3">
@@ -312,9 +304,10 @@
                                 <input type="hidden" id="ai_backend_enabled_hidden" name="ai_backend_enabled" value="{% if settings.ai_backend_enabled %}true{% else %}false{% endif %}">
 
                                 {# iris-next: Per-feature AI backend overrides.
-                                   Each feature can be pinned to a specific slot ('primary'/'alt')
-                                   or left as null to follow the global ai_backend_active_slot radio.
-                                   Values collected into ai_feature_overrides JSONB by update_settings(). #}
+                                   Each feature can be pinned to a backend (its ai_backend.id, since
+                                   2026-10-09) or left as null to follow ai_backend_active_id.
+                                   Values collected into ai_feature_overrides JSONB by update_settings();
+                                   the update route checks every id exists. #}
                                 {% set _overrides = (settings.ai_feature_overrides or {}) %}
                                 {% set _features = [
                                     ('case_summary',            'Case Summary (exec panel)'),
@@ -345,15 +338,16 @@
                                     </button>
                                     <div class="collapse mt-3" id="ai-feature-overrides-panel">
                                         <p class="text-muted" style="font-size:0.82rem; margin-bottom:0.6rem;">
-                                            Pin individual AI surfaces to a specific backend slot instead of following
-                                            the global "Use this backend" radio. Leave as <em>Default</em> to use
-                                            whichever slot the radio selects.
+                                            Pin individual AI surfaces to a specific backend instead of following
+                                            the "Use this backend" radio. Leave as <em>Default</em> to use
+                                            whichever backend the radio selects. A pin to a deleted backend
+                                            falls back to the active one. Saved with this tab.
                                         </p>
                                         <table class="table table-sm" style="width: auto; min-width: 480px; font-size:0.84rem;">
                                             <thead>
                                                 <tr>
                                                     <th style="width:55%;">Feature</th>
-                                                    <th style="width:45%;">Backend slot</th>
+                                                    <th style="width:45%;">Backend</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -366,13 +360,10 @@
                                                                 name="feature_override_{{ feat_key }}"
                                                                 data-feat="{{ feat_key }}"
                                                                 style="max-width:180px;">
-                                                            <option value="" {% if not _cur %}selected{% endif %}>Default (global)</option>
-                                                            <option value="primary" {% if _cur == 'primary' %}selected{% endif %}>
-                                                                Primary{% if settings.ai_backend_label %} · {{ settings.ai_backend_label }}{% endif %}
-                                                            </option>
-                                                            <option value="alt" {% if _cur == 'alt' %}selected{% endif %}>
-                                                                Alternate{% if settings.ai_backend_alt_label %} · {{ settings.ai_backend_alt_label }}{% endif %}
-                                                            </option>
+                                                            <option value="" {% if not _cur %}selected{% endif %}>Default (active backend)</option>
+                                                            {% for b in (ai_backends or []) %}
+                                                            <option value="{{ b.id }}" {% if _cur|string == b.id|string %}selected{% endif %}>{{ b.label }}{% if b.id == _active_id %} (active){% endif %}</option>
+                                                            {% endfor %}
                                                         </select>
                                                     </td>
                                                 </tr>
@@ -791,19 +782,45 @@
 })();
 </script>
 <script id="iris-ai-provider-hints">
-// iris-ng (2026-10-07): each AI slot's Provider select drives ITS slot
-// (data-iris-slot = the input id prefix): the URL row's label (URL / Region)
+// iris-ng (2026-10-07, N backends 2026-10-09): each AI backend card's Provider
+// select drives ITS card (data-iris-slot = the input id prefix, ai_backend_<id>
+// or ai_backend_new<n> for an unsaved card): the URL row's label (URL / Region)
 // and the URL + Model placeholders come from data-iris-* hints on the markup;
 // for Bedrock the Model row shows the cached inference-profile <select> and
-// the "Load models" button, and the submitted <prefix>_model text input
-// mirrors the selected entry's id ("Other" reveals the input). The server
-// renders the stored state; this keeps it in step before Save. "Load models"
-// posts region + the key typed in the form (the server falls back to the
-// stored key and never returns one) and rebuilds the options from the reply.
+// the "Load models" button, and the <prefix>_model text input mirrors the
+// selected entry's id ("Other" reveals the input). Cards save / delete
+// themselves through /manage/settings/ai/backends/* (never the settings form);
+// "+" clones the <template> card. Handlers are DELEGATED from the grid so a
+// cloned card needs no wiring. "Load models" posts region + the key typed in
+// the card (the server falls back to the stored key and never returns one).
 (function () {
     var CUSTOM = '__custom__';
+    var newSeq = 0;
     function byId(id) { return document.getElementById(id); }
     function show(el, on) { if (el) el.classList.toggle('d-none', !on); }
+    function val(id) { var el = byId(id); return el ? (el.value || '') : ''; }
+    function cardOf(prefix) {
+        var grid = byId('iris-ai-backends');
+        if (!grid) return null;
+        var cards = grid.querySelectorAll('.iris-ai-backend-card');
+        for (var i = 0; i < cards.length; i++) {
+            if (cards[i].getAttribute('data-iris-prefix') === prefix) return cards[i];
+        }
+        return null;
+    }
+    function backendId(prefix) {
+        var card = cardOf(prefix);
+        var id = card ? card.getAttribute('data-iris-backend-id') : '';
+        return id ? parseInt(id, 10) : null;
+    }
+    function csrf() { var el = byId('csrf_token'); return el ? el.value : ''; }
+    function note(prefix, text, isError) {
+        var el = byId(prefix + '_note');
+        if (!el) return;
+        el.textContent = text;
+        el.classList.toggle('text-danger', !!isError);
+        el.classList.toggle('text-muted', !isError);
+    }
 
     function syncModelRow(prefix, isBedrock) {
         var sel = byId(prefix + '_model_select');
@@ -869,46 +886,152 @@
         sel.appendChild(other);
     }
 
-    Array.prototype.forEach.call(document.querySelectorAll('select.iris-ai-provider'), function (sel) {
-        if (!sel.getAttribute('data-iris-slot')) return;
-        sel.addEventListener('change', function () { applyProvider(sel); });
-    });
+    function loadModels(prefix, btn) {
+        var id = backendId(prefix);
+        var cnote = byId(prefix + '_catalog_note');
+        if (id === null) {
+            if (cnote) cnote.textContent = 'Save the backend first, then Load models.';
+            return;
+        }
+        var body = {
+            region: val(prefix + '_url'),
+            api_key: val(prefix + '_api_key'),
+            csrf_token: csrf()
+        };
+        btn.disabled = true;
+        if (cnote) cnote.textContent = 'Listing inference profiles…';
+        post_request_api('/manage/settings/ai/backends/' + id + '/catalog', JSON.stringify(body), true)
+        .done(function (data) {
+            var payload = (data && data.data) || {};
+            var catalog = payload.catalog || [];
+            var current = val(prefix + '_model');
+            rebuildOptions(prefix, catalog, current);
+            syncModelRow(prefix, true);
+            if (cnote) cnote.textContent = payload.application + ' application + ' + (payload.count - payload.application)
+                + ' cross-region profiles loaded. Pick one, then Save backend.';
+        })
+        .fail(function (xhr) {
+            var msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) || 'Listing failed';
+            if (cnote) cnote.textContent = msg;
+        })
+        .always(function () { btn.disabled = false; });
+    }
 
-    Array.prototype.forEach.call(document.querySelectorAll('select.iris-ai-model-select'), function (sel) {
-        var prefix = sel.getAttribute('data-iris-slot');
-        sel.addEventListener('change', function () { syncModelRow(prefix, true); });
-    });
+    function cardBody(prefix) {
+        var body = {
+            label: val(prefix + '_label').trim(),
+            provider: val(prefix + '_provider') || 'openai',
+            url: val(prefix + '_url').trim(),
+            model: val(prefix + '_model').trim(),
+            csrf_token: csrf()
+        };
+        var key = val(prefix + '_api_key');
+        if (key) body.api_key = key;          // empty = keep the stored key
+        return body;
+    }
 
-    Array.prototype.forEach.call(document.querySelectorAll('button.iris-ai-bedrock-load'), function (btn) {
-        var prefix = btn.getAttribute('data-iris-slot');
-        btn.addEventListener('click', function () {
-            var note = byId(prefix + '_catalog_note');
-            var csrf = byId('csrf_token');
-            var body = {
-                slot: prefix === 'ai_backend_alt' ? 'alt' : 'primary',
-                region: (byId(prefix + '_url') || {}).value || '',
-                api_key: (byId(prefix + '_api_key') || {}).value || '',
-                csrf_token: csrf ? csrf.value : ''
-            };
-            btn.disabled = true;
-            if (note) note.textContent = 'Listing inference profiles…';
-            post_request_api('/manage/settings/ai/bedrock/catalog', JSON.stringify(body), true)
-            .done(function (data) {
-                var payload = (data && data.data) || {};
-                var catalog = payload.catalog || [];
-                var current = (byId(prefix + '_model') || {}).value || '';
-                rebuildOptions(prefix, catalog, current);
-                syncModelRow(prefix, true);
-                if (note) note.textContent = payload.application + ' application + ' + (payload.count - payload.application)
-                    + ' cross-region profiles loaded. Pick one, then Save.';
-            })
-            .fail(function (xhr) {
-                var msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) || 'Listing failed';
-                if (note) note.textContent = msg;
-            })
-            .always(function () { btn.disabled = false; });
+    function saveCard(prefix, btn) {
+        var body = cardBody(prefix);
+        if (!body.label) { note(prefix, 'Give the backend a label first.', true); return; }
+        var id = backendId(prefix);
+        var uri = id === null ? '/manage/settings/ai/backends/add' : '/manage/settings/ai/backends/update/' + id;
+        btn.disabled = true;
+        note(prefix, 'Saving…', false);
+        post_request_api(uri, JSON.stringify(body), true)
+        .done(function (data) {
+            var row = (data && data.data) || {};
+            if (id === null) {
+                // A new backend: the page's ids, the radio and the override table all
+                // need the real id -- reload rather than patch four places.
+                window.location.reload();
+                return;
+            }
+            var keyInput = byId(prefix + '_api_key');
+            if (keyInput) {
+                keyInput.value = '';
+                if (row.api_key_set) {
+                    keyInput.setAttribute('placeholder', 'Leave blank to keep the stored key');
+                    if (!byId(prefix + '_key_badge')) {
+                        var lab = keyInput.parentNode ? keyInput.parentNode.querySelector('.input-group-text') : null;
+                        if (lab) { var b = document.createElement('span'); b.className = 'badge badge-success ml-1'; b.id = prefix + '_key_badge'; b.textContent = 'stored'; lab.appendChild(b); }
+                    }
+                }
+            }
+            note(prefix, (data && data.message) || 'Saved.', false);
+        })
+        .fail(function (xhr) {
+            var r = xhr && xhr.responseJSON;
+            var msg = (r && r.message) || 'Save failed';
+            if (r && r.data && typeof r.data === 'object') {
+                Object.keys(r.data).forEach(function (k) { msg += ' — ' + k + ': ' + [].concat(r.data[k]).join(', '); });
+            }
+            note(prefix, msg, true);
+        })
+        .always(function () { btn.disabled = false; });
+    }
+
+    function deleteCard(prefix, btn) {
+        var id = backendId(prefix);
+        var card = cardOf(prefix);
+        if (id === null) {
+            if (card && card.parentNode) card.parentNode.removeChild(card);
+            return;
+        }
+        var label = val(prefix + '_label') || ('#' + id);
+        if (!window.confirm('Delete the AI backend "' + label + '"? Features pinned to it fall back to the active backend.')) return;
+        btn.disabled = true;
+        post_request_api('/manage/settings/ai/backends/delete/' + id, JSON.stringify({ csrf_token: csrf() }), true)
+        .done(function () { window.location.reload(); })
+        .fail(function (xhr) {
+            var msg = (xhr && xhr.responseJSON && xhr.responseJSON.message) || 'Delete failed';
+            note(prefix, msg, true);
+            btn.disabled = false;
         });
-    });
+    }
+
+    function addCard() {
+        var tpl = byId('iris-ai-backend-card-template');
+        var grid = byId('iris-ai-backends');
+        if (!tpl || !grid) return;
+        newSeq += 1;
+        var prefix = 'ai_backend_new' + newSeq;
+        var html = (tpl.innerHTML || '').split('ai_backend_newX').join(prefix);
+        var holder = document.createElement('div');
+        holder.innerHTML = html;
+        var card = holder.firstElementChild;
+        if (!card) return;
+        grid.appendChild(card);
+        var empty = byId('iris-ai-backends-empty');
+        if (empty) empty.style.display = 'none';
+        var sel = byId(prefix + '_provider');
+        if (sel) applyProvider(sel);
+        var label = byId(prefix + '_label');
+        if (label && label.focus) label.focus();
+    }
+
+    var grid = byId('iris-ai-backends');
+    if (grid) {
+        grid.addEventListener('change', function (ev) {
+            var t = ev.target;
+            if (!t || !t.classList) return;
+            if (t.classList.contains('iris-ai-provider')) { applyProvider(t); return; }
+            if (t.classList.contains('iris-ai-model-select')) { syncModelRow(t.getAttribute('data-iris-slot'), true); }
+        });
+        grid.addEventListener('click', function (ev) {
+            var t = ev.target;
+            while (t && t !== grid && !(t.classList && (t.classList.contains('iris-ai-bedrock-load')
+                || t.classList.contains('iris-ai-backend-save') || t.classList.contains('iris-ai-backend-delete')))) {
+                t = t.parentNode;
+            }
+            if (!t || t === grid || !t.classList) return;
+            var prefix = t.getAttribute('data-iris-slot');
+            if (t.classList.contains('iris-ai-bedrock-load')) { loadModels(prefix, t); }
+            else if (t.classList.contains('iris-ai-backend-save')) { saveCard(prefix, t); }
+            else if (t.classList.contains('iris-ai-backend-delete')) { deleteCard(prefix, t); }
+        });
+    }
+    var addBtn = byId('iris-ai-backend-add');
+    if (addBtn) addBtn.addEventListener('click', addCard);
 })();
 </script>
 <script>

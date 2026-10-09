@@ -1544,6 +1544,32 @@ class DSFileSchema(ma.SQLAlchemyAutoSchema):
         return file_path, file_size, file_hash
 
 
+class AiBackendSchema(ma.Schema):
+    """One configured AI backend (iris-ng, 2026-10-09). `api_key` is WRITE-ONLY
+    (load_only; `api_key_set` tells the UI one is stored; the routes treat an
+    empty / masked submission as "keep"); `model_catalog` is written only by the
+    per-backend Bedrock catalog route; `is_active` is computed by the route
+    from ServerSettings.ai_backend_active_id. Partial loads validate what is
+    present, so an update may send a subset."""
+    id = fields.Integer(dump_only=True)
+    label = fields.String(required=True, validate=validate.Length(min=1, max=120))
+    provider = fields.String(required=False, load_default='openai',
+                             validate=validate.OneOf(['openai', 'openai_api', 'bedrock']))
+    url = fields.String(required=False, allow_none=True)
+    model = fields.String(required=False, allow_none=True)
+    api_key = fields.String(required=False, allow_none=True, load_only=True)
+    api_key_set = fields.Method("get_api_key_set", dump_only=True)
+    model_catalog = fields.Raw(dump_only=True)
+    position = fields.Integer(dump_only=True)
+    is_active = fields.Boolean(dump_only=True)
+
+    class Meta:
+        unknown = EXCLUDE
+
+    def get_api_key_set(self, obj) -> bool:
+        return bool(getattr(obj, 'api_key', None))
+
+
 class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     """Schema for serializing and deserializing ServerSettings objects.
 
@@ -1555,44 +1581,20 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     https_proxy: Optional[str] = fields.String(required=False, allow_none=False)
     prevent_post_mod_repush: Optional[bool] = fields.Boolean(required=False)
 
-    # iris-next AI backend settings (Tier-1 features). Allow None / empty so
-    # admins can clear the URL/key/model from the UI without tripping validation.
-    # Two-slot design: slot-1 ('primary', the legacy fields) + slot-2 ('alt')
-    # + ai_backend_active_slot pointer chosen via the radio in the admin UI.
-    # The API keys are WRITE-ONLY since 2026-10-07 (same contract as the mail
-    # passwords below): load_only keeps them out of every dump, the paired
-    # *_api_key_set booleans tell the UI a key is stored, and the update route
-    # treats an empty submission as "keep the stored value".
-    # Per-slot provider ('openai' | 'bedrock', a7c2d9e4f1b6); null = openai.
+    # iris-ng AI backend settings (Tier-1 features). Since b8e3f1a7c2d5
+    # (2026-10-09) the backends themselves are `ai_backend` rows served by
+    # AiBackendSchema through /manage/settings/ai/backends/*; the settings row
+    # keeps only the pointers: the active backend id, the per-feature overrides
+    # (values = backend ids), the enable flag and the confidence threshold. The
+    # twelve legacy slot keys (ai_backend_url / _alt_* / ai_backend_active_slot
+    # ...) are RETIRED from this payload: the columns stay in the DB, unread,
+    # and a submission naming them is ignored (Meta.unknown = EXCLUDE). The
+    # update route checks that the ids exist.
     ai_backend_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
-    ai_backend_active_slot: Optional[str] = fields.String(required=False, allow_none=True)
-    ai_backend_provider: Optional[str] = fields.String(required=False, allow_none=True,
-                                                       validate=validate.OneOf(['openai', 'openai_api', 'bedrock']))
-    ai_backend_url: Optional[str] = fields.String(required=False, allow_none=True)
-    ai_backend_api_key: Optional[str] = fields.String(required=False, allow_none=True, load_only=True)
-    ai_backend_model: Optional[str] = fields.String(required=False, allow_none=True)
-    ai_backend_label: Optional[str] = fields.String(required=False, allow_none=True)
-    ai_backend_alt_provider: Optional[str] = fields.String(required=False, allow_none=True,
-                                                           validate=validate.OneOf(['openai', 'openai_api', 'bedrock']))
-    ai_backend_alt_url: Optional[str] = fields.String(required=False, allow_none=True)
-    ai_backend_alt_api_key: Optional[str] = fields.String(required=False, allow_none=True, load_only=True)
-    ai_backend_alt_model: Optional[str] = fields.String(required=False, allow_none=True)
-    ai_backend_alt_label: Optional[str] = fields.String(required=False, allow_none=True)
+    ai_backend_active_id: Optional[int] = fields.Integer(required=False, allow_none=True)
     ai_backend_confidence_threshold: Optional[float] = fields.Float(required=False, allow_none=True)
-    ai_backend_api_key_set = fields.Method("get_ai_api_key_set", dump_only=True)
-    ai_backend_alt_api_key_set = fields.Method("get_ai_alt_api_key_set", dump_only=True)
-    # Bedrock inference-profile catalogs: written only by the listing endpoint
-    # (POST /manage/settings/ai/bedrock/catalog), never by the settings form.
-    ai_backend_model_catalog = fields.Raw(dump_only=True)
-    ai_backend_alt_model_catalog = fields.Raw(dump_only=True)
-
-    def get_ai_api_key_set(self, obj) -> bool:
-        return bool(getattr(obj, 'ai_backend_api_key', None))
-
-    def get_ai_alt_api_key_set(self, obj) -> bool:
-        return bool(getattr(obj, 'ai_backend_alt_api_key', None))
-    # Per-feature slot overrides. {"feature_key": "primary"|"alt"|null}.
-    # Missing / null = use global ai_backend_active_slot.
+    # Per-feature overrides. {"feature_key": <ai_backend.id>|null}.
+    # Missing / null = use the global ai_backend_active_id.
     ai_feature_overrides: Optional[dict] = fields.Dict(required=False, allow_none=True)
 
     # iris-ng v2: mail ingest + SMTP settings (Phase 1). The passwords are
@@ -1650,6 +1652,18 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
         model = ServerSettings
         load_instance = True
         unknown = EXCLUDE
+        # The twelve legacy AI slot columns (imported into ai_backend by
+        # b8e3f1a7c2d5) are RETIRED from the payload. Listing them here is
+        # load-bearing: an auto-schema would otherwise generate plain fields for
+        # every one of them -- including the two old API-key columns, which would
+        # then be DUMPED. Excluded fields are neither dumped nor loaded.
+        exclude = (
+            'ai_backend_active_slot',
+            'ai_backend_url', 'ai_backend_api_key', 'ai_backend_model', 'ai_backend_label',
+            'ai_backend_provider', 'ai_backend_model_catalog',
+            'ai_backend_alt_url', 'ai_backend_alt_api_key', 'ai_backend_alt_model', 'ai_backend_alt_label',
+            'ai_backend_alt_provider', 'ai_backend_alt_model_catalog',
+        )
 
 
 class ContactSchema(ma.SQLAlchemyAutoSchema):

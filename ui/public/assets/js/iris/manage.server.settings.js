@@ -13,14 +13,25 @@ function update_settings() {
     data_sent['email_notifications_enabled'] = $('#email_notifications_enabled').is(":checked");
     data_sent['password_policy_min_length'] = $('#password_policy_min_length').val().toString();
 
+    // iris-ng 2026-10-09: the AI backends are their own rows, saved card by card
+    // through /manage/settings/ai/backends/*. The card inputs sit inside this
+    // form (ids ai_backend_<id>_* / ai_backend_new<n>_*) so the hints script
+    // can address them, but they must never ride on the settings POST -- a
+    // typed key would reach the wrong route. Only the pointers go here.
+    Object.keys(data_sent).forEach(function (k) {
+        if (/^ai_backend_(\d+|new\d+)_/.test(k)) { delete data_sent[k]; }
+    });
+    var activeId = $('input[name="ai_backend_active_id"]:checked').val();
+    data_sent['ai_backend_active_id'] = activeId ? parseInt(activeId, 10) : null;
+
     // Collect per-feature backend overrides into a single dict.
-    // Empty string = "Default (global)" → store as null (omit from dict so
-    // the backend treats it as "follow the global radio").
+    // Empty string = "Default (global)" → store as null (the backend treats it
+    // as "follow the active backend"); otherwise the chosen backend's id.
     var featureOverrides = {};
     $('.iris-feat-override').each(function () {
         var key = $(this).data('feat');
         var val = $(this).val();
-        featureOverrides[key] = val ? val : null;
+        featureOverrides[key] = val ? parseInt(val, 10) : null;
     });
     data_sent['ai_feature_overrides'] = featureOverrides;
 

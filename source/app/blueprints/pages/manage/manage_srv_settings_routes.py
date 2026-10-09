@@ -81,4 +81,7 @@ def manage_settings(caseid, url_redir):
     # notification-defaults matrix moved to their standalone pages
     # (/manage/mail-rules computes the catalogs; /manage/notifications uses
     # business.notifications.org_defaults_matrix — the single source).
-    return render_template('manage_srv_settings.html', form=form, settings=server_settings, versions=versions)
+    # iris-ng 2026-10-09: the AI tab renders one card per ai_backend row.
+    from app.datamgmt.manage.manage_ai_backends_db import list_ai_backends
+    return render_template('manage_srv_settings.html', form=form, settings=server_settings, versions=versions,
+                           ai_backends=list_ai_backends())

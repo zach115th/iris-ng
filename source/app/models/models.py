@@ -1929,6 +1929,35 @@ class WarRoomMispLink(db.Model):
     )
 
 
+class AiBackend(db.Model):
+    """One configured AI backend (iris-ng, 2026-10-09; replaces the two
+    ServerSettings slots). Any number of rows; ServerSettings.ai_backend_active_id
+    names the one every surface uses unless ai_feature_overrides pins a feature
+    to another id. `api_key` is WRITE-ONLY through the schema (load_only +
+    api_key_set), `model_catalog` is the Bedrock inference-profile listing
+    written only by the per-backend catalog route. Labels are unique
+    case-insensitively (the override table and the logs identify backends by
+    label) -- the functional unique index lives here so db.create_all() and the
+    migration both create it. The twelve legacy ai_backend_* slot columns on
+    ServerSettings stay in place, unread, after the b8e3f1a7c2d5 import."""
+    __tablename__ = 'ai_backend'
+
+    id = Column(BigInteger, primary_key=True)
+    label = Column(Text, nullable=False)
+    provider = Column(String(32), nullable=False, server_default=text("'openai'"))
+    url = Column(Text, nullable=True)
+    api_key = Column(Text, nullable=True)
+    model = Column(Text, nullable=True)
+    model_catalog = Column(JSONB, nullable=True)
+    position = Column(Integer, nullable=False, server_default=text('0'))
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    updated_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    __table_args__ = (
+        Index('ix_ai_backend_label_lower', text('lower(label)'), unique=True),
+    )
+
+
 class ServerSettings(db.Model):
     __table_name__ = "server_settings"
 
@@ -1984,10 +2013,17 @@ class ServerSettings(db.Model):
     ai_backend_model_catalog = Column(JSONB, nullable=True)
     ai_backend_alt_model_catalog = Column(JSONB, nullable=True)
     ai_backend_confidence_threshold = Column(Float, nullable=True)
-    # Per-feature slot overrides. JSONB dict: {"feature_key": "primary"|"alt"}.
-    # Missing key / null value = use the global ai_backend_active_slot default.
+    # Per-feature overrides. JSONB dict: {"feature_key": <ai_backend.id as int>}
+    # since b8e3f1a7c2d5 (the values were "primary"|"alt" before the import).
+    # Missing key / null value = use the global ai_backend_active_id default.
     # Written/read by openai_client.build_default_client(feature=...).
     ai_feature_overrides = Column(JSONB, nullable=True)
+    # The backend every AI surface uses unless a feature override says
+    # otherwise (b8e3f1a7c2d5). NULL = no backend configured. ON DELETE SET
+    # NULL is belt and braces: the delete route refuses to delete the active
+    # backend. Relationship declared with the column (lesson 172).
+    ai_backend_active_id = Column(BigInteger, ForeignKey('ai_backend.id', ondelete='SET NULL'), nullable=True)
+    ai_backend_active = relationship('AiBackend', foreign_keys=[ai_backend_active_id])
 
     # Pinecone vector DB (used by sigma_grounding + ATT&CK / Atomic RAG layers).
     # When pinecone_enabled is False, callers fall back to model-only suggestions

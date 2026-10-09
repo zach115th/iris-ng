@@ -528,19 +528,22 @@ class OpenAIApiClient(OpenAIClient):
 def _read_settings_row(
     feature: str | None = None
 ) -> tuple[bool | None, str | None, str | None, str | None, str | None]:
-    """Pull AI backend config from the ServerSettings row.
+    """Pull the AI backend config from the ServerSettings row + the
+    `ai_backend` table (iris-ng, 2026-10-09; the two slots before that).
 
-    If `feature` is given and ai_feature_overrides[feature] is set to
-    'primary' or 'alt', that slot takes precedence over the global
-    ai_backend_active_slot radio. This lets admins route individual surfaces
+    The backend is ai_backend_active_id unless `feature` is given and
+    ai_feature_overrides[feature] names another existing backend id (an id that
+    no longer exists falls back to the active one; the delete route clears such
+    pins, this is belt and braces). This lets admins route individual surfaces
     (e.g. 'case_summary') to a different backend without touching the global
     default.
 
     Returns (enabled, url, api_key, model, provider). Any field can be None if
-    the row or column doesn't exist yet (covers fresh installs / pre-migration
-    boot) or if the selected slot has empty URL/model.
+    the row / table / column doesn't exist yet (covers fresh installs /
+    pre-migration boot) or if no backend is configured.
     """
     try:
+        from app.models.models import AiBackend
         from app.models.models import ServerSettings
         row = ServerSettings.query.first()
     except Exception:
@@ -549,32 +552,39 @@ def _read_settings_row(
     if row is None:
         return (None, None, None, None, None)
 
-    global_slot = (getattr(row, 'ai_backend_active_slot', None) or 'primary').strip().lower()
+    enabled = getattr(row, 'ai_backend_enabled', None)
+    backend = None
+    try:
+        if feature:
+            overrides = getattr(row, 'ai_feature_overrides', None) or {}
+            pinned = _backend_id(overrides.get(feature))
+            if pinned is not None:
+                backend = AiBackend.query.get(pinned)
+        if backend is None:
+            active = _backend_id(getattr(row, 'ai_backend_active_id', None))
+            if active is not None:
+                backend = AiBackend.query.get(active)
+    except Exception:
+        return (enabled, None, None, None, None)
 
-    # Per-feature override: if the admin pinned this feature to a specific slot,
-    # use it; otherwise fall back to the global radio selection.
-    slot = global_slot
-    if feature:
-        overrides = getattr(row, 'ai_feature_overrides', None) or {}
-        feature_slot = (overrides.get(feature) or '').strip().lower()
-        if feature_slot in ('primary', 'alt'):
-            slot = feature_slot
-
-    if slot == 'alt':
-        url_attr, key_attr, model_attr, provider_attr = (
-            'ai_backend_alt_url', 'ai_backend_alt_api_key', 'ai_backend_alt_model',
-            'ai_backend_alt_provider',
-        )
-    else:
-        url_attr, key_attr, model_attr, provider_attr = (
-            'ai_backend_url', 'ai_backend_api_key', 'ai_backend_model',
-            'ai_backend_provider',
-        )
+    if backend is None:
+        return (enabled, None, None, None, None)
 
     return (
-        getattr(row, 'ai_backend_enabled', None),
-        (getattr(row, url_attr, None) or '').strip() or None,
-        (getattr(row, key_attr, None) or '').strip() or None,
-        (getattr(row, model_attr, None) or '').strip() or None,
-        (getattr(row, provider_attr, None) or '').strip().lower() or None,
+        enabled,
+        (backend.url or '').strip() or None,
+        (backend.api_key or '').strip() or None,
+        (backend.model or '').strip() or None,
+        (backend.provider or '').strip().lower() or None,
     )
+
+
+def _backend_id(value) -> int | None:
+    """An ai_backend id out of an override / pointer value: int or digit string;
+    anything else (None, '', the legacy 'primary' / 'alt') is None."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return None

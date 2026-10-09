@@ -113,6 +113,35 @@ def connect_to_database(host: str, port: int) -> bool:
         return False
 
 
+def seed_ai_backend_from_env(env_ai_url: str, env_ai_key: str, env_ai_model: str) -> bool:
+    """Create the first `ai_backend` row from AI_BACKEND_URL / _API_KEY / _MODEL
+    and make it active -- ONLY while the table is empty (an admin-configured
+    backend is never overwritten) and only when url AND model are set. Returns
+    True when a row was created. Fail-soft: a missing table (pre-migration
+    boot) logs and returns False."""
+    if not (env_ai_url and env_ai_model):
+        return False
+    try:
+        from app.models.models import AiBackend
+        if AiBackend.query.count():
+            return False
+        backend = AiBackend(label='Primary', provider='openai', url=env_ai_url,
+                            api_key=env_ai_key or None, model=env_ai_model, position=0)
+        db.session.add(backend)
+        db.session.flush()
+        row = ServerSettings.query.first()
+        if row is not None:
+            row.ai_backend_active_id = backend.id
+            if not row.ai_backend_enabled:
+                row.ai_backend_enabled = True
+        db.session.commit()
+        return True
+    except Exception as exc:
+        db.session.rollback()
+        log.warning("Could not seed the AI backend from the environment: %s", exc)
+        return False
+
+
 def run_post_init(development=False):
     """Runs post-initiation steps for the IRIS application.
 
@@ -1859,12 +1888,6 @@ def create_safe_server_settings():
                     password_policy_lower_case=True, password_policy_digit=True,
                     password_policy_special_chars="", enforce_mfa=app.config.get("MFA_ENABLED", False),
                     ai_backend_enabled=bool(env_ai_url and env_ai_model),
-                    ai_backend_active_slot='primary',
-                    ai_backend_url=env_ai_url or None,
-                    ai_backend_api_key=env_ai_key or None,
-                    ai_backend_model=env_ai_model or None,
-                    ai_backend_label='Primary',
-                    ai_backend_alt_label='Alternate',
                     ai_backend_confidence_threshold=0.70,
                     pinecone_enabled=bool(env_pc_key and env_pc_any_host),
                     pinecone_api_key=env_pc_key or None,
@@ -1873,43 +1896,21 @@ def create_safe_server_settings():
                     pinecone_attack_host=env_pc_attack or None,
                     pinecone_atomic_host=env_pc_atomic or None,
                     notification_defaults=dict(MENTION_ORG_DEFAULT))
+        seed_ai_backend_from_env(env_ai_url, env_ai_key, env_ai_model)
         return
 
-    # Existing-install backfill: if the AI columns are still empty after the
-    # migration ran, copy env values in once. Admins editing the UI later
-    # wins over this — we never overwrite a non-empty value.
+    # Existing-install backfill (iris-ng 2026-10-09: the AI backends are
+    # `ai_backend` rows; the env values seed ONE row while the table is empty
+    # and never overwrite a configured backend). The threshold default stays.
     row = ServerSettings.query.first()
     changed = False
-    if not (row.ai_backend_url or '').strip() and env_ai_url:
-        row.ai_backend_url = env_ai_url
-        changed = True
-    if not (row.ai_backend_api_key or '').strip() and env_ai_key:
-        row.ai_backend_api_key = env_ai_key
-        changed = True
-    if not (row.ai_backend_model or '').strip() and env_ai_model:
-        row.ai_backend_model = env_ai_model
-        changed = True
     if row.ai_backend_confidence_threshold is None:
         row.ai_backend_confidence_threshold = 0.70
         changed = True
-    # Friendly defaults for the slot labels so the admin UI never renders
-    # blank chips on existing installs that predate the e9d2c5a3f8b1 migration.
-    if not (getattr(row, 'ai_backend_label', None) or '').strip():
-        row.ai_backend_label = 'Primary'
-        changed = True
-    if not (getattr(row, 'ai_backend_alt_label', None) or '').strip():
-        row.ai_backend_alt_label = 'Alternate'
-        changed = True
-    if not (getattr(row, 'ai_backend_active_slot', None) or '').strip():
-        row.ai_backend_active_slot = 'primary'
-        changed = True
-    # Only flip enabled to True on the backfill path if all three required
-    # values are now present AND the admin hasn't explicitly turned it off.
-    if changed and not row.ai_backend_enabled and env_ai_url and env_ai_model:
-        row.ai_backend_enabled = True
     if changed:
         db.session.commit()
-        log.info("Backfilled AI backend settings from environment on existing ServerSettings row")
+    if seed_ai_backend_from_env(env_ai_url, env_ai_key, env_ai_model):
+        log.info("Seeded the first AI backend from the AI_BACKEND_* environment on an existing install")
 
     # Pinecone existing-install backfill — same idempotent never-overwrite rule.
     pc_changed = False
