@@ -11,6 +11,31 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.6.0] — 2026-10-09
+
+OpenAI's own API as a first-class AI backend, and a chat-completions client that adapts its
+request shape to whatever is on the other end. **No schema change** — the database head stays
+at `a7c2d9e4f1b6`. Python and one template: a clone install needs a reset and an app + worker
+restart; the release images are rebuilt as always.
+
+### Added
+- **"OpenAI (api.openai.com)" as a Provider choice on each AI slot** (Settings → AI). OpenAI's
+  current models reject `max_tokens` ("Use `max_completion_tokens` instead") and its reasoning
+  models reject any explicit temperature, so the executive case summary failed on every domain
+  specialist against gpt-6.1-sol. The new provider sends `max_completion_tokens` from the
+  first call. The existing entry keeps its stored value and is now labelled "OpenAI-compatible
+  (LM Studio, OpenRouter, vLLM, Ollama)"; nothing changes for configured slots. Per-feature
+  overrides keep picking a slot, so the provider follows the slot.
+- **Self-healing request shape on both OpenAI-style providers.** A 400 that rejects
+  `max_tokens` is resent once with `max_completion_tokens`; a 400 that rejects `temperature` is
+  resent once without it. Each lesson is remembered per backend URL and model for the life of
+  the worker process, so the next request for that backend sends the right shape first. A
+  gateway that fronts OpenAI therefore works on the "OpenAI-compatible" setting too; choosing
+  "OpenAI" only saves the first rejected call per worker. Only an explicit instruction naming
+  `max_completion_tokens` is followed, only a 400 counts, and every other error is raised as
+  before. Reasoning tokens count against `max_completion_tokens` exactly as they do on Bedrock,
+  which the per-surface budgets and the compact retry already cover.
+
 ## [IRIS-NG-v2.5.4] — 2026-10-08
 
 A dependency-only release. **No schema change** — the database head stays at `a7c2d9e4f1b6`.
