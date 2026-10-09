@@ -174,7 +174,7 @@
                                    ai_backend_alt_{url,api_key,model}. ai_backend_active_slot picks
                                    which one build_default_client() uses. #}
                                 <h2>AI Backend</h2>
-                                <p>Backend used by the Tier-1 AI features (case summary, chat assistant, per-event analysis). Defaults seed from <code>AI_BACKEND_*</code> environment variables on first install; values here take precedence afterwards. Configure two backends and pick the active one with the radio. Each slot names its provider: <strong>OpenAI-compatible</strong> talks to anything that exposes <code>/v1/chat/completions</code> (LM Studio, OpenRouter, OpenAI); <strong>AWS Bedrock</strong> talks to the Converse API with a Bedrock API key — URL is the runtime endpoint (<code>https://bedrock-runtime.&lt;region&gt;.amazonaws.com</code>), Model is an inference profile ARN / ID or a model ID, pasted as the console shows it. No Bedrock Guardrail is applied. Stored API keys are never shown again; leave the field blank to keep the stored key.</p>
+                                <p>Backend used by the Tier-1 AI features (case summary, chat assistant, per-event analysis). Defaults seed from <code>AI_BACKEND_*</code> environment variables on first install; values here take precedence afterwards. Configure two backends and pick the active one with the radio. Each slot names its provider: <strong>OpenAI-compatible</strong> talks to anything that exposes <code>/v1/chat/completions</code> with the classic request shape (LM Studio, OpenRouter, vLLM, Ollama); <strong>OpenAI</strong> talks to OpenAI's own API, whose current models want <code>max_completion_tokens</code> and whose reasoning models take no explicit temperature (either shape also adapts itself after one rejected call); <strong>AWS Bedrock</strong> talks to the Converse API with a Bedrock API key — URL is the runtime endpoint (<code>https://bedrock-runtime.&lt;region&gt;.amazonaws.com</code>), Model is an inference profile ARN / ID or a model ID, pasted as the console shows it. No Bedrock Guardrail is applied. Stored API keys are never shown again; leave the field blank to keep the stored key.</p>
                                 <div class="row mb-3">
                                     <div class="col-12">
                                         <div class="form-check">
@@ -199,14 +199,15 @@
                                 {% macro ai_slot_rows(prefix, provider, url_value, model_value, catalog, ph_url_openai, ph_model_openai) %}
                                 {% set _cat = catalog or [] %}
                                 {% set _is_bedrock = (provider == 'bedrock') %}
+                                {% set _is_openai_api = (provider == 'openai_api') %}
                                 {% set _model = model_value or '' %}
                                 {% set _in_cat = (_cat | selectattr('id', 'equalto', _model) | list | length) > 0 %}
                                 {% set _select_shown = _is_bedrock and (_cat | length) > 0 %}
                                 <div class="input-group mb-2">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text" id="{{ prefix }}_url_label" data-iris-label-openai="URL" data-iris-label-bedrock="Region">{% if _is_bedrock %}Region{% else %}URL{% endif %}</span>
+                                        <span class="input-group-text" id="{{ prefix }}_url_label" data-iris-label-openai="URL" data-iris-label-openai_api="URL" data-iris-label-bedrock="Region">{% if _is_bedrock %}Region{% else %}URL{% endif %}</span>
                                     </div>
-                                    <input class="form-control" id="{{ prefix }}_url" name="{{ prefix }}_url" placeholder="{% if _is_bedrock %}us-west-2{% else %}{{ ph_url_openai }}{% endif %}" data-iris-ph-openai="{{ ph_url_openai }}" data-iris-ph-bedrock="us-west-2" value="{{ url_value or '' }}">
+                                    <input class="form-control" id="{{ prefix }}_url" name="{{ prefix }}_url" placeholder="{% if _is_bedrock %}us-west-2{% elif _is_openai_api %}https://api.openai.com/v1{% else %}{{ ph_url_openai }}{% endif %}" data-iris-ph-openai="{{ ph_url_openai }}" data-iris-ph-openai_api="https://api.openai.com/v1" data-iris-ph-bedrock="us-west-2" value="{{ url_value or '' }}">
                                 </div>
                                 <div class="input-group mb-2">
                                     <div class="input-group-prepend">
@@ -226,7 +227,7 @@
                                         {% endif %}
                                         <option value="__custom__" {% if not _in_cat %}selected{% endif %}>Other: paste an ARN or model ID</option>
                                     </select>
-                                    <input class="form-control{% if _select_shown and _in_cat %} d-none{% endif %}" id="{{ prefix }}_model" name="{{ prefix }}_model" placeholder="{% if _is_bedrock %}inference profile ARN / ID or model ID{% else %}{{ ph_model_openai }}{% endif %}" data-iris-ph-openai="{{ ph_model_openai }}" data-iris-ph-bedrock="inference profile ARN / ID or model ID" value="{{ _model }}">
+                                    <input class="form-control{% if _select_shown and _in_cat %} d-none{% endif %}" id="{{ prefix }}_model" name="{{ prefix }}_model" placeholder="{% if _is_bedrock %}inference profile ARN / ID or model ID{% elif _is_openai_api %}gpt-6.1-sol{% else %}{{ ph_model_openai }}{% endif %}" data-iris-ph-openai="{{ ph_model_openai }}" data-iris-ph-openai_api="gpt-6.1-sol" data-iris-ph-bedrock="inference profile ARN / ID or model ID" value="{{ _model }}">
                                     <div class="input-group-append">
                                         <button class="btn btn-outline-secondary iris-ai-bedrock-load{% if not _is_bedrock %} d-none{% endif %}" type="button" id="{{ prefix }}_bedrock_load" data-iris-slot="{{ prefix }}" title="List the inference profiles this region and key can see">Load models</button>
                                     </div>
@@ -251,7 +252,8 @@
                                                     <span class="input-group-text">Provider</span>
                                                 </div>
                                                 <select class="form-control iris-ai-provider" id="ai_backend_provider" name="ai_backend_provider" data-iris-slot="ai_backend">
-                                                    <option value="openai" {% if _p1 == 'openai' %}selected{% endif %}>OpenAI-compatible (/v1/chat/completions)</option>
+                                                    <option value="openai" {% if _p1 == 'openai' %}selected{% endif %}>OpenAI-compatible (LM Studio, OpenRouter, vLLM, Ollama)</option>
+                                                    <option value="openai_api" {% if _p1 == 'openai_api' %}selected{% endif %}>OpenAI (api.openai.com)</option>
                                                     <option value="bedrock" {% if _p1 == 'bedrock' %}selected{% endif %}>AWS Bedrock (Converse API)</option>
                                                 </select>
                                             </div>
@@ -281,7 +283,8 @@
                                                     <span class="input-group-text">Provider</span>
                                                 </div>
                                                 <select class="form-control iris-ai-provider" id="ai_backend_alt_provider" name="ai_backend_alt_provider" data-iris-slot="ai_backend_alt">
-                                                    <option value="openai" {% if _p2 == 'openai' %}selected{% endif %}>OpenAI-compatible (/v1/chat/completions)</option>
+                                                    <option value="openai" {% if _p2 == 'openai' %}selected{% endif %}>OpenAI-compatible (LM Studio, OpenRouter, vLLM, Ollama)</option>
+                                                    <option value="openai_api" {% if _p2 == 'openai_api' %}selected{% endif %}>OpenAI (api.openai.com)</option>
                                                     <option value="bedrock" {% if _p2 == 'bedrock' %}selected{% endif %}>AWS Bedrock (Converse API)</option>
                                                 </select>
                                             </div>

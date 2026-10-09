@@ -1567,13 +1567,13 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     ai_backend_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
     ai_backend_active_slot: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_provider: Optional[str] = fields.String(required=False, allow_none=True,
-                                                       validate=validate.OneOf(['openai', 'bedrock']))
+                                                       validate=validate.OneOf(['openai', 'openai_api', 'bedrock']))
     ai_backend_url: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_api_key: Optional[str] = fields.String(required=False, allow_none=True, load_only=True)
     ai_backend_model: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_label: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_alt_provider: Optional[str] = fields.String(required=False, allow_none=True,
-                                                           validate=validate.OneOf(['openai', 'bedrock']))
+                                                           validate=validate.OneOf(['openai', 'openai_api', 'bedrock']))
     ai_backend_alt_url: Optional[str] = fields.String(required=False, allow_none=True)
     ai_backend_alt_api_key: Optional[str] = fields.String(required=False, allow_none=True, load_only=True)
     ai_backend_alt_model: Optional[str] = fields.String(required=False, allow_none=True)

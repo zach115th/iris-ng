@@ -21,9 +21,88 @@ log = logging.getLogger(__name__)
 # predate the column keep their behaviour. The Bedrock adapter lives in
 # bedrock_client.py and subclasses OpenAIClient so every orchestrator keeps
 # consuming the chat-completions envelope.
+#
+# 'openai' is the OpenAI-COMPATIBLE shape (LM Studio, OpenRouter, vLLM, Ollama):
+# `max_tokens` + `temperature`. 'openai_api' is OpenAI's own API (iris-ng,
+# 2026-10-09): its current models reject `max_tokens` ("Use
+# 'max_completion_tokens' instead") and its reasoning models reject any
+# temperature but the default, so that subclass sends `max_completion_tokens`
+# from the first call. Both shapes also self-heal: a 400 that names one of the
+# two fields is retried once with the field swapped / dropped and the lesson is
+# remembered per (base_url, model) for the life of the process (see
+# learned_adaptations), so a gateway that fronts OpenAI works without the admin
+# knowing which shape it wants.
 PROVIDER_OPENAI = "openai"
+PROVIDER_OPENAI_API = "openai_api"
 PROVIDER_BEDROCK = "bedrock"
-KNOWN_PROVIDERS = (PROVIDER_OPENAI, PROVIDER_BEDROCK)
+KNOWN_PROVIDERS = (PROVIDER_OPENAI, PROVIDER_OPENAI_API, PROVIDER_BEDROCK)
+
+# Request-shape adaptations learned from a backend's 400s. Clients are built
+# per request, so a per-instance memory (what the Bedrock adapter keeps for its
+# temperature rejection) would re-pay one wasted call per specialist on every
+# summary; this map is process-wide (one per gunicorn / celery worker), keyed by
+# (base_url, effective model), bounded, and cleared only by a restart or
+# forget_adaptations() (suites).
+ADAPT_MAX_COMPLETION_TOKENS = "max_completion_tokens"
+ADAPT_NO_TEMPERATURE = "no_temperature"
+_LEARNED_ADAPTATIONS: dict[tuple[str, str], frozenset[str]] = {}
+_LEARNED_CAP = 256
+
+
+def learned_adaptations(base_url: str, model: str) -> frozenset[str]:
+    """The adaptation flags learned for this (base_url, model) in this process."""
+    return _LEARNED_ADAPTATIONS.get((base_url, model), frozenset())
+
+
+def remember_adaptation(base_url: str, model: str, flag: str) -> bool:
+    """Record `flag` for (base_url, model); True when it is new. The map is
+    bounded: a new key beyond the cap starts the map over (a bound, not an LRU --
+    a worker talks to a handful of backends, the cap exists so a hostile model
+    list cannot grow it without limit)."""
+    key = (base_url, model)
+    have = _LEARNED_ADAPTATIONS.get(key, frozenset())
+    if flag in have:
+        return False
+    if key not in _LEARNED_ADAPTATIONS and len(_LEARNED_ADAPTATIONS) >= _LEARNED_CAP:
+        _LEARNED_ADAPTATIONS.clear()
+    _LEARNED_ADAPTATIONS[key] = have | {flag}
+    return True
+
+
+def forget_adaptations() -> None:
+    """Drop every learned adaptation (suites; a restart does the same)."""
+    _LEARNED_ADAPTATIONS.clear()
+
+
+_ERR_PARAM_RE = re.compile(r'"param"\s*:\s*"([^"]*)"')
+_ERR_MESSAGE_RE = re.compile(r'"message"\s*:\s*"((?:[^"\\]|\\.)*)')
+_HTTP_400_PREFIX = "AI backend returned HTTP 400"
+
+
+def classify_rejection(exc: AIClientError) -> str | None:
+    """Which request field a backend's 400 rejected: 'max_tokens' (the backend
+    wants `max_completion_tokens`), 'temperature' (the model takes only its
+    default), or None for every other error.
+
+    Reads the chat-completions error envelope OpenAI and the gateways that
+    front it return ({"error": {"message", "type", "param", "code"}}) out of the
+    AIClientError text http_json builds (`HTTP 400: <body[:500]>`) with regexes,
+    so a truncated body still classifies. Only a 400 qualifies: a 5xx or a
+    transport error that happens to mention a field is not a rejection of it.
+    """
+    text = str(exc)
+    if not text.startswith(_HTTP_400_PREFIX):
+        return None
+    param_match = _ERR_PARAM_RE.search(text)
+    param = param_match.group(1) if param_match else ""
+    message_match = _ERR_MESSAGE_RE.search(text)
+    message = message_match.group(1) if message_match else ""
+    if param == "max_tokens" or "'max_tokens' is not supported" in message:
+        if "max_completion_tokens" in message:
+            return "max_tokens"
+    if param == "temperature" or re.search(r"'temperature'[^\"]*(?:not support|unsupported)", message):
+        return "temperature"
+    return None
 
 
 class AIClientError(Exception):
@@ -129,6 +208,33 @@ class OpenAIClient:
         self.default_max_tokens = default_max_tokens
         self.default_temperature = default_temperature
 
+    # The output-limit field this shape sends by default. The OpenAI-compatible
+    # shape says `max_tokens`; OpenAIApiClient says `max_completion_tokens`.
+    # Either way a learned adaptation for the (base_url, model) wins.
+    MAX_TOKENS_PARAM = "max_tokens"
+
+    def request_shape(self, model: str) -> tuple[str, bool]:
+        """(output-limit field name, whether to send temperature) for `model`
+        on this base_url: the class default, then what this process learned."""
+        learned = learned_adaptations(self.base_url, model)
+        tokens_param = (
+            ADAPT_MAX_COMPLETION_TOKENS
+            if (self.MAX_TOKENS_PARAM == ADAPT_MAX_COMPLETION_TOKENS or ADAPT_MAX_COMPLETION_TOKENS in learned)
+            else "max_tokens"
+        )
+        return tokens_param, ADAPT_NO_TEMPERATURE not in learned
+
+    def _send(self, body: dict[str, Any]) -> dict[str, Any]:
+        return http_post_json(
+            f"{self.base_url}/chat/completions",
+            {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            },
+            json.dumps(body).encode("utf-8"),
+            self.timeout
+        )
+
     def _post_chat(
         self,
         messages: list[dict[str, str]],
@@ -146,23 +252,46 @@ class OpenAIClient:
         useful for caller-specific routing (e.g. case_summary uses Haiku for
         the synthesizer stage to skip Sonnet's slower per-token throughput
         on the 8-9 KB synthesis output, while keeping Sonnet for the
-        specialist analyses upstream).        """
-        body = json.dumps({
-            "model": model if model is not None else self.model,
-            "messages": messages,
-            "max_tokens": max_tokens if max_tokens is not None else self.default_max_tokens,
-            "temperature": temperature if temperature is not None else self.default_temperature
-        }).encode("utf-8")
+        specialist analyses that feed it).
 
-        return http_post_json(
-            f"{self.base_url}/chat/completions",
-            {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            },
-            body,
-            self.timeout
-        )
+        Self-healing request shape (2026-10-09): OpenAI's current models
+        reject `max_tokens` (they want `max_completion_tokens`) and its
+        reasoning models reject any temperature but the default. A 400 that
+        names one of those fields is retried once with the field swapped /
+        dropped -- at most one retry per field, so at most two extra calls
+        -- and the lesson is remembered process-wide for the (base_url,
+        model) so the next client built for it sends the right shape first.
+        Every other error is raised as-is.
+        """
+        model_id = model if model is not None else self.model
+        limit = max_tokens if max_tokens is not None else self.default_max_tokens
+        temp = temperature if temperature is not None else self.default_temperature
+        tokens_param, send_temperature = self.request_shape(model_id)
+        while True:
+            body: dict[str, Any] = {"model": model_id, "messages": messages, tokens_param: limit}
+            if send_temperature:
+                body["temperature"] = temp
+            try:
+                return self._send(body)
+            except AIClientError as exc:
+                rejected = classify_rejection(exc)
+                if rejected == "max_tokens" and tokens_param == "max_tokens":
+                    tokens_param = ADAPT_MAX_COMPLETION_TOKENS
+                    remember_adaptation(self.base_url, model_id, ADAPT_MAX_COMPLETION_TOKENS)
+                    log.warning(
+                        "AI backend (model=%s) rejected max_tokens; resending with "
+                        "max_completion_tokens and remembering it for this backend", model_id
+                    )
+                    continue
+                if rejected == "temperature" and send_temperature:
+                    send_temperature = False
+                    remember_adaptation(self.base_url, model_id, ADAPT_NO_TEMPERATURE)
+                    log.warning(
+                        "AI backend (model=%s) rejected an explicit temperature; resending "
+                        "without it and remembering it for this backend", model_id
+                    )
+                    continue
+                raise
 
     def chat(
         self,
@@ -376,9 +505,24 @@ def client_class_for(provider: str | None) -> type[OpenAIClient]:
     if key == PROVIDER_BEDROCK:
         from app.iris_engine.ai.bedrock_client import BedrockConverseClient
         return BedrockConverseClient
+    if key == PROVIDER_OPENAI_API:
+        return OpenAIApiClient
     if key != PROVIDER_OPENAI:
         log.warning("Unknown AI backend provider %r; using the OpenAI-compatible client", provider)
     return OpenAIClient
+
+
+class OpenAIApiClient(OpenAIClient):
+    """OpenAI's own API (api.openai.com and its regional hosts): the same
+    chat-completions envelope, but the output limit is `max_completion_tokens`
+    from the first call -- OpenAI's current models reject `max_tokens`. The
+    temperature fallback is inherited: the reasoning models reject any value
+    but their default, the first 400 teaches the process to drop the field.
+    Like Bedrock's `maxTokens`, `max_completion_tokens` counts reasoning
+    tokens, which is what json_reply.ask_json's budgets and compact retry are
+    sized for."""
+
+    MAX_TOKENS_PARAM = ADAPT_MAX_COMPLETION_TOKENS
 
 
 def _read_settings_row(
