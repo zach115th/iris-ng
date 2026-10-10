@@ -11,6 +11,60 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.0] — 2026-10-09
+
+The Executive Case Summary becomes a verified summary with review questions. **One schema
+migration (`c4d9a2e7f1b3`)** — take a database dump before upgrading (migrations are one-way;
+`scripts/update.sh` does the dump). Python and two templates; the browser bundle is unchanged.
+A clone install needs a reset and an app + worker restart; the release images are rebuilt as
+always.
+
+### Added
+- **Writer, checks, verifier.** The summary is no longer one prose pass. The five domain
+  specialists cite the notes, events, indicators, assets and evidence items they draw on; a
+  writer role turns them into sourced claims (section, text, confidence tier, cited objects)
+  that the server renders into the familiar ten-section briefing, with every count, the assets
+  table and the fixed lines computed server-side. Deterministic checks compare each claim with
+  its cited sources: the objects exist in the case; numbers, dates, addresses, host names and
+  accounts appear in them; task wording matches the task's status; evidence claims match the
+  register; no "yesterday" or "in the past few hours". A verifier role judges every claim
+  against only its cited sources and reads the whole briefing once for contradictions and the
+  known failure patterns (a download described as a file, one address as one actor, a
+  third-party figure stated as confirmed, an unsourced impact number, relative time, a status
+  the claims do not support). When a high-severity flag remains, one automatic revise pass
+  runs; never a second.
+- **Review questions instead of a blank box.** Every flag becomes a question in the new
+  Review tab of the summary panel, with concrete options proposed from the context (a
+  rewritten sentence, a lower confidence tier, drop) plus "keep as written" and "other". Once
+  every question is answered, **Apply answers** builds the next pass: the answers are applied
+  exactly as chosen, the text is re-rendered and re-checked, a kept flag is not asked again,
+  and anything new comes back as a question. Free-text "other" answers are the only ones that
+  go back to the writer, and it may change only those claims. The Audit tab shows which
+  backend (provider, label, model, prompt) produced each step, every pass, and the superseded
+  questions. The status pill reads Draft while a question is open and Verified otherwise;
+  `summary_status` and `summary_questions_open` travel with the case payload (module hooks,
+  `/case/meta`) for report templates and webhooks.
+- **Roles map to backends.** The writer uses the existing *Case Summary* override; the
+  verifier and the question builder use the new *Case Summary verifier* override row, so a
+  different backend can check the writer's work. Settings → AI also gains **Verify executive
+  summaries** (on by default): off means the deterministic checks only, which still ask their
+  questions.
+- API: `GET /api/v2/cases/<id>/ai/summary` carries `summary_status`, `summary_questions_open`
+  and a `verification` block; `GET …/summary/verification` (claims, questions with options,
+  steps, passes); `POST …/summary/flags/<id>/answer`; `POST …/summary/apply-answers` (an
+  async job, `?sync=true` inline). Indicator values, host names and accounts may now appear in
+  the briefing when a cited source contains them; `unverified` and `third-party reported`
+  claims carry an italic marker.
+
+### Changed
+- **Upgrade path.** Summaries generated before this release read as *Draft · not reviewed*
+  and get questions on their next generation; the text itself is untouched. The specialist
+  caches re-run once per case (the prompts changed), as do the case chat and task-suggester
+  caches that share the case payload. A reasoning model on the writer role needs the
+  12 000-token budget this release sets; the verifier and the question builder use 6 000.
+  Answering a question no longer invalidates the summary cache (the activity-log timestamp
+  left the cache key).
+
 ## [IRIS-NG-v2.7.0] — 2026-10-09
 
 Any number of AI backends. **One schema migration (`b8e3f1a7c2d5`)** — take a database dump
