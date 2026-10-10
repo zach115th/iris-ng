@@ -303,6 +303,21 @@
                                 {# Hidden mirror — unchecked checkboxes don't serialize #}
                                 <input type="hidden" id="ai_backend_enabled_hidden" name="ai_backend_enabled" value="{% if settings.ai_backend_enabled %}true{% else %}false{% endif %}">
 
+                                {# iris-ng 2026-10-09: the verified executive summary's second AI pass.
+                                   NULL = on; the hidden mirror carries the boolean like ai_backend_enabled. #}
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <label class="form-check-label">
+                                                <input class="form-check-input" type="checkbox" id="ai_summary_verify" {% if settings.ai_summary_verify is not sameas false %}checked{% endif %}>
+                                                <span class="form-check-sign">Verify executive summaries</span>
+                                            </label>
+                                            <small class="form-text text-muted">Run the verifier (the "Case Summary verifier" role below) on every generated executive summary: per-claim verdicts against the cited case objects plus a whole-document pass. When off, only the deterministic checks run; their high-severity flags still gate Mark final and the investigation report.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="ai_summary_verify_hidden" name="ai_summary_verify" value="{% if settings.ai_summary_verify is not sameas false %}true{% else %}false{% endif %}">
+
                                 {# iris-next: Per-feature AI backend overrides.
                                    Each feature can be pinned to a backend (its ai_backend.id, since
                                    2026-10-09) or left as null to follow ai_backend_active_id.
@@ -311,6 +326,7 @@
                                 {% set _overrides = (settings.ai_feature_overrides or {}) %}
                                 {% set _features = [
                                     ('case_summary',            'Case Summary (exec panel)'),
+                                    ('case_summary_verifier',   'Case Summary verifier (claim checks)'),
                                     ('case_chat',               'Case Chat assistant'),
                                     ('event_analysis',          'Per-event analysis drawer'),
                                     ('asset_profile',           'Asset profile (Assets tab)'),
@@ -766,6 +782,7 @@
 (function () {
     var pairs = [
         ['ai_backend_enabled',          'ai_backend_enabled_hidden'],
+        ['ai_summary_verify',           'ai_summary_verify_hidden'],
         ['pinecone_enabled',            'pinecone_enabled_hidden'],
         ['time_tracking_nudge_enabled', 'time_tracking_nudge_enabled_hidden'],
         ['enable_updates_check',        'enable_updates_check_hidden'],

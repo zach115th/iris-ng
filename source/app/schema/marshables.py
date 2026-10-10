@@ -1591,6 +1591,8 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     # and a submission naming them is ignored (Meta.unknown = EXCLUDE). The
     # update route checks that the ids exist.
     ai_backend_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
+    # Verify executive summaries with the second AI pass (NULL = on).
+    ai_summary_verify: Optional[bool] = fields.Boolean(required=False, allow_none=True)
     ai_backend_active_id: Optional[int] = fields.Integer(required=False, allow_none=True)
     ai_backend_confidence_threshold: Optional[float] = fields.Float(required=False, allow_none=True)
     # Per-feature overrides. {"feature_key": <ai_backend.id>|null}.
@@ -2810,6 +2812,11 @@ class CaseDetailsSchema(ma.SQLAlchemyAutoSchema):
     status_name = ma.Method('get_status_name')
     protagonists = ma.Method('get_protagonists')
     executive_summary = ma.Method('get_executive_summary')
+    # iris-ng 2026-10-09: the verified summary's derived status (draft while a
+    # review question is unanswered) and the count of open questions, dump-only
+    # like executive_summary, prefetched for many= dumps.
+    summary_status = ma.Method('get_summary_status')
+    summary_questions_open = ma.Method('get_summary_questions_open')
 
     def get_executive_summary(self, obj):
         cache = getattr(self, '_executive_summaries', None)
@@ -2817,19 +2824,38 @@ class CaseDetailsSchema(ma.SQLAlchemyAutoSchema):
             return cache.get(obj.case_id)
         return executive_summaries_for([obj.case_id]).get(obj.case_id)
 
+    def _summary_state(self, obj):
+        cache = getattr(self, '_summary_states', None)
+        if cache is not None and obj.case_id in cache:
+            return cache[obj.case_id]
+        from app.business.summary_verification import summary_states_for
+        return (summary_states_for([obj.case_id]).get(obj.case_id)
+                or {'summary_status': 'draft', 'summary_questions_open': 0})
+
+    def get_summary_status(self, obj):
+        return self._summary_state(obj)['summary_status']
+
+    def get_summary_questions_open(self, obj):
+        return self._summary_state(obj)['summary_questions_open']
+
     def dump(self, obj, *, many=None):
         # Prefetch for list dumps (dashboard, manage list, the webhook module's
         # many=True) — one statement for every case in the batch.
+        # ONE case_ai_artifact statement feeds both executive_summary and the
+        # summary state (iris-ng 2026-10-09), for a single dump as for many=.
+        from app.business.summary_verification import newest_summary_artifacts
+        from app.business.summary_verification import summary_states_for_artifacts
         many = self.many if many is None else many
-        if not many:
-            return super().dump(obj, many=False)
-        obj = list(obj)
-        self._executive_summaries = executive_summaries_for(
-            [getattr(c, 'case_id', None) for c in obj])
+        items = list(obj) if many else [obj]
+        ids = [getattr(c, 'case_id', None) for c in items]
+        arts = newest_summary_artifacts(ids)
+        self._executive_summaries = {i: (arts[i].display_content if i in arts else None) for i in ids}
+        self._summary_states = summary_states_for_artifacts(arts, ids)
         try:
-            return super().dump(obj, many=True)
+            return super().dump(items if many else obj, many=many)
         finally:
             self._executive_summaries = None
+            self._summary_states = None
 
     class Meta:
         model = Cases

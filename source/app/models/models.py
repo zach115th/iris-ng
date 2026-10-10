@@ -799,6 +799,139 @@ class AiJob(db.Model):
     artifact = relationship('CaseAiArtifact')
 
 
+class CaseSummaryRun(db.Model):
+    """One pass of the verified executive-summary pipeline (iris-ng, 2026-10-09).
+
+    The final markdown still lives in `case_ai_artifact` (kind `case_summary`)
+    so every reader of the summary text is untouched; this row hangs the
+    writer's structured claims, the deterministic check results, the verifier
+    verdicts and the analyst's answers off that artifact. `pass_kind`:
+      draft   - pass 1, the writer's first claims
+      revise  - the one automatic revise pass (parent = pass 1)
+      answers - a pass built from the analyst's answers to the review
+                questions (parent = the run that asked them); as many as
+                the analyst wants, each one started by hand
+    `verifier_status`:
+      verified             - both verifier passes ran to a contract reply
+      skipped              - sparse case, nothing to verify
+      verifier_failed      - the verifier backend errored or broke the contract
+      verifier_unavailable - no backend for the verifier role
+      disabled             - the verifier is switched off (Settings > AI); the
+                             deterministic checks still ran
+      carried              - an answers pass; the verdicts of the parent stand
+    The summary status (draft while a question is unanswered, verified
+    otherwise) is DERIVED from the flags (business/summary_verification.py).
+    """
+    __tablename__ = 'case_summary_run'
+    __table_args__ = (
+        CheckConstraint("pass_no >= 1", name='ck_case_summary_run_pass_no'),
+        CheckConstraint("pass_kind IN ('draft', 'revise', 'answers')", name='ck_case_summary_run_pass_kind'),
+        CheckConstraint(
+            "verifier_status IN ('verified', 'skipped', 'verifier_failed', 'verifier_unavailable', 'disabled', 'carried')",
+            name='ck_case_summary_run_verifier_status'),
+        Index('ix_case_summary_run_case_hash', 'case_id', 'input_hash'),
+    )
+
+    id = Column(BigInteger, primary_key=True)
+    case_id = Column(ForeignKey('cases.case_id', ondelete='CASCADE'), nullable=False)
+    artifact_id = Column(ForeignKey('case_ai_artifact.id', ondelete='CASCADE'), nullable=False, unique=True)
+    pass_no = Column(Integer, nullable=False, default=1)
+    pass_kind = Column(String(16), nullable=False, default='draft', server_default=text("'draft'"))
+    parent_run_id = Column(ForeignKey('case_summary_run.id', ondelete='SET NULL'), nullable=True)
+    input_hash = Column(String(64), nullable=False)
+    pipeline_version = Column(String(32), nullable=False)
+    claims_json = Column(Text, nullable=False)          # the validated claims, as rendered
+    writer_meta_json = Column(Text, nullable=True)      # status, counts, classification, coercions
+    checks_json = Column(Text, nullable=True)           # CHECKS_VERSION + the raw deterministic flags
+    verifier_status = Column(String(24), nullable=False, default='skipped')
+    verifier_json = Column(Text, nullable=True)         # raw verdicts per claim + the document pass
+    answers_json = Column(Text, nullable=True)          # answers pass: what was applied, per flag
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    artifact = relationship('CaseAiArtifact')
+    steps = relationship('CaseSummaryStep', back_populates='run', cascade='all, delete-orphan',
+                         passive_deletes=True, order_by='CaseSummaryStep.id')
+    flags = relationship('CaseSummaryFlag', back_populates='run', cascade='all, delete-orphan',
+                         passive_deletes=True, order_by='CaseSummaryFlag.id')
+
+
+class CaseSummaryStep(db.Model):
+    """Audit trail of one pipeline step: which backend (provider, id, label,
+    model) and prompt produced it, cached or called, when, with what outcome.
+    `backend_id` is deliberately not a foreign key - the audit outlives a
+    deleted backend. The five specialist rows point at their `case_summary:*`
+    artifact (a cache hit records `cached=True` with the stored row's
+    provenance); the checks row stores CHECKS_VERSION in `prompt_id`.
+    """
+    __tablename__ = 'case_summary_step'
+    __table_args__ = (
+        CheckConstraint(
+            "step IN ('specialist:notes', 'specialist:timeline', 'specialist:iocs', 'specialist:assets', "
+            "'specialist:evidence', 'writer', 'checks', 'verifier:claims', 'verifier:document', 'questions', 'apply')",
+            name='ck_case_summary_step_step'),
+        CheckConstraint("outcome IN ('ok', 'failed', 'skipped')", name='ck_case_summary_step_outcome'),
+    )
+
+    id = Column(BigInteger, primary_key=True)
+    run_id = Column(ForeignKey('case_summary_run.id', ondelete='CASCADE'), nullable=False, index=True)
+    step = Column(String(32), nullable=False)
+    provider = Column(String(32), nullable=True)
+    backend_id = Column(BigInteger, nullable=True)
+    backend_label = Column(Text, nullable=True)
+    model = Column(Text, nullable=True)
+    prompt_id = Column(String(96), nullable=True)
+    artifact_id = Column(ForeignKey('case_ai_artifact.id', ondelete='SET NULL'), nullable=True)
+    cached = Column(Boolean, nullable=False, default=False)
+    outcome = Column(String(16), nullable=False, default='ok')
+    error = Column(Text, nullable=True)
+    usage_json = Column(Text, nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    finished_at = Column(DateTime, nullable=True)
+
+    run = relationship('CaseSummaryRun', back_populates='steps')
+    artifact = relationship('CaseAiArtifact')
+
+
+class CaseSummaryFlag(db.Model):
+    """One problem found with a summary claim (or with the document when
+    `claim_id` is NULL), asked to the analyst as a review QUESTION. `source`
+    says who raised it: the deterministic checks, the LLM verifier, or the
+    pipeline itself (verifier unavailable). `question` + `options_json` are
+    built once per pass (an LLM call on the verifier role proposes concrete
+    rewrites / tier changes / drops; the server appends "keep as written" and
+    "other"); `answer_json` records the analyst's choice. Every flag is a
+    question whatever its severity; a summary reads `draft` until all are
+    answered, and an answers pass applies them.
+    """
+    __tablename__ = 'case_summary_flag'
+    __table_args__ = (
+        CheckConstraint("severity IN ('high', 'medium', 'low')", name='ck_case_summary_flag_severity'),
+        CheckConstraint("source IN ('checks', 'verifier', 'pipeline')", name='ck_case_summary_flag_source'),
+        CheckConstraint("status IN ('open', 'answered')", name='ck_case_summary_flag_status'),
+        Index('ix_case_summary_flag_run_status_sev', 'run_id', 'status', 'severity'),
+    )
+
+    id = Column(BigInteger, primary_key=True)
+    run_id = Column(ForeignKey('case_summary_run.id', ondelete='CASCADE'), nullable=False)
+    claim_id = Column(String(16), nullable=True)
+    code = Column(String(48), nullable=False)
+    severity = Column(String(8), nullable=False)
+    source = Column(String(16), nullable=False)
+    message = Column(Text, nullable=False)
+    detail_json = Column(Text, nullable=True)
+    source_refs_json = Column(Text, nullable=True)      # [{"type": "note", "id": 12}, ...]
+    question = Column(Text, nullable=True)              # the plain-language question to the analyst
+    options_json = Column(Text, nullable=True)          # [{"id", "label", "action", "text"?, "tier"?, "claim_id"?}]
+    status = Column(String(16), nullable=False, default='open')
+    answer_json = Column(Text, nullable=True)           # {"option_id", "action", "text"?, "tier"?, "claim_id"?, "note"?}
+    answered_by_id = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    answered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    run = relationship('CaseSummaryRun', back_populates='flags')
+    answered_by = relationship('User', foreign_keys=[answered_by_id])
+
+
 class IocAssetLink(db.Model):
     __tablename__ = 'ioc_asset_link'
 
@@ -2024,6 +2157,10 @@ class ServerSettings(db.Model):
     # backend. Relationship declared with the column (lesson 172).
     ai_backend_active_id = Column(BigInteger, ForeignKey('ai_backend.id', ondelete='SET NULL'), nullable=True)
     ai_backend_active = relationship('AiBackend', foreign_keys=[ai_backend_active_id])
+    # iris-ng 2026-10-09: run the LLM verifier on executive summaries. NULL = on
+    # (every install keeps verifying until an admin switches it off); False =
+    # the deterministic checks only. Column added by c4d9a2e7f1b3.
+    ai_summary_verify = Column(Boolean, nullable=True)
 
     # Pinecone vector DB (used by sigma_grounding + ATT&CK / Atomic RAG layers).
     # When pinecone_enabled is False, callers fall back to model-only suggestions

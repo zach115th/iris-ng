@@ -49,6 +49,16 @@ from app.iris_engine.ai.timeline_analysis import generate_timeline_analysis
 from app.iris_engine.ai.timeline_analysis import get_cached_analysis as get_cached_timeline_analysis
 from app.models.authorization import CaseAccessLevel
 from app.models.models import CaseAiArtifact
+from app.business.summary_verification import SummaryVerificationError
+from app.business.summary_verification import answer_flag
+from app.business.summary_verification import derive_status
+from app.business.summary_verification import open_questions
+from app.business.summary_verification import run_for_artifact
+from app.business.summary_verification import serialize_flag
+from app.business.summary_verification import verification_payload
+from app.business.summary_verification import verification_summary
+from app.iris_engine.ai.case_summary import apply_answers_pass
+from app.iris_engine.utils.tracker import track_activity
 
 case_ai_blueprint = Blueprint(
     'case_ai_rest_v2',
@@ -67,7 +77,7 @@ def _serialize_artifact(artifact: CaseAiArtifact) -> dict:
     `ai_content` to back "View AI original" / "Revert to AI".
     """
     edited = artifact.is_edited
-    return {
+    data = {
         'id': artifact.id,
         'case_id': artifact.case_id,
         'kind': artifact.kind,
@@ -84,6 +94,29 @@ def _serialize_artifact(artifact: CaseAiArtifact) -> dict:
         # Only meaningful (and only computed) for an edited artifact.
         'edit_is_stale': summary_edit_is_stale(artifact) if edited else False
     }
+    if artifact.kind == 'case_summary':
+        data.update(_summary_keys(artifact))
+    return data
+
+
+def _summary_keys(artifact: CaseAiArtifact) -> dict:
+    """The verified-summary keys GET /summary carries beside the text (iris-ng,
+    2026-10-09): `summary_status` draft | verified (derived: draft while a review
+    question is unanswered), the count of open questions, and the compact run
+    block (None for a summary generated before verification existed)."""
+    run = run_for_artifact(artifact)
+    opens = open_questions(run)
+    return {
+        'summary_status': derive_status(run, len(opens)),
+        'summary_questions_open': len(opens),
+        'verification': verification_summary(run),
+    }
+
+
+def _verification_refused(exc: SummaryVerificationError):
+    # 404 / 409 / 400 with the same body shape as the manual-edit 409:
+    # {message, data: {reason, ...}}. response_api_error() is hardcoded to 400.
+    return response(exc.status, data={'message': str(exc), 'data': {'reason': exc.reason, **exc.data}})
 
 
 @case_ai_blueprint.get('/summary')
@@ -219,6 +252,75 @@ def revert_case_summary_edit_endpoint(case_identifier):
         return response_api_error(str(exc))
 
     return response_api_success(_serialize_artifact(artifact))
+
+
+@case_ai_blueprint.get('/summary/verification')
+@ac_api_requires()
+def get_case_summary_verification(case_identifier):
+    """The verified-summary detail for the newest summary: status, claims,
+    flags (with resolved source refs + deep links), steps, the previous pass.
+    `null` lists = no run (none or a legacy summary), `[]` = a run with none."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.read_only, CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+    return response_api_success(verification_payload(case_identifier))
+
+
+@case_ai_blueprint.post('/summary/flags/<int:flag_id>/answer')
+@ac_api_requires()
+def answer_case_summary_question(case_identifier, flag_id):
+    """Answer one review question. Body: {"option_id": "o1" | "keep" | "other",
+    "text": "<required for other, an optional note otherwise>"}. 404 for a
+    question of another case, 409 when it is already answered, 400 for an
+    unknown option or an "other" without text."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    body = request.get_json(silent=True) or {}
+    try:
+        flag = answer_flag(case_identifier, flag_id, body.get('option_id'), body.get('text'), current_user.id)
+    except SummaryVerificationError as exc:
+        return _verification_refused(exc)
+    track_activity(f"answered executive summary review question #{flag.id} ({flag.code})", caseid=case_identifier)
+    return response_api_success(serialize_flag(flag, case_identifier))
+
+
+@case_ai_blueprint.post('/summary/apply-answers')
+@ac_api_requires()
+def apply_case_summary_answers(case_identifier):
+    """Run the answers pass on the newest summary: every question answered ->
+    the answers are applied, the summary re-rendered and re-checked. Async by
+    default (202 + task_id, feature `case_summary_apply`); `?sync=true` runs
+    inline. 409 `apply_refused` while a question is unanswered or when every
+    answer keeps the text."""
+    if not ac_fast_check_current_user_has_case_access(
+        case_identifier, [CaseAccessLevel.full_access]
+    ):
+        return ac_api_return_access_denied(caseid=case_identifier)
+
+    sync = request.args.get('sync', False, type=parse_boolean) or False
+    if sync:
+        try:
+            artifact = apply_answers_pass(case_identifier, user_id=current_user.id)
+        except CaseSummaryError as exc:
+            return response(409, data={'message': str(exc), 'data': {'reason': 'apply_refused'}})
+        track_activity("applied the executive summary review answers", caseid=case_identifier)
+        return response_api_success(_serialize_artifact(artifact))
+
+    try:
+        job = enqueue_ai_job(
+            feature='case_summary_apply',
+            case_id=case_identifier,
+            user_id=current_user.id,
+            params={'user_id': current_user.id},
+        )
+    except AiJobError as exc:
+        return response_api_error(str(exc))
+    track_activity("applied the executive summary review answers", caseid=case_identifier)
+    return _accepted(job)
 
 
 @case_ai_blueprint.get('/timeline-analysis')

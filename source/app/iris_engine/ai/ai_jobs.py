@@ -47,6 +47,13 @@ def _run_case_summary(case_id: int, params: dict[str, Any]):
     return generate_case_summary(case_id, force=bool(params.get('force', False)))
 
 
+def _run_case_summary_apply(case_id: int, params: dict[str, Any]):
+    # iris-ng 2026-10-09: the answers pass of the verified summary (the
+    # analyst's review answers applied, re-rendered, re-checked).
+    from app.iris_engine.ai.case_summary import apply_answers_pass
+    return apply_answers_pass(case_id, user_id=params.get('user_id'))
+
+
 def _run_case_chat(case_id: int, params: dict[str, Any]):
     from app.iris_engine.ai.case_chat import ask_case
     return ask_case(
@@ -103,6 +110,7 @@ def _run_task_suggester(case_id: int, params: dict[str, Any]):
 # import-cheap and never fails to load if one orchestrator has a heavy import.
 FEATURES: dict[str, dict[str, Any]] = {
     'case_summary': {'runner': _run_case_summary, 'kind': 'artifact', 'priority': 6},
+    'case_summary_apply': {'runner': _run_case_summary_apply, 'kind': 'artifact', 'priority': 6},
     'chat':         {'runner': _run_case_chat,    'kind': 'dict',     'priority': 3},
     # v2 Phase 2: returns the serialized triage dict (artifact row managed by
     # the orchestrator itself — result_json carries the payload the panel

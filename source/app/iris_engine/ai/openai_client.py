@@ -207,6 +207,12 @@ class OpenAIClient:
         self.timeout = timeout
         self.default_max_tokens = default_max_tokens
         self.default_temperature = default_temperature
+        # Provenance of the configured backend this client was built from:
+        # build_default_client() fills them in, a hand-built client keeps None.
+        # The verified-summary audit trail records them per pipeline step.
+        self.backend_id: int | None = None
+        self.backend_label: str | None = None
+        self.provider: str | None = None
 
     # The output-limit field this shape sends by default. The OpenAI-compatible
     # shape says `max_tokens`; OpenAIApiClient says `max_completion_tokens`.
@@ -471,7 +477,10 @@ def build_default_client(
     """
     from app import app
 
-    enabled, base_url, api_key, model, provider = _read_settings_row(feature=feature)
+    enabled, backend = _resolve_backend(feature=feature)
+    base_url, api_key, model, provider = _backend_fields(backend)
+    backend_id = backend.id if backend is not None else None
+    backend_label = ((backend.label or '').strip() or None) if backend is not None else None
 
     if base_url is None or model is None:
         cfg = app.config
@@ -484,13 +493,19 @@ def build_default_client(
     if not enabled or not base_url or not model:
         return None
 
-    return client_class_for(provider)(
+    client = client_class_for(provider)(
         base_url=base_url,
         api_key=api_key or "",
         model=model,
         timeout=timeout,
         default_max_tokens=default_max_tokens
     )
+    # Provenance for audit trails: the row's id + label, or 'config' when the
+    # bootstrap env vars built the client (no row yet).
+    client.backend_id = backend_id
+    client.backend_label = backend_label if backend is not None else 'config'
+    client.provider = (provider or PROVIDER_OPENAI).strip().lower()
+    return client
 
 
 def client_class_for(provider: str | None) -> type[OpenAIClient]:
@@ -525,32 +540,31 @@ class OpenAIApiClient(OpenAIClient):
     MAX_TOKENS_PARAM = ADAPT_MAX_COMPLETION_TOKENS
 
 
-def _read_settings_row(
+def _resolve_backend(
     feature: str | None = None
-) -> tuple[bool | None, str | None, str | None, str | None, str | None]:
-    """Pull the AI backend config from the ServerSettings row + the
-    `ai_backend` table (iris-ng, 2026-10-09; the two slots before that).
+):
+    """(enabled, AiBackend row | None) for a feature (iris-ng, 2026-10-09).
 
     The backend is ai_backend_active_id unless `feature` is given and
     ai_feature_overrides[feature] names another existing backend id (an id that
     no longer exists falls back to the active one; the delete route clears such
     pins, this is belt and braces). This lets admins route individual surfaces
-    (e.g. 'case_summary') to a different backend without touching the global
-    default.
+    (e.g. 'case_summary', 'case_summary_verifier') to a different backend
+    without touching the global default.
 
-    Returns (enabled, url, api_key, model, provider). Any field can be None if
-    the row / table / column doesn't exist yet (covers fresh installs /
-    pre-migration boot) or if no backend is configured.
+    `enabled` is None when the settings row / table / column does not exist yet
+    (fresh installs, pre-migration boot); the row is None when no backend is
+    configured or the lookup failed.
     """
     try:
         from app.models.models import AiBackend
         from app.models.models import ServerSettings
         row = ServerSettings.query.first()
     except Exception:
-        return (None, None, None, None, None)
+        return (None, None)
 
     if row is None:
-        return (None, None, None, None, None)
+        return (None, None)
 
     enabled = getattr(row, 'ai_backend_enabled', None)
     backend = None
@@ -565,18 +579,30 @@ def _read_settings_row(
             if active is not None:
                 backend = AiBackend.query.get(active)
     except Exception:
-        return (enabled, None, None, None, None)
+        return (enabled, None)
+    return (enabled, backend)
 
+
+def _backend_fields(backend) -> tuple[str | None, str | None, str | None, str | None]:
+    """(url, api_key, model, provider) of a row, each None when blank or when
+    there is no row."""
     if backend is None:
-        return (enabled, None, None, None, None)
-
+        return (None, None, None, None)
     return (
-        enabled,
         (backend.url or '').strip() or None,
         (backend.api_key or '').strip() or None,
         (backend.model or '').strip() or None,
         (backend.provider or '').strip().lower() or None,
     )
+
+
+def _read_settings_row(
+    feature: str | None = None
+) -> tuple[bool | None, str | None, str | None, str | None, str | None]:
+    """(enabled, url, api_key, model, provider) -- the 5-tuple contract every
+    orchestrator and suite knows, now a thin wrapper over _resolve_backend()."""
+    enabled, backend = _resolve_backend(feature=feature)
+    return (enabled, *_backend_fields(backend))
 
 
 def _backend_id(value) -> int | None:
