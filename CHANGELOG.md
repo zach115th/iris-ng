@@ -11,6 +11,38 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.1] — 2026-10-15
+
+A dependency-only release. **No schema change** — the database head stays at `c4d9a2e7f1b3`.
+The application code is identical to 2.8.0. The browser bundle differs in one vendored file,
+`marked.min.js`; every bundle Vite builds is byte-for-byte the 2.8.0 output.
+
+### Changed
+- **Markdown renderer (Dependabot #144).** marked 18.0.14 → 18.1.0, the library vendored as
+  `assets/js/plugin/marked/marked.min.js` that renders note bodies and other Markdown in the
+  browser. 18.1.0 fixes cubic backtracking on unicode whitespace in a link destination: marked's
+  own regression input (`[](` followed by non-breaking spaces) takes 2.3 s at 2 000 characters
+  and 36 s at 5 000 on 18.0.14, under a millisecond on 18.1.0, so a crafted note could freeze the
+  browser tab of anyone who opened it. It also stops treating a link destination with unbalanced
+  parentheses as a link. Fifteen note-shaped samples (indicator mention links, sized pasted
+  images, datastore file links, defanged URLs, tables, balanced parentheses) render identically;
+  the only differences are the unbalanced-parenthesis cases. The same group moves vite 8.3.4,
+  svelte 5.57.2, eslint-plugin-svelte 3.23.1 and the transitive nanoid 3.3.20 and postcss
+  8.5.29 (build-time only, output unchanged), and in the end-to-end test harness
+  @playwright/test 1.64.0, dotenv 18.0.7 and @types/node. The UI `npm audit` is unchanged (the
+  six findings under Tailwind CSS 3).
+- **Python dependencies (Dependabot #145).** SQLAlchemy-Utils 0.42.1 → 0.43.0 (IRIS uses only
+  its database-creation helpers at boot, whose behaviour on SQLAlchemy 2.0 is unchanged; the
+  release also adds SQLAlchemy 2.1 support, which this release does not adopt); Flask-SocketIO
+  5.6.1 → 5.7.0 (two error-handling changes in the event dispatcher; the Socket.IO handshake and
+  the `/alerts` namespace behave as before); pypdf 6.19.0 → 6.20.0 (per-stream work limits,
+  BrotliDecode, robustness fixes; the seven ICS forms export byte-identically). The rebuilt image
+  also resolves newer unpinned transitive packages: pycparser 3.11, pycryptodomex 3.24.1,
+  pydantic 2.14.1, pydantic-core 2.50.1, pydantic-settings 2.16.0 and wrapt 2.5.1. Checked on the
+  rebuilt image: every module imports, app and both workers start cleanly, and GraphQL, a
+  `.docx` report, case create and delete, the ICS PDF export and every test suite give the same
+  results as before.
+
 ## [IRIS-NG-v2.8.0] — 2026-10-09
 
 The Executive Case Summary becomes a verified summary with review questions. **One schema
