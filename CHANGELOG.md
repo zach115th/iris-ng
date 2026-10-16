@@ -11,6 +11,41 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.2] — 2026-10-16
+
+Faster working-timeline imports for large files. **No schema change** — the database head stays
+at `c4d9a2e7f1b3`. The app image changes (Python and one template); the nginx and database
+images do not.
+
+### Changed
+- **Large imports upload compressed.** The working-timeline import modal (Hayabusa and EZ Tools)
+  gzips a file over 1 MB in the browser before sending it, and the server decompresses it as it
+  parses. A 963 MB full-host Hayabusa run goes over the network as 24 MB; compressing it takes a
+  few seconds in the browser. The server reads the whole upload before it starts parsing, so on a
+  remote instance the upload was most of the wait. A `.csv.gz` you pick yourself is sent as is,
+  and a browser without `CompressionStream` sends the raw file as before.
+- **The modal says which phase it is in:** Compressing N MB (%), then Uploading N / M MB (%),
+  then Parsing on the server… N s, instead of one "Uploading + parsing…" line for the whole
+  import.
+- **Hayabusa parsing is faster, with the same output.** Timestamps are read without `strptime`,
+  and rows outside the date window or the selected levels are no longer cleaned up before being
+  skipped. On the 963 MB file the parse drops from 24 s to 13.5 s on the development machine.
+- **EZ Tools imports stream the upload** instead of reading it into memory first.
+
+### Added
+- **Time of day on the import window.** From and To each take an optional time (UTC) beside the
+  date; To includes its whole minute. A day that holds more than the 25,000-event cap can be
+  imported in several windows. API: `begin_time` / `end_time` (`HH:MM` or `HH:MM:SS`) on all
+  three import endpoints; a time without its date is a 400; an ISO datetime sent in `begin_date`
+  / `end_date` still reads as its date only.
+- **gzip on the import API.** `POST …/working-timeline/import/{hayabusa,eztools,master-csv}`
+  accept a gzip-compressed `file`, detected by its magic bytes rather than the file name or
+  content type. A damaged or truncated gzip is a 400 that says so. The master-timeline CSV
+  import, which holds the file in memory, refuses more than 512 MB once decompressed.
+- **`truncated_at` in the Hayabusa import response:** when the cap stops an import, the newest
+  imported event (UTC, `Z`-suffixed); `null` otherwise. The modal shows it ("reached 2026-10-14
+  08:41:07 UTC") and stays open instead of closing after the import.
+
 ## [IRIS-NG-v2.8.1] — 2026-10-15
 
 A dependency-only release. **No schema change** — the database head stays at `c4d9a2e7f1b3`.
