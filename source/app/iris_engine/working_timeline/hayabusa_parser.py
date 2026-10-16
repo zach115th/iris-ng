@@ -236,17 +236,25 @@ def _parse_timestamp(value: str) -> datetime | None:
     the timezone you ran it under, and the fixture files we see have
     been ``--UTC``-flagged. If that assumption breaks for some user
     we'll add a per-import tz override later.
+
+    The fields are sliced out of the regex match rather than handed to
+    ``strptime``: this runs once per event, and on a full-host run
+    ``strptime`` was over a third of the import's time. A fraction longer
+    than six digits is refused, as ``%f`` refused it.
     """
     if not value:
         return None
     m = _TIMESTAMP_RE.match(value)
     if not m:
         return None
-    date_part, time_part = m.group(1), m.group(2)
+    d, t = m.group(1), m.group(2)
+    hms, _, frac = t.partition('.')
+    if len(frac) > 6:
+        return None
     try:
-        if '.' in time_part:
-            return datetime.strptime(f'{date_part} {time_part}', '%Y-%m-%d %H:%M:%S.%f')
-        return datetime.strptime(f'{date_part} {time_part}', '%Y-%m-%d %H:%M:%S')
+        return datetime(int(d[0:4]), int(d[5:7]), int(d[8:10]),
+                        int(hms[0:2]), int(hms[3:5]), int(hms[6:8]),
+                        int(frac.ljust(6, '0')) if frac else 0)
     except ValueError:
         return None
 
@@ -538,12 +546,37 @@ def _group_to_event(rows: list[dict[str, str]], ts: datetime, case_id: int,
 
 
 def _group_level(rows: list[dict[str, str]]) -> str:
-    """Highest Level across the rules that fired on one event ('' if none)."""
+    """Highest Level across the rules that fired on one event ('' if none).
+
+    Runs on rows that have not been cleaned yet (see ``_clean_rows``), so a
+    short row's missing Level cell is None here, not ''."""
     return max(
-        (r.get('Level', '').strip().lower() for r in rows),
+        ((r.get('Level') or '').strip().lower() for r in rows),
         key=lambda l: _SEVERITY_RANK.get(l, -1),
         default='',
     )
+
+
+def _clean_rows(rows: list[dict[str, str]]) -> None:
+    """Normalise the cells of an ACCEPTED event's rows in place.
+
+    Hayabusa 3.x wrote multi-line cells (Details, ExtraFieldInfo,
+    multi-author RuleAuthor) with LF; 4.x keeps the raw CR/LF. Normalise so a
+    card built from either version is byte-identical and no bare CR reaches
+    the stored description. A SHORT row (fewer cells than the header) gets
+    None for the cells it lacks; the card builders do ``.get(k, '')``, which
+    returns that None, so blank them here.
+
+    Only kept events are cleaned: on a full-host run most rows fall outside
+    the date window or the levels, and cleaning them first was a large share
+    of the import's time for rows that were then thrown away.
+    """
+    for row in rows:
+        for k, v in row.items():
+            if v is None:
+                row[k] = ''
+            elif isinstance(v, str) and '\r' in v:
+                row[k] = v.replace('\r\n', '\n').replace('\r', '\n')
 
 
 def parse_hayabusa_csv_ex(
@@ -636,6 +669,7 @@ def parse_hayabusa_csv_ex(
             if max_events is not None and len(out) >= max_events:
                 stats['truncated'] = True
                 return False
+            _clean_rows(rows)
             out.append(_group_to_event(rows, ts, case_id, batch_id))
         pending.clear()
         return True
@@ -646,18 +680,8 @@ def parse_hayabusa_csv_ex(
         if not any(v and v.strip() for v in row.values() if isinstance(v, str)):
             continue
         stats['rows'] += 1
-        # Hayabusa 3.x wrote multi-line cells (Details, ExtraFieldInfo,
-        # multi-author RuleAuthor) with LF; 4.x keeps the raw CR/LF. Normalise
-        # here so a card built from either version is byte-identical and no
-        # bare CR reaches the stored description.
-        # A SHORT row (fewer cells than the header) gets None for the cells
-        # it lacks; every field reader below does `.get(k, '')`, which
-        # returns that None, so blank them here once.
-        for k, v in row.items():
-            if v is None:
-                row[k] = ''
-            elif isinstance(v, str) and '\r' in v:
-                row[k] = v.replace('\r\n', '\n').replace('\r', '\n')
+        # Cells are cleaned only once the event is kept (_clean_rows in
+        # _flush); everything read before that tolerates a raw cell.
         ts_raw = (row.get('Timestamp') or '').strip()
         if not ts_raw:
             stats['skipped_no_timestamp'] += 1

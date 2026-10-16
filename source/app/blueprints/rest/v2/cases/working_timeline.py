@@ -15,6 +15,7 @@ Architecture: docs/19-ux-ai-design.md §5b.1.
 """
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime
 from datetime import time as _time
@@ -53,6 +54,9 @@ from app.iris_engine.working_timeline.hayabusa_parser import normalize_levels
 from app.iris_engine.working_timeline.hayabusa_parser import parse_hayabusa_csv_ex
 from app.iris_engine.working_timeline.iris_master_csv_parser import MasterCsvParseError
 from app.iris_engine.working_timeline.iris_master_csv_parser import parse_master_csv
+from app.iris_engine.working_timeline.upload_stream import UploadDecodeError
+from app.iris_engine.working_timeline.upload_stream import open_upload
+from app.iris_engine.working_timeline.upload_stream import read_upload_bytes
 from app.models.authorization import CaseAccessLevel
 from app.models.cases import CaseWorkingEvent
 from app.models.cases import CasesEvent
@@ -130,25 +134,63 @@ class _DateWindowError(Exception):
     """Raised when a begin/end date filter can't be parsed."""
 
 
-def _parse_day_bound(value: str | None, *, end: bool) -> datetime | None:
+_TIME_OF_DAY_RE = re.compile(r'^(\d{2}):(\d{2})(?::(\d{2}))?$')
+
+
+def _parse_time_of_day(value, *, end: bool, field: str) -> _time | None:
+    """Parse an optional ``HH:MM`` / ``HH:MM:SS`` UTC time-of-day bound.
+
+    An END bound includes the whole minute (or second) it names, so
+    ``end_time=08:41`` keeps an event at 08:41:30 — the same inclusive
+    reading the end date has. Returns None when no value is supplied.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise _DateWindowError(f"Invalid {field} {value!r}. Expected HH:MM (UTC).")
+    value = value.strip()
+    if not value:
+        return None
+    m = _TIME_OF_DAY_RE.match(value)
+    if not m:
+        raise _DateWindowError(f"Invalid {field} '{value}'. Expected HH:MM (UTC).")
+    hour, minute, second = int(m.group(1)), int(m.group(2)), m.group(3)
+    try:
+        if second is None:
+            return _time(hour, minute, 59, 999999) if end else _time(hour, minute)
+        return _time(hour, minute, int(second), 999999 if end else 0)
+    except ValueError:
+        raise _DateWindowError(f"Invalid {field} '{value}'. Expected HH:MM (UTC).")
+
+
+def _parse_day_bound(value: str | None, *, end: bool, time_value=None,
+                     time_field: str = 'time') -> datetime | None:
     """Parse a `YYYY-MM-DD` date filter into an inclusive UTC datetime bound.
 
     Both ingest sources store event_date as a *naive* datetime representing
     UTC wall-clock (see `_iso_utc`), so the bounds are naive UTC too:
-      * begin → that day at 00:00:00.000000 (inclusive)
-      * end   → that day at 23:59:59.999999 (inclusive)
+      * begin → that day at 00:00:00.000000 (inclusive), or at ``time_value``
+      * end   → that day at 23:59:59.999999 (inclusive), or through the
+        minute ``time_value`` names
 
-    Returns None when no value is supplied (filter inactive on that side).
-    Accepts the HTML5 <input type="date"> value verbatim. We also tolerate a
-    full ISO datetime string and just take its date component, so a future
-    datetime-precision picker degrades gracefully to whole-day bounds.
+    Returns None when no value is supplied (filter inactive on that side); a
+    time without its date is refused. Accepts the HTML5 <input type="date">
+    value verbatim. A full ISO datetime string is tolerated and only its date
+    component is used — the time of day travels in its own field, so an
+    existing client that sends a datetime keeps whole-day bounds.
     """
-    if value is None:
-        return None
-    value = value.strip()
+    tod = _parse_time_of_day(time_value, end=end, field=time_field)
+    if value is not None and not isinstance(value, str):
+        raise _DateWindowError(f"Invalid date {value!r}. Expected YYYY-MM-DD.")
+    value = (value or '').strip()
     if not value:
+        if tod is not None:
+            raise _DateWindowError(
+                f'{time_field} needs its date — send the matching '
+                f"{'end_date' if end else 'begin_date'} too."
+            )
         return None
-    # Take the date component only (date-only bounds per the agreed design).
+    # Take the date component only (the time of day has its own field).
     date_part = value.split('T')[0].split(' ')[0]
     try:
         d = datetime.strptime(date_part, '%Y-%m-%d').date()
@@ -156,27 +198,38 @@ def _parse_day_bound(value: str | None, *, end: bool) -> datetime | None:
         raise _DateWindowError(
             f"Invalid date '{value}'. Expected YYYY-MM-DD."
         )
+    if tod is not None:
+        return datetime.combine(d, tod)
     return datetime.combine(d, _time.max if end else _time.min)
 
 
+_WINDOW_FIELDS = ('begin_date', 'end_date', 'begin_time', 'end_time')
+
+
 def _read_date_window():
-    """Pull optional begin/end date filters off the request (form or JSON).
+    """Pull the optional import window off the request (form or JSON).
+
+    Fields: ``begin_date`` / ``end_date`` (``YYYY-MM-DD``) and, optionally,
+    ``begin_time`` / ``end_time`` (``HH:MM`` or ``HH:MM:SS``, UTC). The form
+    is the source when it carries any of them, the JSON body otherwise.
 
     Returns ``(begin_dt, end_dt)`` — either may be None. Raises
-    ``_DateWindowError`` on a malformed value or an inverted range.
+    ``_DateWindowError`` on a malformed value, a time without its date, or
+    an inverted range.
     """
-    begin_raw = request.form.get('begin_date')
-    end_raw = request.form.get('end_date')
-    if begin_raw is None and end_raw is None:
-        body = request.get_json(silent=True) or {}
-        begin_raw = body.get('begin_date')
-        end_raw = body.get('end_date')
+    src = request.form
+    if not any(src.get(k) is not None for k in _WINDOW_FIELDS):
+        src = request.get_json(silent=True) or {}
+        if not isinstance(src, dict):
+            src = {}
 
-    begin_dt = _parse_day_bound(begin_raw, end=False)
-    end_dt = _parse_day_bound(end_raw, end=True)
+    begin_dt = _parse_day_bound(src.get('begin_date'), end=False,
+                                time_value=src.get('begin_time'), time_field='begin_time')
+    end_dt = _parse_day_bound(src.get('end_date'), end=True,
+                              time_value=src.get('end_time'), time_field='end_time')
     if begin_dt and end_dt and begin_dt > end_dt:
         raise _DateWindowError(
-            'Begin date is after end date — nothing would be imported.'
+            'Begin is after end — nothing would be imported.'
         )
     return begin_dt, end_dt
 
@@ -221,17 +274,21 @@ def import_hayabusa(case_identifier):
     JSON body with a ``csv`` string field (handy for scripted imports).
 
     Optional filters (form fields, or JSON keys on the JSON path):
-      ``begin_date`` / ``end_date``  inclusive UTC day bounds;
+      ``begin_date`` / ``end_date``  inclusive UTC day bounds, narrowed by
+      ``begin_time`` / ``end_time`` (``HH:MM``, UTC) when given;
       ``levels``  comma-separated Hayabusa levels to keep (info, low, med,
       high, crit — medium/critical accepted); omitted = every level. The
       level filter is per event: a card keeps every rule that fired on it
       and is dropped only when its highest level is not selected.
 
-    The upload is STREAMED to the parser (never decoded into one string)
-    and the import stops at MAX_EVENTS_PER_IMPORT accepted events, so a
-    multi-hundred-MB run from a full host imports in bounded memory; the
-    response says when the cap was hit (``truncated``) so the analyst can
-    narrow the window or the levels rather than wonder where the rest went.
+    The file may be gzip-compressed (the import modal compresses large
+    files in the browser; detected by its magic bytes). The upload is
+    STREAMED to the parser (never decoded into one string) and the import
+    stops at MAX_EVENTS_PER_IMPORT accepted events, so a multi-hundred-MB run
+    from a full host imports in bounded memory; the response says when the
+    cap was hit (``truncated``, with ``truncated_at`` = the newest imported
+    event) so the analyst can narrow the window or the levels rather than
+    wonder where the rest went.
     """
     denied = _require_full_access(case_identifier)
     if denied is not None:
@@ -240,7 +297,7 @@ def import_hayabusa(case_identifier):
     source = None
     body = {}
     if 'file' in request.files:
-        source = request.files['file'].stream
+        source = open_upload(request.files['file'].stream)
     else:
         body = request.get_json(silent=True) or {}
         if body.get('csv'):
@@ -269,7 +326,7 @@ def import_hayabusa(case_identifier):
             source, case_identifier,
             levels=levels, begin_dt=begin_dt, end_dt=end_dt,
         )
-    except HayabusaParseError as exc:
+    except (HayabusaParseError, UploadDecodeError) as exc:
         return response_api_error(str(exc))
 
     if not parsed:
@@ -322,6 +379,10 @@ def import_hayabusa(case_identifier):
         'skipped_out_of_range': stats['skipped_out_of_range'],
         'skipped_by_level': stats['skipped_by_level'],
         'truncated': stats['truncated'],
+        # How far the import got when the cap stopped it: the newest imported
+        # event (the parsed list is sorted), so the analyst can pick the next
+        # window. None when the whole window fit.
+        'truncated_at': _iso_utc(parsed[-1]['event_date']) if stats['truncated'] else None,
         'cap': stats['cap'],
         'levels': sorted(levels) if levels else None,
         'rows_read': stats['rows'],
@@ -337,21 +398,23 @@ def import_eztools(case_identifier):
     Accepts ``multipart/form-data`` with a ``file`` field, or a JSON body
     with a ``csv`` string field. Auto-detects which EZ Tools sub-format
     the CSV is (EvtxECmd / MFTECmd $J / PECmd / Amcache / AppCompatCache /
-    RBCmd / LECmd / JLECmd) by inspecting the header columns.
+    RBCmd / LECmd / JLECmd) by inspecting the header columns. The file may
+    be gzip-compressed (detected by its magic bytes) and is streamed to the
+    parser, which stops at its row cap.
     """
     denied = _require_full_access(case_identifier)
     if denied is not None:
         return denied
 
-    csv_bytes: bytes | str | None = None
+    csv_source = None
     if 'file' in request.files:
-        csv_bytes = request.files['file'].read()
+        csv_source = open_upload(request.files['file'].stream)
     else:
         body = request.get_json(silent=True) or {}
         if 'csv' in body:
-            csv_bytes = body['csv']
+            csv_source = body['csv'] or None
 
-    if not csv_bytes:
+    if csv_source is None:
         return response_api_error('No CSV provided. POST a "file" multipart field or JSON {"csv": "..."}.')
 
     try:
@@ -360,8 +423,8 @@ def import_eztools(case_identifier):
         return response_api_error(str(exc))
 
     try:
-        batch_id, kind, parsed = parse_eztools_csv(csv_bytes, case_identifier)
-    except EztoolsParseError as exc:
+        batch_id, kind, parsed = parse_eztools_csv(csv_source, case_identifier)
+    except (EztoolsParseError, UploadDecodeError) as exc:
         return response_api_error(str(exc))
 
     parsed, skipped_out_of_range = _filter_rows_by_window(parsed, begin_dt, end_dt)
@@ -406,6 +469,11 @@ def import_eztools(case_identifier):
     })
 
 
+# A master-timeline export is a case's own timeline, kilobytes to a few MB; the
+# limit only stops a small gzip upload from inflating into the app's memory.
+MASTER_CSV_MAX_BYTES = 512 * 1024 * 1024
+
+
 @case_working_timeline_blueprint.post('/import/master-csv')
 @ac_api_requires()
 def import_master_csv(case_identifier):
@@ -421,6 +489,10 @@ def import_master_csv(case_identifier):
     analyst reference but are not auto-linked — the analyst reviews each
     event in the working timeline and promotes the ones they want, at
     which point the normal promote flow handles asset / IOC resolution.
+
+    The file may be gzip-compressed (detected by its magic bytes). This
+    parser holds the whole CSV in memory, so the upload is refused past
+    MASTER_CSV_MAX_BYTES once decompressed.
     """
     denied = _require_full_access(case_identifier)
     if denied is not None:
@@ -428,7 +500,10 @@ def import_master_csv(case_identifier):
 
     csv_bytes: bytes | str | None = None
     if 'file' in request.files:
-        csv_bytes = request.files['file'].read()
+        try:
+            csv_bytes = read_upload_bytes(request.files['file'].stream, MASTER_CSV_MAX_BYTES)
+        except UploadDecodeError as exc:
+            return response_api_error(str(exc))
     else:
         body = request.get_json(silent=True) or {}
         if 'csv' in body:

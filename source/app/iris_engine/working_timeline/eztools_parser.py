@@ -24,7 +24,7 @@ import re
 import sys
 import uuid
 from datetime import datetime
-from typing import Any, Callable, Iterable
+from typing import Any, BinaryIO, Callable, Iterable
 
 # PECmd_Output.csv's Files / Directories columns concatenate every file and
 # directory the prefetch references — for chromium-style binaries this
@@ -786,8 +786,12 @@ def _detect(fieldnames: list[str]) -> tuple[str, Callable[[Iterable[dict[str, st
     return None
 
 
-def parse_eztools_csv(csv_bytes: bytes | str, case_id: int) -> tuple[uuid.UUID, str, list[dict[str, Any]]]:
+def parse_eztools_csv(csv_bytes: bytes | str | BinaryIO, case_id: int) -> tuple[uuid.UUID, str, list[dict[str, Any]]]:
     """Parse an EZ Tools CSV → CaseWorkingEvent-shaped dicts.
+
+    ``csv_bytes`` is the CSV as bytes, a str, or a binary stream (the
+    upload, possibly gunzipped on the fly by ``upload_stream.open_upload``),
+    which is read lazily up to the row cap.
 
     Returns:
         ``(import_batch_id, detected_kind, [event_dict, …])``. The kind
@@ -798,15 +802,19 @@ def parse_eztools_csv(csv_bytes: bytes | str, case_id: int) -> tuple[uuid.UUID, 
             or zero usable rows.
     """
     # Stream-decode so a huge CSV (e.g. 800+ MB EvtxECmd) doesn't materialise
-    # as a single Python string. We still hold the upload bytes in RAM (Flask
-    # already buffered them), but lazy text decoding + the 25k row cap keep
+    # as a single Python string. The upload endpoint passes a stream, so not
+    # even the bytes are held; lazy text decoding + the 25k row cap keep
     # peak memory bounded.
     if isinstance(csv_bytes, bytes):
         text_stream = io.TextIOWrapper(
             io.BytesIO(csv_bytes), encoding='utf-8-sig', errors='replace'
         )
-    else:
+    elif isinstance(csv_bytes, str):
         text_stream = io.StringIO(csv_bytes)
+    else:
+        text_stream = io.TextIOWrapper(
+            csv_bytes, encoding='utf-8-sig', errors='replace'
+        )
 
     reader = csv.DictReader(text_stream)
     fieldnames = list(reader.fieldnames or [])
