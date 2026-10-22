@@ -11,11 +11,11 @@
     "test": "npm run start && npm run e2e && npm run stop"
   },
   "devDependencies": {
-    "@playwright/test": "^1.64.0",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.2",
     "wait-on": "^9.5.1"
   },
   "dependencies": {
-    "dotenv": "^18.0.7"
+    "dotenv": "^18.0.8"
   }
 }
