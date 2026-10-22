@@ -15,7 +15,7 @@
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/jquery": "^3.5.30",
     "autoprefixer": "^10.6.1",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "eslint-plugin-svelte": "^3.23.1",
     "globals": "^17.13.0",
     "svelte": "^5.57.2",
@@ -24,7 +24,7 @@
     "vite-plugin-static-copy": "^3.3.0"
   },
   "dependencies": {
-    "ace-builds": "^1.44.0",
+    "ace-builds": "^1.45.0",
     "bootstrap": "^4.0.0",
     "bootstrap-slider": "^11.0.2",
     "chart.js": "^2.7.2",
@@ -35,7 +35,7 @@
     "jquery-ui-touch-punch": "^0.2.3",
     "jquery-validation": "^1.22.1",
     "jquery.scrollbar": "^0.2.10",
-    "marked": "^18.1.0",
+    "marked": "^18.1.1",
     "moment": "^2.31.0",
     "popper.js": "^1.16.1",
     "socket.io": "^4.8.4",
