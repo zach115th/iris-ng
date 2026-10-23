@@ -11,6 +11,49 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.3] — 2026-10-22
+
+A dependency and security release. **No schema change** — the database head stays at
+`c4d9a2e7f1b3`. Only the app image changes (Python packages and two vendored browser libraries);
+the application code is identical to 2.8.2, and the nginx and database images do not change.
+
+### Security
+- **pypdf 6.20.0 → 6.21.1 (Dependabot #147; #149 proposed the same change).** Closes six pypdf
+  advisories: unvalidated JPEG image data loading (GHSA-5hx5-vpf9-5wcv), long runtimes / large
+  memory when retrieving form fields (GHSA-6vvc-x485-93v7), large memory when parsing arrays and
+  dictionaries (GHSA-f54x-cmq8-qg57), large memory when parsing content streams
+  (GHSA-cgf9-327m-v77c), and infinite loops when removing tree items (GHSA-9mx8-4j7g-633p) and in
+  `PdfWriter.find_outline_item` (GHSA-qfv9-64jg-mh7p). None was reachable: pypdf is used only by
+  the ICS form export, which parses the bundled, checksum-pinned FEMA forms and nothing a user
+  uploads. The seven ICS forms export identically. Three further advisories fixed only in pypdf
+  6.21.2 (published 2026-10-21; long runtimes on malformed cross-reference data) are not part of
+  this release and are equally unreachable.
+- **follow-redirects 1.16.0 → 1.16.1 in the end-to-end test harness (Dependabot #148).** Closes
+  GHSA-q3jh-wrc6-jgq8 (credential headers passed in array form were kept on a redirect to another
+  host) and GHSA-8r9p-f939-6h3c (`sensitiveHeaders` names containing `^` or `|` were never
+  stripped). Both reproduce on 1.16.0 and not on 1.16.1. The package belongs to the test harness's
+  readiness poll only, which sends no credentials; nothing of it ships in an image.
+
+### Changed
+- **SQLAlchemy 2.0.54 → 2.0.55 (Dependabot #147).** Fixes a regression since 2.0.36 where a bulk
+  ORM `update()` refreshed an `onupdate` column on only one of the matched objects already loaded
+  in the session. In IRIS-NG only the case template's `updated_at` has such a column, and no bulk
+  update touches it.
+- **Code editor and Markdown renderer (Dependabot #146).** ace-builds 1.44.0 → 1.45.0 (variable-
+  width font support, faster search highlighting, three new Godot language modes; its changelog
+  entry "V-001 security vulnerability" changes only ace's own build tooling, not the published
+  editor). marked 18.1.0 → 18.1.1, which renders note bodies: CommonMark conformance fixes for
+  blockquotes after headings, backslashes in code spans, character references, HTML blocks and
+  tab-indented lists. Twenty note-shaped samples (indicator links, pasted images, datastore links,
+  defanged URLs, tables, nested task lists) render identically, and the notes and alert-filter
+  editors behave the same. Also eslint 10.13.0 (build-time only) and, in the test harness,
+  @playwright/test 1.64.1 and dotenv 18.0.8.
+- **Unpinned packages in the rebuilt image:** Pillow 12.3.0 → 13.0.0 (pulled in by the QR-code
+  library for MFA setup; the MFA QR code is byte-identical), certifi, pycparser, pydantic-settings,
+  setuptools 84.2.1, tzlocal and wcwidth. Checked on the rebuilt image: every module imports, app
+  and both workers start cleanly, and GraphQL, a `.docx` report, case create and delete, the ICS
+  PDF export and every test suite give the same results as before.
+
 ## [IRIS-NG-v2.8.2] — 2026-10-16
 
 Faster working-timeline imports for large files. **No schema change** — the database head stays
