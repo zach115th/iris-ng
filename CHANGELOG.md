@@ -11,6 +11,34 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.4] — 2026-10-23
+
+A security release for two Python packages in the app image. **No schema change** — the database
+head stays at `c4d9a2e7f1b3`. Only the app image changes; the application code is identical to
+2.8.3, and the nginx and database images do not change.
+
+### Security
+- **idna 3.3 → 3.20.** The image was held on idna 3.3 by the bundled `evtx2splunk` wheel (used by
+  the EVTX import module), which pinned it exactly although it never uses idna itself. Because
+  that pin sat inside the wheel rather than in `requirements.txt`, dependency scanners could not
+  see it. idna 3.3 carries two denial-of-service advisories (GHSA-jjg7-2v4v-x38h /
+  CVE-2024-3651 and GHSA-65pc-fj4g-8rjx / CVE-2026-45409): a crafted hostname makes
+  `idna.encode()` take quadratic time. The `requests` library encodes non-ASCII hostnames with
+  it, including the target of a redirect, so a server IRIS-NG contacts (MISP, an AI backend, a
+  webhook target) could tie up a worker; a 16,000-character label took 17 seconds of CPU on
+  3.3 and is rejected immediately on 3.20. The bundled wheel now leaves idna unpinned (that one
+  line of its metadata changed, nothing else), and `requirements.txt` pins idna 3.20 directly
+  so it is tracked from now on. Ordinary internationalised hostnames encode exactly as before.
+- **pypdf 6.21.1 → 6.21.2.** Closes three further pypdf advisories (GHSA-gmh7-3g9r-mjh5,
+  GHSA-jr96-gvgh-j3r4, GHSA-6c7f-9265-g8fw: long runtimes on malformed cross-reference data
+  and repeated references to a missing object). Not reachable: the ICS form export, the only
+  user of pypdf, opens only the bundled FEMA forms. The seven forms export identically.
+
+Checked on the rebuilt image: it differs from 2.8.3 in exactly these packages and the bundled
+wheel; no broken requirements; every module imports; app and both workers start cleanly; and
+GraphQL, a `.docx` report, case create and delete, the ICS PDF export and every test suite give
+the same results as before.
+
 ## [IRIS-NG-v2.8.3] — 2026-10-22
 
 A dependency and security release. **No schema change** — the database head stays at
