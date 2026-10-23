@@ -16,6 +16,8 @@ psycopg2-binary==2.9.13
 pyunpack==0.3
 packaging==26.3
 requests==2.34.2
+# Pinned here so it is tracked; the vendored evtx2splunk wheel used to pin idna==3.3
+idna==3.20
 SQLAlchemy==2.0.55
 SQLAlchemy-ImageAttach==1.1.0
 SQLAlchemy-Utils==0.43.0
@@ -29,7 +31,7 @@ python-dateutil==2.9.0.post0
 python-gnupg==0.5.7
 pyminizip~=0.2.6
 # ICS form export: fills the bundled FEMA PDFs (business/war_room_ics_pdf.py)
-pypdf==6.21.1
+pypdf==6.21.2
 PyJWT==2.15.1
 cryptography>=50.0.2
 ldap3==2.9.1
