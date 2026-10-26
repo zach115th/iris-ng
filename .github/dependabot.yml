@@ -117,6 +117,14 @@ updates:
       # APIs the runtime does not have. Move it with the Node LTS bump.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      # Chart.js 3+ is a rewrite, not a bump: 4.x no longer ships dist/Chart.min.js,
+      # the file vite.config.js copies (a missing static-copy source is skipped
+      # silently, so the library just disappears from dist), and every chart here
+      # (dashboard, Inventory, Metrics) uses options 3.0 renamed or removed: xAxes /
+      # yAxes, top-level tooltips and legend, cutoutPercentage, generateLegend.
+      # 2.9.4 has no open advisory. Migrate deliberately, porting each chart.
+      - dependency-name: "chart.js"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor-patch:
         patterns:
