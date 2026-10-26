@@ -11,6 +11,61 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.5] — 2026-10-26
+
+A security and dependency release. **No schema change** — the database head stays at
+`c4d9a2e7f1b3`. The app image changes (Python packages and two vendored browser libraries), and
+so does the guest-portal tunnel agent, which every install builds locally; the application code
+is identical to 2.8.4, and the nginx and database images do not change.
+
+### Security
+- **Guest-portal tunnel agent: cloudflared pinned to 2026.10.4.** cloudflared before 2026.10.2
+  trusts eight eMudhra (emSign) intermediate certificates whose private keys are weak, so anyone
+  holding them can issue a certificate for any site (Cloudflare's notice of 2026-10-20; Go's
+  `crypto/x509` now refuses chains through them, CVE-2026-111943). The agent was built from
+  `cloudflare/cloudflared:latest`, and `docker compose up --build` (which `scripts/update.sh`
+  runs) never re-downloads a `latest` image it already has, so every install kept the cloudflared
+  it first built with; an agent first built in September runs 2026.9.x. The tag is now pinned and
+  Dependabot tracks it. 2026.10.4 also restricts the debug endpoints on cloudflared's metrics
+  server. **Updating to 2.8.5 with `scripts/update.sh` rebuilds the agent** when the guest portal
+  is enabled; Settings → Guest Portal shows the version it reports. To rebuild the agent alone,
+  from the clone: `docker compose -f docker-compose.dev.yml -f docker-compose.portal.yml build
+  --pull tunnel`, then the same with `up -d tunnel`. A quick tunnel gets a new hostname whenever
+  it restarts; a named tunnel keeps its own.
+- **Tunnel agent base image Alpine 3.20 → 3.24 (Dependabot #150).** Alpine 3.20 has been end of
+  life since 2026-04-01 and no longer receives fixes. Checked against Alpine's maintained security
+  data, its package versions (curl, OpenSSL, jq, BusyBox, musl and others) matched about 130
+  advisories; the 3.24 image matches none. The agent behaves exactly as before.
+- **xss (js-xss) 1.0.15 → 1.0.16 (Dependabot #151)**, the HTML sanitiser every page loads. It now
+  ignores inherited object properties when reading its options and allowlists: if another script
+  on a page had polluted `Object.prototype`, 1.0.15 let a `<script>` tag through the filter that
+  renders notes, and 1.0.16 escapes it. It also refuses non-HTTP(S) schemes in form `action` /
+  `formaction` under a custom allowlist (IRIS-NG's allowlist has no form elements). Notes and other
+  content render exactly as before.
+- **certifi 2026.10.23** (picked up by the rebuild): removes two eMudhra roots (emSign Root CA -
+  C1, emSign ECC Root CA - C3) from the certificate bundle IRIS-NG uses for outbound HTTPS (MISP,
+  AI backends, the update check).
+- **setuptools floor raised to 84.2.1 (Dependabot #154).** Rules out the releases with
+  GHSA-xmj3-9gf7-h52w (Windows only; not reachable here). The image already installed 84.2.1.
+
+### Changed
+- WTForms 3.2.2 → 3.3.0 and alembic 1.20.0 → 1.20.1 (Dependabot #153). Every form renders and
+  validates as before, including the CSRF check; the boot migration runs unchanged.
+- ace-builds 1.45.2 (the notes editor; a soft-keyboard deletion fix), vite 8.3.5 with rolldown
+  1.2.15 (the built bundles differ only in comments) and, in the end-to-end harness, dotenv 18.0.9
+  (Dependabot #151).
+- Dependabot now also watches the tunnel agent's Dockerfile, and holds three updates that cannot
+  apply as proposed: Chart.js 3 and later (a rewrite — the dashboard, Inventory and Metrics charts
+  need porting first; #152), marshmallow-sqlalchemy 1.6 and later (requires marshmallow 4; part
+  of #153) and python-dateutil 3 (graphene, behind `/graphql`, requires an earlier version; #155).
+
+Checked on the rebuilt images: the app image differs from 2.8.4 in exactly the packages above
+(plus wcwidth, a command-line helper) and the two vendored libraries; no broken requirements;
+every module imports; app and both workers start cleanly; GraphQL, a `.docx` report, case create
+and delete, login and every test suite give the same results as before. The tunnel agent
+connects, reports cloudflared 2026.10.4, serves the guest portal and restarts cloudflared when it
+stops.
+
 ## [IRIS-NG-v2.8.4] — 2026-10-23
 
 A security release for two Python packages in the app image. **No schema change** — the database
