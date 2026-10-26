@@ -27,7 +27,7 @@ WTForms==3.2.2
 Flask-SocketIO==5.7.0
 alembic==1.20.0
 setuptools>=84.0.0
-python-dateutil==2.9.0.post0
+python-dateutil==3.0.0
 python-gnupg==0.5.7
 pyminizip~=0.2.6
 # ICS form export: fills the bundled FEMA PDFs (business/war_room_ics_pdf.py)
