@@ -16,6 +16,6 @@
     "wait-on": "^9.5.1"
   },
   "dependencies": {
-    "dotenv": "^18.0.8"
+    "dotenv": "^18.0.9"
   }
 }
