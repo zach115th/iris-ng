@@ -130,6 +130,7 @@ updates:
     directories:
       - "/docker/db"
       - "/docker/nginx"
+      - "/docker/tunnel"
       - "/docker/webApp"
       - "/.devcontainer"
     schedule:
