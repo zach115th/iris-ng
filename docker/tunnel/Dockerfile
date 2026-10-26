@@ -7,7 +7,7 @@
 # 2026.10.2+ distrusts the compromised eMudhra intermediates (Go 1.27.3).
 FROM cloudflare/cloudflared:2026.10.4 AS cf
 
-FROM alpine:3.20
+FROM alpine:3.24
 RUN apk add --no-cache curl jq ca-certificates
 COPY --from=cf /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 COPY entrypoint.sh /entrypoint.sh
