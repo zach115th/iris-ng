@@ -65,6 +65,12 @@ updates:
       # migration across datamgmt/, not a dependency bump.
       - dependency-name: "flask-marshmallow"
         versions: [">=1.5.0"]
+      # marshmallow-sqlalchemy 1.6.0 dropped marshmallow 3 (it requires
+      # marshmallow>=4.0.0): the same wall, uninstallable here (the app image
+      # build of Dependabot #153 failed on it). 1.5.0 is the last release that
+      # accepts marshmallow 3; move it together with the marshmallow 4 migration.
+      - dependency-name: "marshmallow-sqlalchemy"
+        versions: [">=1.6.0"]
       - dependency-name: "marshmallow"
         update-types: ["version-update:semver-major"]
       # SQLAlchemy 2.1 is UNBOOTABLE here, not merely risky: SQLAlchemy-Utils
