@@ -85,6 +85,13 @@ updates:
       # SQLAlchemy-Utils release supports 2.1; move the two together.
       - dependency-name: "sqlalchemy"
         versions: [">=2.1.0"]
+      # python-dateutil 3.x is UNINSTALLABLE here: graphene 3.4.3 (the newest,
+      # behind graphene-sqlalchemy and /graphql) requires python-dateutil<3, so
+      # pip reports ResolutionImpossible (Dependabot #155's app image build
+      # failed on it). Lift this once a graphene release accepts 3.x. IRIS itself
+      # uses only dateutil.parser; 3.0 mainly rewrites dateutil.tz.
+      - dependency-name: "python-dateutil"
+        versions: [">=3.0.0"]
     groups:
       python-minor-patch:
         patterns:
