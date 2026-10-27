@@ -40,8 +40,12 @@ import sys
 from typing import Any
 
 
-def _key(ioc) -> tuple[Any, str]:
-    return ioc.ioc_type_id, str(ioc.ioc_value or "").strip().lower()
+def _key(ioc, misp_type: str) -> tuple[Any, str]:
+    """An IOC's identity under the attribute's MISP type, its value as the sync sends it
+    (`tcp/8070` and `8070` are the same port to MISP)."""
+    from iris_misp_sync_module.IrisMISPSyncInterface import normalise_value
+
+    return ioc.ioc_type_id, normalise_value(misp_type, ioc.ioc_value).lower()
 
 
 def load_handler(log):
@@ -97,8 +101,12 @@ def scan_event(client, event_link) -> dict[str, Any]:
         if attribute is None:
             stale.extend(iocs)
             continue
-        keys = {_key(ioc) for ioc in iocs}
-        value_moved = len(keys) == 1 and next(iter(keys))[1] != str(attribute.get("value") or "").strip().lower()
+        from iris_misp_sync_module.IrisMISPSyncInterface import normalise_value
+
+        misp_type = attribute.get("type") or ""
+        keys = {_key(ioc, misp_type) for ioc in iocs}
+        value_moved = (len(keys) == 1
+                       and next(iter(keys))[1] != normalise_value(misp_type, attribute.get("value")).lower())
         if len(keys) > 1 or value_moved:
             damaged.append({"attribute": attribute, "links": group, "iocs": iocs})
 

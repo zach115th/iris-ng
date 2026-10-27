@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import re
 from typing import Any
 
 import iris_interface.IrisInterfaceStatus as InterfaceStatus
@@ -24,6 +25,32 @@ from iris_misp_sync_module.ai_type_resolver import AITypeResolverError
 from iris_misp_sync_module.misp_sync_client import MispSyncClient
 from iris_misp_sync_module.misp_sync_client import MispSyncClientError
 
+# What MISP's own validation (AttributeValidationTool, checked against 2.5.32)
+# accepts for the values the sync adjusts before sending: a hostname needs a dot
+# and a top-level part of two characters or more (isDomainValid, verbatim), a
+# port is an integer from 1 to 65535, a filename|<hash> value needs both halves,
+# and most types refuse a line break inside the value.
+_MISP_HOSTNAME = re.compile(r"^[A-Z0-9.\-_]+\.[A-Z0-9\-]{2,}$", re.IGNORECASE)
+_PORT_WITH_PROTOCOL = re.compile(r"^(?:(?:tcp|udp|sctp)\s*/\s*(\d+)|(\d+)\s*/\s*(?:tcp|udp|sctp))$", re.IGNORECASE)
+_LINE_BREAKS = re.compile(r"\s*[\r\n]+\s*")
+_HEX = re.compile(r"^[0-9a-fA-F]+$")
+
+
+def normalise_value(misp_type: str, value: Any) -> str:
+    """The IOC value as the sync sends it for `misp_type`.
+
+    Line breaks become one space and surrounding whitespace goes; a port written
+    `tcp/8070` or `8070/tcp` becomes `8070`, the number MISP's port type takes.
+    scripts/misp_sync_repair.py compares an attribute with its IOCs through this
+    too, so a value the sync rewrote is not mistaken for damage.
+    """
+    text = _LINE_BREAKS.sub(" ", str(value or "")).strip()
+    if misp_type == "port":
+        match = _PORT_WITH_PROTOCOL.match(text)
+        if match:
+            text = match.group(1) or match.group(2)
+    return text
+
 
 class IrisMISPSyncHandler:
     """Implements the Phase 1 case and IOC synchronization behavior."""
@@ -32,6 +59,7 @@ class IrisMISPSyncHandler:
         self.log = logger
         self.config = mod_config
         self._type_defaults: dict[str, str] | None = None
+        self._category_types: dict[str, list[str]] = {}
 
     def _is_configured(self) -> bool:
         return bool(self.config.get("misp_sync_url") and self.config.get("misp_sync_api_key"))
@@ -86,6 +114,7 @@ class IrisMISPSyncHandler:
 
         response = client.describe_types()
         sane_defaults = response.get("result", {}).get("sane_defaults", {})
+        self._category_types = response.get("result", {}).get("category_type_mappings", {}) or {}
         self._type_defaults = {
             type_name: details.get("default_category")
             for type_name, details in sane_defaults.items()
@@ -255,7 +284,7 @@ class IrisMISPSyncHandler:
         db.session.commit()
 
     @staticmethod
-    def _build_ioc_comment(ioc: Ioc) -> str:
+    def _build_ioc_comment(ioc: Ioc, notes: list[str] | tuple = ()) -> str:
         comment_parts = [
             f"dfir_ioc_id={ioc.ioc_id}",
             f"dfir_ioc_uuid={ioc.ioc_uuid}",
@@ -264,6 +293,7 @@ class IrisMISPSyncHandler:
 
         if ioc.tlp and ioc.tlp.tlp_name:
             comment_parts.append(f"tlp={ioc.tlp.tlp_name.lower()}")
+        comment_parts.extend(notes)
         if ioc.ioc_description:
             comment_parts.append(f"desc={ioc.ioc_description}")
         if ioc.ioc_tags:
@@ -369,7 +399,41 @@ class IrisMISPSyncHandler:
             )
         return misp_type
 
-    def _attribute_payload(self, ioc: Ioc, event_link: MispEventLink, misp_type: str, category: str) -> dict[str, Any]:
+    def _prepare_attribute(self, client: MispSyncClient, ioc: Ioc, misp_type: str) -> tuple[str, str, str, list[str]]:
+        """Fit the IOC to what MISP accepts: (type, value, category, comment notes).
+
+        Two IOC shapes MISP always rejects are sent as a type that holds them: a
+        hostname with no domain part (a workstation name such as DESKTOP-1A2B3C)
+        goes as `other`, kept in Network activity where the MISP allows it, and a
+        bare hash typed filename|<hash> goes as the hash type. The comment then
+        records the IRIS type, and the IRIS value whenever the sync rewrote more
+        than whitespace, so a reader of the event loses nothing.
+        """
+        defaults = self._get_type_defaults(client)
+        value = normalise_value(misp_type, ioc.ioc_value)
+        sent_type = misp_type
+        category = None
+        if misp_type == "hostname" and not _MISP_HOSTNAME.match(value):
+            sent_type = "other"
+            if "other" in self._category_types.get("Network activity", []):
+                category = "Network activity"
+        elif misp_type.startswith("filename|") and "|" not in value and _HEX.match(value):
+            hash_type = misp_type.split("|", 1)[1]
+            if hash_type in defaults:
+                sent_type = hash_type
+        if category is None:
+            category = self._category_for_ioc(client, sent_type)
+
+        notes = []
+        if sent_type != misp_type:
+            notes.append(f"iris_type={getattr(ioc.ioc_type, 'type_name', None) or misp_type}")
+        as_typed = normalise_value("", ioc.ioc_value)
+        if value != as_typed:
+            notes.append(f"iris_value={as_typed}")
+        return sent_type, value, category, notes
+
+    def _attribute_payload(self, ioc: Ioc, event_link: MispEventLink, misp_type: str, category: str,
+                           value: str, notes: list[str] | tuple = ()) -> dict[str, Any]:
         distribution = self._default_attribute_distribution(ioc, event_link)
         sharing_group_id = None
         if distribution == 4:
@@ -382,9 +446,9 @@ class IrisMISPSyncHandler:
         payload = {
             "type": misp_type,
             "category": category,
-            "value": ioc.ioc_value,
+            "value": value,
             "to_ids": bool(self.config.get("misp_sync_attribute_to_ids", True)),
-            "comment": self._build_ioc_comment(ioc),
+            "comment": self._build_ioc_comment(ioc, notes),
             "distribution": distribution,
             "sharing_group_id": sharing_group_id
         }
@@ -419,6 +483,7 @@ class IrisMISPSyncHandler:
         ioc: Ioc,
         event_link: MispEventLink,
         misp_type: str | None = None,
+        value: str | None = None,
     ) -> dict[str, Any] | None:
         """Find the MISP attribute already representing this IOC, if any.
 
@@ -463,17 +528,19 @@ class IrisMISPSyncHandler:
         # same pre-existing attribute, and we try to insert a second link row
         # for it. Finding it here means taking the update path instead.
         if misp_type:
+            # The value as it was sent (see _prepare_attribute), not as typed.
+            sent_value = ioc.ioc_value if value is None else value
             dedup_response = client.search_attributes({
                 "returnFormat": "json",
                 "eventid": event_link.misp_event_id,
                 "type": misp_type,
-                "value": ioc.ioc_value,
+                "value": sent_value,
                 "includeContext": False
             })
             for attribute in dedup_response.get("response", {}).get("Attribute", []):
                 if (str(attribute.get("event_id")) == event_id
                         and attribute.get("type") == misp_type
-                        and self._same_value(attribute.get("value"), ioc.ioc_value)):
+                        and self._same_value(attribute.get("value"), sent_value)):
                     self.log.info(
                         f"IOC #{ioc.ioc_id}: matched MISP attribute {attribute.get('id')} "
                         f"by type+value rather than provenance marker — the IOC was most "
@@ -494,12 +561,12 @@ class IrisMISPSyncHandler:
         client = self._build_client()
         event_link = self._get_or_create_event_link(client, case)
         misp_type = self._resolve_misp_type(client, ioc)
-        category = self._category_for_ioc(client, misp_type)
-        payload = self._attribute_payload(ioc, event_link, misp_type, category)
+        misp_type, value, category, notes = self._prepare_attribute(client, ioc, misp_type)
+        payload = self._attribute_payload(ioc, event_link, misp_type, category, value, notes)
 
         attr_link = MispAttributeLink.query.filter(MispAttributeLink.ioc_id == ioc.ioc_id).first()
         if attr_link is None:
-            existing_attribute = self._lookup_existing_attribute(client, ioc, event_link, misp_type)
+            existing_attribute = self._lookup_existing_attribute(client, ioc, event_link, misp_type, value)
             if existing_attribute:
                 attr_link = MispAttributeLink()
                 attr_link.event_link_id = event_link.id
