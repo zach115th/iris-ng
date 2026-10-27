@@ -11,6 +11,47 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.7] — 2026-10-27
+
+A bug-fix release for the MISP sync module. **No schema change** — the database head stays at
+`c4d9a2e7f1b3`. Only the app image changes (the MISP sync module and
+`scripts/misp_sync_repair.py`); the nginx and database images, and the guest-portal tunnel agent,
+do not change.
+
+### Fixed
+- **MISP sync: IOCs whose value MISP's validation refuses never reached the case's event.** MISP
+  checks each attribute's value against its type and rejects an attribute that does not fit, so
+  these IOCs were never added and the MISP application log recorded a validation error for each.
+  The module now sends them in a form MISP accepts:
+  - a hostname without a domain part (a workstation name such as `DESKTOP-1A2B3C`; MISP's
+    hostname type needs a dot and a top-level part of at least two characters) goes as type
+    `other`, in the Network activity category where the MISP allows it, and still takes part in
+    correlation;
+  - a bare hash typed `filename|sha256` (or another `filename|<hash>` type) goes as the hash
+    type;
+  - a port written with its protocol (`tcp/8070`, `8070/udp`) goes as the number;
+  - a line break inside a value becomes one space, and surrounding whitespace is trimmed.
+
+  When the type changes, the attribute's comment records the IRIS type (`iris_type=hostname`), and
+  when the value changes beyond whitespace it records the value as typed (`iris_value=tcp/8070`).
+  An IOC whose value does not fit its type at all, such as a URL typed `ip-dst` or a bare filename
+  typed `filename|sha256`, is still refused: change its type in IRIS and it syncs.
+
+### Changed
+- `scripts/misp_sync_repair.py` compares an attribute's value with its IOCs' values as the sync
+  sends them, so an attribute holding `8070` for an IOC typed `tcp/8070` is not reported as
+  damaged.
+
+### Upgrading
+Update, then run `scripts/misp_sync_repair.py` (the command is in the 2.8.6 notes below): the IOCs
+MISP refused are listed as IOCs without an attribute, and `--apply --sync-missing` adds them.
+
+Checked against a stand-in MISP that applies MISP 2.5.32's validation to these types: each shape
+above is accepted and its comment carries the note, a hostname with a domain part and a complete
+`filename|sha256` value go unchanged, a recreated port IOC finds the attribute holding the number,
+and a URL typed `ip-dst` and a bare filename typed `filename|sha256` are still refused with nothing
+added.
+
 ## [IRIS-NG-v2.8.6] — 2026-10-27
 
 A bug-fix release for the MISP sync module. **No schema change** — the database head stays at
