@@ -399,6 +399,20 @@ class IrisMISPSyncHandler:
             )
         return category
 
+    @staticmethod
+    def _marker_uuid(attribute: dict[str, Any]) -> str | None:
+        """The `dfir_ioc_uuid` an attribute's comment carries (see `_build_ioc_comment`)."""
+        for part in (attribute.get("comment") or "").split(" | "):
+            if part.startswith("dfir_ioc_uuid="):
+                return part[len("dfir_ioc_uuid="):].strip()
+        return None
+
+    @staticmethod
+    def _same_value(left: Any, right: Any) -> bool:
+        # MISP lowercases hashes and hostnames on save and its value filter is
+        # case-insensitive; compare the way MISP matched.
+        return str(left or "").strip().lower() == str(right or "").strip().lower()
+
     def _lookup_existing_attribute(
         self,
         client: MispSyncClient,
@@ -410,17 +424,37 @@ class IrisMISPSyncHandler:
 
         Two passes, because the provenance marker and MISP's own identity are
         different things.
+
+        Every candidate is re-checked here, because the search filters are a
+        hint, not a guarantee, and they mean different things per MISP version:
+
+        - up to MISP 2.5.32, `/attributes/restSearch` does not know `searchall`
+          and drops it without an error, so pass 1 returns EVERY attribute of
+          the event. Taking the first one made each new IOC overwrite the
+          event's first attribute (its value, its comment, and every IOC's tags
+          piled onto it);
+        - from 2.5.33, `searchall` is honoured but replaces the other filters
+          (`eventid` included) and matches a whole field unless `%` wraps the
+          term, so pass 1 without the wildcards never matched anything.
+
+        Whatever comes back, an attribute is only taken when it sits in this
+        case's event AND carries this IOC's marker (pass 1) or this IOC's type
+        and value (pass 2). Anything else is not this IOC's attribute, and the
+        caller adds a new one.
         """
+        event_id = str(event_link.misp_event_id)
+
         # Pass 1 — our own marker. Exact, and it survives an edit to the value.
         search_response = client.search_attributes({
             "returnFormat": "json",
             "eventid": event_link.misp_event_id,
-            "searchall": f"dfir_ioc_uuid={ioc.ioc_uuid}",
+            "searchall": f"%dfir_ioc_uuid={ioc.ioc_uuid}%",
             "includeContext": False
         })
-        attributes = search_response.get("response", {}).get("Attribute", [])
-        if attributes:
-            return attributes[0]
+        for attribute in search_response.get("response", {}).get("Attribute", []):
+            if (str(attribute.get("event_id")) == event_id
+                    and self._marker_uuid(attribute) == str(ioc.ioc_uuid)):
+                return attribute
 
         # Pass 2 — what MISP actually keys on. An IOC deleted and recreated in
         # IRIS carries a new ioc_uuid, so pass 1 can never match it, while MISP
@@ -436,14 +470,16 @@ class IrisMISPSyncHandler:
                 "value": ioc.ioc_value,
                 "includeContext": False
             })
-            attributes = dedup_response.get("response", {}).get("Attribute", [])
-            if attributes:
-                self.log.info(
-                    f"IOC #{ioc.ioc_id}: matched MISP attribute {attributes[0].get('id')} "
-                    f"by type+value rather than provenance marker — the IOC was most "
-                    f"likely recreated, or shares its value with another IOC in this case"
-                )
-                return attributes[0]
+            for attribute in dedup_response.get("response", {}).get("Attribute", []):
+                if (str(attribute.get("event_id")) == event_id
+                        and attribute.get("type") == misp_type
+                        and self._same_value(attribute.get("value"), ioc.ioc_value)):
+                    self.log.info(
+                        f"IOC #{ioc.ioc_id}: matched MISP attribute {attribute.get('id')} "
+                        f"by type+value rather than provenance marker — the IOC was most "
+                        f"likely recreated, or shares its value with another IOC in this case"
+                    )
+                    return attribute
         return None
 
     def sync_ioc(self, ioc: Ioc):

@@ -76,6 +76,11 @@ class MispSyncClient:
     def update_attribute(self, attribute_id: int, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request("PUT", f"attributes/edit/{attribute_id}", payload)
 
+    def delete_attribute(self, attribute_id: int) -> dict[str, Any]:
+        """Soft delete: MISP keeps the row (restorable from the event's
+        Deleted view), and its duplicate-value check skips deleted rows."""
+        return self._request("DELETE", f"attributes/delete/{attribute_id}")
+
     def search_attributes(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST", "attributes/restSearch", payload)
 
