@@ -11,6 +11,55 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.6] — 2026-10-27
+
+A bug-fix release for the MISP sync module. **No schema change** — the database head stays at
+`c4d9a2e7f1b3`. Only the app image changes (the MISP sync module and one new script); the nginx
+and database images, and the guest-portal tunnel agent, do not change.
+
+### Fixed
+- **MISP sync: each new IOC overwrote the case's first MISP attribute instead of adding its own
+  (MISP 2.5.32 and earlier).** Before adding an attribute for an IOC it has not synced yet, the
+  module looks in the case's MISP event for an attribute that already carries that IOC's marker
+  (`dfir_ioc_uuid=…` in the comment). Up to MISP 2.5.32, MISP's attribute search does not support
+  the full-text filter that lookup used and ignores it without an error, so the search returned
+  every attribute of the event and the module took the first one as the IOC's own. Every IOC after
+  the first was linked to that attribute and updated it in place: its value and comment were
+  replaced and the IOC's tags were added to it, so a case's event ended up with a single attribute
+  holding the latest IOC's value and every IOC's tags, while the module's task log reported
+  success. On MISP 2.5.33 and later the filter is honoured, but it replaces the event filter and
+  matches a whole field, so the lookup never found anything there: IOCs were added correctly, but
+  an IOC whose link was lost could not be matched to its attribute again.
+  The lookup now behaves the same on both: it checks every attribute MISP returns and reuses one
+  only when it belongs to the case's event and carries the IOC's marker, or the IOC's type and
+  value. Anything else gets a new attribute. Several IOCs with the same type and value still share
+  one attribute, since MISP keeps one per event.
+
+### Added
+- **`scripts/misp_sync_repair.py`** finds what the bug left behind and repairs it. Run it in the
+  app container (the container name of a Docker Compose install):
+  ```
+  docker exec -w /iriswebapp -e PYTHONPATH=/iriswebapp iriswebapp_app \
+      python /iriswebapp/scripts/misp_sync_repair.py
+  ```
+  On its own it only reports: each MISP attribute linked to IOCs of different types or values, or
+  holding a value none of its IOCs has, and each IOC with no MISP attribute; `--case <id>` limits
+  it to one case. `--apply` soft-deletes each damaged attribute (MISP keeps it under the event's
+  Deleted view) and syncs its IOCs again, so each gets its own attribute and tags;
+  `--sync-missing` also syncs the IOCs that have none.
+
+### Upgrading
+If the MISP sync module runs against MISP 2.5.32 or earlier, turn off its "Trigger on IOC create"
+and "Trigger on IOC update" settings (Manage → Modules) until you have updated, so no more
+attributes are overwritten. Update, run the repair report, then run it again with `--apply` (and
+`--sync-missing` if it lists IOCs without an attribute), and turn the two settings back on.
+
+Checked against a stand-in MISP answering as 2.5.32 and as 2.5.33 and later: new IOCs each get
+their own attribute and tags, an edit changes only its own attribute, a lost link is found again
+by the marker, a recreated IOC reuses its predecessor's attribute, an attribute in another case's
+event is never reused, and the repair script gives each damaged IOC its own attribute again while
+leaving legitimately shared ones alone.
+
 ## [IRIS-NG-v2.8.5] — 2026-10-26
 
 A security and dependency release. **No schema change** — the database head stays at
