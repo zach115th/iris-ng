@@ -11,6 +11,36 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.8] — 2026-10-29
+
+A dependency release. **No schema change** — the database head stays at `c4d9a2e7f1b3`. Only the
+app image changes (one Python package and one vendored browser library); the application code is
+identical to 2.8.7, and the nginx and database images, and the guest-portal tunnel agent, do not
+change.
+
+### Changed
+- **xss 1.0.16 → 1.0.17 (Dependabot #158)**, the HTML filter behind note rendering and the
+  escaping of alert, IOC and asset fields. It now falls back to its default handling when an
+  option such as `escapeHtml` or `onTag` is null or not a function, treats a null allowlist as
+  unset, and makes `filterXSSWithResult()` copy only the caller's own options. IRIS-NG calls the
+  filter with no options or with an explicit allowlist, so its output is unchanged: the default
+  filter and the note filter give identical results on 1.0.16 and 1.0.17 over note-shaped
+  Markdown and hostile HTML, including with a polluted `Object.prototype`. The built
+  `assets/js/plugin/xss/xss.js` is the only file of the browser bundle that changes.
+- **WTForms 3.3.0 → 3.3.1 (Dependabot #159).** Keeps the form prefix when a `FieldList` renumbers
+  its entries, and the `URL` validator no longer slows down exponentially on hostnames with long
+  runs of dashes (a label with 36 dashes took over a second on 3.3.0). IRIS-NG's forms use
+  neither, and every form renders and validates identically on both versions.
+
+### Not taken
+- **The devcontainer's Python 3.12 → 3.15 (Dependabot #157).** The devcontainer runs the same
+  interpreter as the app image (`python:3.12-slim`), so it moves only together with it; Dependabot
+  now leaves `devcontainers/python` minor and major versions alone.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.8.8`, or the 2.8.8 images / chart 1.8.8).
+No migration runs.
+
 ## [IRIS-NG-v2.8.7] — 2026-10-27
 
 A bug-fix release for the MISP sync module. **No schema change** — the database head stays at
