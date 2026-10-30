@@ -17,9 +17,13 @@
     * Sits ABOVE the announcement strip: announcement_banners.html inserts
       after #iris-upd-banner when it is already there, and this script inserts
       before #iris-ann-banners when that came first - the order is fixed
-      whichever fetch wins. #}
+      whichever fetch wins. Both go at the top of .main-panel > .content, under
+      the fixed header (announcement_banners.html says why). #}
 {% if request.endpoint != 'home.home' %}
 <style>
+    /* Above the page's first block, below every sticky / menu layer
+       (announcement_banners.html says why). */
+    #iris-upd-banner { position: relative; z-index: 2; }
     .iris-upd-banner {
         display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
         padding: 8px 18px; font-size: 13px; color: #efeaff;
@@ -66,6 +70,12 @@
         if (cls) { e.className = cls; }
         if (text != null) { e.textContent = text; }
         return e;
+    }
+
+    function chromeChanged() {
+        /* Measured layouts re-measure on resize; the strip moves the flow
+           under them without resizing anything they observe. */
+        try { window.dispatchEvent(new Event('resize')); } catch (e) { /* no Event constructor */ }
     }
 
     function dismissedTag() {
@@ -139,6 +149,7 @@
             how.addEventListener('click', function () {
                 detail.hidden = !detail.hidden;
                 how.setAttribute('aria-expanded', detail.hidden ? 'false' : 'true');
+                chromeChanged();
             });
         }
 
@@ -150,6 +161,7 @@
         x.innerHTML = '&times;';
         x.addEventListener('click', function () {
             wrap.remove();
+            chromeChanged();
             try { localStorage.setItem(STORAGE_KEY, latest.tag); } catch (e) { /* convenience only */ }
         });
         bar.appendChild(x);
@@ -159,11 +171,12 @@
 
         var ann = document.getElementById('iris-ann-banners');
         host.insertBefore(wrap, ann && ann.parentNode === host ? ann : host.firstChild);
+        chromeChanged();
     }
 
     function init(fetchImpl) {
-        var host = document.querySelector('.main-panel');
-        if (!host) { return Promise.resolve(); }
+        var host = document.querySelector('.main-panel > .content');
+        if (!host || getComputedStyle(host).display.indexOf('flex') !== -1) { return Promise.resolve(); }
         var doFetch = fetchImpl || window.fetch.bind(window);
         return doFetch(ENDPOINT, { credentials: 'same-origin' })
             .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })

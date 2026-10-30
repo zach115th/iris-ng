@@ -4,8 +4,19 @@
     textContent (admin-authored, but escaping is not optional) and the level
     picks a colour through a fixed map - a stored value never reaches a
     style attribute. Dismissal is a per-browser-session convenience
-    (sessionStorage, guarded: some contexts throw on access). #}
+    (sessionStorage, guarded: some contexts throw on access).
+    The strips go at the top of the content scroller (.main-panel > .content),
+    not of .main-panel: .main-header is position:fixed over the top of
+    .main-panel and .content clears it with its own margin-top, so a strip
+    placed before .content sat UNDER the header and pushed the page down by
+    its height plus that margin. A flex .content (the 403 page's centred
+    layout) would lay a strip beside the page, so nothing renders there. #}
 <style>
+    /* Above the page's own first block: the dashboard's .panel-header.mt--4
+       tucks its top padding under whatever is above it, and as a later
+       sibling it would paint over the strip. Well below the sticky case nav
+       (930), the shell menus (1000) and .main-header (1001). */
+    #iris-ann-banners { position: relative; z-index: 2; }
     .iris-ann-banner {
         display: flex; align-items: center; gap: 10px;
         padding: 8px 18px; font-size: 13px; color: #efeaff;
@@ -22,8 +33,15 @@
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    var host = document.querySelector('.main-panel');
-    if (!host) { return; }
+    var host = document.querySelector('.main-panel > .content');
+    if (!host || getComputedStyle(host).display.indexOf('flex') !== -1) { return; }
+    function chromeChanged() {
+        /* Panels placed from measured offsets (the timeline's fixed panels,
+           the task board, the war room) re-measure on resize; a strip that
+           appears or goes away moves the flow under them without resizing
+           anything they observe. */
+        try { window.dispatchEvent(new Event('resize')); } catch (e) { /* no Event constructor */ }
+    }
     var dismissed = [];
     try { dismissed = JSON.parse(sessionStorage.getItem('iris_ann_dismissed') || '[]'); }
     catch (e) { /* storage unavailable - show everything */ }
@@ -49,6 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 x.innerHTML = '&times;';
                 x.addEventListener('click', function () {
                     el.remove();
+                    chromeChanged();
                     try {
                         dismissed.push(b.id);
                         sessionStorage.setItem('iris_ann_dismissed', JSON.stringify(dismissed));
@@ -62,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
                ABOVE the announcements, whichever fetch resolves first. */
             var upd = document.getElementById('iris-upd-banner');
             host.insertBefore(wrap, upd && upd.parentNode === host ? upd.nextSibling : host.firstChild);
+            chromeChanged();
         })
         .catch(function () { /* banner feed unavailable - never block the page */ });
 });
