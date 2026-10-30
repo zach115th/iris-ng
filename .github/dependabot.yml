@@ -177,6 +177,13 @@ updates:
       # failures only surface at app boot - a green build proves nothing.
       - dependency-name: "python"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # The devcontainer must run the interpreter the app image ships
+      # (docker/webApp: python:3.12-slim); the header of .devcontainer/Dockerfile
+      # says why. The "python" rule above does not match this image's name, so
+      # Dependabot proposed 3.13 (#46) and 3.15 (#157) anyway. Move it by hand,
+      # together with docker/webApp's python.
+      - dependency-name: "devcontainers/python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       # Node majors alternate: odd releases (23, 25, 27) never get an LTS phase
       # and reach EOL in ~6 months -- Node 25 was ALREADY end-of-life when it was
       # first proposed. Node is build-time only here (the runtime image has no
