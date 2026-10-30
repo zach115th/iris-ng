@@ -269,7 +269,8 @@
 {% include 'includes/sidenav.html' %}
 <div class="main-panel">
 
-    <div class="content">
+    <div class="content" role="main">
+        {% include 'includes/top_strips.html' %}
         {# v3 case shell (shared chrome; content below untouched).
            Tasks promotes its primary action into the header, like
            Assets/IOC/Timeline/Evidence — the toolbar copy is removed. #}

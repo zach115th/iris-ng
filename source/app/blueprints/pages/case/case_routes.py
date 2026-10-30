@@ -35,6 +35,7 @@ from app.iris_engine.module_handler.module_handler import list_available_pipelin
 from app.models.models import CaseStatus
 from app.models.authorization import CaseAccessLevel
 from app.blueprints.access_controls import ac_case_requires
+from app.blueprints.rest.v2.cases.ai import case_summary_initial_state
 
 case_blueprint = Blueprint('case',
                            __name__,
@@ -70,7 +71,8 @@ def case_r(caseid, url_redir):
     setattr(case, 'status_name', CaseStatus(case.status_id).name.replace('_', ' ').title())
 
     return render_template('case.html', case=case, desc=description, crc=desc_crc32,
-                           reports=reports, reports_act=reports_act, form=form)
+                           reports=reports, reports_act=reports_act, form=form,
+                           ai_summary_initial=case_summary_initial_state(caseid))
 
 
 @case_blueprint.route('/case/pipelines-modal', methods=['GET'])

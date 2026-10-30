@@ -18,6 +18,10 @@
    provenance, the steps, the chain of passes and the superseded questions.
    Every card is built with createElement + textContent -- a question, an
    option and a flag message are model text.
+
+   First paint (iris-ng 2026-10-30): the case page embeds GET /summary's answer
+   (#iris-ai-initial) and the panel paints it while the page parses; the GET
+   runs only when the page could not embed it.
 #}
 <style>
   .iris-ai-panel {
@@ -130,6 +134,10 @@
     transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
     line-height: 1;
   }
+  /* The icon font lands after the first frame; until then the glyph has no
+     width, and the header's buttons wrapped or unwrapped when it arrived (a
+     layout shift). 1em is the loaded glyph's own width, so nothing else moves. */
+  .iris-ai-btn > i { display: inline-block; width: 1em; text-align: center; }
   .iris-ai-btn:hover { background: rgba(255, 255, 255, 0.10); border-color: rgba(255,255,255,0.18); }
   .iris-ai-btn:active { transform: translateY(1px); }
   .iris-ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -192,6 +200,8 @@
     font-size: 13px;
     text-align: center;
   }
+  /* display:flex above would beat the hidden attribute's UA rule */
+  .iris-ai-empty[hidden] { display: none; }
 
   .iris-ai-empty-icon {
     width: 38px;
@@ -539,18 +549,30 @@
     <button type="button" class="iris-ai-tab" data-iris-tab="review" role="tab">Review <span class="iris-ai-tab-badge" id="iris-ai-review-count" style="display:none;"></span></button>
     <button type="button" class="iris-ai-tab" data-iris-tab="audit" role="tab">Audit</button>
   </div>
+  {#- ai_summary_initial (case_routes.case_r): {looked: true, artifact: GET /summary's
+      payload | null}, or None when the read failed. "No AI summary yet" is shown only
+      when the server LOOKED and found none; a summary is painted by the script below
+      before the first frame; a page that could not look says it is loading and fetches. #}
+  {%- set _ai_init = ai_summary_initial if ai_summary_initial is defined else none %}
+  {%- set _ai_has = _ai_init and _ai_init.artifact and _ai_init.artifact.content %}
   <div class="iris-ai-panel-body" id="iris-ai-body">
-    <div class="iris-ai-empty" id="iris-ai-empty">
+    <div class="iris-ai-empty" id="iris-ai-empty"{% if not (_ai_init and _ai_init.looked and not _ai_has) %} hidden{% endif %}>
       <div class="iris-ai-empty-icon">
         <span aria-hidden="true">✨</span>
       </div>
       <div>No AI summary yet for this case.</div>
       <div style="font-size: 11.5px; opacity: 0.7;">Click <b>Generate Summary</b> to run the writer, the claim checks and the verifier. Output is cached and re-derivable.</div>
     </div>
+    {%- if not _ai_init %}
+    <div class="iris-ai-empty" id="iris-ai-pending">Loading the cached summary…</div>
+    {%- endif %}
   </div>
   <div class="iris-ai-panel-body iris-ai-pane" id="iris-ai-review" style="display:none;"></div>
   <div class="iris-ai-panel-body iris-ai-pane" id="iris-ai-audit" style="display:none;"></div>
 </div>
+{%- if _ai_init %}
+<script type="application/json" id="iris-ai-initial">{{ _ai_init|tojson }}</script>
+{%- endif %}
 
 <script>
 (function() {
@@ -1432,12 +1454,31 @@
     }).catch(handleGenerateFailure).finally(function() { setBusy(false); });
   });
 
-  // Auto-fetch any cached summary on page load
-  fetchCached().then(function(artifact) {
-    if (artifact) showArtifact(artifact);
-  }).catch(function(e) {
-    // silent — leave the empty state visible
-    if (window.console) console.warn('iris-ai-panel: cached fetch failed', e);
-  });
+  // The cached summary arrives IN the page (#iris-ai-initial, what GET /summary
+  // would answer) and is painted here, during parsing, so the first frame
+  // already holds it: fetching it after load made the panel grow under the
+  // reader (a layout shift of up to 0.56 with the Summary columns stacked).
+  // The fetch remains for a page that could not embed it.
+  var initial = null;
+  try {
+    var initialEl = document.getElementById('iris-ai-initial');
+    initial = initialEl ? JSON.parse(initialEl.textContent) : null;
+  } catch (e) { initial = null; }
+  if (initial && initial.looked) {
+    var embedded = readArtifact(initial.artifact);
+    if (embedded) showArtifact(embedded);
+    else if (emptyEl) emptyEl.hidden = false;
+  } else {
+    var pendingEl = document.getElementById('iris-ai-pending');
+    fetchCached().then(function(artifact) {
+      if (artifact) { showArtifact(artifact); return; }
+      if (pendingEl && pendingEl.parentNode) pendingEl.parentNode.removeChild(pendingEl);
+      if (emptyEl) emptyEl.hidden = false;
+    }).catch(function(e) {
+      // "No AI summary yet" would be a claim nobody checked — say what happened
+      if (window.console) console.warn('iris-ai-panel: cached fetch failed', e);
+      if (pendingEl) pendingEl.textContent = 'Could not load the cached summary. Reload the page to try again.';
+    });
+  }
 })();
 </script>

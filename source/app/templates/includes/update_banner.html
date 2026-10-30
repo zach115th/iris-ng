@@ -18,7 +18,10 @@
       after #iris-upd-banner when it is already there, and this script inserts
       before #iris-ann-banners when that came first - the order is fixed
       whichever fetch wins. Both go at the top of .main-panel > .content, under
-      the fixed header (announcement_banners.html says why). #}
+      the fixed header (announcement_banners.html says why).
+    * First frame (2026-10-30): includes/top_strips.html calls mount() with the
+      state the server already holds, while the page parses; the fetch below
+      runs only when it could not (worker does not know yet / answer stale). #}
 {% if request.endpoint != 'home.home' %}
 <style>
     /* Above the page's first block, below every sticky / menu layer
@@ -174,22 +177,36 @@
         chromeChanged();
     }
 
+    /* One gate for both paths: the page's own answer (mount) and the fetch. */
+    function show(host, state) {
+        if (!state || !state.enabled || !state.update_available || !state.latest) { return; }
+        if (typeof state.latest.tag !== 'string' || !state.latest.tag) { return; }
+        if (dismissedTag() === state.latest.tag) { return; }
+        if (document.getElementById('iris-upd-banner')) { return; }
+        render(host, state);
+    }
+
+    /* The page answered (includes/top_strips.html, while it parses): draw now,
+       in the first frame, and skip the fetch. */
+    var settled = false;
+    function mount(host, state) {
+        settled = true;
+        if (!host || getComputedStyle(host).display.indexOf('flex') !== -1) { return; }
+        show(host, state);
+    }
+
     function init(fetchImpl) {
+        if (settled) { return Promise.resolve(); }
         var host = document.querySelector('.main-panel > .content');
         if (!host || getComputedStyle(host).display.indexOf('flex') !== -1) { return Promise.resolve(); }
         var doFetch = fetchImpl || window.fetch.bind(window);
         return doFetch(ENDPOINT, { credentials: 'same-origin' })
             .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
-            .then(function (state) {
-                if (!state || !state.enabled || !state.update_available || !state.latest) { return; }
-                if (typeof state.latest.tag !== 'string' || !state.latest.tag) { return; }
-                if (dismissedTag() === state.latest.tag) { return; }
-                render(host, state);
-            })
+            .then(function (state) { show(host, state); })
             .catch(function () { /* check unavailable - never block the page */ });
     }
 
-    window.irisUpdateBanner = { init: init, STORAGE_KEY: STORAGE_KEY };
+    window.irisUpdateBanner = { init: init, mount: mount, STORAGE_KEY: STORAGE_KEY };
     document.addEventListener('DOMContentLoaded', function () { init(); });
 })();
 </script>

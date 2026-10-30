@@ -1163,4 +1163,40 @@ body .main-panel code {
     padding: 1.5px 6px;
 }
 
+/* --- accessibility (Lighthouse, iris-ng 2026-10-30) ------------------ */
+/* Links inside rendered analyst Markdown differ from their sentence by colour
+   alone - underline them. The containers are every target the product's
+   Markdown renderer writes into: #targetDiv (case description, notes), the
+   object description / comment previews and the task panel. Navigation,
+   buttons and chips sit outside them and keep their look. */
+#targetDiv a,
+#target_asset_desc a,
+#target_comment_content a,
+#target_event_desc a,
+#target_evidence_desc a,
+#target_ioc_desc a,
+#target_task_desc a,
+.iris-tk-desc a {
+    text-decoration: underline;
+}
+/* The minimized sidebar hid its link labels with display:none, which left
+   every link without a name for assistive technology; hide them visually
+   instead. Hovering expands the sidebar and Atlantis shows them again. */
+@media screen and (min-width: 991px) {
+    .sidebar_minimize .sidebar:not(:hover) .sidebar-wrapper .nav-item a > span,
+    .sidebar_minimize .sidebar:not(:hover) .sidebar-wrapper .nav-item a > p {
+        display: block;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        border: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+
 /* End iris-next overrides ============================================== */

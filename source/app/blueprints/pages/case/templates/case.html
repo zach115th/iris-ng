@@ -13,7 +13,8 @@
 
 <div class="main-panel">
 
-    <div class="content">
+    <div class="content" role="main">
+        {% include 'includes/top_strips.html' %}
         {# v3 case shell replaces the gradient header + the action-button
            strip (case-nav_landing) - the actions now live in the shell's
            "..." menu with their historical element ids, so the Summary
@@ -59,12 +60,18 @@
                    columns wrap back to stacked below ~1100px so neither card
                    is crushed on a narrow viewport. #}
                 <style>
+                    /* A grid of at most two equal tracks (each >= 520px, else
+                       one; never wider than the row on a narrow screen): the AI
+                       panel has its final width even in a frame painted before
+                       the parser reached the second column. As a flex row it
+                       filled the row alone, then halved when the case summary
+                       card arrived (Lighthouse layout shift). */
                     .iris-sum-cols {
-                        display: flex; gap: 14px;
-                        align-items: flex-start; flex-wrap: wrap;
+                        display: grid; gap: 14px; align-items: start;
+                        grid-template-columns: repeat(auto-fill, minmax(min(100%, max(520px, calc((100% - 14px) / 2))), 1fr));
                     }
                     .iris-sum-cols > .iris-sum-col {
-                        flex: 1 1 520px; min-width: 0;
+                        min-width: 0;
                     }
                     /* Both cards own the same bottom margin so their bottoms
                        align — 1.25rem is the AI panel's own value. */

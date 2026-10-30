@@ -8,6 +8,8 @@
 from flask import Blueprint
 from flask import request
 
+from app import app
+from app import db
 from app.blueprints.access_controls import ac_api_requires
 from app.blueprints.access_controls import ac_api_return_access_denied
 from app.blueprints.rest.endpoints import response_api_error
@@ -132,6 +134,26 @@ def get_case_summary(case_identifier):
     if artifact is None:
         return response_api_not_found()
     return response_api_success(_serialize_artifact(artifact))
+
+
+def case_summary_initial_state(case_identifier):
+    """What GET /summary would answer, for the case page to embed (iris-ng,
+    2026-10-30): the panel paints the cached summary in its first frame instead
+    of an empty state that a fetch replaces a moment later — a layout shift of
+    up to 0.56 when the Summary columns stack.
+
+    `looked` separates "no summary" (`artifact` None) from "did not look": a
+    read that fails returns None and the panel falls back to the fetch. The
+    caller has already checked case access (the page's ac_case_requires)."""
+    try:
+        artifact = get_cached_summary(case_identifier)
+        return {'looked': True,
+                'artifact': _serialize_artifact(artifact) if artifact is not None else None}
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.warning('Case %s: cached summary not embedded (%s); the panel will fetch it',
+                           case_identifier, exc)
+        return None
 
 
 def _accepted(job):

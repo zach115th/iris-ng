@@ -50,13 +50,19 @@ def _dump(b):
     }
 
 
-@manage_banners_rest_blueprint.route('/manage/banners/active', methods=['GET'])
-@ac_api_requires()
-def banners_active():
+def active_banners():
+    """The active announcements, oldest first: the /active feed's data, and what
+    the page embeds so the strips are in its first frame (top_strips.html)."""
     rows = AnnouncementBanner.query.filter(
         AnnouncementBanner.is_active.is_(True)
     ).order_by(AnnouncementBanner.created_at.asc()).all()
-    return response_success('', data=[_dump(b) for b in rows])
+    return [_dump(b) for b in rows]
+
+
+@manage_banners_rest_blueprint.route('/manage/banners/active', methods=['GET'])
+@ac_api_requires()
+def banners_active():
+    return response_success('', data=active_banners())
 
 
 @manage_banners_rest_blueprint.route('/manage/banners/list', methods=['GET'])

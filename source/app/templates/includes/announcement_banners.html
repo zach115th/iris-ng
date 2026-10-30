@@ -10,7 +10,10 @@
     .main-panel and .content clears it with its own margin-top, so a strip
     placed before .content sat UNDER the header and pushed the page down by
     its height plus that margin. A flex .content (the 403 page's centred
-    layout) would lay a strip beside the page, so nothing renders there. #}
+    layout) would lay a strip beside the page, so nothing renders there.
+    First frame (2026-10-30): includes/top_strips.html calls mount() with the
+    active rows the server already read, while the page parses; the fetch runs
+    only on a page that did not (anonymous, a failed read, no hook). #}
 <style>
     /* Above the page's own first block: the dashboard's .panel-header.mt--4
        tucks its top padding under whatever is above it, and as a later
@@ -32,9 +35,9 @@
     .iris-ann-banner .iris-ann-dismiss:hover { opacity: 1; }
 </style>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    var host = document.querySelector('.main-panel > .content');
-    if (!host || getComputedStyle(host).display.indexOf('flex') !== -1) { return; }
+(function () {
+    var LEVELS = { info: 'iris-ann-info', warning: 'iris-ann-warning', danger: 'iris-ann-danger' };
+    var STORAGE_KEY = 'iris_ann_dismissed';
     function chromeChanged() {
         /* Panels placed from measured offsets (the timeline's fixed panels,
            the task board, the war room) re-measure on resize; a strip that
@@ -42,47 +45,67 @@ document.addEventListener('DOMContentLoaded', function () {
            anything they observe. */
         try { window.dispatchEvent(new Event('resize')); } catch (e) { /* no Event constructor */ }
     }
-    var dismissed = [];
-    try { dismissed = JSON.parse(sessionStorage.getItem('iris_ann_dismissed') || '[]'); }
-    catch (e) { /* storage unavailable - show everything */ }
-    var LEVELS = { info: 'iris-ann-info', warning: 'iris-ann-warning', danger: 'iris-ann-danger' };
-    var cid = new URLSearchParams(location.search).get('cid');
-    fetch('/manage/banners/active' + (cid ? '?cid=' + cid : ''), { credentials: 'same-origin' })
-        .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
-        .then(function (j) {
-            var rows = (j.data || []).filter(function (b) {
-                return dismissed.indexOf(b.id) === -1;
+    function dismissedIds() {
+        try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]'); }
+        catch (e) { return []; /* storage unavailable - show everything */ }
+    }
+    function render(host, data) {
+        if (document.getElementById('iris-ann-banners')) { return; }
+        var dismissed = dismissedIds();
+        var rows = (data || []).filter(function (b) {
+            return dismissed.indexOf(b.id) === -1;
+        });
+        if (!rows.length) { return; }
+        var wrap = document.createElement('div');
+        wrap.id = 'iris-ann-banners';
+        rows.forEach(function (b) {
+            var el = document.createElement('div');
+            el.className = 'iris-ann-banner ' + (LEVELS[b.level] || 'iris-ann-info');
+            var txt = document.createElement('span');
+            txt.textContent = b.message;
+            var x = document.createElement('button');
+            x.className = 'iris-ann-dismiss';
+            x.setAttribute('title', 'Dismiss for this session');
+            x.innerHTML = '&times;';
+            x.addEventListener('click', function () {
+                el.remove();
+                chromeChanged();
+                try {
+                    var ids = dismissedIds();
+                    ids.push(b.id);
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+                } catch (e) { /* convenience only */ }
             });
-            if (!rows.length) { return; }
-            var wrap = document.createElement('div');
-            wrap.id = 'iris-ann-banners';
-            rows.forEach(function (b) {
-                var el = document.createElement('div');
-                el.className = 'iris-ann-banner ' + (LEVELS[b.level] || 'iris-ann-info');
-                var txt = document.createElement('span');
-                txt.textContent = b.message;
-                var x = document.createElement('button');
-                x.className = 'iris-ann-dismiss';
-                x.setAttribute('title', 'Dismiss for this session');
-                x.innerHTML = '&times;';
-                x.addEventListener('click', function () {
-                    el.remove();
-                    chromeChanged();
-                    try {
-                        dismissed.push(b.id);
-                        sessionStorage.setItem('iris_ann_dismissed', JSON.stringify(dismissed));
-                    } catch (e) { /* convenience only */ }
-                });
-                el.appendChild(txt);
-                el.appendChild(x);
-                wrap.appendChild(el);
-            });
-            /* The update-available strip (update_banner.html) always sits
-               ABOVE the announcements, whichever fetch resolves first. */
-            var upd = document.getElementById('iris-upd-banner');
-            host.insertBefore(wrap, upd && upd.parentNode === host ? upd.nextSibling : host.firstChild);
-            chromeChanged();
-        })
-        .catch(function () { /* banner feed unavailable - never block the page */ });
-});
+            el.appendChild(txt);
+            el.appendChild(x);
+            wrap.appendChild(el);
+        });
+        /* The update-available strip (update_banner.html) always sits
+           ABOVE the announcements, whichever one is drawn first. */
+        var upd = document.getElementById('iris-upd-banner');
+        host.insertBefore(wrap, upd && upd.parentNode === host ? upd.nextSibling : host.firstChild);
+        chromeChanged();
+    }
+    function usable(host) {
+        return !!host && getComputedStyle(host).display.indexOf('flex') === -1;
+    }
+    /* The page answered (includes/top_strips.html, while it parses): draw now,
+       in the first frame, and skip the fetch. */
+    var settled = false;
+    function mount(host, data) {
+        settled = true;
+        if (usable(host)) { render(host, data); }
+    }
+    window.irisAnnBanners = { mount: mount, STORAGE_KEY: STORAGE_KEY };
+    document.addEventListener('DOMContentLoaded', function () {
+        if (settled) { return; }
+        var host = document.querySelector('.main-panel > .content');
+        if (!usable(host)) { return; }
+        var cid = new URLSearchParams(location.search).get('cid');
+        fetch('/manage/banners/active' + (cid ? '?cid=' + cid : ''), { credentials: 'same-origin' })
+            .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+            .then(function (j) { render(host, j.data || []); })
+            .catch(function () { /* banner feed unavailable - never block the page */ });
+    });
+})();
 </script>

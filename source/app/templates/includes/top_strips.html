@@ -1,0 +1,25 @@
+{#  First-frame top strips (iris-ng 2026-10-30, Lighthouse CLS).
+    The FIRST child of .main-panel > .content on every page that opens one
+    (layouts/default.html; each case page opens its own). It draws the update
+    strip and the announcements from what the server already knows, while the
+    page parses, so they are in the first frame - inserted after their fetches
+    they pushed the whole page down by their height (CLS 0.077 on a prod case
+    page). The builders, the order (update above announcements) and the
+    dismissal rules stay in update_banner.html / announcement_banners.html,
+    which the navs include earlier in the page; a part the server did not
+    answer (null) is left to that file's fetch. Not on a flex .content (the
+    centred layout) - the builders refuse one anyway. /home carries no update
+    strip (update_banner.html), so no update line here either. #}
+{%- set _with_update = request.endpoint != 'home.home' %}
+{%- set _strips = top_strips_state(include_update=_with_update) %}
+<script>
+(function () {
+    var s = {{ _strips|tojson }};
+    var host = document.currentScript && document.currentScript.parentNode;
+    if (!host) { return; }
+{%- if _with_update %}
+    if (s.update && window.irisUpdateBanner) { window.irisUpdateBanner.mount(host, s.update); }
+{%- endif %}
+    if (s.banners && window.irisAnnBanners) { window.irisAnnBanners.mount(host, s.banners); }
+})();
+</script>

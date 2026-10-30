@@ -68,7 +68,8 @@
 {% include 'includes/sidenav.html' %}
 <div class="main-panel">
 
-    <div class="content">
+    <div class="content" role="main">
+        {% include 'includes/top_strips.html' %}
         {# v3 case shell (shared chrome; content below untouched) #}
         <div class="page-inner pt-2 pb-0">
             {% include 'includes/case_shell.html' %}

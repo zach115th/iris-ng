@@ -838,7 +838,8 @@
 {% include 'includes/sidenav.html' %}
 <div class="main-panel">
 
-    <div class="content">
+    <div class="content" role="main">
+        {% include 'includes/top_strips.html' %}
         {# v3 case shell (shared chrome; content below untouched). This tab's
            own actions are promoted into the header ⋮ menu — the toolbar's
            second ⋮ is gone. Every item is moved VERBATIM (same onclick /

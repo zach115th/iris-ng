@@ -28,6 +28,7 @@ from app.blueprints.access_controls import ac_api_requires
 from app.blueprints.rest.endpoints import response_api_success
 from app.blueprints.rest.parsing import parse_boolean
 from app.iris_engine.update_check import get_update_state
+from app.iris_engine.update_check import peek_fresh_state
 from app.models.authorization import Permissions
 
 
@@ -54,3 +55,13 @@ def get_latest_release():
     state = get_update_state(force=refresh)
     state['viewer_can_act'] = is_admin
     return response_api_success(state)
+
+
+def latest_release_initial_state():
+    """What GET /latest would answer from this worker's cache right now, for
+    the page to embed (includes/top_strips.html); None when only a fetch can
+    answer (peek_fresh_state)."""
+    state = peek_fresh_state()
+    if state is not None:
+        state['viewer_can_act'] = _viewer_is_server_admin()
+    return state

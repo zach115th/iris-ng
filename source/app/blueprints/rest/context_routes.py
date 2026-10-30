@@ -140,6 +140,37 @@ def has_updates():
                 iris_update_url=latest.get('url'))
 
 
+def _top_strips_state(include_update=True):
+    """includes/top_strips.html's data: {'update': GET /api/v2/updates/latest's
+    answer | None, 'banners': GET /manage/banners/active's rows | None}. None
+    = not answered here (anonymous viewer, update state unknown or stale, a
+    failed read) — that strip keeps fetching. Never raises: a strip must not
+    break a page."""
+    state = {'update': None, 'banners': None}
+    if not getattr(current_user, 'is_authenticated', False):
+        return state
+    if include_update:
+        try:
+            from app.blueprints.rest.v2.updates import latest_release_initial_state
+            state['update'] = latest_release_initial_state()
+        except Exception as exc:
+            app.logger.warning('Update strip not embedded: %s', exc)
+    try:
+        from app.blueprints.rest.manage.manage_banners_routes import active_banners
+        state['banners'] = active_banners()
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.warning('Announcement strips not embedded: %s', exc)
+    return state
+
+
+@app.context_processor
+def top_strips():
+    """A callable, not a value: only the pages that render the hook pay for it
+    (a context processor runs for every template, modals included)."""
+    return dict(top_strips_state=_top_strips_state)
+
+
 def _update_user_case_ctx():
     """
     Retrieve a list of cases for the case selector

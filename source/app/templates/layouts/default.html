@@ -15,6 +15,15 @@
 		<script defer data-domain="{{ analytics_site_id }}" src="{{ analytics_script_url }}"></script>
 	{% endif %}
 	<!-- Fonts and icons -->
+	{# The text font is known and fetched before the first frame (iris-ng
+	   2026-10-30): fonts.css used to arrive only through WebFont.load below - a
+	   script-inserted stylesheet, which does not hold the first paint - so Lato
+	   replaced the fallback a frame later and rows sized by heading text moved
+	   (Lighthouse layout shift). WebFont.load stays for its wf-* classes. #}
+	<link rel="preload" href="/static/assets/fonts/lato/Lato-Regular.ttf" as="font" type="font/ttf" crossorigin>
+	<link rel="preload" href="/static/assets/fonts/lato/Lato-Bold.ttf" as="font" type="font/ttf" crossorigin>
+	<link rel="preload" href="/static/assets/fonts/lato/Lato-Light.ttf" as="font" type="font/ttf" crossorigin>
+	<link rel="stylesheet" href="/static/assets/css/fonts.css">
 	<script src="/static/assets/js/plugin/webfont/webfont.min.js"></script>
 	<script>
 		WebFont.load({
@@ -47,7 +56,8 @@
 
 		<div class="main-panel">
 
-			<div class="content">
+			<div class="content" role="main">
+				{% include 'includes/top_strips.html' %}
 
 				{% block content %}{% endblock content %}
 			

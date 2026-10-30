@@ -226,6 +226,23 @@ def peek_update_state() -> dict:
     return {'update_available': bool(value.get('update_available')), 'latest': value.get('latest')}
 
 
+def peek_fresh_state():
+    """The whole state get_update_state() would serve from THIS worker's cache,
+    with no outbound call — for a page to draw the update strip in its first
+    frame (includes/top_strips.html, iris-ng 2026-10-30) instead of inserting
+    it after a fetch, which pushed the page down by the strip's height.
+
+    None while the worker does not know yet or once its answer is older than
+    CACHE_TTL: the strip then fetches as before, and that request refreshes
+    the cache. With the check switched off, the off state (nothing to show).
+    """
+    if not is_check_enabled():
+        return _base(False)
+    if not (_cache['at'] and _cache['value']) or (datetime.utcnow() - _cache['at']) >= CACHE_TTL:
+        return None
+    return {**_cache['value'], 'cached': True}
+
+
 def reset_cache() -> None:
     """Test hook + used when the admin flips the toggle."""
     _cache['at'] = None
