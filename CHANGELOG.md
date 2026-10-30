@@ -11,6 +11,45 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.10] — 2026-10-30
+
+Page-load and accessibility fixes. **No schema change** — the database head stays at
+`c4d9a2e7f1b3`. Only the app image changes (page templates, application code and one stylesheet);
+the nginx and database images, and the guest-portal tunnel agent, do not change.
+
+### Fixed
+- **The case Summary page jumped while it loaded.** The Executive Case Summary panel first showed
+  "No AI summary yet" and replaced it with the cached summary a moment later, which pushed the case
+  summary card off the screen whenever the two cards sit one above the other. The page now arrives
+  with the cached summary already drawn. "No AI summary yet" appears only when there is no summary;
+  if the summary cannot be read, the panel says it is loading and fetches it as before. Generate,
+  Refresh and the Review / Audit tabs are unchanged.
+- **Every page moved down when a strip appeared.** The "a newer release is available" strip and the
+  Settings → Banners announcements were added to the top of the page after it had been drawn,
+  moving everything below them. They now arrive with the page. The release strip arrives this way
+  while the server's last check is under six hours old; just after a restart, or once that answer
+  is older, it is fetched as before.
+- **Smaller movements while a page loads.** The page font is fetched before the first draw
+  (headings changed width a moment later and could re-wrap the summary panel's header), the summary
+  panel's Refresh icon keeps its size while the icon font loads, and the two summary cards hold
+  their final widths from the start.
+- **Screen-reader names and landmarks.** The icon-only buttons in the top bar and the quick
+  sidebar's close link have names, the quick sidebar's tabs are announced as tabs, every page marks
+  its main content area, and the minimized sidebar's links keep their names (their labels are now
+  hidden from view instead of removed).
+
+Measured with Chrome Lighthouse on a case page: layout shift 0.596 → 0.018, performance 75 → 99,
+accessibility 66 → 89.
+
+### Changed
+- **Links inside written text are underlined** — case descriptions, notes, comments, task
+  descriptions and the asset, IOC, event and evidence descriptions — so they no longer rely on
+  colour alone. Other links (menus, buttons, the case and object lists) keep their look.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.8.10`, or the 2.8.10 images / chart 1.8.10).
+No migration runs.
+
 ## [IRIS-NG-v2.8.9] — 2026-10-29
 
 Two interface fixes and three dependency updates. **No schema change** — the database head stays
