@@ -6,7 +6,7 @@
 
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](./LICENSE.txt)
 [![Edition: Community](https://img.shields.io/badge/Edition-Community-8b5cf6.svg)](#what-community-edition-means)
-[![Latest release](https://img.shields.io/github/v/release/zach115th/iris-ng?include_prereleases&label=release)](https://github.com/zach115th/iris-ng/releases)
+[![Latest release](https://img.shields.io/github/v/release/zach115th/iris-ng?label=release)](https://github.com/zach115th/iris-ng/releases/latest)
 
 A collaborative incident-response platform, extending DFIR-IRIS `v2.5.0-beta.1` with
 native MISP integration, an in-tree AI assistant layer, and a modernised analyst UI —
