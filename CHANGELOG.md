@@ -11,6 +11,45 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.8.9] — 2026-10-29
+
+Two interface fixes and three dependency updates. **No schema change** — the database head stays
+at `c4d9a2e7f1b3`. Only the app image changes (page templates, one vendored browser library and
+one Python package); the nginx and database images, and the guest-portal tunnel agent, do not
+change.
+
+### Fixed
+- **Announcement banners were hidden under the top bar.** A banner set under Settings → Banners,
+  and the "a newer release is available" strip, were drawn behind the fixed top bar (fully hidden
+  on some screens, a sliver on others, nothing at all on Home) and left an empty band above the
+  page. Both strips now sit directly under the top bar on every page, with the page starting right
+  below them; the release strip stays above the announcements. Showing, dismissing or expanding a
+  strip also moves the Timeline page's analysis and working-timeline panels with it straight away.
+  The 403 page, which centres its content, shows no strip.
+- **Add / Edit windows for Evidence, Assets, IOCs and Tasks closed on a click outside them (#156),**
+  discarding whatever had been typed. They now stay open, as the Add Event window already did; Esc,
+  the close button and Cancel still close them. Other windows keep closing on a click outside.
+
+### Changed
+- **marked 18.1.1 → 18.1.2 (Dependabot #160)**, the Markdown renderer behind notes and every other
+  Markdown view. A parser fix release; three of its fixes change how some notes render:
+  - a line starting with `#` and no space (such as a ticket number, `#4521`) written directly under
+    a list item now stays part of that item instead of starting a new paragraph;
+  - a tab after the `>` of a quote is kept as indentation;
+  - an HTML block whose tag name is followed by a tab is recognised as HTML.
+
+  Everything else in note-shaped Markdown (section tables, defanged IOC links, datastore images and
+  file links, task lists, quotes, code) renders identically, and parsing is about 20% faster.
+  autoprefixer 10.6.2 and svelte 5.57.3 rode along in the same update; neither changes any built
+  file.
+- **azure-identity 1.26.0 → 1.27.0 (Dependabot #161)**, used only when the configuration is read
+  from Azure Key Vault. It adds an AKS identity-binding option and fixes three credential types
+  IRIS-NG does not use; Key Vault configuration behaves identically.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.8.9`, or the 2.8.9 images / chart 1.8.9).
+No migration runs.
+
 ## [IRIS-NG-v2.8.8] — 2026-10-29
 
 A dependency release. **No schema change** — the database head stays at `c4d9a2e7f1b3`. Only the
