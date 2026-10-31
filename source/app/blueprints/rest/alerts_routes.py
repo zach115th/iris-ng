@@ -444,28 +444,36 @@ def alerts_batch_update_route() -> Response:
 
         try:
 
+            # Check if the user has access to the client
+            if not user_has_client_access(current_user.id, alert.alert_customer_id):
+                return response_error('User not entitled to update alerts for the client', status=403)
+
+            # iris-ng (2026-10-30): each alert gets its own copy of the update.
+            # The owner default used to be written into the shared `updates`, so
+            # the first unowned alert made the actor the owner of every later
+            # alert in the batch (owned ones included), and it replaced an
+            # explicit "Assign to <someone>" with the actor. Same rule as the
+            # single-alert update: default to the actor only when the request
+            # names no owner and this alert has none.
+            alert_updates = dict(updates)
+            if updates.get('alert_owner_id') is None and alert.alert_owner_id is None:
+                alert_updates['alert_owner_id'] = current_user.id
+
+            if data.get('alert_owner_id') == "-1" or data.get('alert_owner_id') == -1:
+                alert_updates['alert_owner_id'] = None
+
             activity_data = []
-            for key, value in updates.items():
+            for key, value in alert_updates.items():
                 old_value = getattr(alert, key, None)
 
                 if old_value != value:
                     activity_data.append(f"\"{key}\"")
 
-            # Check if the user has access to the client
-            if not user_has_client_access(current_user.id, alert.alert_customer_id):
-                return response_error('User not entitled to update alerts for the client', status=403)
-
-            if getattr(alert, 'alert_owner_id') is None:
-                updates['alert_owner_id'] = current_user.id
-
-            if data.get('alert_owner_id') == "-1" or data.get('alert_owner_id') == -1:
-                updates['alert_owner_id'] = None
-
             # Phase 5: capture the pre-update owner for the assignment notification.
             previous_owner_id = alert.alert_owner_id
 
             # Deserialize the JSON data into an Alert object
-            alert_schema.load(updates, instance=alert, partial=True)
+            alert_schema.load(alert_updates, instance=alert, partial=True)
 
             db.session.commit()
 
