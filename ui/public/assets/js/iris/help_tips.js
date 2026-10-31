@@ -77,9 +77,21 @@
         return n;
     }
 
+    // Only an http(s) URL or a same-site path becomes a link; anything else
+    // (a javascript: URL, a protocol-relative //host) is dropped. The parts
+    // come from the glossary script and the page config, never from the DOM.
+    function safeHref(href) {
+        var s = String(href === undefined || href === null ? '' : href);
+        if (/^https?:\/\/[^\s]/i.test(s)) { return s; }
+        if (s.charAt(0) === '/' && s.charAt(1) !== '/' && s.charAt(1) !== '\\') { return s; }
+        return null;
+    }
+
     function link(href, text, external) {
+        var url = safeHref(href);
+        if (url === null) { return null; }
         var a = mk('a', 'iris-help-pop-link', text);
-        a.href = href;
+        a.href = url;
         if (external) {
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
@@ -272,7 +284,12 @@
         var d = data(), c = config();
         var links = [];
         if (t.wiki && d && d.wiki_base) { links.push(link(d.wiki_base + t.wiki, 'Learn more', true)); }
-        if (c && c.glossary_url) { links.push(link(c.glossary_url + '#term-' + key, 'All terms', false)); }
+        // The anchor uses the term's own key from the glossary script, not
+        // the data-iris-help text the icon was found by.
+        if (c && c.glossary_url && t.key) {
+            links.push(link(c.glossary_url + '#term-' + encodeURIComponent(t.key), 'All terms', false));
+        }
+        links = links.filter(Boolean);
         if (links.length) {
             var foot = mk('div', 'iris-help-pop-foot');
             links.forEach(function (a) { foot.appendChild(a); });

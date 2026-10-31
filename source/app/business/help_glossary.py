@@ -232,7 +232,9 @@ def _client_terms(loaded, viewer):
     for key, t in loaded['terms'].items():
         if t['page_only'] or not visible_to(t, viewer):
             continue
-        entry = {'title': t['title'], 'text': t['text']}
+        # `key` lets the client build the glossary link from this data rather
+        # than from the icon's data-iris-help attribute (code scanning #49).
+        entry = {'key': key, 'title': t['title'], 'text': t['text']}
         if t['items']:
             entry['items'] = [[i['name'], i['text']] for i in t['items']]
         if t['values'] and viewer == 'user':
