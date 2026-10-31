@@ -34,6 +34,8 @@ from app.util import add_obj_history_entry
 from app.business.errors import BusinessProcessingError
 from app.business.errors import ObjectNotFoundError
 from app.datamgmt.case.case_iocs_db import get_ioc
+from app.datamgmt.case.case_iocs_db import find_existing_ioc
+from app.datamgmt.datastore.datastore_db import datastore_file_ioc_payload
 
 
 def _load(request_data):
@@ -79,6 +81,25 @@ def iocs_create(request_json, case_identifier):
         return ioc, msg
 
     raise BusinessProcessingError('Unable to create IOC for internal reasons')
+
+
+def iocs_create_from_datastore_file(dsf, case_identifier):
+    """iris-ng (2026-10-30): the datastore's "File is IOC". The file's SHA-256
+    becomes an IOC of THIS case (TLP:AMBER, tag datastore) through iocs_create,
+    so it gets the same validation, history, hooks and activity entry as one
+    added by hand. A case that already holds the hash (same type, the dedup
+    key) is left as it is. Returns (ioc or None, message)."""
+    payload = datastore_file_ioc_payload(dsf)
+    if payload is None:
+        return None, '(not added as an IOC: no SHA-256, or no sha256 IOC type / amber TLP on this server)'
+    existing = find_existing_ioc(case_identifier, payload['ioc_type_id'], payload['ioc_value'])
+    if existing is not None:
+        return existing, '(already an IOC of this case)'
+    try:
+        ioc, _ = iocs_create(payload, case_identifier)
+    except BusinessProcessingError as e:
+        return None, '(not added as an IOC: {})'.format(e)
+    return ioc, 'and added in IOC'
 
 
 def iocs_update(ioc: Ioc, request_json: dict) -> (Ioc, str):

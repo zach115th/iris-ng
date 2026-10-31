@@ -30,7 +30,6 @@ from app import db
 from app.models.models import CaseReceivedFile
 from app.models.models import DataStoreFile
 from app.models.models import DataStorePath
-from app.models.models import Ioc
 from app.models.models import IocType
 from app.models.models import Tlp
 
@@ -348,30 +347,28 @@ def datastore_delete_file(cur_id, cid):
     return False, f'File {cur_id} deleted'
 
 
-def datastore_add_file_as_ioc(dsf, caseid):
-    ioc = Ioc.query.filter(
-        Ioc.ioc_value == dsf.file_sha256
-    ).first()
+def datastore_file_ioc_payload(dsf):
+    """The IOC a datastore file marked "File is IOC" becomes: its SHA-256,
+    TLP:AMBER, tag `datastore`. None when the file has no hash or this server
+    lacks the sha256 type or the amber TLP.
 
-    ioc_type_id = IocType.query.filter(
-        IocType.type_name == 'sha256'
-    ).first()
-
-    ioc_tlp_id = Tlp.query.filter(
-        Tlp.tlp_name == 'amber'
-    ).first()
-
-    if ioc is None:
-        ioc = Ioc()
-        ioc.ioc_value = dsf.file_sha256
-        ioc.ioc_description = f"SHA256 of {dsf.file_original_name}. Imported from datastore."
-        ioc.ioc_type_id = ioc_type_id.type_id
-        ioc.ioc_tlp_id = ioc_tlp_id.tlp_id
-        ioc.ioc_tags = "datastore"
-        ioc.user_id = current_user.id
-
-        db.session.add(ioc)
-        db.session.commit()
+    iris-ng (2026-10-30): this used to create the IOC here, without a case_id
+    and only when the value existed nowhere on the server, so it never showed
+    on the case's IOC tab. business/iocs.py::iocs_create_from_datastore_file
+    now creates it in the case through iocs_create."""
+    if not dsf.file_sha256:
+        return None
+    ioc_type = IocType.query.filter(IocType.type_name == 'sha256').first()
+    ioc_tlp = Tlp.query.filter(Tlp.tlp_name == 'amber').first()
+    if ioc_type is None or ioc_tlp is None:
+        return None
+    return {
+        'ioc_value': dsf.file_sha256,
+        'ioc_description': f"SHA256 of {dsf.file_original_name}. Imported from datastore.",
+        'ioc_type_id': ioc_type.type_id,
+        'ioc_tlp_id': ioc_tlp.tlp_id,
+        'ioc_tags': 'datastore',
+    }
 
 
 def datastore_add_file_as_evidence(dsf, caseid):

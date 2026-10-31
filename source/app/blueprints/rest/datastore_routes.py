@@ -31,7 +31,7 @@ import app
 from app import db
 from app.datamgmt.datastore.datastore_db import datastore_add_child_node
 from app.datamgmt.datastore.datastore_db import datastore_add_file_as_evidence
-from app.datamgmt.datastore.datastore_db import datastore_add_file_as_ioc
+from app.business.iocs import iocs_create_from_datastore_file
 from app.datamgmt.datastore.datastore_db import datastore_delete_file
 from app.datamgmt.datastore.datastore_db import datastore_delete_node
 from app.datamgmt.datastore.datastore_db import datastore_filter_tree
@@ -139,8 +139,8 @@ def datastore_update_file(cur_id: int, caseid: int):
 
         msg_added_as = ''
         if dsf.file_is_ioc:
-            datastore_add_file_as_ioc(dsf, caseid)
-            msg_added_as += 'and added in IOC'
+            _ioc, ioc_msg = iocs_create_from_datastore_file(dsf, caseid)
+            msg_added_as += ioc_msg
 
         if dsf.file_is_evidence:
             datastore_add_file_as_evidence(dsf, caseid)
@@ -264,8 +264,8 @@ def datastore_add_file(cur_id: int, caseid: int):
 
         msg_added_as = ''
         if dsf_sc.file_is_ioc:
-            datastore_add_file_as_ioc(dsf_sc, caseid)
-            msg_added_as += 'and added in IOC'
+            _ioc, ioc_msg = iocs_create_from_datastore_file(dsf_sc, caseid)
+            msg_added_as += ioc_msg
 
         if dsf_sc.file_is_evidence:
             datastore_add_file_as_evidence(dsf_sc, caseid)
