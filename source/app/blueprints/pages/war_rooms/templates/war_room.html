@@ -649,14 +649,14 @@
             <div style="flex: 1 1 auto; min-width: 0;">
                 <div>
                     <span class="iris-wr-slug">WR#{{ room_id }}</span>
-                    <span class="h4 mb-0 ml-1" id="iris-wr-name" style="font-weight: 600;">&hellip;</span>
+                    <span class="h4 mb-0 ml-1" id="iris-wr-name" style="font-weight: 600;">&hellip;</span>{{ help_tip('room.war_room') }}
                 </div>
                 <div class="iris-wr-meta" id="iris-wr-meta"></div>
             </div>
             <div style="flex-shrink: 0;" class="d-flex align-items-center" >
-                <span id="iris-wr-status" class="mr-1"></span>
+                <span id="iris-wr-status" class="mr-1"></span>{{ help_tip('room.status', cls='mr-2') }}
                 <span id="iris-wr-severity" class="mr-2"></span>
-                <span id="iris-wr-myrole" class="mr-2"></span>
+                <span id="iris-wr-myrole" class="mr-1"></span>{{ help_tip('room.role', cls='mr-2') }}
                 <select class="form-control form-control-sm mr-1" id="iris-wr-status-select"
                         style="width: 105px; display:none;" title="Room status (lead)">
                     <option value="open">open</option>
@@ -712,38 +712,38 @@
                 <div class="iris-wr-rail">
                     <div class="iris-wr-rail-h">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                        Filters <a href="#" class="iris-wr-clear" id="iris-wr-clear-filters">Clear all</a>
+                        Filters {{ help_tip('room.stream') }} <a href="#" class="iris-wr-clear" id="iris-wr-clear-filters">Clear all</a>
                     </div>
 
                     <div class="iris-wr-rail-h">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg>
-                        Topics
+                        Topics {{ help_tip('room.topics') }}
                         <a href="#" id="iris-wr-topic-add" class="ml-auto" title="New topic" style="color:#7a7a85;">+</a>
                     </div>
                     <div id="iris-wr-rail-topics"></div>
 
                     <div class="iris-wr-rail-h">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        Threads (<span id="iris-wr-thread-count">0</span>)</div>
+                        Threads (<span id="iris-wr-thread-count">0</span>) {{ help_tip('room.threads') }}</div>
                     <div id="iris-wr-rail-threads"></div>
                     <div class="iris-wr-rail-hint" id="iris-wr-thread-hint">Reply to any message or use <code>/thread</code> to start one.</div>
 
                     <div class="iris-wr-rail-h">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 12.5-8 8a2.119 2.119 0 1 1-3-3l8-8"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>
-                        Decisions &amp; Pins (<span id="iris-wr-dp-count">0</span>)</div>
+                        Decisions &amp; Pins (<span id="iris-wr-dp-count">0</span>) {{ help_tip('room.decisions_pins') }}</div>
                     <div class="iris-wr-rail-hint">Use <code>/decision</code> or <code>/pin</code> to record something the room should remember.</div>
 
-                    <div class="iris-wr-rail-h">Stream lanes</div>
+                    <div class="iris-wr-rail-h">Stream lanes {{ help_tip('room.stream_lanes') }}</div>
                     <div id="iris-wr-rail-lanes"></div>
 
                     <div class="iris-wr-rail-h">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2.5"/><path d="m10.2 6.3-3.9 3.9"/><circle cx="4.5" cy="12" r="2.5"/><path d="M7 12h10"/><circle cx="19.5" cy="12" r="2.5"/><path d="m13.8 17.7 3.9-3.9"/><circle cx="12" cy="19.5" r="2.5"/></svg>
-                        Cases (<span id="iris-wr-rail-case-count">0</span>)</div>
+                        Cases (<span id="iris-wr-rail-case-count">0</span>) {{ help_tip('room.case_activity') }}</div>
                     <div id="iris-wr-rail-cases"></div>
 
                     <div class="iris-wr-rail-h" id="iris-wr-cmd-toggle" style="cursor:pointer;">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                        Slash commands</div>
+                        Slash commands {{ help_tip('room.slash_commands') }}</div>
                     <div class="iris-wr-cmdlist" id="iris-wr-cmdlist"></div>
                 </div>
             </div>
@@ -768,6 +768,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></a>
                                     <a href="#" id="iris-wr-resource-btn" title="Reference a case resource" style="color:inherit;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></a>
+                                    {{ help_tip('room.resource_tokens') }}
                                 </span>
                                 <textarea class="form-control" id="iris-wr-msg-input" rows="1"
                                           placeholder="Type a message, /command, @user or #resource..." maxlength="4000"
@@ -777,7 +778,7 @@
                                     Send</button>
                             </div>
                             <div class="iris-wr-composer-hints">
-                                <kbd>Enter</kbd> to send &middot; <kbd>Shift+Enter</kbd> for newline &middot; <kbd>/</kbd> for commands &middot; <kbd>@</kbd> to mention, <kbd>Tab</kbd> completes
+                                <kbd>Enter</kbd> to send &middot; <kbd>Shift+Enter</kbd> for newline &middot; <kbd>/</kbd> for commands &middot; <kbd>@</kbd> to mention, <kbd>Tab</kbd> completes {{ help_tip('room.mentions') }}
                                 <span id="iris-wr-cmd-status" class="ml-2"></span>
                             </div>
                         </div>
@@ -795,9 +796,9 @@
     <div class="iris-wr-pane" id="iris-wr-pane-summary">
         <div class="card"><div class="card-body">
             <div class="d-flex align-items-center flex-wrap" style="gap:8px;">
-                <div style="font-weight:600;">Operational summary</div>
+                <div style="font-weight:600;">Operational summary {{ help_tip('room.operational_summary') }}</div>
                 <span class="iris-wr-rail-hint" title="ICS 209 shape; Emergency Support Functions derived from the attached cases' sectors">ICS 209 &middot; <span id="iris-wr-os-esflist">ESF</span></span>
-                <span id="iris-wr-os-esf"></span>
+                <span id="iris-wr-os-esf"></span>{{ help_tip('room.esf') }}
                 <span class="ml-auto"></span>
                 <span id="iris-wr-os-stale" class="badge badge-warning" style="display:none;"
                       title="The cases, tasks, ICS forms or stream changed after this summary was written">Inputs changed since this summary</span>
@@ -814,11 +815,11 @@
                 <div style="margin-top:6px; display:flex; gap:6px;">
                     <button type="button" class="btn btn-sm btn-primary" id="iris-wr-os-save">Save</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="iris-wr-os-cancel">Cancel</button>
-                    <span class="iris-wr-rail-hint" style="align-self:center;">Markdown. Saving pauses automatic refresh until you revert.</span>
+                    <span class="iris-wr-rail-hint" style="align-self:center;">Markdown. Saving pauses automatic refresh until you revert.</span>{{ help_tip('ai.manual_edit', cls='align-self-center') }}
                 </div>
             </div>
             <hr style="border-color:#2a2a35;">
-            <div class="iris-wr-rail-hint" title="room.summary: the campaign description on STIX export and MISP push; edit it from the room's Edit button">Export description (STIX / MISP)</div>
+            <div class="iris-wr-rail-hint">Export description (STIX / MISP) {{ help_tip('room.export_description') }}</div>
             <div id="iris-wr-summary-view" class="text-muted">No summary yet.</div>
         </div></div>
     </div>
@@ -828,13 +829,13 @@
         <div class="row">
             <div class="col-md-3">
                 <div class="iris-wr-rail">
-                    <div class="iris-wr-rail-h">Timelines
+                    <div class="iris-wr-rail-h">Timelines {{ help_tip('room.timelines') }}
                         <a href="#" id="iris-wr-tl-add" class="ml-auto" title="New room timeline" style="color:#7a7a85;">+</a>
                     </div>
                     <a href="#" id="iris-wr-tl-showall" class="iris-wr-rail-hint" style="display:block; margin-bottom:4px;">Show all</a>
                     <div id="iris-wr-tl-roomlist"></div>
                     <div id="iris-wr-tl-roomempty" class="iris-wr-rail-hint">No timelines yet.</div>
-                    <div class="iris-wr-rail-h">Linked case timelines</div>
+                    <div class="iris-wr-rail-h">Linked case timelines {{ help_tip('room.linked_case_content') }}</div>
                     <div id="iris-wr-tl-caselist"></div>
                 </div>
             </div>
@@ -849,7 +850,7 @@
                         <label class="mb-0 text-muted" style="font-size:0.75rem;">From (UTC)</label>
                         <input type="datetime-local" class="form-control form-control-sm" id="iris-wr-tl-from" style="width:190px;">
                         <label class="mb-0 text-muted" style="font-size:0.75rem;">To (UTC)</label>
-                        <input type="datetime-local" class="form-control form-control-sm" id="iris-wr-tl-to" style="width:190px;">
+                        <input type="datetime-local" class="form-control form-control-sm" id="iris-wr-tl-to" style="width:190px;">{{ help_tip('room.timeline_utc') }}
                         <div class="ml-auto d-flex align-items-center" style="gap:8px;">
                             <div class="btn-group btn-group-sm">
                                 <button type="button" class="btn btn-dark" id="iris-wr-tl-viewlist">List</button>
@@ -871,7 +872,7 @@
         <div class="card"><div class="card-body">
             <div class="d-flex align-items-center mb-2">
                 <div>
-                    <h5 class="mb-0" style="font-size:1.05rem; font-weight:600;">Tasks</h5>
+                    <h5 class="mb-0" style="font-size:1.05rem; font-weight:600;">Tasks {{ help_tip('room.tasks') }}</h5>
                     <div class="text-muted" style="font-size:0.78rem;">
                         War-room-level coordination tasks with subtasks, statuses, tags and search.
                     </div>
@@ -908,7 +909,7 @@
             <div class="text-muted mt-1" id="iris-wr-rt-counter" style="font-size:0.72rem;"></div>
 
             <hr>
-            <h5 style="font-size:0.95rem;">Case tasks <span class="text-muted" style="font-size:0.78rem;">(read-only, across linked cases you can access)</span></h5>
+            <h5 style="font-size:0.95rem;">Case tasks <span class="text-muted" style="font-size:0.78rem;">(read-only, across linked cases you can access)</span> {{ help_tip('room.linked_case_content') }}</h5>
             <table class="table table-sm table-hover">
                 <thead><tr><th>Task</th><th>Status</th><th>Case</th><th>Updated</th></tr></thead>
                 <tbody id="iris-wr-tk-tbody"></tbody>
@@ -922,7 +923,7 @@
         <div class="row">
             <div class="col-md-3">
                 <div class="iris-wr-rail">
-                    <div class="iris-wr-rail-h" style="display:flex; align-items:center;">Notes
+                    <div class="iris-wr-rail-h" style="display:flex; align-items:center;">Notes {{ help_tip('room.notes') }}
                         <span class="ml-auto" style="letter-spacing:0;">
                             <a href="#" id="iris-wr-nt-newfolder" class="iris-wr-nt-toolbtn" title="New folder" style="display:none;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></a>
@@ -945,7 +946,7 @@
                     <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-nt-search" placeholder="Search notes..." autocomplete="off">
                     <div id="iris-wr-nt-roomlist"></div>
                     <div id="iris-wr-nt-roomempty" class="iris-wr-rail-hint">No room notes yet.</div>
-                    <div class="iris-wr-rail-h mt-3">Linked case notes</div>
+                    <div class="iris-wr-rail-h mt-3">Linked case notes {{ help_tip('room.linked_case_content') }}</div>
                     <div id="iris-wr-nt-caselist"></div>
                     <div id="iris-wr-nt-caseempty" class="iris-wr-rail-hint" style="display:none;">No notes in the linked cases you can access.</div>
                 </div>
@@ -957,11 +958,14 @@
                         <div style="display:flex; align-items:center; gap:8px;">
                             <input type="text" id="iris-wr-nt-title" class="iris-wr-nt-titleinput" maxlength="255" autocomplete="off">
                             <span id="iris-wr-nt-ro" class="iris-wr-tl-on" style="display:none;">READ-ONLY</span>
+                            {# ICS notes only (iris_wroom_nt_show_doc toggles both help spans with the PDF button). #}
+                            <span id="iris-wr-nt-icshelp" style="display:none;">{{ help_tip('ics.forms') }}</span>
                             <span class="text-muted" id="iris-wr-nt-status" style="margin-left:auto; font-size:0.72rem; white-space:nowrap;"></span>
                             {# ICS notes only: the official FEMA form, filled from this note
                                (server-side, business/war_room_ics_pdf.py). Read access. #}
                             <a href="#" id="iris-wr-nt-icspdf" class="iris-wr-nt-toolbtn" title="Download this ICS form as the filled FEMA PDF" style="display:none;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></a>
+                            <span id="iris-wr-nt-icspdfhelp" style="display:none;">{{ help_tip('ics.pdf_export') }}</span>
                             <a href="#" id="iris-wr-nt-del" class="iris-wr-nt-toolbtn" title="Delete note" style="display:none; color:#a04a52;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></a>
                         </div>
@@ -979,11 +983,12 @@
         <div class="row">
             <div class="col-md-3">
                 <div class="iris-wr-rail">
-                    <div class="iris-wr-rail-h" style="display:flex; align-items:center;">SitReps
+                    <div class="iris-wr-rail-h" style="display:flex; align-items:center;">SitReps {{ help_tip('sitrep.sitreps') }}
                         <a href="#" class="iris-wr-nt-toolbtn ml-auto" id="iris-wr-sitrep-new" title="New SitRep draft" style="display:none; letter-spacing:0;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></a>
                     </div>
                     <button class="btn btn-sm btn-secondary mb-1" id="iris-wr-sitrep-ai" style="display:none;">&#10024; AI draft</button>
+                    <span id="iris-wr-sitrep-ai-help" style="display:none;">{{ help_tip('sitrep.ai_draft') }}</span>
                     <div class="text-muted mb-1" id="iris-wr-sitrep-ai-status" style="font-size:0.72rem;"></div>
                     <div id="iris-wr-sitrep-list"></div>
                     <div id="iris-wr-sitrep-empty" class="iris-wr-rail-hint" style="display:none;">No SitReps yet.</div>
@@ -996,7 +1001,7 @@
                         <div style="display:flex; align-items:flex-start; gap:8px;">
                             <div style="flex:1 1 auto; min-width:0;">
                                 <input type="text" id="iris-wr-sr-title" class="iris-wr-nt-titleinput" maxlength="255" autocomplete="off">
-                                <div class="text-muted" id="iris-wr-sr-meta" style="font-size:0.72rem;"></div>
+                                <div class="text-muted" style="font-size:0.72rem;"><span id="iris-wr-sr-meta"></span>{{ help_tip('sitrep.status') }}</div>
                             </div>
                             <span class="text-muted" id="iris-wr-sr-status" style="font-size:0.72rem; white-space:nowrap; margin-top:6px;"></span>
                             <a href="#" class="iris-wr-sr-export iris-wr-nt-toolbtn" data-fmt="md" title="Download Markdown" style="margin-top:4px;">
@@ -1045,8 +1050,8 @@
         <div class="card"><div class="card-body">
             <div style="display:flex; align-items:flex-start; gap:10px;">
                 <div style="flex:1 1 auto; min-width:0;">
-                    <h5 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Teams</h5>
-                    <div class="text-muted" style="font-size:0.78rem;">Group members together and @-mention the group in chat. Every member of a mentioned team gets notified.</div>
+                    <h5 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Teams {{ help_tip('room.teams') }}</h5>
+                    <div class="text-muted" style="font-size:0.78rem;">Group members together and @-mention the group in chat. Every member of a mentioned team gets notified. {{ help_tip('room.leadership_team') }}</div>
                 </div>
                 <button class="btn btn-sm btn-primary" id="iris-wr-team-newbtn" style="display:none; flex-shrink:0;">+ New team</button>
             </div>
@@ -1060,7 +1065,7 @@
         <div class="card"><div class="card-body">
             <div style="display:flex; align-items:flex-start; gap:10px;">
                 <div style="flex:1 1 auto; min-width:0;">
-                    <h5 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Attached cases</h5>
+                    <h5 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Attached cases {{ help_tip('room.attached_cases') }}</h5>
                     <div class="text-muted" style="font-size:0.78rem;">Cases pulled into this war room for coordinated triage. Click a row to peek at the case details.</div>
                 </div>
                 <button class="btn btn-sm btn-primary" id="iris-wr-case-attachbtn" style="display:none; flex-shrink:0;">+ Attach cases</button>
@@ -1087,15 +1092,15 @@
         <div class="card"><div class="card-body">
             <div style="display:flex; align-items:flex-start; gap:10px;">
                 <div style="flex:1 1 auto; min-width:0;">
-                    <h5 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Members</h5>
-                    <div class="text-muted" style="font-size:0.78rem;">People with access to this war room. Leads coordinate, responders execute, observers watch.</div>
+                    <h5 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Members {{ help_tip('room.role') }}</h5>
+                    <div class="text-muted" style="font-size:0.78rem;">People with access to this war room. Leads coordinate, responders execute, observers watch. {{ help_tip('room.membership_access') }}</div>
                 </div>
                 <button class="btn btn-sm btn-primary" id="iris-wr-member-addbtn" style="display:none; flex-shrink:0;">+ Add member</button>
             </div>
             <div class="mt-2" id="iris-wr-mb-list"></div>
             <div class="mt-3" id="iris-wr-guests-wrap" style="display:none;">
-                <h6 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Guests</h6>
-                <div class="text-muted" style="font-size:0.78rem;">Outside participants invited by link. They exist only in this room, hold no IRIS-NG account and no case access; access ends at expiry, on revoke, or when the room closes.</div>
+                <h6 style="color:#e8e8ee; font-weight:600; margin-bottom:2px;">Guests {{ help_tip('guest.guests') }}</h6>
+                <div class="text-muted" style="font-size:0.78rem;">Outside participants invited by link, who sign in on the guest portal with email and password. They exist only in this room and hold no IRIS-NG account; they see the attached cases read-only, through the room. Access ends at expiry, on revoke, or when the room closes. {{ help_tip('guest.status') }}</div>
                 <div class="mt-2" id="iris-wr-guest-list"></div>
             </div>
         </div></div>
@@ -1108,6 +1113,7 @@
                 <button class="btn btn-sm btn-primary" id="iris-wr-corr-tag" style="display:none;">Apply campaign tag</button>
                 <a class="btn btn-sm btn-secondary" id="iris-wr-corr-stix" href="#">Export STIX</a>
                 <button class="btn btn-sm btn-secondary" id="iris-wr-corr-misp" style="display:none;">Push to MISP</button>
+                {{ help_tip('room.correlation') }}{{ help_tip('room.outbound_sharing') }}
                 <span class="text-muted ml-1" id="iris-wr-corr-status" style="font-size:0.78rem;"></span>
             </div>
             <div class="text-muted mb-2" id="iris-wr-corr-note" style="font-size:0.78rem;"></div>
@@ -1134,7 +1140,7 @@
                     <input type="text" class="form-control" id="iris-wr-edit-name" maxlength="255">
                 </div>
                 <div class="form-group">
-                    <label for="iris-wr-edit-slug">Portal address (slug)</label>
+                    <label for="iris-wr-edit-slug">Portal address (slug)</label>{{ help_tip('guest.room_address') }}
                     <input type="text" class="form-control" id="iris-wr-edit-slug" maxlength="63" placeholder="valley-water" autocomplete="off"
                            title="Lowercase letters, digits and hyphens. Guests reach the room at <portal URL>/<slug>. Leave blank to derive it from the name.">
                     <small class="form-text text-muted" id="iris-wr-edit-slug-hint"></small>
@@ -1144,7 +1150,7 @@
                     <textarea class="form-control" id="iris-wr-edit-desc" rows="2"></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="iris-wr-edit-severity">Severity</label>
+                    <label for="iris-wr-edit-severity">Severity</label>{{ help_tip('room.severity') }}
                     <select class="form-control" id="iris-wr-edit-severity">
                         <option value="">(unset)</option>
                         <option value="low">low</option>
@@ -1154,7 +1160,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="iris-wr-edit-summary">Summary</label>
+                    <label for="iris-wr-edit-summary">Summary</label>{{ help_tip('room.export_description') }}
                     <textarea class="form-control" id="iris-wr-edit-summary" rows="6"></textarea>
                 </div>
                 <div class="text-danger" id="iris-wr-edit-error" style="display:none;"></div>
@@ -1171,7 +1177,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">&#128202; New poll</h5>
+                <h5 class="modal-title">&#128202; New poll {{ help_tip('room.polls') }}</h5>
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body">
@@ -1231,7 +1237,7 @@
                 </div>
                 <div class="d-flex" style="gap:10px;">
                     <div class="form-group" style="flex:1;">
-                        <label for="iris-wr-rtask-f-status">Status</label>
+                        <label for="iris-wr-rtask-f-status">Status</label>{{ help_tip('room.task_status') }}
                         <select class="form-control" id="iris-wr-rtask-f-status">
                             <option value="no_status">No status</option>
                             <option value="todo">To do</option>
@@ -1310,7 +1316,7 @@
                 <div class="d-flex mb-2" style="gap:10px;">
                     <input type="date" class="form-control" id="iris-wr-tlev-date" title="Date, in the offset on the right" style="flex:1;">
                     <input type="time" class="form-control" id="iris-wr-tlev-time" step="1" title="Time, in the offset on the right" style="flex:1;">
-                    <input type="text" class="form-control" id="iris-wr-tlev-tz" value="+00:00" maxlength="6" placeholder="+00:00" title="UTC offset the time is entered in (+HH:MM). The timeline displays UTC." style="width:92px; flex:none;" autocomplete="off">
+                    <input type="text" class="form-control" id="iris-wr-tlev-tz" value="+00:00" maxlength="6" placeholder="+00:00" title="UTC offset the time is entered in (+HH:MM). The timeline displays UTC." style="width:92px; flex:none;" autocomplete="off">{{ help_tip('room.timeline_utc', cls='align-self-center') }}
                 </div>
                 <div class="d-flex mb-2" style="gap:10px; align-items:center;">
                     <input type="text" class="form-control" id="iris-wr-tlev-cat" maxlength="64" placeholder="Category (optional)" style="flex:1;">
@@ -1366,7 +1372,7 @@
             <div class="modal-header" style="border-bottom:0; padding-bottom:0; display:block;">
                 <button type="button" class="close" data-dismiss="modal" style="float:right;"><span>&times;</span></button>
                 <h5 class="modal-title">Add member</h5>
-                <div class="text-muted" style="font-size:0.78rem;">Adding a member grants them access to the war room. Case access stays governed by each case's own ACL.</div>
+                <div class="text-muted" style="font-size:0.78rem;">Adding a member grants them access to the war room. Case access stays governed by each case's own ACL. {{ help_tip('room.membership_access') }}</div>
                 <div class="btn-group btn-group-sm mt-2" role="group" id="iris-wr-mbadd-mode">
                     <button type="button" class="btn btn-secondary active" data-mode="user" id="iris-wr-mbadd-mode-user">IRIS-NG user</button>
                     <button type="button" class="btn btn-outline-secondary" data-mode="guest" id="iris-wr-mbadd-mode-guest" title="An outside participant who exists only in this room">Guest</button>
@@ -1377,7 +1383,7 @@
                     <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-mbadd-search" placeholder="Search by login or name" autocomplete="off">
                     <div id="iris-wr-mbadd-list" style="max-height:240px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:4px;"></div>
                     <div class="mt-2">
-                        <label class="text-muted" for="iris-wr-mbadd-role" style="font-size:0.72rem;">Role</label>
+                        <label class="text-muted" for="iris-wr-mbadd-role" style="font-size:0.72rem;">Role</label>{{ help_tip('room.role') }}
                         <select class="form-control form-control-sm" id="iris-wr-mbadd-role" style="max-width:200px;">
                             <option value="responder">Responder</option>
                             <option value="observer">Observer</option>
@@ -1386,7 +1392,7 @@
                     </div>
                 </div>
                 <div id="iris-wr-mbadd-guest-fields" style="display:none;">
-                    <div class="text-muted mb-2" style="font-size:0.78rem;">The guest gets a personal link to this room only. No account, no password, nothing outside the room. Access ends at expiry, on revoke, or when the room closes.</div>
+                    <div class="text-muted mb-2" style="font-size:0.78rem;">The guest gets a personal link to this room only and signs in with this email and a password, both shown to you once. No IRIS-NG account, nothing outside the room. Access ends at expiry, on revoke, or when the room closes. {{ help_tip('guest.invitation') }}</div>
                     <label class="text-muted" for="iris-wr-mbadd-g-name" style="font-size:0.72rem;">Name</label>
                     <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-mbadd-g-name" placeholder="Jane Doe" autocomplete="off" maxlength="120">
                     <label class="text-muted" for="iris-wr-mbadd-g-org" style="font-size:0.72rem;">Organisation</label>
@@ -1414,7 +1420,7 @@
                         <input type="text" class="form-control form-control-sm" id="iris-wr-mbadd-result-pw" readonly title="Password" style="font-family:monospace;">
                         <button type="button" class="btn btn-sm btn-secondary" id="iris-wr-mbadd-result-copypw">Copy</button>
                     </div>
-                    <div class="iris-wr-rail-hint mt-2">Shown once. "New link" issues another link (same password); "Reset password" issues a new password (same link).</div>
+                    <div class="iris-wr-rail-hint mt-2">Shown once. "New link" issues another link (same password); "Reset password" issues a new password (same link). {{ help_tip('guest.actions') }}</div>
                 </div>
             </div>
             <div class="modal-footer" style="border-top:0;">
@@ -1429,7 +1435,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header" style="border-bottom:0; padding-bottom:0;">
-                <h5 class="modal-title">Attach cases</h5>
+                <h5 class="modal-title">Attach cases {{ help_tip('room.attached_cases') }}</h5>
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body">
@@ -1490,7 +1496,7 @@
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body text-muted" style="font-size:0.85rem;">
-                It stays editable &mdash; publishing just marks the state.
+                Publishing notifies the room once; the SitRep stays editable afterwards. {{ help_tip('sitrep.publish') }}
             </div>
             <div class="modal-footer" style="border-top:0;">
                 <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Cancel</button>

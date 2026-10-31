@@ -11,7 +11,7 @@
    id and gains `show active` so it renders as a normal page region. The
    /api/v2/dashboard/* endpoints it calls are untouched. #}
 <div class="page-inner">
-    <h4 class="page-title mb-3">Metrics</h4>
+    <h4 class="page-title mb-3">Metrics{{ help_tip('metrics.page') }}</h4>
     {# iris-next: Metrics pane — KPI strip + 4 sections, computed on-load. #}
     <div class="tab-pane fade show active" id="iris-dash-metrics" role="tabpanel">
       <div class="row mb-3">
@@ -21,7 +21,7 @@
             <button type="button" class="btn btn-dark iris-mtx-range-btn" data-range="30">30d</button>
             <button type="button" class="btn btn-outline-dark iris-mtx-range-btn" data-range="90">90d</button>
             <button type="button" class="btn btn-outline-dark iris-mtx-range-btn" data-range="ytd">YTD</button>
-          </div>
+          </div>{{ help_tip('metrics.date_range', cls='ml-0') }}
           <span class="text-muted small">or</span>
           <input type="date" id="iris-mtx-start" class="form-control form-control-sm" style="max-width: 160px;">
           <span class="text-muted small">to</span>
@@ -50,20 +50,20 @@
           </div>
           <div class="col-sm-6 col-md-3">
             <div class="card card-stats card-round"><div class="card-body">
-              <p class="card-category">Median MTTR (days)</p>
+              <p class="card-category">Median MTTR (days){{ help_tip('metrics.mttr') }}</p>
               <h4 class="card-title" id="iris-mtx-kpi-mttr">&mdash;</h4>
             </div></div>
           </div>
           <div class="col-sm-6 col-md-3">
             <div class="card card-stats card-round"><div class="card-body">
-              <p class="card-category">Untriaged working-tl</p>
+              <p class="card-category">Untriaged working-tl{{ help_tip('metrics.untriaged_wt') }}</p>
               <h4 class="card-title" id="iris-mtx-kpi-untriaged">&mdash;</h4>
             </div></div>
           </div>
         </div>
 
         <section class="card mt-3">
-          <div class="card-header"><div class="card-title">Your activity</div></div>
+          <div class="card-header"><div class="card-title">Your activity{{ help_tip('metrics.your_activity') }}</div></div>
           <div class="card-body">
             <div class="row">
               <div class="col-md-3"><p class="card-category mb-1">My open cases</p><h5 id="iris-mtx-my-open">&mdash;</h5></div>
@@ -81,7 +81,7 @@
         </section>
 
         <section class="card mt-3">
-          <div class="card-header"><div class="card-title">Team throughput</div></div>
+          <div class="card-header"><div class="card-title">Team throughput{{ help_tip('metrics.team_throughput') }}</div></div>
           <div class="card-body">
             <div class="row">
               <div class="col-md-12">
@@ -189,7 +189,7 @@
           <div class="iris-flip-card-inner">
             <div class="iris-flip-face iris-flip-face-front card">
               <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
-                <div class="card-title mr-2">Case tagging</div>
+                <div class="card-title mr-2">Case tagging{{ help_tip('metrics.case_tagging') }}</div>
                 <div class="d-flex align-items-center" style="gap: 6px;"
                      onclick="event.stopPropagation();">
                   <span class="text-muted small">Year:</span>
@@ -267,7 +267,7 @@
           <div class="iris-flip-card-inner">
             <div class="iris-flip-face iris-flip-face-front card">
               <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
-                <div class="card-title mr-2">Sectors</div>
+                <div class="card-title mr-2">Sectors{{ help_tip('metrics.sectors') }}</div>
                 {# Year selector — stopPropagation so its clicks don't flip the card. #}
                 <div class="d-flex align-items-center" style="gap: 6px;"
                      onclick="event.stopPropagation();">
@@ -340,7 +340,7 @@
         </section>
 
         <section class="card mt-3 mb-4">
-          <div class="card-header"><div class="card-title">Investigation quality</div></div>
+          <div class="card-header"><div class="card-title">Investigation quality{{ help_tip('metrics.investigation_quality') }}</div></div>
           <div class="card-body">
             <div class="row">
               <div class="col-md-4"><p class="card-category mb-1">Open cases missing notes/IOCs/assets/events</p><h5><span id="iris-mtx-redflag-count">&mdash;</span></h5></div>
@@ -373,7 +373,7 @@
            analysts never enter them. Honors the page date range. #}
         <section class="card mt-3 mb-4" id="iris-mtx-time-card">
           <div class="card-header d-flex align-items-center" style="gap: 12px; flex-wrap: wrap;">
-            <div class="card-title mr-2">Time tracking</div>
+            <div class="card-title mr-2">Time tracking{{ help_tip('metrics.time_tracking') }}</div>
             <div class="text-muted small">15-minute increments &mdash; logged hours within the selected date range.</div>
             <button class="btn btn-sm btn-link ml-auto" onclick="iris_time_export_csv();" title="Download all breakdowns as CSV">
               <i class="fas fa-cloud-download-alt mr-1"></i>CSV

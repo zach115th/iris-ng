@@ -1,0 +1,92 @@
+{
+  "group": "IOCs",
+  "order": 50,
+  "terms": {
+    "ioc.indicator": {
+      "title": "Indicator (IOC)",
+      "text": "An observable from this incident that can be searched for or blocked elsewhere: an IP address, a domain, a URL, a file hash, an e-mail address and so on. Each IOC belongs to this case and is stored as a value plus an IOC type, with a TLP, tags and a description.\n\nIOCs can be linked to assets, cited by notes and attached to timeline events. An IOC with exactly the same type and value in another case links the two cases: that is what the cross-case count on each row and the Correlation page are built on.",
+      "aka": ["ioc", "indicator of compromise", "observable", "indicators"]
+    },
+    "ioc.value": {
+      "title": "IOC value",
+      "text": "The indicator itself, stored exactly as typed. Enter the live form (1.2.3.4, http://...), not a defanged one (1[.]2[.]3[.]4, hxxp://...): cross-case links and correlation match the stored text exactly, and the MISP sync does not undo defanging, so a defanged or differently written copy is a different indicator to them.\n\nIf the IOC type defines a format (a SHA-256 must be 64 hexadecimal characters), a value that does not match is refused. Adding the exact same type and value to a case twice is refused too; near repeats are found later by Find duplicates.",
+      "aka": ["defang", "refang", "defanged", "value format", "validation"],
+      "wiki": "IOC-Deduplication#what-counts-as-a-duplicate"
+    },
+    "ioc.one_per_line": {
+      "title": "One IOC per line",
+      "text": "When ticked, each non-empty line of the value box becomes its own IOC, all with the type, TLP, description and tags chosen here. Each line is saved separately, so a line that is refused (wrong format for the type, or already in the case) does not stop the others. Untick it to store a multi-line value as a single IOC.",
+      "aka": ["bulk add", "multiple iocs", "paste a list"]
+    },
+    "ioc.source_notes": {
+      "title": "Source notes",
+      "text": "Notes recorded as a source of this IOC. A note is recorded when the IOC is added or linked from that note's Extract IOCs panel (source ai_extractor), or when its Link known IOCs button turns a mention of the IOC into a link (source note_link). An administrator's backfill script can add more. A note that only mentions the value is not listed until one of these runs. Deleting the note removes the record.\n\nSource notes are what join notes to IOCs on the Graph tab.",
+      "aka": ["provenance", "linked notes", "ai_extractor", "note_link", "sourced from"],
+      "wiki": "Case-Notes#indicators-in-notes"
+    },
+    "ioc.cross_case": {
+      "title": "Other cases with this IOC",
+      "text": "Other cases holding an IOC with exactly the same type and value. Only cases you can open are counted and listed, so two analysts can see different numbers. Matching is on the stored text, so a defanged or differently written copy is not found.\n\nOpen a case card to see its state, severity, owner and summary without leaving the page. In the IOC's edit window, Check other cases also shows each case's description and tags for the IOC and the notes there that cite or mention it.",
+      "aka": ["cross-case", "linked cases", "also seen in", "correlation", "appearances"],
+      "wiki": "IOC-Correlation#per-ioc-cross-case-panel"
+    },
+    "ioc.enrichment": {
+      "title": "Module enrichment",
+      "text": "What enrichment modules (VirusTotal, for example) have written into this IOC. Run enrichment lists the modules that offer a manual action for IOCs and starts the chosen one for this IOC in the background; its results arrive as extra tabs of the IOC, shown here and in the full editor, once the module finishes. A module may send the IOC's value to an outside service. Modules are installed and configured by administrators under Manage -> Modules.",
+      "aka": ["virustotal", "modules", "intel", "custom attributes", "run enrichment"]
+    },
+    "ioc.misp_sync": {
+      "title": "MISP sync",
+      "text": "Whether this IOC has been pushed to MISP. When an administrator has enabled the MISP sync module, creating or editing an IOC adds or updates an attribute on the case's MISP event. By default the attribute carries the IOC's tags and a tlp: tag, and the TLP sets who in MISP can see it: red, amber and amber+strict stay within your MISP organisation.\n\nThis block shows the attribute and event the IOC was published as and when it last synced. Not published means IRIS-NG holds no record of a sync for this IOC.",
+      "aka": ["misp", "attribute", "misp event", "publish"],
+      "wiki": "MISP-Integration#what-it-syncs"
+    },
+    "ioc.profile": {
+      "title": "Indicator profile (AI)",
+      "text": "A short AI reading of this IOC, written from the IOC itself, the other cases it appears in, the notes that cite it, its linked assets, the timeline events it is attached to and its comments. Opening an IOC only reads the saved profile. The model is called when you click Generate one or the sparkle button, which reuse the saved profile if nothing it reads has changed, or Re-run, which always asks again. Generating needs write access to the case.\n\nThe saved profile is shared with everyone who can open the case; its cross-case part covers the cases visible to whoever generated it.",
+      "aka": ["ai profile", "indicator summary", "ioc profile"],
+      "wiki": "AI-Features#new-surfaces-in-iris-ng-v200"
+    },
+    "ioc.csv_import": {
+      "title": "IOC CSV import",
+      "text": "Adds IOCs from a CSV file with the columns ioc_value, ioc_type, ioc_description, ioc_tags, ioc_tlp, in that order (a header row is optional). The type is the IOC type's exact name in lower case (ip-dst, domain, sha256...), the TLP its name (red, amber, amber+strict, green or clear), and several tags go in one cell separated by |.\n\nA row with an empty value or an unknown type is reported and skipped. A row that is the same indicator as one the case already holds, defanged or not, is skipped and named in the result, so importing a file twice adds nothing twice.",
+      "aka": ["csv", "upload", "bulk import"],
+      "wiki": "Troubleshooting#a-csv-import-of-iocs-reports-skipped-n-duplicates"
+    },
+    "ioc.dedup": {
+      "title": "Find duplicates",
+      "text": "Finds indicators this case holds more than once, so links and comments stop splitting across copies. It covers this case only: the same IOC in another case is correlation, not a duplicate. Nothing changes until you resolve a group or a pair, and resolving one deletes the extra IOC. Every resolution is recorded in the kept IOC's history and in the case activity.",
+      "items": [
+        {"name": "Keep left / Keep right", "text": "Keeps that IOC and deletes the other. The deleted one's asset links, timeline events, source notes, comments and alert links move to the kept one, and its MISP link too when the kept one has none; its own tags and description are dropped."},
+        {"name": "Merge into left / Merge into right", "text": "As Keep, and also adds the other's tags, appends its description (headed Merged from IOC #id) and fills in the kept IOC's TLP and enrichment where they are empty."},
+        {"name": "Keep both", "text": "Dismisses the pair in this window only. It is not remembered, so the next scan shows it again."}
+      ],
+      "aka": ["dedup", "deduplicate", "merge", "duplicates"],
+      "wiki": "IOC-Deduplication#keep-versus-merge--nothing-is-orphaned"
+    },
+    "ioc.dedup_exact": {
+      "title": "Exact duplicates",
+      "text": "IOCs of the same type whose values are equal once surrounding spaces are trimmed, defanging is undone (hxxp, [.], (.), [dot], [at] and similar) and case is ignored, so evil[.]com and EVIL.com are one indicator. In each group the first entry (lowest IOC number) is kept.\n\nAuto-resolve all merges every group into its first entry: links move, tags are combined and descriptions appended, so nothing written on a duplicate is lost. Under the same rule, CSV import skips and alert escalation reuses an IOC the case already holds instead of adding a copy.",
+      "aka": ["auto-resolve", "normalised value", "first entry"],
+      "wiki": "IOC-Deduplication#what-counts-as-a-duplicate"
+    },
+    "ioc.dedup_near": {
+      "title": "Near duplicates",
+      "text": "Pairs that may be the same indicator written differently. They are suggestions only: review each pair and choose Keep, Merge or Keep both. The scan compares up to the first 2000 IOCs (lowest numbers first) and lists at most 200 pairs, the most similar first.",
+      "items": [
+        {"name": "close spelling", "text": "Same type, and the values are at least 85% alike once their words are sorted: usually a typo or an extra character."},
+        {"name": "same value, different type", "text": "One value recorded under two IOC types, such as a domain also stored as a hostname."},
+        {"name": "URL host is another indicator", "text": "A URL whose host is itself an IOC of this case."},
+        {"name": "host:port vs host", "text": "A value with a port and the same value without it."}
+      ],
+      "aka": ["similar", "fuzzy match", "near match"],
+      "wiki": "IOC-Deduplication#the-modal"
+    },
+    "ioc.dedup_ai": {
+      "title": "AI duplicate pass",
+      "text": "Sends the case's IOCs (type, normalised value and the start of each description, for the first 400 by number) to the AI backend and asks which pairs are the same indicator written two ways, with a confidence and a reason. It runs in the background queue; the proposals are listed like near duplicates and nothing is applied until you resolve one. Pairs that are exact duplicates or name an IOC that was not sent are discarded, and at most 50 are shown.",
+      "aka": ["ai dedup", "ai pass"],
+      "wiki": "AI-Features#ioc-deduplication-pass"
+    }
+  }
+}

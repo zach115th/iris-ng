@@ -1,0 +1,151 @@
+{
+  "group": "Case summary and chat",
+  "order": 32,
+  "terms": {
+    "summary.executive": {
+      "title": "Executive Case Summary",
+      "text": "An AI-written briefing for leadership, built from this case's records in fixed sections (situation, status, impact, findings, actions, recommendations, key timeline). Five specialists condense the notes, timeline, IOCs, assets and evidence; a writer turns them into short claims, each citing the case items it rests on; the server writes the text and every count. Each claim is then checked against its sources, in code and by a second AI role, the verifier.\n\nReport templates and module hooks receive the text shown here, your edit included.",
+      "aka": [
+        "executive summary",
+        "briefing",
+        "leadership summary",
+        "ai summary"
+      ],
+      "wiki": "AI-Features#executive-case-summary"
+    },
+    "summary.status": {
+      "title": "Summary verification status",
+      "text": "Whether this summary has been through review. It is worked out from the open review questions each time, never stored, and it blocks nothing: a draft can be read, edited and put in a report. Verified means every flag was answered, not that the text is guaranteed right.",
+      "items": [
+        {
+          "name": "Draft · N questions",
+          "text": "N review questions are still unanswered (Review tab)."
+        },
+        {
+          "name": "Draft · not reviewed",
+          "text": "Made before verification existed. Regenerate it to have it checked."
+        },
+        {
+          "name": "Verified",
+          "text": "Every review question is answered, or none was raised."
+        },
+        {
+          "name": "Verified · checks only",
+          "text": "As Verified, but the AI verifier is switched off (Settings > AI), so only the checks in code ran."
+        }
+      ],
+      "aka": [
+        "draft",
+        "verified",
+        "checks only",
+        "not reviewed",
+        "pill"
+      ],
+      "wiki": "AI-Features#review-questions-and-the-answers-pass"
+    },
+    "summary.generate": {
+      "title": "Generate Summary and Refresh",
+      "text": "Generate Summary runs the pipeline but reuses every saved result whose inputs have not changed, so on an unchanged case it returns the stored summary. Refresh re-runs every stage from scratch, even on unchanged data. Both run in the background, can take several minutes, and keep going if you leave the page. If the summary was edited by hand, either one asks before discarding your edit.",
+      "aka": [
+        "regenerate",
+        "refresh",
+        "force",
+        "re-run"
+      ],
+      "wiki": "AI-Features#executive-case-summary"
+    },
+    "summary.review_questions": {
+      "title": "Review questions",
+      "text": "Every flag raised on this pass, by the checks in code or by the verifier, asked as a question about one claim (or about the whole text), most severe first. The options are proposed from the case; pick one and press Answer. An answer cannot be changed once recorded. If the verifier could not run, that is a question too.",
+      "items": [
+        {
+          "name": "Rewrite",
+          "text": "Replace the claim with the proposed sentence."
+        },
+        {
+          "name": "Lower the tier",
+          "text": "Keep the claim but mark it less certain. Tiers, most to least certain: confirmed, suspected, unverified, third-party reported."
+        },
+        {
+          "name": "Drop",
+          "text": "Remove the claim from the summary."
+        },
+        {
+          "name": "Keep as written",
+          "text": "You confirm the claim; the same check does not ask about it again."
+        },
+        {
+          "name": "Other",
+          "text": "Describe the change in your own words; the AI writer applies it to that claim only."
+        },
+        {
+          "name": "High / medium / low",
+          "text": "How serious the flag is. When the first draft had a high flag, the writer already revised it once automatically."
+        }
+      ],
+      "aka": [
+        "flags",
+        "questions",
+        "review tab",
+        "tier",
+        "severity"
+      ],
+      "wiki": "AI-Features#review-questions-and-the-answers-pass"
+    },
+    "summary.apply_answers": {
+      "title": "Apply answers",
+      "text": "Once every question is answered, builds the next pass from your answers: rewrites, tier changes and drops are applied directly, Other answers go to the AI writer, then the text is re-rendered and re-checked. Anything new comes back as a question. It is unavailable while a question is open, or when every answer keeps the text as written, since nothing would change.",
+      "aka": [
+        "answers pass",
+        "apply"
+      ],
+      "wiki": "AI-Features#review-questions-and-the-answers-pass"
+    },
+    "summary.audit": {
+      "title": "Summary audit",
+      "text": "How this summary was produced: the backend and model behind each role (writer, verifier, the five specialists), every step of this pass with its outcome and token use, the chain of passes (draft, automatic revise, answers) and the questions of the pass it replaced. A step marked cached reused a saved result instead of calling the model.",
+      "aka": [
+        "audit tab",
+        "provenance",
+        "steps",
+        "passes",
+        "tokens"
+      ],
+      "wiki": "AI-Features#review-questions-and-the-answers-pass"
+    },
+    "chat.assistant": {
+      "title": "Case assistant",
+      "text": "Ask about this case in plain language. Every question sends the whole case (notes, timeline, IOCs, assets, tasks and evidence, without the timeline events taken out of the summary) and the last ten messages of this conversation to the AI backend. Each tab's assistant is tuned to that tab but sees the whole case. Answers can be wrong: check them against the evidence. The conversation lives in this page only; reloading or Clear starts over.",
+      "aka": [
+        "chat",
+        "ask",
+        "assistant",
+        "question"
+      ],
+      "wiki": "AI-Features#case-scoped-chat-assistant"
+    },
+    "chat.followups": {
+      "title": "Follow-up questions",
+      "text": "Up to three questions the assistant suggests asking next, written with its answer; click one to ask it. Questions already asked are not offered again, and the next answer replaces them. When an answer is cut off at the model's output limit, a Continue chip asks it to carry on.",
+      "aka": [
+        "suggestions",
+        "chips",
+        "continue",
+        "truncated"
+      ],
+      "wiki": "AI-Features#case-scoped-chat-assistant"
+    },
+    "tagsugg.suggestions": {
+      "title": "Suggested tags",
+      "text": "Tags the AI backend proposes for this item from its saved content, so save your changes first. Each one is checked against the bundled MISP taxonomy and galaxy catalog (for a note, the tags already used in this case count too); anything else, and anything under 50% confidence, is dropped, leaving at most seven. The percentage is the model's own confidence. Amber chips are galaxy tags (threat actors, tools, malware...), violet ones taxonomy or case tags. A click, or add all, puts the tag in the tag field as if typed.",
+      "aka": [
+        "suggest tags",
+        "misp",
+        "taxonomy",
+        "galaxy",
+        "auto tag"
+      ],
+      "wiki": "AI-Features#ai-tag-suggester"
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "group": "Notes",
+  "order": 60,
+  "terms": {
+    "note.folders": {
+      "title": "Note folders",
+      "text": "Folders group this case's notes and can be nested. Right-click a folder to add a note or a sub-folder, rename, move or delete it; right-click a note to copy its link or Markdown link, move it or delete it. The search box above the tree matches note titles, text and tags.\n\nDeleting a folder deletes every note and sub-folder inside it, after a confirmation. Move the notes out first if you want to keep them.",
+      "aka": ["directory", "directories", "subfolder", "notes tree"],
+      "wiki": "Case-Notes#layout"
+    },
+    "note.tags": {
+      "title": "Note tags",
+      "text": "Labels on this note. Adding or removing a tag saves the note at once. Each note's tags show as chips in the folder tree: click a chip to list only the notes carrying that tag, and the search box matches tags too.\n\nThe tags go with the note into the AI features and the case export. Suggest tags (AI) can also propose tags already used elsewhere in this case, so a case keeps one vocabulary.",
+      "aka": ["labels", "note labels", "tag filter"],
+      "wiki": "Case-Notes#tags"
+    },
+    "note.revisions": {
+      "title": "Autosave and revisions",
+      "text": "A note saves itself about ten seconds after you stop typing; the save button turns red while a change is not saved yet. A save that changes the title or the text adds a revision.\n\nThe clock icon lists the revisions with their author and time. Open one to preview it, revert the note to it, or delete it.",
+      "aka": ["autosave", "history", "versions", "revert", "undo"],
+      "wiki": "Case-Notes#writing"
+    },
+    "note.markdown": {
+      "title": "Markdown editor",
+      "text": "Notes, task and evidence descriptions and comments are written in Markdown and shown rendered. The toolbar inserts formatting; the shortcuts are Ctrl-B bold, Ctrl-I italic, Ctrl-Shift-1 to 4 headings, Ctrl-` code and Ctrl-K link, and the question-mark button lists them.\n\nIn a note, pasting an image uploads it to the case datastore (folder Notes Upload) and inserts it. To show any other datastore file, copy its Markdown link from the datastore and paste it.",
+      "aka": ["markdown", "shortcuts", "formatting", "editor", "paste image"],
+      "wiki": "Case-Notes#writing"
+    },
+    "note.ioc_extraction": {
+      "title": "Extract IOCs (AI)",
+      "text": "Sends this note's text (the first 12,000 characters) to the AI backend, and to the Sigma rule search when one is configured, then lists up to 10 indicators it found, each with a type, a confidence of 50% or more, a reason and, where it applies, a noise warning such as a public DNS resolver. Nothing is added until you choose.\n\n+ add creates the IOC in this case at TLP:AMBER, records this note as its source and turns its mentions into links. An IOC the case already holds offers link instead. Accept all does every row, one after another. The list is not saved.",
+      "aka": ["ioc extraction", "extract indicators", "accept all", "observables"],
+      "wiki": "AI-Features#ioc-extraction-from-notes"
+    },
+    "note.link_iocs": {
+      "title": "Link known IOCs",
+      "text": "Turns every mention of an IOC already in this case into a Markdown link to that IOC, then saves the note. No AI is involved. Defanged spellings (hxxp, [.], [at]) are recognised and kept as the link text; a mention already inside a link or a code block is left alone, and running it twice changes nothing.\n\nEach linked IOC records this note as a source, so the IOC's Notes tab and the case Graph show where it is mentioned.",
+      "aka": ["linkify", "ioc links", "defanged", "mentions"],
+      "wiki": "Case-Notes#indicators-in-notes"
+    },
+    "note.mentions": {
+      "title": "@mentions",
+      "text": "Type @ followed by a person's login (not their display name) in a comment to notify them; a list suggests the people who can see the case. Only users with access to the case are notified: in the bell, and by e-mail when that channel is on for them.\n\nOnly a new comment notifies. A mention in a note's own text, or one added by editing a comment, notifies nobody. Mentions that resolved to a person are highlighted in the saved comment.",
+      "aka": ["mention", "at sign", "notify", "comments", "tag a colleague"],
+      "wiki": "Notifications#mentioning-someone"
+    }
+  }
+}

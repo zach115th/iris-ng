@@ -47,8 +47,9 @@
                     <div class="card" id="card_main_load">
                         <div class="card-header">
                             <div class="row">
-                                <div class="col">
-                                    <div class="card-title" id="overviewTableTitle">Open cases</div>
+                                <div class="col d-flex align-items-center">
+                                    {# The title text is replaced by overview.js - the icon sits beside it, not in it. #}
+                                    <div class="card-title" id="overviewTableTitle">Open cases</div>{{ help_tip('overview.cases', cls='ml-2') }}
                                 </div>
                                 <div class="col">
                                     <button type="button" class="btn btn-sm btn-outline-black float-right" onclick="get_cases_overview(false);">
@@ -82,14 +83,14 @@
                                             <th>Open since</th>
                                             <th>Tasks</th>
                                             <th>Title</th>
-                                            <th>SOC ID</th>
+                                            <th>SOC ID{{ help_tip('case.soc_id') }}</th>
                                             <th>Opened</th>
                                             <th>Closed</th>
-                                            <th>Customer</th>
-                                            <th>State</th>
-                                            <th>Severity</th>
-                                            <th>Owner</th>
-                                            <th>Tags</th>
+                                            <th>Customer{{ help_tip('common.customer') }}</th>
+                                            <th>State{{ help_tip('common.case_state') }}</th>
+                                            <th>Severity{{ help_tip('common.severity') }}</th>
+                                            <th>Owner{{ help_tip('case.owner') }}</th>
+                                            <th>Tags{{ help_tip('common.tags') }}</th>
                                         </tr>
                                     </thead>
                                     <tfoot>

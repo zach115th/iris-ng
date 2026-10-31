@@ -19,19 +19,23 @@
         <div class="modal-content">
             <div class="modal-header" style="border-bottom:0; padding-bottom:0; display:block;">
                 <button type="button" class="close" data-dismiss="modal" style="float:right;"><span>&times;</span></button>
-                <div class="text-muted" id="{{ pk }}-eyebrow" style="font-size:0.68rem; letter-spacing:0.08em;"></div>
+                {# The eyebrow's text is replaced by the including page's JS, so
+                   the (i) sits beside it, never inside it. #}
+                <div class="d-flex align-items-center">
+                    <div class="text-muted" id="{{ pk }}-eyebrow" style="font-size:0.68rem; letter-spacing:0.08em;"></div>{{ help_tip('corr.case_peek') }}
+                </div>
                 <h5 class="modal-title" id="{{ pk }}-title" style="margin-top:2px;"></h5>
             </div>
             <div class="modal-body">
                 <div class="{{ pk }}-grid">
-                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">State</div><div class="{{ pk }}-val" id="{{ pk }}-state"></div></div>
-                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Severity</div><div class="{{ pk }}-val" id="{{ pk }}-sev"></div></div>
-                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Customer</div><div class="{{ pk }}-val" id="{{ pk }}-cust"></div></div>
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">State{{ help_tip('common.case_state', target='#' ~ pk ~ '-state') }}</div><div class="{{ pk }}-val" id="{{ pk }}-state"></div></div>
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Severity{{ help_tip('common.severity', target='#' ~ pk ~ '-sev') }}</div><div class="{{ pk }}-val" id="{{ pk }}-sev"></div></div>
+                    <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Customer{{ help_tip('common.customer') }}</div><div class="{{ pk }}-val" id="{{ pk }}-cust"></div></div>
                     <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Owner</div><div class="{{ pk }}-val" id="{{ pk }}-owner"></div></div>
                     <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Opened</div><div class="{{ pk }}-val" id="{{ pk }}-opened"></div></div>
                     <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Closed</div><div class="{{ pk }}-val" id="{{ pk }}-closed"></div></div>
                     <div class="{{ pk }}-tile"><div class="{{ pk }}-lbl">Reviewer</div><div class="{{ pk }}-val" id="{{ pk }}-reviewer"></div></div>
-                    <div class="{{ pk }}-tile" style="grid-column: span 2;"><div class="{{ pk }}-lbl">Tags</div><div class="{{ pk }}-val" id="{{ pk }}-tags"></div></div>
+                    <div class="{{ pk }}-tile" style="grid-column: span 2;"><div class="{{ pk }}-lbl">Tags{{ help_tip('common.tags') }}</div><div class="{{ pk }}-val" id="{{ pk }}-tags"></div></div>
                 </div>
                 <div class="text-muted mt-3" style="font-size:0.66rem; letter-spacing:0.08em;">SUMMARY</div>
                 <div class="{{ peek_view_class | default('iris-md-rendered') }} mt-1" id="{{ pk }}-summary" style="border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; min-height:80px;"></div>

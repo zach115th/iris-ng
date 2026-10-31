@@ -75,7 +75,7 @@
     <div class="iris-co-head">
         <span class="iris-co-head-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg></span>
         <div>
-            <div class="iris-co-title">Case Objects</div>
+            <div class="iris-co-title">Case Objects {{ help_tip('object.lookup_lists') }}</div>
             <div class="iris-co-sub">Manage the taxonomies used by cases, IOCs, assets and evidence.</div>
         </div>
         <div class="iris-co-head-actions">
@@ -97,7 +97,7 @@
 
     <div class="iris-co-body">
         <div class="iris-co-list">
-            <div class="iris-co-eyebrow"><span id="iris-co-list-title"></span> <span id="iris-co-count"></span></div>
+            <div class="iris-co-eyebrow"><span id="iris-co-list-title"></span><span id="iris-co-list-tip"></span> <span id="iris-co-count"></span></div>
             <input type="text" class="form-control form-control-sm iris-co-search" id="iris-co-search"
                    placeholder="Search..." autocomplete="off">
             <div class="iris-co-rows" id="iris-co-rows"></div>

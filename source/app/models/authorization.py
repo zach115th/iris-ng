@@ -223,6 +223,9 @@ class User(UserMixin, db.Model):
     # case cost from logged time. Nullable — unset means "unpriced" (counts as $0
     # in totals but is flagged so the figure isn't silently understated).
     hourly_rate = Column(Numeric(10, 2), nullable=True)
+    # iris-ng: the (i) help icons (2026-10-30). NULL = shown; only an explicit
+    # False (Profile -> "Show help icons" off) hides them.
+    has_help_tips = Column(Boolean(), nullable=True)
 
     def __init__(self, user: str, name: str, email: str, password: str, active: bool,
                  external_id: str = None, is_service_account: bool = False, mfa_secret: str = None,

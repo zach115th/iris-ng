@@ -11,7 +11,7 @@
 	<div class="dropdown-menu dropdown-menu-right iris-notif-panel animated shadow-xl" aria-labelledby="iris-notif-bell">
 		<div class="iris-notif-head">
 			<div>
-				<div class="iris-notif-title">Case updates</div>
+				<div class="iris-notif-title">Case updates {{ help_tip('case.notifications') }}</div>
 				<div class="iris-notif-sub" id="iris-notif-scope">#{{ session['current_case'].case_id }}</div>
 			</div>
 			<button type="button" class="iris-notif-ack" id="iris-notif-ack" disabled>Mark as read</button>

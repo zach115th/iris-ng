@@ -1,0 +1,233 @@
+{
+  "group": "Shared terms",
+  "order": 10,
+  "terms": {
+    "common.help_icons": {
+      "title": "Help icons",
+      "text": "An (i) next to a field explains it. Hover to read the definition; click it (or press Enter) to keep it open and use its links; Esc or a click elsewhere closes it. Where a field takes a value from a list, the tip also shows what the chosen value means on this server.\n\nEvery definition is also on the Glossary page (the user menu, top left). You can hide the icons under My settings; the Glossary stays.",
+      "aka": [
+        "tooltip",
+        "help",
+        "info",
+        "definition",
+        "glossary"
+      ]
+    },
+    "common.tlp": {
+      "title": "TLP (Traffic Light Protocol)",
+      "text": "Who an item may be shared with outside the team working on it. TLP never limits who can see the item inside IRIS-NG (case access does that); it decides what may leave.\n\nThe STIX export and the correlation and war-room MISP push send only TLP:GREEN and TLP:CLEAR items: when the same value appears in several cases the most restrictive label wins, and an item with no TLP is withheld. The per-case MISP sync sends every IOC with a tlp: tag and, by default, keeps AMBER and RED ones to your own MISP organisation.",
+      "items": [
+        {
+          "name": "TLP:RED",
+          "text": "For the people in the room only; never shared further."
+        },
+        {
+          "name": "TLP:AMBER+STRICT",
+          "text": "Within the recipient's own organization only."
+        },
+        {
+          "name": "TLP:AMBER",
+          "text": "Within the recipient's organization and its clients, on a need-to-know basis."
+        },
+        {
+          "name": "TLP:GREEN",
+          "text": "Within the recipient's community, but not publicly."
+        },
+        {
+          "name": "TLP:CLEAR",
+          "text": "No restriction; may be published."
+        }
+      ],
+      "aka": [
+        "traffic light protocol",
+        "sharing",
+        "red",
+        "amber",
+        "green",
+        "clear"
+      ],
+      "wiki": "IOC-Correlation#tlp-handling"
+    },
+    "common.severity": {
+      "title": "Severity",
+      "text": "How serious this is, from Informational to Critical. Severity orders work queues and filters; it does not change who can see anything or what is shared.\n\nThe meaning of each level below is the description stored on this server.",
+      "values": "severity",
+      "aka": [
+        "priority",
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "informational"
+      ]
+    },
+    "common.case_classification": {
+      "title": "Classification",
+      "text": "What kind of incident this is, from the MISP incident-classification taxonomy (for example Malicious code: Ransomware). Classifications drive the dashboard metrics and help find similar cases; one that matches the MISP CERT-XLM taxonomy also adds its CERT-XLM tag to the case. Administrators can add or edit them under Manage.",
+      "values": "case_classification",
+      "aka": [
+        "incident type",
+        "taxonomy",
+        "category"
+      ]
+    },
+    "common.case_state": {
+      "title": "Case state",
+      "text": "Where the case is in the incident-response lifecycle (open, containment, eradication, recovery, post-incident, reporting, closed). Most states are labels, but Closed is not: choosing it closes the case (the close date is recorded, its alerts are closed with a resolution matching the case outcome, and logged time is locked), and leaving it reopens the case, which always puts the state back to Open. Administrators can add or edit states under Manage.",
+      "values": "case_state",
+      "aka": [
+        "status",
+        "phase",
+        "lifecycle"
+      ],
+      "wiki": "Case-Lifecycle"
+    },
+    "common.ioc_type": {
+      "title": "IOC type",
+      "text": "What kind of value the indicator is (an IP address, a domain, a file hash, an e-mail address...). The type decides how the value is validated, how it is matched across cases and which MISP attribute it becomes when shared. The types follow MISP's attribute types; administrators can add or edit them under Manage.",
+      "values": "ioc_type",
+      "aka": [
+        "indicator type",
+        "attribute type",
+        "observable type"
+      ]
+    },
+    "common.asset_type": {
+      "title": "Asset type",
+      "text": "What kind of thing the asset is (a Windows workstation, a Linux server, an account, a firewall...). The type sets the asset's icon and is part of its identity in the customer-asset registry (the same name with a different type is a different asset). Administrators can add or edit types under Manage.",
+      "values": "asset_type",
+      "aka": [
+        "host type",
+        "device type"
+      ]
+    },
+    "common.evidence_type": {
+      "title": "Evidence type",
+      "text": "What kind of evidence this is (a disk image, a memory dump, a log export...). The type is descriptive: it labels the item in lists and reports and changes nothing about how the file is stored. Administrators can add or edit types under Manage.",
+      "values": "evidence_type",
+      "aka": [
+        "artifact type",
+        "image type"
+      ]
+    },
+    "common.task_status": {
+      "title": "Task status",
+      "text": "Where a task stands: to do, in progress, on hold, done or canceled. A status change is recorded in the case activity.",
+      "values": "task_status",
+      "aka": [
+        "to do",
+        "in progress",
+        "on hold",
+        "done",
+        "canceled"
+      ]
+    },
+    "common.alert_status": {
+      "title": "Alert status",
+      "text": "Where an alert is in triage, from New to Closed. Escalated is set when a single alert becomes a new case; Merged when an alert is merged into an existing case, or when several alerts (or a whole alert cluster) go into one new case - Merged can also be chosen by hand. Closing a case closes its linked alerts.",
+      "values": "alert_status",
+      "aka": [
+        "new",
+        "assigned",
+        "pending",
+        "merged",
+        "escalated"
+      ],
+      "wiki": "Alert-Clusters"
+    },
+    "common.alert_resolution": {
+      "title": "Resolution",
+      "text": "The outcome of an alert once triaged: whether it was a false positive, a true positive with or without impact, legitimate activity, or not applicable. It records the verdict; it does not close the alert by itself. Closing a linked case sets it from the case outcome.",
+      "values": "alert_resolution",
+      "aka": [
+        "false positive",
+        "true positive",
+        "outcome",
+        "verdict"
+      ]
+    },
+    "common.compromise_status": {
+      "title": "Compromise status",
+      "text": "Whether the asset is believed to be compromised in this case. The customer-asset registry keeps its own status across cases: marking a case asset Compromised raises the registry entry to compromised (only from empty, to be determined or unknown), and the registry never lowers it by itself.",
+      "items": [
+        {
+          "name": "To be determined",
+          "text": "Not assessed yet."
+        },
+        {
+          "name": "Compromised",
+          "text": "Evidence shows the attacker had access to or control of it."
+        },
+        {
+          "name": "Not compromised",
+          "text": "Assessed and cleared."
+        },
+        {
+          "name": "Unknown",
+          "text": "Assessed, but the evidence does not allow a decision."
+        }
+      ],
+      "aka": [
+        "compromised",
+        "infected",
+        "clean"
+      ],
+      "wiki": "Customer-Asset-Registry"
+    },
+    "common.analysis_status": {
+      "title": "Analysis status",
+      "text": "How far the analysis of this item has gone: to be done, started, pending (waiting on something), done or canceled. It is a working note for the team and changes nothing else.",
+      "aka": [
+        "to be done",
+        "started",
+        "pending",
+        "done",
+        "canceled"
+      ]
+    },
+    "common.customer": {
+      "title": "Customer",
+      "text": "The organization (client) a case, alert or registry asset belongs to. Associating a user with a customer gives them that association's access to every case of the customer (only a direct case grant overrides it) and is required to read or work the customer's alerts. A customer cannot be deleted while anything still refers to it, such as cases, alerts or contacts.",
+      "aka": [
+        "client",
+        "tenant",
+        "organization"
+      ]
+    },
+    "common.case_access": {
+      "title": "Case access",
+      "text": "Who can open a case, decided per case and recomputed when grants change. A direct grant to the user wins; otherwise the user's customer association applies (it covers every case of that customer); otherwise the user's groups (when two groups disagree, either may apply - do not rely on it); with none of these the case is invisible. Membership of a war room never grants a user access to its cases; the room's guests are the exception and read every attached case.",
+      "items": [
+        {
+          "name": "No access (deny_all)",
+          "text": "The case does not exist for this user in case lists, case pages and correlation."
+        },
+        {
+          "name": "Read only",
+          "text": "The case can be opened but not changed."
+        },
+        {
+          "name": "Full access",
+          "text": "Read and write, including closing and deleting the case where the user's permissions allow it."
+        }
+      ],
+      "aka": [
+        "acl",
+        "permissions",
+        "deny_all",
+        "read_only",
+        "full_access",
+        "visibility"
+      ]
+    },
+    "common.tags": {
+      "title": "Tags",
+      "text": "Free-form labels for finding and grouping things.\n\nOn cases, IOCs, assets, events and notes, MISP-style tags (for example tlp:amber or misp-galaxy:threat-actor=\"...\") are kept exactly as written, an IOC's tags go with it when the MISP sync pushes it, and the AI tag suggester proposes tags from the bundled MISP catalog.",
+      "aka": [
+        "labels",
+        "misp tags",
+        "galaxy"
+      ]
+    }
+  }
+}

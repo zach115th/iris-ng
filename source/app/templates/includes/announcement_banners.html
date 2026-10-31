@@ -58,7 +58,7 @@
         if (!rows.length) { return; }
         var wrap = document.createElement('div');
         wrap.id = 'iris-ann-banners';
-        rows.forEach(function (b) {
+        rows.forEach(function (b, i) {
             var el = document.createElement('div');
             el.className = 'iris-ann-banner ' + (LEVELS[b.level] || 'iris-ann-info');
             var txt = document.createElement('span');
@@ -77,6 +77,10 @@
                 } catch (e) { /* convenience only */ }
             });
             el.appendChild(txt);
+            /* One (i) help icon, on the first strip only; null while icons
+               are off. Guarded so the strips never depend on help_tips.js. */
+            var tip = (i === 0 && window.IrisHelp) ? IrisHelp.el('notif.announcement', {cls: 'ml-0'}) : null;
+            if (tip) { el.appendChild(tip); }
             el.appendChild(x);
             wrap.appendChild(el);
         });

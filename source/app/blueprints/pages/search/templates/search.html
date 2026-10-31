@@ -14,7 +14,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">Search across cases</div>
+                    <div class="card-title">Search across cases{{ help_tip('search.page') }}</div>
                 </div>
                 <div class="card-body">
                     <form method="post" action="" id="form_search">
@@ -26,7 +26,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label mr-3">Set to search within</label>
+                            <label class="form-label">Set to search within</label>{{ help_tip('search.scope', cls='mr-3') }}
                             <div class="selectgroup selectgroup-pills">
                                 <label class="selectgroup-item">
                                     <input type="radio" name="search_type" value="ioc" class="selectgroup-input" checked="">

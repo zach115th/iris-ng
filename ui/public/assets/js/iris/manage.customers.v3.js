@@ -151,22 +151,24 @@ function iris_cust_render_detail() {
         + '/view' + case_param() + '" title="Cases, assets and stats for this customer">Open full view</a>'
         + '<button type="button" class="btn btn-sm btn-dark" id="iris-cust-edit">Edit</button>'
         + '<button type="button" class="btn btn-sm btn-outline-danger" id="iris-cust-del">Delete</button>'
+        + IrisHelp.icon('customer.delete', {cls: 'align-self-center'})
         + '</span></div>';
 
     var sectors = (det.customer_dhs_sectors || '')
         .split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    // f[2]: the (i) help icon markup for the label ('' when icons are off).
     var fields = [
         ['Name', det.customer_name],
         ['Customer ID', '#' + det.customer_id],
         ['Description', det.customer_description],
-        ['SLA', det.customer_sla],
-        ['Sectors', sectors.length ? sectors.join(', ') : null]
+        ['SLA', det.customer_sla, IrisHelp.icon('customer.sla')],
+        ['Sectors', sectors.length ? sectors.join(', ') : null, IrisHelp.icon('customer.sectors')]
     ];
     html += '<div class="iris-co-fields">';
     fields.forEach(function (f) {
         var v = (f[1] === null || f[1] === undefined || f[1] === '')
             ? '<span class="text-muted">—</span>' : iris_cust_esc(f[1]);
-        html += '<div><div class="iris-co-f-label">' + iris_cust_esc(f[0])
+        html += '<div><div class="iris-co-f-label">' + iris_cust_esc(f[0]) + (f[2] || '')
             + '</div><div class="iris-co-f-value">' + v + '</div></div>';
     });
     html += '</div>';
@@ -175,7 +177,7 @@ function iris_cust_render_detail() {
     // fetch, so an empty list here really is "no contacts".
     var contacts = det.contacts || [];
     html += '<div class="iris-cust-contacts"><div class="iris-cust-contacts-head">'
-        + '<span class="iris-co-d-eyebrow">Contacts</span>'
+        + '<span class="iris-co-d-eyebrow">Contacts' + IrisHelp.icon('customer.contacts') + '</span>'
         + '<span class="iris-co-row-id">' + contacts.length + '</span>'
         + '<span class="iris-co-d-actions">'
         + '<button type="button" class="btn btn-sm btn-primary" id="iris-cust-add-contact">+ Add contact</button>'

@@ -1,0 +1,151 @@
+{
+  "group": "Alert clusters",
+  "order": 72,
+  "terms": {
+    "cluster.cluster": {
+      "title": "Alert cluster",
+      "text": "A group of alerts that a clustering rule judged to be the same activity: same rule, same customer and the same values for the rule's correlation keys, arriving within the rule's window. Clustering happens when an alert is created, so it is already in its cluster when it appears. An alert belongs to at most one cluster; alerts that match no rule stay unclustered.\n\nOnly users with access to the cluster's customer can see it.",
+      "aka": ["stack", "grouped alerts"],
+      "wiki": "Alert-Clusters"
+    },
+    "cluster.awaiting_triage": {
+      "title": "Awaiting triage",
+      "text": "The number of clusters that are Open and have no owner. It counts every cluster you can see, whatever filters are set; the total before it follows the filters.",
+      "aka": ["unassigned", "queue"],
+      "wiki": "Alert-Clusters#the-cluster-list"
+    },
+    "cluster.status": {
+      "title": "Cluster status",
+      "text": "Where the cluster is in triage. Open and Investigating are active: new matching alerts join the cluster. In any other status a new matching alert starts a fresh cluster. Changing the cluster status does not change the status of its alerts.\n\nA cluster cannot be moved back to Open or Investigating while another active cluster exists for the same rule, customer and key values.",
+      "items": [
+        {"name": "Open", "text": "Not triaged yet. Counted as awaiting triage while it has no owner."},
+        {"name": "Investigating", "text": "Someone is working it; it still collects matching alerts."},
+        {"name": "Dismissed", "text": "Judged not worth pursuing (noise, a benign pattern)."},
+        {"name": "Escalated", "text": "Turned into, or merged into, a case. Escalate or merge sets it, unless the cluster was already Dismissed or Closed; it can also be chosen by hand."},
+        {"name": "Closed", "text": "Set by IRIS-NG when a matching alert arrives after the rule's window has lapsed (that alert opens a new cluster). Not offered in the status menu."}
+      ],
+      "aka": ["open", "investigating", "dismissed", "escalated", "closed"],
+      "wiki": "Alert-Clusters#the-cluster-list"
+    },
+    "cluster.severity": {
+      "title": "Cluster severity",
+      "text": "By default the highest severity among the member alerts, ranked by meaning (Critical above High, and so on), so it rises when a more severe alert joins. Picking a value pins it as an override until you choose Derived (auto) again; the override changes no alert. The list's severity filter uses the value shown.",
+      "values": "severity",
+      "aka": ["derived severity", "override"],
+      "wiki": "Alert-Clusters#the-cluster-list"
+    },
+    "cluster.owner": {
+      "title": "Cluster owner",
+      "text": "The analyst triaging the cluster. Assigning someone else notifies them (according to their notification settings); an Open cluster with no owner counts as awaiting triage. The cluster owner is separate from the owners of its member alerts, which do not change.",
+      "aka": ["assignee", "unassigned"],
+      "wiki": "Notifications"
+    },
+    "cluster.fingerprint": {
+      "title": "Cluster fingerprint",
+      "text": "A hash of the rule, the customer and the values of the rule's correlation keys; alerts with the same fingerprint belong together. The database allows at most one active (Open or Investigating) cluster per fingerprint, so alerts arriving at the same moment join one cluster instead of creating two. Dismissed, escalated and closed clusters keep their fingerprint as history.",
+      "aka": ["one open cluster", "identity", "hash"],
+      "wiki": "Alert-Clusters#clustering-rules"
+    },
+    "cluster.summary": {
+      "title": "Cluster summary",
+      "text": "A free-text triage document shared by everyone working the cluster. Double-click to edit; it saves by itself a moment after you stop typing and when you leave the field. It is separate from the AI triage, and it is not copied into a case when the cluster is escalated.",
+      "aka": ["notes", "triage document"]
+    },
+    "cluster.triage": {
+      "title": "AI cluster triage",
+      "text": "Asks the AI backend what the cluster most likely represents, why it matters and what to check first. The model gets the cluster's rule, key values and customer, counts computed by IRIS-NG (alerts, titles, sources, severities, assets, IOCs) and the newest alerts. It returns a suggested name, three short paragraphs and a confidence (high, medium or low) in its own reading, not in the severity.\n\nThe suggested name does not rename the cluster. Generation runs in the background.",
+      "aka": ["ai triage", "narrative"],
+      "wiki": "Alert-Clusters#ai-triage-narrative"
+    },
+    "cluster.escalate": {
+      "title": "Escalate or merge a cluster",
+      "text": "Acts on the whole cluster: every member alert goes into a new case (titled after the cluster unless you change it) or into an existing open case you choose. All member IOCs and assets are imported, the note goes into the case summary, and every member alert becomes Merged. No case template is applied from here.\n\nThe cluster records the case and becomes Escalated (a Dismissed or Closed cluster keeps its status). It can be escalated only once; afterwards the button opens that case.",
+      "aka": ["escalate", "merge", "new case"],
+      "wiki": "Alert-Clusters#escalate-or-merge"
+    },
+    "cluster.members": {
+      "title": "Member alerts",
+      "text": "The alerts in this cluster, newest first; a title opens the alert on the Alerts page with its details expanded. The bin removes an alert from the cluster only: the alert itself is untouched and is then in no cluster, so a later clustering backfill can place it again.",
+      "aka": ["alerts tab", "remove from cluster"]
+    },
+    "cluster.context": {
+      "title": "Cluster assets and IOCs",
+      "text": "Everything the member alerts carry, merged by identity: an IOC seen on several alerts (same value ignoring case, and same type) or an asset (same trimmed name ignoring case, and same type) is listed once. These are not case objects yet; escalating the cluster imports them into the case.",
+      "aka": ["assets tab", "iocs tab", "deduplicated"]
+    },
+    "cluster.correlation_graph": {
+      "title": "Cluster correlation graph",
+      "text": "The member alerts drawn with the IOCs and assets they carry, from the same merged lists as the Assets and IOCs tabs. An IOC or asset linked to several alerts is a correlation point: something those alerts have in common. Click a node for its details; the search box cycles through matching nodes with Enter.",
+      "aka": ["graph", "correlation", "nodes"]
+    },
+    "cluster.comments": {
+      "title": "Cluster comments",
+      "text": "Notes and updates on the cluster, newest first, visible to everyone who can see the cluster. Mentioning a login with @ notifies that user if they have access to the cluster's customer. Comments cannot be edited or deleted here.",
+      "aka": ["activity", "mention", "comment"],
+      "wiki": "Notifications#mentioning-someone"
+    },
+    "crule.rule": {
+      "title": "Clustering rule",
+      "text": "Decides which incoming alerts are grouped into alert clusters. When an alert is created, the enabled rules are tried in priority order and the first whose conditions match claims it; the alert then joins the active cluster for that rule, customer and correlation-key values, or starts a new one.\n\nRules are managed by administrators. Deleting a rule keeps the clusters it built; they show (rule deleted).",
+      "aka": ["clustering", "grouping rule", "source rule"],
+      "wiki": "Alert-Clusters#clustering-rules"
+    },
+    "crule.priority": {
+      "title": "Rule priority",
+      "text": "The order in which clustering rules are tried, lowest number first (rules with the same number in the order they were created). The first enabled rule whose conditions match an alert claims it, so put narrow rules before broad ones.",
+      "aka": ["order", "first match"]
+    },
+    "crule.correlation_keys": {
+      "title": "Correlation keys",
+      "text": "The alert fields whose values must be equal for two alerts to share a cluster, as comma-separated paths (alert_source, alert_context.hostname...). The rule and the customer are always part of the grouping, so different customers never share a cluster. A key that is missing on the alert, or that names a list (tags, asset_names, ioc_values) or an object, counts as an empty value. With no keys, all matching alerts of one customer stack together (within the window).",
+      "aka": ["group by", "keys"],
+      "wiki": "Alert-Clusters#clustering-rules"
+    },
+    "crule.window": {
+      "title": "Stacking window",
+      "text": "How long, in minutes, a cluster keeps accepting alerts after its newest one (1440, one day, by default). When a matching alert arrives later than that, measured on IRIS creation times, the old cluster is closed (status Closed) and the alert starts a new one. Nothing closes on a timer: the check happens when the next matching alert arrives.",
+      "aka": ["window", "time window", "minutes"]
+    },
+    "crule.title_template": {
+      "title": "Cluster title template",
+      "text": "The title given to new clusters, with {path} tokens replaced by the values of the alert that opened the cluster, for example {alert_context.hostname}. A token that does not resolve becomes empty. Without a template the title is the rule name followed by the correlation-key values. The title is set once, when the cluster opens.",
+      "aka": ["title", "naming"]
+    },
+    "crule.conditions": {
+      "title": "Match conditions",
+      "text": "Which alerts a clustering rule or investigation flow applies to, tested on the alert as it is created. Each condition is a field, an operator and a value; Match ALL or ANY combines them, and Advanced (JSON) allows nesting with and, or and not. Text comparisons ignore case; on a list field a condition matches when any element does. No conditions matches every alert.\n\nA condition that cannot be evaluated never matches, except that a missing field satisfies not and not_in. Conditions are checked when saved.",
+      "items": [
+        {"name": "eq / not", "text": "Equal to / different from the value."},
+        {"name": "in / not_in", "text": "One of / none of a comma-separated list of values."},
+        {"name": "like", "text": "A pattern over the whole value: % stands for any run of characters, _ for one character. Use %word% to match anywhere."},
+        {"name": "regex", "text": "A regular expression found anywhere in the value (its first 4 KB). Patterns over 512 characters, backreferences, lookarounds and repeated groups prone to runaway backtracking are refused when saved and never match."},
+        {"name": "exists", "text": "The field is present with a value; a value of false tests that it is absent."}
+      ],
+      "aka": ["condition builder", "operators", "regex", "like"],
+      "wiki": "Alert-Clusters#clustering-rules"
+    },
+    "crule.condition_fields": {
+      "title": "Condition fields",
+      "text": "The fields a condition or a correlation key can name. Pick one from the list, or type a dotted path into the alert's context or raw content. Use these names, not the labels shown on the Alerts page.",
+      "items": [
+        {"name": "alert_title, alert_description, alert_source, alert_source_ref", "text": "The alert's own text fields."},
+        {"name": "severity, status, classification, customer", "text": "The current names (for example High, New), so a rule does not depend on per-server ids. alert_severity_id and the other *_id fields hold the numeric ids."},
+        {"name": "tags, asset_names, ioc_values", "text": "Lists: a condition matches when any element matches."},
+        {"name": "alert_context.<key>", "text": "A key of the alert context, for example alert_context.hostname."},
+        {"name": "alert_source_content.<path>", "text": "A path into the raw alert as it was received."}
+      ],
+      "aka": ["fields", "paths", "alert_context"]
+    },
+    "crule.test": {
+      "title": "Test conditions",
+      "text": "A dry run of the conditions in the editor against the newest N alerts (up to 200) of every customer. Nothing is saved or attached. It shows how many matched; for a clustering rule it also lists up to 10 matches with the correlation-key values they would group on. It tests these conditions alone: rule priority and the other rules are not taken into account.",
+      "aka": ["dry run", "preview"]
+    },
+    "crule.backfill": {
+      "title": "Backfill",
+      "text": "Runs clustering, in the background, over every alert that is not in a cluster yet, oldest first. It always applies all enabled rules in priority order, whichever rule's button you press, and never moves an alert that already belongs to a cluster. A broad rule over a long alert history can create many clusters; they appear on the Alert Clusters page as it runs.\n\nA backfill attaches no investigation flows; use Deploy to existing on the Investigation flows page for that.",
+      "aka": ["re-run", "reprocess", "historic alerts"],
+      "wiki": "Alert-Clusters#clustering-rules"
+    }
+  }
+}

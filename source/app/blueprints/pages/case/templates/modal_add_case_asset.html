@@ -104,11 +104,11 @@
                                 {{ form.hidden_tag() }}
                                 <div class="form-row ml-2">
                                     <div class="form-group col-6">
-                                        <label for="asset_name" class="placeholder">Asset Name *</label>
+                                        <label for="asset_name" class="placeholder">Asset Name *</label>{{ help_tip('asset.name') }}
                                         {{ form.asset_name(class='form-control',  autocomplete="off") }}
                                     </div>
                                     <div class="form-group col-6">
-                                        <label for="asset_type_id" class="placeholder">Asset Type *</label>
+                                        <label for="asset_type_id" class="placeholder">Asset Type *</label>{{ help_tip('common.asset_type', target='#asset_type_id') }}
                                         {{ form.asset_type_id(class="selectpicker form-control") }}
                                     </div>
                                 </div>
@@ -137,7 +137,7 @@
                                 </div>
                                 <div class="form-row ml-2">
                                     <div class="form-group col-6">
-                                            <label for="asset_domain" class="placeholder">Domain</label>
+                                            <label for="asset_domain" class="placeholder">Domain</label>{{ help_tip('asset.domain_ip') }}
                                             {{ form.asset_domain(class='form-control',  autocomplete="off") }}
                                     </div>
                                     <div class="form-group col-6">
@@ -156,24 +156,28 @@
                                 </div>
                                 <div class="form-row ml-2">
                                     <div class="form-group col-6">
-                                        <label for="asset_compromise_status_id" class="placeholder mt-2">Compromise Status  </label>
+                                        <label for="asset_compromise_status_id" class="placeholder mt-2">Compromise Status</label>{{ help_tip('common.compromise_status') }}
                                         {{ form.asset_compromise_status_id(class="selectpicker col-9") }}
                                     </div>
                                     <div class="form-group col-6">
-                                        <label for="analysis_status_id" class="placeholder mt-2">Analysis Status  </label>
+                                        <label for="analysis_status_id" class="placeholder mt-2">Analysis Status</label>{{ help_tip('common.analysis_status') }}
                                         {{ form.analysis_status_id(class="selectpicker col-9 float-right") }}
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label for="asset_tags" class="d-flex align-items-center" style="gap: 8px; flex-wrap: wrap;">
-                                        <span>Asset tags</span>
+                                    {# The label holds only its text: the (i) icon and the
+                                       suggester pill are buttons, which must not sit inside
+                                       a <label> (invalid HTML, and they would join the
+                                       field's accessible name). #}
+                                    <div class="d-flex align-items-center mb-2" style="gap: 8px; flex-wrap: wrap;">
+                                        <label for="asset_tags" class="mb-0">Asset tags</label>{{ help_tip('common.tags', cls='ml-0') }}
                                         {# iris-next: AI tag suggester pill — inline next to the Asset tags label. #}
                                         {% set tagsuggest_object_type = "asset" %}
                                         {% set tagsuggest_object_id = asset.asset_id %}
                                         {% set tagsuggest_target_input_id = "asset_tags" %}
                                         {% set tagsuggest_pill_only = True %}
                                         {% include 'case_tag_suggester.html' %}
-                                    </label>
+                                    </div>
                                     <input type="text" id="asset_tags"
                                         class="form-control col-md-12" {% if asset.asset_tags %} value="{{ asset.asset_tags }}" {% endif %}/>
                                     {# iris-next: tag suggester results panel (paired with the pill in the label above). #}
@@ -182,7 +186,7 @@
                                     {% include 'case_tag_suggester.html' %}
                                 </div>
                                 <div class="form-group" data-select2-id="7">
-                                    <label>Related IOC</label>
+                                    <label>Related IOC</label>{{ help_tip('asset.ioc_links') }}
                                     <div class="select2-input ml-12" data-select2-id="6">
                                         <select id="ioc_links" name="ioc_links" class="form-control select2-hidden-accessible ml-12" multiple="" data-select2-id="ioc_links" tabindex="-1" aria-hidden="true" style="width: 100%">
 
@@ -190,7 +194,7 @@
                                     </div>
                                 </div>
                                 <div class="form-group" data-select2-id="9">
-                                    <label>Related Evidence</label>
+                                    <label>Related Evidence</label>{{ help_tip('asset.evidence_links') }}
                                     <div class="select2-input ml-12" data-select2-id="8">
                                         <select id="evidence_links" name="evidence_links" class="form-control select2-hidden-accessible ml-12" multiple="" data-select2-id="evidence_links" tabindex="-1" aria-hidden="true" style="width: 100%">
 

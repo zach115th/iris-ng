@@ -131,8 +131,8 @@
                 <div class="col-6">
                     {{ form.hidden_tag() }}
                     <div class="form-group">
-                        <label for="Attribute content" class="mr-4">Attribute definition
-                        </label>
+                        <label for="Attribute content">Attribute definition
+                        </label>{{ help_tip('attr.schema', cls='mr-4') }}
                         <div id="editor_detail">{{ attribute.attribute_content|tojsonsafe }}</div>
                     </div>
                 </div>
@@ -148,7 +148,7 @@
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-outline-danger float-right" id="submit_complete_overwrite">Complete overwrite</button>
-    <button type="button" class="btn btn-outline-danger mr-auto" id="submit_partial_overwrite">Partial overwrite</button>
+    <span class="mr-auto d-inline-flex align-items-center"><button type="button" class="btn btn-outline-danger" id="submit_partial_overwrite">Partial overwrite</button>{{ help_tip('attr.overwrite') }}</span>
     <button type="button" class="btn btn-outline-black float-right" id="preview_attribute">Preview</button>
     <button type="button" class="btn btn-outline-success float-right" id="submit_new_attribute">Update</button>
 </div>

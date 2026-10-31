@@ -20,7 +20,7 @@
                       <strong class="text-danger">Note :</strong> Modules are running as the same trust level as Iris. They can thus access all the information
                         stored on Iris as well as run code on the server. Please be cautious and review modules before installing them.
                     </div>
-                    <label for="module_name" class="mr-4 mt-3">Module name</label>
+                    <label for="module_name" class="mt-3">Module name</label>{{ help_tip('module.add', cls='mr-4') }}
                     {{ form.module_name(class='form-control',  autocomplete="off") }}
                     <div class="alert-std alert-warning" style="display:none;" role="alert" id="alert_mod_add">
                     </div>

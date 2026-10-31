@@ -15,7 +15,7 @@
       <div class="page-inner py-5">
         <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row ">
           <div>
-            <h2 class="text-white pb-2 fw-bold">Dashboard</h2>
+            <h2 class="text-white pb-2 fw-bold">Dashboard{{ help_tip('dashboard.page') }}</h2>
           </div>
           <div class="ml-md-auto py-2 py-md-0">
             {# iris-next: portable case import. Triggers a small modal that POSTs a JSON file to /api/v2/cases/import. #}
@@ -55,7 +55,7 @@
                         </div>
                         <div class="col-7 col-stats">
                             <div class="numbers">
-                                <p class="card-category">Cases (open / all)</p>
+                                <p class="card-category">Cases (open / all){{ help_tip('dashboard.case_counts') }}</p>
                                 <h4 class="card-title">{{ data.cases_open_count }} / {{ data.cases_count }}</h4>
                             </div>
                         </div>
@@ -74,7 +74,7 @@
                         </div>
                         <div class="col-7 col-stats">
                             <div class="numbers">
-                                <p class="card-category">Attributed open cases</p>
+                                <p class="card-category">Attributed open cases{{ help_tip('home.my_open_cases') }}</p>
                                 <h4 class="card-title">{{ data.user_open_count }}</h4>
                             </div>
                         </div>
@@ -93,7 +93,7 @@
                         </div>
                         <div class="col-7 col-stats">
                             <div class="numbers">
-                                <p class="card-category">Attributed open tasks</p>
+                                <p class="card-category">Attributed open tasks{{ help_tip('home.pending_tasks') }}</p>
                                 <h4 class="card-title" id="user_attr_count"></h4>
                             </div>
                         </div>
@@ -106,7 +106,7 @@
       <div class="col-md-12">
             <section class="card">
                 <div class="card-header">
-                  <div class="card-title">Attributed cases review
+                  <div class="card-title">Attributed cases review{{ help_tip('home.my_reviews') }}
                     <div class="text-faded float-right">
                       <small id="ureviews_last_updated"></small>
                       <button type="button" class="btn btn-xs btn-dark ml-2"
@@ -229,7 +229,7 @@
 
 				<section class="card">
                     <div class="card-header">
-                      <div class="card-title">Global tasks
+                      <div class="card-title">Global tasks{{ help_tip('task.global') }}
                         <div class="text-faded float-right">
                           <small id="tasks_last_updated"></small>
                             <button type="button" class="btn btn-xs btn-dark ml-2"
@@ -287,7 +287,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title"><i class="fa-solid fa-lock mr-1"></i> Import case</h4>
+                    <h4 class="modal-title"><i class="fa-solid fa-lock mr-1"></i> Import case{{ help_tip('dashboard.import_case') }}</h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>

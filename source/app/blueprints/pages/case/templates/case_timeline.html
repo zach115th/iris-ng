@@ -613,7 +613,9 @@
     letter-spacing: 0;
     font-size: 9.5px;
   }
-  .iris-wt-explanation .iris-wt-explanation-eyebrow button {
+  /* :not(.iris-help) - the (i) help icon in the eyebrow is a button too and
+     keeps its own look. */
+  .iris-wt-explanation .iris-wt-explanation-eyebrow button:not(.iris-help) {
     background: transparent;
     border: none;
     color: #a78bfa;
@@ -720,6 +722,9 @@
     color: #64748b;
     margin-left: 6px;
   }
+  /* The (i) after the meta line explains a SAVED result: hide it while no
+     result is shown (renderEmpty() clears the meta text). */
+  #iris-ai-tl-header .iris-ai-tl-meta:empty + .iris-help { display: none; }
   #iris-ai-tl-header .iris-ai-tl-actions {
     margin-left: auto;
     display: flex;
@@ -859,11 +864,11 @@
             {% set cshell_tab_menu %}
                 <a href="javascript:void(0);" onclick="toggle_tree_view();">Toggle tree view</a>
                 <a href="javascript:void(0);" onclick="toggle_compact_view();">Toggle compact view</a>
-                <div class="iris-cshell-mh">Visualize</div>
+                <div class="iris-cshell-mh">Visualize{{ help_tip('timeline.visualize') }}</div>
                 <a href="timeline/visualize?cid={{session['current_case'].case_id}}">Visualize</a>
                 <a href="timeline/visualize?cid={{session['current_case'].case_id}}&group-by=asset">Visualize by asset</a>
                 <a href="timeline/visualize?cid={{session['current_case'].case_id}}&group-by=category">Visualize by category</a>
-                <div class="iris-cshell-mh">CSV</div>
+                <div class="iris-cshell-mh">CSV{{ help_tip('timeline.csv') }}</div>
                 <a href="#" onclick="timelineToCsv();return false;">Download as CSV</a>
                 <a href="#" onclick="timelineToCsvWithUI();return false;">Download as CSV with user info</a>
                 <a href="#" onclick="fire_upload_csv_events();return false;">Upload CSV of events</a>
@@ -873,7 +878,7 @@
                 <div class="iris-cshell-mh">Duplicates</div>
                 <a href="#" onclick="irisDedupOpen('master', {{ session['current_case'].case_id }});return false;">Find duplicates (master timeline)</a>
                 <a href="#" onclick="irisDedupOpen('working', {{ session['current_case'].case_id }});return false;">Find duplicates (working timeline)</a>
-                <div class="iris-cshell-mh">Days</div>
+                <div class="iris-cshell-mh">Days{{ help_tip('timeline.day_groups') }}</div>
                 <a href="#" onclick="irisDayFold.collapseAll();return false;">Collapse all days</a>
                 <a href="#" onclick="irisDayFold.expandAll();return false;">Expand all days</a>
             {% endset %}
@@ -910,6 +915,7 @@
                                    Reset
                                 </button>
                                 <i class="ml-1 mt-1 fa-regular text-white fa-circle-question" title="Filter help" style="cursor:pointer;" onclick="show_timeline_filter_help();"></i>
+                                {{ help_tip('timeline.filter', cls='ml-2 mt-1') }}
                             </div>
                         </li>
                      </ul>
@@ -932,7 +938,7 @@
                         <li class="nav-item hidden-caret">
                             <button id="iris-wt-toggle" type="button" onclick="irisWorkingTimeline.togglePanel();" title="Tool-ingested events pending review (Hayabusa, KAPE, …)">
                                 <i class="fas fa-stream" style="font-size: 10px; margin-right: 4px;"></i>Working timeline<span id="iris-wt-toggle-count" class="iris-wt-badge zero">0</span>
-                            </button>
+                            </button>{{ help_tip('wt.panel') }}
                         </li>
                         {# The toolbar's ⋮ menu moved into the case shell
                            header's ⋮ (cshell_tab_menu, set above the shell
@@ -994,7 +1000,7 @@
 
           <div class="modal-content">
             <div class="modal-header">
-              <h5>Upload events list (CSV format)</h5>
+              <h5>Upload events list (CSV format){{ help_tip('timeline.csv') }}</h5>
               <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
                   aria-hidden="true">&times;</span></button>
             </div>
@@ -1005,16 +1011,16 @@
                     <div>
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="csv_upload_dest" id="csv_dest_master" value="master" checked>
-                            <label class="form-check-label" for="csv_dest_master" style="font-size: 13px;">Master timeline <small class="text-muted">(direct import, events go live immediately)</small></label>
+                            <label class="form-check-label" for="csv_dest_master" style="font-size: 13px;">Master timeline <small class="text-muted">(direct import, events go live immediately)</small></label>{{ help_tip('timeline.master') }}
                         </div>
                         <div class="form-check form-check-inline mt-1">
                             <input class="form-check-input" type="radio" name="csv_upload_dest" id="csv_dest_working" value="working">
-                            <label class="form-check-label" for="csv_dest_working" style="font-size: 13px;">Working timeline <small class="text-muted">(staged for review, promote individually)</small></label>
+                            <label class="form-check-label" for="csv_dest_working" style="font-size: 13px;">Working timeline <small class="text-muted">(staged for review, promote individually)</small></label>{{ help_tip('wt.panel') }}
                         </div>
                     </div>
                 </div>
                 <div class="form-group" id="csv_upload_date_filter" style="display: none;">
-                    <label class="placeholder" style="font-size: 12.5px;">Date range filter <span style="color: #94a3b8; font-weight: 400;">(optional, UTC — leave blank to import everything)</span></label>
+                    <label class="placeholder" style="font-size: 12.5px;">Date range filter <span style="color: #94a3b8; font-weight: 400;">(optional, UTC — leave blank to import everything)</span></label>{{ help_tip('wt.import_window') }}
                     <div class="row">
                         <div class="col">
                             <label for="csv_upload_begin" style="font-size: 11px; color: #94a3b8; margin-bottom: 2px;">From (inclusive)</label>
@@ -1072,7 +1078,7 @@ event_date,event_tz,event_title,event_category,event_content,event_raw,event_sou
                 <option value="true_positive">Promoted</option>
                 <option value="false_positive">Rejected</option>
                 <option value="all">All</option>
-            </select>
+            </select>{{ help_tip('wt.promote', cls='ml-0') }}
             <button type="button" class="iris-wt-close" title="Find duplicates" onclick="irisDedupOpen('working', {{ session['current_case'].case_id }});"><i class="fas fa-clone" style="font-size: 11px;"></i></button>
             <button type="button" class="iris-wt-close" title="Refresh" onclick="irisWorkingTimeline.refresh();"><i class="fas fa-sync-alt" style="font-size: 11px;"></i></button>
             <button type="button" class="iris-wt-close" title="Close panel" onclick="irisWorkingTimeline.togglePanel(false);">&times;</button>
@@ -1092,8 +1098,8 @@ event_date,event_tz,event_title,event_category,event_content,event_raw,event_sou
 <div id="iris-ai-tl-panel" data-cid="">
     <div id="iris-ai-tl-header">
         <span class="iris-ai-tl-eyebrow"><i class="fas fa-sparkles"></i></span>
-        <span class="iris-ai-tl-title">Timeline analysis</span>
-        <span class="iris-ai-tl-meta" id="iris-ai-tl-meta"></span>
+        <span class="iris-ai-tl-title">Timeline analysis{{ help_tip('tlai.panel') }}</span>
+        <span class="iris-ai-tl-meta" id="iris-ai-tl-meta"></span>{{ help_tip('ai.cached', cls='ml-0') }}
         <span class="iris-ai-tl-actions">
             <button type="button" id="iris-ai-tl-refresh" title="Re-analyze the timeline" onclick="irisTimelineAi.run(true);">
                 <i class="fas fa-redo-alt mr-1" style="font-size: 9px;"></i>Re-run
@@ -1113,12 +1119,12 @@ event_date,event_tz,event_title,event_category,event_content,event_raw,event_sou
             <div class="modal-body">
                 <p id="iris-wt-import-blurb" style="font-size: 12.5px; color: #94a3b8;"></p>
                 <div class="form-group">
-                    <label class="placeholder" id="iris-wt-import-file-label">CSV file</label>
+                    <label class="placeholder" id="iris-wt-import-file-label">CSV file</label>{{ help_tip('wt.import') }}
                     <input id="iris-wt-import-file" type="file" accept=".csv,.gz,text/csv,application/gzip" class="form-control">
-                    <small style="font-size: 11px; color: #94a3b8;">A large CSV is compressed in your browser before it is sent; a <code>.csv.gz</code> works too.</small>
+                    <small style="font-size: 11px; color: #94a3b8;">A large CSV is compressed in your browser before it is sent; a <code>.csv.gz</code> works too.</small>{{ help_tip('wt.gzip') }}
                 </div>
                 <div class="form-group">
-                    <label class="placeholder" style="font-size: 12.5px;">Date range filter <span style="color: #94a3b8; font-weight: 400;">(optional, UTC — leave blank to import everything)</span></label>
+                    <label class="placeholder" style="font-size: 12.5px;">Date range filter <span style="color: #94a3b8; font-weight: 400;">(optional, UTC — leave blank to import everything)</span></label>{{ help_tip('wt.import_window') }}
                     <div class="row">
                         <div class="col">
                             <label for="iris-wt-import-begin" style="font-size: 11px; color: #94a3b8; margin-bottom: 2px;">From (inclusive)</label>
@@ -1135,10 +1141,10 @@ event_date,event_tz,event_title,event_category,event_content,event_raw,event_sou
                             </div>
                         </div>
                     </div>
-                    <small style="font-size: 11px; color: #94a3b8;">Only events whose timestamp falls within this window are imported; the rest are skipped. The times are optional: From starts at that minute, To includes that whole minute. Rows with no parseable timestamp are always kept.</small>
+                    <small style="font-size: 11px; color: #94a3b8;">Only events whose timestamp falls within this window are imported; the rest are skipped. The times are optional: From starts at that minute, To includes that whole minute.</small>
                 </div>
                 <div class="form-group" id="iris-wt-import-levels" style="display: none;">
-                    <label class="placeholder" style="font-size: 12.5px;">Severity filter <span style="color: #94a3b8; font-weight: 400;">(Hayabusa rule level — an event is kept when its highest-level rule is ticked)</span></label>
+                    <label class="placeholder" style="font-size: 12.5px;">Severity filter <span style="color: #94a3b8; font-weight: 400;">(Hayabusa rule level — an event is kept when its highest-level rule is ticked)</span></label>{{ help_tip('wt.levels') }}
                     <div style="display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 2px 0;">
                         <label style="font-size: 12.5px; margin: 0; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" class="iris-wt-import-level" value="crit" checked> <span style="color: #f87171;">critical</span></label>
                         <label style="font-size: 12.5px; margin: 0; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" class="iris-wt-import-level" value="high" checked> <span style="color: #fb923c;">high</span></label>
@@ -1146,7 +1152,7 @@ event_date,event_tz,event_title,event_category,event_content,event_raw,event_sou
                         <label style="font-size: 12.5px; margin: 0; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" class="iris-wt-import-level" value="low" checked> <span style="color: #60a5fa;">low</span></label>
                         <label style="font-size: 12.5px; margin: 0; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" class="iris-wt-import-level" value="info"> <span style="color: #94a3b8;">info</span></label>
                     </div>
-                    <small style="font-size: 11px; color: #94a3b8;">Info-level rules are the bulk of a full-host run (typically over 99% of the rows) and are off by default; tick it to import everything. Imports stop at 25,000 events — narrow the window or the levels if that cap is reached.</small>
+                    <small style="font-size: 11px; color: #94a3b8;">Info-level rules are the bulk of a full-host run (typically over 99% of the rows) and are off by default; tick it to import everything. Imports stop at 25,000 events — narrow the window or the levels if that cap is reached.</small>{{ help_tip('wt.cap') }}
                 </div>
                 <div id="iris-wt-import-status" style="font-size: 12px; color: #94a3b8;"></div>
             </div>
@@ -1359,6 +1365,7 @@ window.irisWorkingTimeline = (function () {
             '<div class="iris-wt-explanation">' +
                 '<div class="iris-wt-explanation-eyebrow">' +
                     '<i class="fas fa-sparkles"></i> AI explanation' +
+                    (window.IrisHelp ? IrisHelp.icon('wt.explain') : '') +
                     '<span class="meta">' + escapeHtml(meta) + ' · ' +
                         '<button onclick="irisWorkingTimeline.explain(' + workingId + ', true);" title="Re-run the model">re-run</button> · ' +
                         '<button onclick="irisWorkingTimeline.clearExplanation(' + workingId + ');" title="Hide">hide</button>' +

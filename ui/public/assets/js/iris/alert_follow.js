@@ -36,6 +36,7 @@
             + '<a href="#" class="iris-follow-star" data-object-type="alert"'
             + ' data-object-id="' + alertId + '" title="Follow">&#9734;</a>'
             + ' <span class="text-muted">Follow this alert (home-page feed)</span>'
+            + IrisHelp.icon('follow.following')
             + '</div>');
         $pane.prepend($chip);
         loadFollows().then(function (state) {

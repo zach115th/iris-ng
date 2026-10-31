@@ -382,7 +382,7 @@
                (hidden) so its machinery keeps working. ---- #}
         <div class="page-inner pt-0">
             <div class="iris-ci-head">
-                <h4 style="margin:0; color:#e8e8ee; font-weight:600;">Indicators
+                <h4 style="margin:0; color:#e8e8ee; font-weight:600;">Indicators{{ help_tip('ioc.indicator') }}
                     <span class="text-muted" style="font-size:0.8rem;" id="iris-ci-count"></span>
                 </h4>
                 {# Neither Add IOC nor the ⋮ menu is duplicated here — both are
@@ -473,7 +473,7 @@
 
       <div class="modal-content">
         <div class="modal-header">
-          <h5>Upload IOC list (CSV format)</h5>
+          <h5>Upload IOC list (CSV format){{ help_tip('ioc.csv_import') }}</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
               aria-hidden="true">&times;</span></button>
         </div>
@@ -482,7 +482,7 @@
             <div class="form-group">
                 <label class="placeholder">Expected CSV File format</label>
                 <textarea class="form-control col-md-12 col-sm-12 sizable-textarea" rows="2" disabled>ioc_value,ioc_type,ioc_description,ioc_tags,ioc_tlp
-&lt;Value&gt;,&lt;Type&gt;,&lt;Description&gt;,&lt;TLP&gt;,Tags separated with &quot;|&quot;</textarea>
+&lt;Value&gt;,&lt;Type&gt;,&lt;Description&gt;,Tags separated with &quot;|&quot;,&lt;TLP&gt;</textarea>
             </div>
             <div class="form-group">
                 <label class="placeholder">CSV File format example</label>

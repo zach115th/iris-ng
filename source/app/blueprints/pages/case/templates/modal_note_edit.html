@@ -70,11 +70,12 @@
                         <div class="btn btn-sm btn-light mr-1" title="Insert numbered list" onclick="note_editor.insertSnippet('\n1. a  \n2. b  \n3. c  ');note_editor.focus();"><i class="fa-solid fa-list-ol"></i></div>
                         <div class="btn btn-sm btn-light mr-1" title="Toggle editor expansion" onclick="toggle_max_editor();"><i class="fa-solid fa-maximize"></i></div>
                         <div class="btn btn-sm btn-transparent mr-1" title="Help" onclick="get_md_helper_modal();"><i class="fa-solid fa-question-circle"></i></div>
+                        {{ help_tip('note.markdown', cls='mr-1') }}
                         <button type="button" id="iris-ioc-extract-btn"
                             title="Extract IOCs from this note's text using AI"
                             style="background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; line-height: 1; padding: 4px 10px; border-radius: 999px; cursor: pointer; margin-left: 4px;">
                             &#x2728; Extract IOCs
-                        </button>
+                        </button>{{ help_tip('note.ioc_extraction', cls='ml-1') }}
                         <span id="iris-ioc-extract-status" style="font-size: 11px; color: #9ca3af; margin-left: 6px;"></span>
                 </div>
                 <div class="col">

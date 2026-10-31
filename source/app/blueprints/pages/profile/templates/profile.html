@@ -50,7 +50,7 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">
                                         <i class="icon-token"></i>
-                                        Username
+                                        Username{{ help_tip('profile.username') }}
                                     </span>
                                 </div>
                                 <input class="form-control disable" value="{{ current_user.user }}" readonly>
@@ -63,7 +63,7 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">
                                         <i class="icon-token"></i>
-                                        Email
+                                        Email{{ help_tip('profile.email') }}
                                     </span>
                                 </div>
                                 <input class="form-control disable" value="{{ current_user.email }}" readonly>
@@ -99,7 +99,7 @@
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">
                                         <i class="icon-token"></i>
-                                        API Key
+                                        API Key{{ help_tip('profile.api_key') }}
                                     </span>
                                 </div>
                                 <input class="form-control disable" value="{{ current_user.api_key }}" readonly>
@@ -115,7 +115,7 @@
                     <div class="row">
                         <div class="col">
                             <div class="form-group">
-                                <label class="form-label d-block">Prompt a confirmation box before deleting objects</label>
+                                <div class="d-flex align-items-center mb-2"><label class="form-label mb-0">Prompt a confirmation box before deleting objects</label>{{ help_tip('profile.deletion_prompt') }}</div>
                                 <div class="selectgroup selectgroup-primary selectgroup-pills">
                                     <label class="selectgroup-item" title="Do not prompt a confirmation popup and delete objects directly">
                                         <input type="radio" name="user-has-deletion-prompt" value="false" class="selectgroup-input" {% if not current_user.has_deletion_confirmation %}checked{% endif %}>
@@ -129,11 +129,30 @@
                             </div>
                         </div>
                     </div>
+                    {# iris-ng: the (i) help icons (2026-10-30). NULL = shown. #}
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <div class="d-flex align-items-center mb-2"><label class="form-label mb-0" id="user-help-tips-label">Show help icons (i) next to fields</label>{{ help_tip('common.help_icons') }}</div>
+                                <div class="selectgroup selectgroup-primary selectgroup-pills" role="radiogroup" aria-labelledby="user-help-tips-label">
+                                    <label class="selectgroup-item">
+                                        <input type="radio" name="user-has-help-tips" value="true" class="selectgroup-input" {% if current_user.has_help_tips is not false %}checked{% endif %}>
+                                        <span class="selectgroup-button">Shown</span>
+                                    </label>
+                                    <label class="selectgroup-item">
+                                        <input type="radio" name="user-has-help-tips" value="false" class="selectgroup-input" {% if current_user.has_help_tips is false %}checked{% endif %}>
+                                        <span class="selectgroup-button">Hidden</span>
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">Every definition stays on the <a href="/help/glossary">Glossary</a> page either way.</small>
+                            </div>
+                        </div>
+                    </div>
                     {# iris-ng: self-service hourly rate (drives case-cost estimation) #}
                     <div class="row mt-2">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="form-label d-block">Hourly rate ($/hr)</label>
+                                <div class="d-flex align-items-center mb-2"><label class="form-label mb-0" for="profile_hourly_rate">Hourly rate ($/hr)</label>{{ help_tip('profile.hourly_rate') }}</div>
                                 <div class="input-group" style="max-width: 320px;">
                                     <div class="input-group-prepend"><span class="input-group-text">$</span></div>
                                     <input type="number" min="0" step="0.01" class="form-control" id="profile_hourly_rate"
@@ -156,11 +175,13 @@
                        view -- they read as missing rather than as further down. #}
                     <div class="row">
                         <div class="col-6 float-left mt-4">
-                            <button class="btn btn-dark" type="button" onclick="refresh_user_permissions();" id="user_refresh_perms_btn">Refresh access</button>
+                            <button class="btn btn-dark" type="button" onclick="refresh_user_permissions();" id="user_refresh_perms_btn">Refresh access</button>{{ help_tip('profile.refresh_access') }}
                         </div>
 
                         <div class="col-6 mt-4">
                             {% if mfa_enabled %}
+                                {# First of the right-floated controls, so it sits at the far right. #}
+                                {{ help_tip('profile.mfa', cls='float-right mt-2') }}
                                 {% if mfa_exempt %}
                                     {# Disabled rather than hidden: an absent control is
                                        ambiguous ("broken?"), a disabled one with a reason
@@ -196,7 +217,7 @@
                         <div class="col-md-12">
                             <div class="form-group">
                                 <div class="d-flex align-items-center">
-                                    <label class="form-label mb-0">Cyber-security skills</label>
+                                    <label class="form-label mb-0">Cyber-security skills</label>{{ help_tip('profile.skills') }}
                                     <button class="btn btn-outline-success btn-sm ml-auto" type="button" onclick="save_my_skills();">Save skills</button>
                                 </div>
                                 <small class="text-muted d-block mb-2">Enable the skills you hold. Used to build teams and match the right people to cases.</small>
@@ -236,7 +257,7 @@
                         <div class="col-md-12">
                             <div class="form-group">
                                 <div class="d-flex align-items-center">
-                                    <label class="form-label mb-0">Notifications</label>
+                                    <label class="form-label mb-0">Notifications</label>{{ help_tip('notif.preferences') }}
                                     <button class="btn btn-outline-secondary btn-sm ml-auto" type="button"
                                             id="iris-np-reset">Reset to defaults</button>
                                 </div>
@@ -250,9 +271,9 @@
                                     <table class="table table-sm mb-0">
                                         <thead>
                                             <tr>
-                                                <th>Event</th>
+                                                <th>Event{{ help_tip('notif.events') }}</th>
                                                 <th class="text-center" style="width: 90px;">In-app</th>
-                                                <th class="text-center" style="width: 90px;">Email</th>
+                                                <th class="text-center" style="width: 90px;">Email{{ help_tip('notif.email') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody id="iris-np-body">

@@ -1,0 +1,328 @@
+{
+  "group": "Cases",
+  "order": 30,
+  "terms": {
+    "case.soc_id": {
+      "title": "SOC ticket ID",
+      "text": "The incident's identifier in your SOC's ticketing system or SIEM, kept for cross-reference. It is shown in the case header (SOC #) and travels with the case to report templates and integrations; IRIS-NG does not check it or link anything to it.",
+      "aka": [
+        "soc id",
+        "ticket",
+        "external id",
+        "reference"
+      ]
+    },
+    "case.owner": {
+      "title": "Owner",
+      "text": "The analyst responsible for the case. It starts as the person who created the case and can be handed to someone else here. The new owner is notified of the assignment, and the owner is notified when someone else changes the case details.",
+      "aka": [
+        "assignee",
+        "responsible",
+        "assigned to"
+      ]
+    },
+    "case.outcome": {
+      "title": "Outcome",
+      "text": "The verdict on the incident as a whole, separate from where the case is in its lifecycle (the state). When the case is closed, every alert attached to it is closed too and given the alert resolution matching this outcome.",
+      "items": [
+        {
+          "name": "Unknown",
+          "text": "No verdict yet (the default)."
+        },
+        {
+          "name": "False Positive",
+          "text": "The activity that raised the case was not malicious, or did not happen as reported."
+        },
+        {
+          "name": "True Positive with impact",
+          "text": "Malicious activity that caused harm: data, systems or operations were affected."
+        },
+        {
+          "name": "True Positive without impact",
+          "text": "Malicious activity that was stopped or had no effect."
+        },
+        {
+          "name": "Legitimate",
+          "text": "Real activity, but authorized or expected (an administrator's task, a penetration test)."
+        },
+        {
+          "name": "Not applicable",
+          "text": "A verdict does not apply to this case."
+        }
+      ],
+      "aka": [
+        "verdict",
+        "case status",
+        "false positive",
+        "true positive",
+        "legitimate"
+      ],
+      "wiki": "Case-Lifecycle#what-closing-a-case-changes"
+    },
+    "case.team": {
+      "title": "Case team",
+      "text": "The analysts assigned to work this case; the first one picked is the lead (starred). Suggest proposes analysts whose skills cover what the case's classification and tags call for, leaving out the owner and the reviewer. Being on the team gives no access to the case: grant that on the Access tab.",
+      "aka": [
+        "analysts",
+        "lead",
+        "skills",
+        "staffing"
+      ],
+      "wiki": "Analyst-Skills-and-Teams#per-case-team-building"
+    },
+    "case.protagonists": {
+      "title": "Protagonists",
+      "text": "People involved in the incident or its response (a customer contact, the incident lead...), each with a role and a way to reach them. They are a free-text record for the team and for reports: listing someone here gives them no access and sends them nothing.",
+      "aka": [
+        "contacts",
+        "stakeholders",
+        "people involved"
+      ]
+    },
+    "case.people": {
+      "title": "People on case",
+      "text": "Everyone who can open this case right now (read or full access, from a direct grant, a group or a customer association), active accounts only. It is not the case team, which is set in Edit Case Details.",
+      "aka": [
+        "access",
+        "users",
+        "who can see"
+      ]
+    },
+    "case.related_alerts": {
+      "title": "Related alerts",
+      "text": "Alerts merged into this case or escalated to create it. Closing the case closes them too, with the alert resolution matching the case outcome; the Reopen case button sets them back to Merged.",
+      "aka": [
+        "alerts",
+        "merged",
+        "escalated"
+      ],
+      "wiki": "Case-Lifecycle#what-closing-a-case-changes"
+    },
+    "case.reports": {
+      "title": "Reports",
+      "text": "Generate report fills an Investigation report template with this case's data and downloads the result; Activity report does the same with an Activities template and the case's activity log. Timeline events taken out of the summary are left out of the investigation report. Safe Mode generates without images, for when embedding them fails. Templates are added under Manage > Report Templates.",
+      "aka": [
+        "report",
+        "docx",
+        "word",
+        "export",
+        "activity report",
+        "safe mode"
+      ]
+    },
+    "case.pipelines": {
+      "title": "Pipelines",
+      "text": "Sends files you upload to a processing pipeline offered by an enabled module (an importer, for example), which processes them in the background to update this case; follow its progress under Manage > DIM Tasks. Which pipelines exist depends on the modules enabled under Manage > Modules; some ask for extra arguments, and the required ones must be filled in. Running a pipeline needs full access to the case.",
+      "aka": [
+        "import",
+        "upload",
+        "processing",
+        "modules"
+      ]
+    },
+    "case.processors": {
+      "title": "Processors",
+      "text": "Actions that enabled modules offer on a whole case, for example sending it to another tool. Picking one queues that module's task for this case; it runs in the background and its progress is listed under Manage > DIM Tasks. The list is empty when no enabled module offers a case action.",
+      "aka": [
+        "modules",
+        "hooks",
+        "quick actions",
+        "manual hooks"
+      ]
+    },
+    "case.close": {
+      "title": "Close case / Reopen case",
+      "text": "Closing records the close date, sets the state to Closed, closes every alert attached to the case with the resolution matching its outcome, and locks logged time. Nothing is deleted or hidden. From the interface a reviewer must be set first (API clients are not checked).\n\nReopen case clears the close date, sets the state to Open (not the state it had before), returns its alerts to Merged and unlocks time entries.",
+      "aka": [
+        "close",
+        "reopen",
+        "closed",
+        "close date"
+      ],
+      "wiki": "Case-Lifecycle#what-closing-a-case-changes"
+    },
+    "case.export": {
+      "title": "Export case",
+      "text": "Downloads this case as one .iris-case file encrypted with a password you choose, for import into another IRIS-NG instance, where it always becomes a new case. It carries the case details, notes, IOCs, assets, tasks, timeline and evidence records (not the files); comments, the working timeline, AI results and history stay behind. A lost password cannot be recovered.",
+      "aka": [
+        "export",
+        "import",
+        "iris-case",
+        "encrypted",
+        "move a case"
+      ],
+      "wiki": "Case-Export-Import"
+    },
+    "case.activity_log": {
+      "title": "Live case log",
+      "text": "Everything recorded in this case over the last 14 days, everyone's actions including yours, newest first (the newest 50 are shown). Entries are sorted into views by their wording, so a few cannot be placed, and the log says how many. Unlike the case updates bell, reading the log marks nothing as read.",
+      "items": [
+        {
+          "name": "All activity",
+          "text": "Every entry, labelled with its view (Timeline, IOCs, Assets, Notes, Tasks, Evidence, Datastore or Case) when one could be worked out."
+        },
+        {
+          "name": "This view",
+          "text": "Only the entries for the page you are on. The log opens on it from the Timeline, IOC, Assets, Notes, Tasks and Evidence pages; elsewhere it opens on All activity."
+        },
+        {
+          "name": "API",
+          "text": "The change was made by an API client, a workflow or a module."
+        }
+      ],
+      "aka": [
+        "activity",
+        "history",
+        "audit",
+        "log"
+      ]
+    },
+    "case.notifications": {
+      "title": "Case updates",
+      "text": "What changed in this case since you last pressed Mark as read: other people's changes, plus anything done through the API, a workflow or a module, even under your own account. Your own changes in the interface are left out. Until you first mark the case as read it shows the last 14 days. Mark as read covers this case only, up to the newest update shown. The badge refreshes every minute.",
+      "items": [
+        {
+          "name": "Red dot",
+          "text": "An IOC."
+        },
+        {
+          "name": "Blue dot",
+          "text": "An asset."
+        },
+        {
+          "name": "Amber dot",
+          "text": "A timeline event."
+        },
+        {
+          "name": "Green dot",
+          "text": "A note."
+        },
+        {
+          "name": "Orange dot",
+          "text": "A task."
+        },
+        {
+          "name": "Cyan dot",
+          "text": "Evidence."
+        },
+        {
+          "name": "Violet dot",
+          "text": "The case itself, the datastore or anything else."
+        }
+      ],
+      "aka": [
+        "bell",
+        "unread",
+        "mark as read",
+        "badge"
+      ],
+      "wiki": "Case-Notifications"
+    },
+    "case.summary": {
+      "title": "Case summary",
+      "text": "The case's own description, written in Markdown by the analysts on the case; it starts from the short description given at creation. Edit opens the editor next to the preview; changes save 10 seconds after you stop typing, and Ctrl+S saves at once. If someone else saved in the meantime, you are warned and your version is copied to the clipboard.\n\nReport templates and module hooks receive this text as the case description. It is separate from the AI Executive Case Summary.",
+      "aka": [
+        "description",
+        "analyst commentary",
+        "case description"
+      ]
+    },
+    "case.comments": {
+      "title": "Comments",
+      "text": "Comments on this item, visible to everyone who can see it. Type @ followed by a login to mention someone: posting the comment notifies them, provided they can see the item (a mention added later by editing notifies nobody). Only the login works, not the display name; in a saved comment, mentions of people who can see the item are highlighted.",
+      "aka": [
+        "mention",
+        "@",
+        "discussion",
+        "thread"
+      ],
+      "wiki": "Notifications#mentioning-someone"
+    },
+    "case.sectors": {
+      "title": "Critical infrastructure sectors",
+      "text": "The sector(s) of the affected organization, mostly from the DHS CIIP taxonomy. Each is stored as a MISP tag on the case and counted in the Sectors card on the Metrics page. Picking a customer fills this in from the customer's own sectors; you can change it.\n\nAt least one is required here. A case created through the API without one inherits the customer's sectors, or is accepted and flagged in its activity; a case opened by escalating an alert gets neither. Administrators manage the list under Manage > Case Objects > Sectors.",
+      "aka": [
+        "sector",
+        "dhs ciip",
+        "critical infrastructure",
+        "industry"
+      ],
+      "wiki": "Dashboard-Analytics#sector-enforcement"
+    },
+    "review.reviewer": {
+      "title": "Reviewer",
+      "text": "The analyst asked to check the case before it is closed. Closing from the interface (the Close case button or the state Closed) needs a reviewer to be set, though not a finished review. API clients and workflows can close a case without one, so a closed case is not proof it was reviewed. A newly set reviewer is notified; removing the reviewer resets the review status to Not reviewed.",
+      "aka": [
+        "review",
+        "approver",
+        "second pair of eyes"
+      ],
+      "wiki": "Case-Lifecycle#a-reviewer-is-required-before-closing"
+    },
+    "review.status": {
+      "title": "Review status",
+      "text": "Where the case's review stands. It is tracked apart from the reviewer, and closing a case does not check it. Only the reviewer sees the Start review, Confirm review and Cancel review buttons on the case summary.",
+      "items": [
+        {
+          "name": "No review required",
+          "text": "The case needs no review (set through the API only)."
+        },
+        {
+          "name": "Not reviewed",
+          "text": "No review requested yet: the default, and what removing the reviewer resets to."
+        },
+        {
+          "name": "Pending review",
+          "text": "A review was requested and the reviewer has not started it (also after a cancelled review)."
+        },
+        {
+          "name": "Review in progress",
+          "text": "The reviewer pressed Start review."
+        },
+        {
+          "name": "Reviewed",
+          "text": "The reviewer confirmed the review; the case header shows who."
+        }
+      ],
+      "aka": [
+        "pending review",
+        "reviewed",
+        "review in progress",
+        "not reviewed"
+      ],
+      "wiki": "Case-Lifecycle#reviewer-and-review-status"
+    },
+    "review.request": {
+      "title": "Request review",
+      "text": "Asks the reviewer to review the case: its review status becomes Pending review and the reviewer is notified. With no reviewer set you choose one first, from the users with full access to the case. The reviewer then starts and confirms the review from the banner on the case summary. Offered while the case is Not reviewed.",
+      "aka": [
+        "ask for review",
+        "review request"
+      ],
+      "wiki": "Case-Lifecycle#reviewer-and-review-status"
+    },
+    "time.tracking": {
+      "title": "Time tracking",
+      "text": "Time analysts log on this case in 15-minute steps, with the clock icon in the case pages' top bar. Each entry is one person's minutes on a date, optionally against a task, with a note. You can change or delete only your own entries, and only while the case is open: closing the case locks every entry and reopening unlocks them. The Metrics page totals time across cases.",
+      "aka": [
+        "time",
+        "hours",
+        "log time",
+        "timesheet",
+        "15 minutes"
+      ],
+      "wiki": "Analyst-Time-Tracking"
+    },
+    "time.estimated_cost": {
+      "title": "Estimated cost",
+      "text": "Logged hours multiplied by each analyst's hourly rate, added up for the case. It always uses each analyst's current rate, so changing a rate changes the estimate for past work too. Time logged by someone with no rate counts as $0 and the estimate is marked partial. Administrators set rates on the user's Billing tab; analysts can set their own on their profile.",
+      "aka": [
+        "cost",
+        "hourly rate",
+        "billing",
+        "price"
+      ],
+      "wiki": "Analyst-Time-Tracking#estimated-case-cost"
+    }
+  }
+}

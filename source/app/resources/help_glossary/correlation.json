@@ -1,0 +1,187 @@
+{
+  "group": "IOC correlation",
+  "order": 90,
+  "terms": {
+    "corr.workspace": {
+      "title": "Cross-case correlation",
+      "text": "Finds indicators that appear in two or more of the cases you can open and groups those cases into clusters. Two IOCs match only when the value is identical, character for character, and the IOC type is the same. Cases you cannot open are left out entirely, and only cases opened within the chosen date range take part.\n\nTLP hides nothing here; it only decides what the STIX export and the MISP push may send. Nothing is changed until you apply a campaign tag, run or edit an AI analysis, or push to MISP; Export STIX only downloads a file.",
+      "aka": [
+        "correlation",
+        "shared indicators",
+        "overlap",
+        "cross-case"
+      ],
+      "wiki": "IOC-Correlation#how-it-works"
+    },
+    "corr.date_range": {
+      "title": "Date range",
+      "text": "Limits correlation to cases opened in this range (by the case's open date, both ends included). The quick buttons fill From and To counting back from today; All time clears both. The page opens on the last 60 days. Changes apply when you press Refresh.\n\nThe range also sets the pool of cases that rarity is measured against for cluster confidence. The cross-case details of a single IOC are not limited by it.",
+      "aka": [
+        "30d",
+        "60d",
+        "90d",
+        "180d",
+        "all time",
+        "from",
+        "to"
+      ],
+      "wiki": "IOC-Correlation#controls"
+    },
+    "corr.min_shared": {
+      "title": "Min shared IOCs per case pair",
+      "text": "How many distinct indicators two cases must have in common before they are linked. It filters the links between cases only: an indicator still counts as shared when it is in only two cases, and three cases that each share a single indicator form no cluster at the default of 2.\n\nRaising it drops weaker links, so clusters shrink or split and the Shared IOCs list keeps only the indicators behind the clusters that remain. The relationship graph is still drawn from every shared indicator. Press Refresh to apply; Export STIX and Push to MISP rebuild the cluster with the value in this box.",
+      "aka": [
+        "threshold",
+        "min_shared",
+        "edge filter",
+        "minimum shared"
+      ],
+      "wiki": "IOC-Correlation#controls"
+    },
+    "corr.clusters": {
+      "title": "Case clusters",
+      "text": "A cluster is a group of cases joined by links, where a link means two cases share at least Min shared distinct indicators. Links chain: if A links to B and B to C, all three form one cluster even when A and C share nothing (cluster confidence accounts for this).\n\nThe cluster id is computed from its member case numbers, so it changes whenever a case joins or leaves. The shared IOC count on a card is every indicator held by 2 or more of its cases. Click a card, or Filter IOCs, to narrow the Shared IOCs list and the graph to that cluster; click again to clear.",
+      "aka": [
+        "cluster",
+        "cluster id",
+        "linked cases",
+        "group"
+      ],
+      "wiki": "IOC-Correlation#cluster-cards"
+    },
+    "corr.decay": {
+      "title": "Decay (Active / Aging / Stale)",
+      "text": "How fresh the cluster's shared indicators are, as a percentage and a label. Each indicator loses half its score every half-life for its type, counted from the open date of the newest cluster case that holds it. Tags change the half-life, not the score: attribution tags such as a threat actor or ransomware family lengthen it; CDN, public DNS, parked or sinkhole flags shorten it. TLP has no effect.\n\nThe cluster's score is the average over its shared indicators. Hover the pill for the indicator types behind it.",
+      "items": [
+        {
+          "name": "Active",
+          "text": "Average of 60% or more, and at least one of the cluster's cases is still open."
+        },
+        {
+          "name": "Aging",
+          "text": "Average of 25% or more, or a fresher cluster whose cases are all closed."
+        },
+        {
+          "name": "Stale",
+          "text": "Average below 25%."
+        },
+        {
+          "name": "Half-lives",
+          "text": "IP addresses 14 days; URLs 30; domains and host names 45; e-mail addresses 90; file names, registry keys and mutexes 120; hashes 180; any other type 60."
+        }
+      ],
+      "aka": [
+        "freshness",
+        "half-life",
+        "active",
+        "aging",
+        "stale"
+      ],
+      "wiki": "IOC-Correlation#decay-score"
+    },
+    "corr.confidence": {
+      "title": "Cluster confidence",
+      "text": "How strongly the shared indicators suggest the cases are really related, from 0 to 100%. Each indicator counts by rarity (one found in most of the cases in the date range adds almost nothing) and by credibility (Admiralty-scale reliability and credibility tags raise or lower it; CDN, public DNS, parked and sinkhole flags cut it sharply). The total saturates, and it is reduced when not every pair of cases in the cluster is directly linked.\n\nHover the pill for the figures behind it. The value is also the campaign confidence in the STIX export. It is an estimate to guide triage, not a verdict.",
+      "aka": [
+        "conf",
+        "rarity",
+        "idf",
+        "cohesion",
+        "credibility",
+        "admiralty"
+      ],
+      "wiki": "IOC-Correlation#ioc-confidence"
+    },
+    "corr.campaign_tag": {
+      "title": "Campaign tag",
+      "text": "A tag of the form campaign:cluster-<id> suggested for each cluster. Apply adds it to every cluster case you can open, and to the cluster's shared IOCs that occur only within those cases, so the grouping stays findable later. It is local bookkeeping: nothing is exported or pushed.\n\nBecause the id comes from the member cases, a cluster that gains or loses a case gets a new id and a new suggested tag; tags already applied stay. A cluster counts as untagged until every one of its cases carries its tag.",
+      "aka": [
+        "campaign",
+        "untagged clusters",
+        "apply tag",
+        "tagged"
+      ],
+      "wiki": "IOC-Correlation#applying-a-campaign-tag"
+    },
+    "corr.narrative": {
+      "title": "Analyze cluster (AI narrative)",
+      "text": "Asks the AI backend for a short campaign name and a three-part assessment: what the shared indicators suggest, how the cases relate, and what to do next. The model is sent the cluster's shared IOC values (up to 20), its counts, and each case's name, customer and dates, and is told to describe victims by sector and never name an organization or case.\n\nThe low / medium / high dot is the model's own grade, mostly from how many IOCs are shared; it is not the confidence percentage. The saved result, or your corrected version, becomes the campaign name and description in the STIX export and the MISP push.",
+      "aka": [
+        "narrative",
+        "cluster analysis",
+        "campaign name",
+        "analyze"
+      ],
+      "wiki": "IOC-Correlation#ai-cluster-narrative"
+    },
+    "corr.stix": {
+      "title": "Export STIX",
+      "text": "Downloads the cluster as a STIX 2.1 bundle: one campaign, one indicator per shared IOC found only within the cluster's cases, and an indicates relationship for each. It is rebuilt from the current date range and Min shared, so if the cluster no longer exists under them nothing is exported.\n\nOnly indicators labelled TLP:GREEN or TLP:CLEAR in every cluster case that holds them go in; the rest are withheld and counted in the X-IRIS-TLP-Withheld response header. The whole bundle is marked TLP:GREEN. Case and customer names are not written, but the saved AI narrative goes in as it stands, without redaction.",
+      "aka": [
+        "stix",
+        "bundle",
+        "export",
+        "threat intelligence",
+        "withheld"
+      ],
+      "wiki": "IOC-Correlation#stix-21-export"
+    },
+    "corr.misp_push": {
+      "title": "Push to MISP",
+      "text": "Publishes the cluster as one campaign event to the MISP server set up in the IrisMISPCluster module. Each publishable shared IOC becomes an attribute with its tags and every case's description of it, and a saved AI narrative becomes the event report. With the module's default settings, notes linked to those IOCs go as MISP analyst notes, and customer and case names are redacted from all free text; IOC values never are.\n\nAn IOC is sent only if every copy of it on the server is TLP:GREEN or TLP:CLEAR; the push response counts the rest as withheld, and if all are withheld nothing is sent. Pushing the same cluster again asks first and creates a new event.",
+      "aka": [
+        "misp",
+        "publish",
+        "campaign event",
+        "redaction",
+        "withheld"
+      ],
+      "wiki": "MISP-Cluster-Publishing"
+    },
+    "corr.shared_iocs": {
+      "title": "Shared IOCs",
+      "text": "The indicators behind the clusters above: each one is held by 2 or more cases of a cluster at the current threshold, and is a reason those cases are linked. A card shows the value, its TLP badge (the most restrictive label across the cases that hold it; a padlock means it will not be exported or pushed), the number of cases, and links to each case's IOC list.\n\nSelect a card for its cross-case details. Filter IOCs on a cluster narrows the list; Table view shows the same list as a table.",
+      "aka": [
+        "shared indicators",
+        "ioc cards",
+        "overlap"
+      ],
+      "wiki": "IOC-Correlation#shared-ioc-cards-and-the-cross-case-detail-panel"
+    },
+    "corr.ioc_context": {
+      "title": "Cross-case details",
+      "text": "Every case you can open that holds this exact value with this IOC type, one card per case, whatever the date range: the customer, classification, severity, whether the case is open or closed, that case's own TLP label for the indicator, IOC and case tags, the analyst's description of the IOC in that case, and related notes.\n\nA note marked sourced from is formally linked to the IOC (for example by the AI IOC extractor). Mentioned in means the value, or a defanged spelling of it, appears in the note text; that search runs only in cases with no formal link.",
+      "aka": [
+        "drawer",
+        "ioc context",
+        "other cases",
+        "linked notes",
+        "sourced from",
+        "mentioned in"
+      ],
+      "wiki": "IOC-Correlation#shared-ioc-cards-and-the-cross-case-detail-panel"
+    },
+    "corr.graph": {
+      "title": "Case relationship graph",
+      "text": "Each circle is a case, coloured by cluster (grey when it is in none), and each line joins two cases that share indicators; thicker lines, and the N IOCs label, mean more shared values. The graph is drawn from every shared indicator in the date range, so it can show links weaker than Min shared. Filtering by a cluster narrows it to that cluster.\n\nClick a case to open it in a new tab; drag to pan, scroll to zoom.",
+      "aka": [
+        "graph",
+        "network",
+        "nodes",
+        "edges",
+        "d3"
+      ],
+      "wiki": "IOC-Correlation#d3-force-directed-graph"
+    },
+    "corr.case_peek": {
+      "title": "Case peek",
+      "text": "A read-only look at a case without leaving the page: state, severity, customer, owner, reviewer, open and close dates, tags and the case summary. It opens only for cases you can open yourself; being a member of a war room never grants access to its cases. Open case takes you to the case.",
+      "aka": [
+        "peek",
+        "case preview",
+        "quick view"
+      ],
+      "wiki": "War-Rooms#the-one-rule-that-governs-everything"
+    }
+  }
+}

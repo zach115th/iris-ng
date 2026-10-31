@@ -1,0 +1,89 @@
+{
+  "group": "Customer asset registry",
+  "order": 92,
+  "terms": {
+    "registry.registry": {
+      "title": "Customer asset registry",
+      "text": "One entry per asset and customer, shared across every case and alert. Entries are created and updated automatically whenever a case or alert asset is added or edited (asset forms and API, alert ingest, escalate and merge, timeline promote, case import) and are curated by hand here. Sync never deletes an entry and never changes criticality, environment, owner or notes; it can only raise compromise status.\n\nYou see the entries of the customers you are associated with; server administrators see every customer. Scan cases, CSV import and deleting an entry (API only) are for server administrators.",
+      "aka": ["customer assets", "asset registry", "hosts", "cmdb"],
+      "wiki": "Customer-Asset-Registry"
+    },
+    "registry.identity": {
+      "title": "Registry identity",
+      "text": "An entry is one customer + asset name + asset type. Names match ignoring letter case and surrounding spaces, and nothing else: host and host.corp.local are two entries, and the same name with a different type is a different entry. The spelling shown is the first one seen.\n\nRenaming or retyping a case asset adds a new entry; the old one stays, with its curation.",
+      "aka": ["same asset", "duplicate", "name matching"],
+      "wiki": "Customer-Asset-Registry#identity"
+    },
+    "registry.sightings": {
+      "title": "Sightings",
+      "text": "The cases and alerts this asset appeared in: assets with the same customer, name and type in the customer's cases and alerts. They are worked out live each time, never stored, so renaming or deleting a case asset changes them at once.\n\nThe Cases and Alerts counts include cases you cannot open. The Sightings tab lists only the cases you can open and says how many were hidden for lack of access; it lists the customer's alerts (the 20 newest).",
+      "aka": ["seen in", "hidden by access", "cases hidden", "appearances"],
+      "wiki": "Customer-Asset-Registry#sightings-live-and-access-bounded"
+    },
+    "registry.activity": {
+      "title": "Activity and last seen",
+      "text": "Counts for this entry: the cases and alerts it appeared in and the master-timeline events linked to it. These counts include cases you cannot open; the Sightings and Timeline tabs list only what you can.\n\nFirst seen and Last seen are when the registry first and last recorded the asset: last seen moves forward each time a matching case or alert asset is added or edited, or an import or scan touches the entry. They are not when the host itself was last active. The list is sorted by last seen, newest first.",
+      "aka": ["first seen", "last seen", "visible activity"],
+      "wiki": "Customer-Asset-Registry#the-detail-panel"
+    },
+    "registry.seen": {
+      "title": "Seen filter",
+      "text": "Yes lists entries that still have at least one sighting: an asset with the same name and type in one of the customer's cases or alerts. No lists entries with none left, for example ones created by CSV import or whose case assets were renamed or deleted. Both count every case, including ones you cannot open.",
+      "aka": ["seen", "unseen", "orphan"],
+      "wiki": "Customer-Asset-Registry#the-detail-panel"
+    },
+    "registry.compromise_status": {
+      "title": "Compromise status (registry)",
+      "text": "The registry's own verdict for the asset across all its cases; each case keeps its own status. Sync only ever raises it: when a case or alert marks a matching asset compromised and the entry is unset, to be determined or unknown, it becomes compromised and the since date is stamped. An explicit not compromised is never overwritten by sync.\n\nSet by hand, compromised stamps since if it was empty; not compromised or unset clears it. In the Compromised filter, No means anything other than compromised, including never assessed.",
+      "aka": ["compromised", "since", "not compromised", "raised"],
+      "wiki": "Customer-Asset-Registry#analyst-curation-is-never-overwritten"
+    },
+    "registry.curation": {
+      "title": "Curation",
+      "text": "Fields set by hand here or by a CSV import; sync never fills or changes them. Every change is written to the Changes tab with who made it. They are labels for triage and filtering and change nothing else.",
+      "items": [
+        {"name": "Criticality", "text": "How important the asset is to the customer: low, medium, high or critical."},
+        {"name": "Environment", "text": "Free text, for example production, staging or OT."},
+        {"name": "Owner", "text": "The person or team responsible for the asset at the customer."},
+        {"name": "Notes", "text": "Anything worth knowing across cases, for example a known benign behaviour."}
+      ],
+      "aka": ["criticality", "environment", "owner", "notes"],
+      "wiki": "Customer-Asset-Registry#analyst-curation-is-never-overwritten"
+    },
+    "registry.scan": {
+      "title": "Scan cases",
+      "text": "Rebuilds the registry from every case asset and alert asset on the server in one background pass: missing entries are added, last-seen dates move forward and compromise status is raised where a case marks the asset compromised (the same rule as live sync). Curation is kept and nothing is deleted. A scan's changes are not written to the Changes log.\n\nUse it once after upgrading, or when entries look missing. Server administrators only; the list refreshes a few seconds after the scan is queued.",
+      "aka": ["backfill", "rebuild", "rescan"],
+      "wiki": "Customer-Asset-Registry#how-it-fills-itself-in"
+    },
+    "registry.csv": {
+      "title": "CSV export and import",
+      "text": "Export downloads the entries matching the current filters as CSV with the columns customer, asset_name, asset_type, criticality, environment, owner, compromise_status, notes, first_seen and last_seen.\n\nImport (server administrators) reads the same columns: customer and asset type are matched by name, a missing entry is created, and each non-empty curation column is applied and logged. compromise_status takes to_be_determined, compromised, not_compromised or unknown; first_seen and last_seen are ignored. A bad row is reported and skipped; the other rows still land.",
+      "aka": ["csv", "export", "import", "bulk"],
+      "wiki": "Customer-Asset-Registry#csv-import-and-export"
+    },
+    "registry.changes": {
+      "title": "Change log",
+      "text": "The audit log of this entry: every change to criticality, environment, owner, notes or compromise status, with the old and new value, who made it and when (the newest 200). A compromise status raised automatically by sync shows as system; changes made by Scan cases are not logged.",
+      "aka": ["changes", "audit", "history"],
+      "wiki": "Customer-Asset-Registry#analyst-curation-is-never-overwritten"
+    },
+    "registry.timeline": {
+      "title": "Asset timeline",
+      "text": "Master-timeline events linked to this asset in the customer's cases you can open, newest first (up to 50). An event is listed when it is linked to a case asset with the same name and type. Each line links to that case's timeline.",
+      "aka": ["timeline events", "events"],
+      "wiki": "Customer-Asset-Registry#the-detail-panel"
+    },
+    "registry.observed": {
+      "title": "Observed IP, domain and tags",
+      "text": "Not stored in the registry: read each time from the most recently updated case or alert asset with the same customer, name and type, so they show what was seen last rather than a saved copy. Change them on the case asset, not here.",
+      "aka": ["ip", "domain", "latest observation"],
+      "wiki": "Customer-Asset-Registry#the-detail-panel"
+    },
+    "registry.origin": {
+      "title": "Origin",
+      "text": "Observed: the entry was created by sync or a scan and no CSV import has touched it. Manual: a CSV import created or updated it, and the name shown is the user who ran the first such import.",
+      "aka": ["observed", "manual", "created by"]
+    }
+  }
+}

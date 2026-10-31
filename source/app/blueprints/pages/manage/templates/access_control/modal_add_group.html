@@ -1,7 +1,7 @@
 <div class="modal-xl modal-dialog" role="document">
     <div class="modal-content" id="modal_access_control_content">
         <div class="modal-header">
-            <h4 class="modal-title mt-2 mr-4">{% if not group.group_id %}Add Group {% else %} Edit {{ group.group_name }} {% endif %}</h4>
+            <h4 class="modal-title mt-2 mr-4">{% if not group.group_id %}Add Group {% else %} Edit {{ group.group_name }} {% endif %}{{ help_tip('group.group') }}</h4>
             <div class="row text-center mr-4">
                 {% if group.group_id %}
                 <ul class="nav nav-pills nav-default mr-4" role="tablist">
@@ -45,7 +45,7 @@
                                         {{ form.group_description(class='form-control',  autocomplete="off") }}
                                     </div>
                                     <div class="form-group" data-select2-id="7">
-                                        <label>Permissions *</label>
+                                        <label>Permissions *</label>{{ help_tip('access.permissions') }}
                                         <div class="select2-input ml-12" data-select2-id="6">
                                             <select id="group_permissions" name="group_permissions" class="form-control select2-hidden-accessible ml-12" multiple="" data-select2-id="group_permissions" tabindex="-1" aria-hidden="true" style="width: 100%">
                                             </select>
@@ -103,7 +103,7 @@
                             <div class="row d-flex mb-2">
                                 <div class="col">
                                     {% if group.group_auto_follow %}
-                                    <b><i class="fa fa-triangle-exclamation text-warning mr-2"></i>This group is set to automatically include all new cases.</b>
+                                    <b><i class="fa fa-triangle-exclamation text-warning mr-2"></i>This group is set to automatically include all new cases.</b>{{ help_tip('group.auto_follow') }}
                                     {% endif %}
                                 </div>
                                 <div class="col pull-right">
@@ -121,7 +121,7 @@
                                   <tr>
                                       <th>Case ID</th>
                                       <th>Case Name</th>
-                                      <th>Access</th>
+                                      <th>Access {{ help_tip('common.case_access') }}</th>
                                   </tr>
                                 </thead>
                                 <tfoot>

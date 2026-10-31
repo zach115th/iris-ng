@@ -129,6 +129,10 @@
         text.appendChild(el('b', null, latest.tag));
         text.appendChild(el('span', 'iris-upd-cur', ' (this server runs ' + state.current_version + ')'));
         bar.appendChild(text);
+        /* The (i) help icon; null while icons are off. Guarded so the strip
+           never depends on help_tips.js having loaded. */
+        var tip = window.IrisHelp ? IrisHelp.el('notif.update_available', {cls: 'ml-0'}) : null;
+        if (tip) { bar.appendChild(tip); }
 
         var detail = null;
         if (state.viewer_can_act) {

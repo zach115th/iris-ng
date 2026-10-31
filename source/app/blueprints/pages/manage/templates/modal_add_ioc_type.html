@@ -1,5 +1,5 @@
 <div class="modal-header">
-    <h4>Add IOC Type</h4>
+    <h4>Add IOC Type {{ help_tip('common.ioc_type', target='#type_name') }}</h4>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
             aria-hidden="true">&times;</span></button>
 </div>
@@ -15,15 +15,15 @@
                     {{ form.type_name(class='form-control',  autocomplete="off") }}
                 </div>
                 <div class="form-group mt-3">
-                    <label for="type_description" class="placeholder">Type description</label>
+                    <label for="type_description" class="placeholder">Type description</label>{{ help_tip('object.description') }}
                     {{ form.type_description(class='form-control',  autocomplete="off") }}
                 </div>
                 <div class="form-group mt-3">
-                    <label for="type_taxonomy" class="placeholder">Type taxonomy</label>
+                    <label for="type_taxonomy" class="placeholder">Type taxonomy</label>{{ help_tip('object.ioc_taxonomy') }}
                     {{ form.type_taxonomy(class='form-control',  autocomplete="off") }}
                 </div>
                 <div class="form-group mt-3">
-                    <label for="type_description" class="placeholder">Type validation regex</label>
+                    <label for="type_validation_regex" class="placeholder">Type validation regex</label>{{ help_tip('object.ioc_validation') }}
                     {{ form.type_validation_regex(class='form-control', autocomplete="off") }}
                 </div>
                 <div class="form-group mt-3">

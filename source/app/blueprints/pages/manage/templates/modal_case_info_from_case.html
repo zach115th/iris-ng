@@ -61,7 +61,7 @@
                                 <span type="text" class="">{{ data.description[0:50] }}</span>
                             </div>
                             <div class="form-group mt--3">
-                                <label>Customer :</label>
+                                <label>Customer :</label>{{ help_tip('common.customer') }}
                                 <span type="text" class="text-faded">{{ data.client.customer_name }}</span>
                             </div>
                             <div class="form-group mt--3">
@@ -70,7 +70,7 @@
                                     <span class="badge badge-pill badge-light ml-1"><i class="fa fa-tag mr-1"></i>{{ tag.tag_title }}</span> {% endfor %}{% endif %}</span>
                             </div>
                             <div class="form-group mt--3">
-                                <label>SOC ID :</label>
+                                <label>SOC ID :</label>{{ help_tip('case.soc_id') }}
                                 <span type="text" class="text-faded">{{ data.soc_id }}</span>
                             </div>
                             <div class="form-group mt--3">
@@ -84,7 +84,7 @@
                         </div>
                         <div class="col-6 col-xs-12 col-md-6">
                             <div class="form-group mt--3">
-                                <label>Classification :</label>
+                                <label>Classification :</label>{{ help_tip('common.case_classification', target='#case_quick_classification') }}
                                 {% if data.classification %}
                                     <span type="text" class="text-faded">{{ data.classification.name }}</span>
                                     {% else %}
@@ -92,11 +92,11 @@
                                 {% endif %}
                             </div>
                             <div class="form-group mt--3">
-                                <label>State :</label>
+                                <label>State :</label>{{ help_tip('common.case_state', target='#case_state') }}
                                 <span type="text" class="text-faded">{{ data.state.state_name }}</span>
                             </div>
                             <div class="form-group mt--3">
-                                <label>Severity :</label>
+                                <label>Severity :</label>{{ help_tip('common.severity', target='#case_quick_severity') }}
                                 <span type="text" class="text-faded">{{ data.severity.severity_name }}</span>
                             </div>
                             <div class="form-group mt--3">
@@ -108,37 +108,38 @@
                                 <span type="text" class="">{{ data.user.user_name }}</span>
                             </div>
                             <div class="form-group mt--3">
-                                <label>Owner :</label>
+                                <label>Owner :</label>{{ help_tip('case.owner') }}
                                 <span type="text" class="">{{ data.owner.user_name }}</span>
                             </div>
                             {# iris-next: total logged time on this case (see Time tab for the breakdown) #}
                             <div class="form-group mt--3">
-                                <label>Total time :</label>
+                                <label>Total time :</label>{{ help_tip('time.tracking') }}
                                 <span type="text" class="">{{ time_summary.total_fmt if time_summary else '0:00' }}
                                     <small class="text-muted ml-1">({{ time_summary.total_minutes if time_summary else 0 }} min)</small>
                                 </span>
                             </div>
                             {# iris-next: estimated case cost from logged time × per-analyst rate (see Time tab) #}
                             <div class="form-group mt--3">
-                                <label>Estimated cost :</label>
+                                <label>Estimated cost :</label>{{ help_tip('time.estimated_cost') }}
                                 <span type="text" class="">${{ time_summary.total_cost_fmt if time_summary else '0.00' }}
                                     {% if time_summary and time_summary.has_unpriced_time %}<small class="text-warning ml-1" title="Some analysts have no hourly rate set; their time counts as $0."><i class="fa-solid fa-triangle-exclamation"></i> partial</small>{% endif %}
                                 </span>
                             </div>
                             {# iris-next: case team — analyst chips, populated by JS on load #}
                             <div class="form-group mt--3" id="iris-case-team-read-row">
-                                <label>Team :</label>
+                                <label>Team :</label>{{ help_tip('case.team') }}
                                 <span id="iris-case-team-chips" class="text-faded"></span>
                             </div>
                             {% if data.reviewer %}
                                 <div class="form-group mt--3">
-                                    <label>Reviewer :</label>
+                                    <label>Reviewer :</label>{{ help_tip('review.reviewer') }}
                                     <span type="text" class="">{{ data.reviewer.user_name }}</span>
                                 </div>
                             {% endif %}
                             {% if data.review_status %}
                                 <div class="form-group mt--3">
-                                    <label>Reviewer :</label>
+                                    {# This row shows the review STATUS; it was labelled "Reviewer" too. #}
+                                    <label>Review status :</label>{{ help_tip('review.status') }}
                                     <span type="text" class="">{{ data.review_status.status_name }}</span>
                                 </div>
                             {% endif %}
@@ -177,7 +178,7 @@
                                     <div class="col-xs-12 col-6">
                                         <div class="input-group mb-4">
                                             <div class="input-group-prepend">
-                                                <span class="input-group-text">SOC ticket ID</span>
+                                                <span class="input-group-text">SOC ticket ID {{ help_tip('case.soc_id') }}</span>
                                             </div>
                                             <input type="text" class="form-control" name="case_soc_id" value="{{ data.soc_id }}">
                                         </div>
@@ -187,7 +188,7 @@
                                     <div class="col-xs-12 col-6">
                                         <div class="input-group mb-4">
                                             <div class="input-group-prepend fix-label-item">
-                                                <span class="input-group-text">Classification</span>
+                                                <span class="input-group-text">Classification {{ help_tip('common.case_classification', target='#case_quick_classification') }}</span>
                                             </div>
                                             <select class="selectpicker form-control"
                                                   id="case_quick_classification" name="classification_id">
@@ -200,7 +201,7 @@
                                     <div class="col-xs-12 col-6">
                                         <div class="input-group mb-4">
                                             <div class="input-group-prepend fix-label-item">
-                                                <span class="input-group-text">Owner</span>
+                                                <span class="input-group-text">Owner {{ help_tip('case.owner') }}</span>
                                             </div>
                                             <select class="selectpicker form-control"
                                                   id="case_quick_owner" name="owner_id">
@@ -212,7 +213,7 @@
                                      <div class="col-xs-12 col-6">
                                         <div class="input-group mb-4">
                                             <div class="input-group-prepend fix-label-item">
-                                                <span class="input-group-text">State</span>
+                                                <span class="input-group-text">State {{ help_tip('common.case_state', target='#case_state') }}</span>
                                             </div>
                                             {# iris-ng (#84): data-state-name lets the client recognise the
                                                Closed state without hardcoding an id (state ids vary per
@@ -232,7 +233,7 @@
                                     <div class="col-xs-12 col-6">
                                         <div class="input-group mb-4">
                                             <div class="input-group-prepend fix-label-item">
-                                                <span class="input-group-text">Outcome</span>
+                                                <span class="input-group-text">Outcome {{ help_tip('case.outcome') }}</span>
                                             </div>
                                             <select class="form-control selectpicker"
                                                   id="case_quick_status" name="status_id">
@@ -251,7 +252,7 @@
                                     <div class="col-xs-12 col-6">
                                         <div class="input-group mb-2">
                                             <div class="input-group-prepend fix-label-item">
-                                                <span class="input-group-text">Customer</span>
+                                                <span class="input-group-text">Customer {{ help_tip('common.customer') }}</span>
                                             </div>
                                             <select class="selectpicker form-control"
                                                   id="case_quick_customer" name="case_customer">
@@ -264,7 +265,7 @@
                                     <div class="col-xs-12 col-6">
                                         <div class="input-group mb-4">
                                             <div class="input-group-prepend fix-label-item">
-                                                <span class="input-group-text">Reviewer</span>
+                                                <span class="input-group-text">Reviewer {{ help_tip('review.reviewer') }}</span>
                                             </div>
                                             <select class="selectpicker form-control"
                                                   id="case_quick_reviewer" name="reviewer_id">
@@ -276,7 +277,7 @@
                                     <div class="col-xs-12 col-6">
                                         <div class="input-group mb-2">
                                             <div class="input-group-prepend fix-label-item">
-                                                <span class="input-group-text">Severity</span>
+                                                <span class="input-group-text">Severity {{ help_tip('common.severity', target='#case_quick_severity') }}</span>
                                             </div>
                                             <select class="selectpicker form-control"
                                                   id="case_quick_severity" name="severity_id">
@@ -294,9 +295,12 @@
                                 <div class="form-group px-0 mt-2" id="iris-team-edit-section">
                                     {# Skill IDs stored silently — derived in background, never shown #}
                                     <input type="hidden" id="iris-team-required-skill-ids" value="">
-                                    <label class="d-flex align-items-center" style="gap:8px;">
+                                    {# The label holds only its text: a button inside a <label> is
+                                       invalid and pollutes the field's accessible name. #}
+                                    <div class="d-flex align-items-center mb-2" style="gap:8px;">
                                         <i class="fa-solid fa-users-gear" style="color:#a78bfa;"></i>
-                                        <span>Team</span>
+                                        <label for="iris-team-analysts" class="mb-0">Team</label>
+                                        {{ help_tip('case.team', cls='ml-0') }}
                                         <button type="button" class="btn btn-xs ml-1"
                                                 id="iris-team-suggest-btn"
                                                 onclick="irisTeamSuggest({{ data.case_id }});"
@@ -304,7 +308,7 @@
                                                 style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);color:#d4c4ff;font-size:11px;padding:2px 8px;border-radius:10px;">
                                             <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Suggest
                                         </button>
-                                    </label>
+                                    </div>
                                     <select class="selectpicker form-control form-control-sm mt-1"
                                             id="iris-team-analysts"
                                             multiple data-live-search="true"
@@ -317,15 +321,17 @@
                                     </div>
                                 </div>
                                 <div class="form-group px-0">
-                                    <label for="case_tags" class="d-flex align-items-center" style="gap: 8px; flex-wrap: wrap;">
-                                        <span>Case tags</span>
-                                        {# iris-next: AI tag suggester pill — placed inline in the label, same pattern as event modal. #}
+                                    <div class="d-flex align-items-center mb-2" style="gap: 8px; flex-wrap: wrap;">
+                                        <label for="case_tags" class="mb-0">Case tags</label>
+                                        {{ help_tip('common.tags', cls='ml-0') }}
+                                        {# iris-next: AI tag suggester pill — inline beside the label (outside it:
+                                           a button inside a <label> is invalid HTML). #}
                                         {% set tagsuggest_object_type = "case" %}
                                         {% set tagsuggest_object_id = data.case_id %}
                                         {% set tagsuggest_target_input_id = "case_tags" %}
                                         {% set tagsuggest_pill_only = True %}
                                         {% include 'case_tag_suggester.html' %}
-                                    </label>
+                                    </div>
                                     <input type="text" id="case_tags"
                                         class="form-control col-md-12" {% if data.tags %} value="{% for tag in data.tags %}{{ tag.tag_title }},{% endfor %}" {% endif %}/>
                                     {# iris-next: tag suggester results panel (paired with the inline pill above). #}
@@ -371,7 +377,7 @@
                                     {% endif %}
                                     <div id="protagonist_list_edit">
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-dark mt-2 mr-2" id="add_protagonist_btn"  onclick="add_protagonist();">Add protagonist</button>
+                                    <button type="button" class="btn btn-sm btn-outline-dark mt-2 mr-2" id="add_protagonist_btn"  onclick="add_protagonist();">Add protagonist</button>{{ help_tip('case.protagonists', cls='ml-0') }}
                                 </div>
                             </div>
                         </form>
@@ -381,7 +387,7 @@
               <div class="tab-pane" id="case-info-access">
                     <div class="row">
                         <div class="col">
-                            <div class="card-title">Case access</div>
+                            <div class="card-title">Case access {{ help_tip('common.case_access') }}</div>
                         </div>
                         <div class="col">
                             <button class="btn btn-dark btn-sm ml-3 float-right" onclick="access_case_info_reload('{{ data.case_id }}');">Refresh</button>
@@ -415,12 +421,12 @@
               <div class="tab-pane" id="case-info-time">
                   <div class="row align-items-center">
                       <div class="col">
-                          <div class="card-title">Time tracking</div>
+                          <div class="card-title">Time tracking {{ help_tip('time.tracking') }}</div>
                           <p class="text-muted small mb-0">Logged in 15-minute increments via the clock icon in the case header.</p>
                       </div>
                       <div class="col-auto">
                           <span class="badge badge-primary" style="font-size: 14px;">Total: {{ time_summary.total_fmt if time_summary else '0:00' }}</span>
-                          <span class="badge badge-success ml-1" style="font-size: 14px;" title="Estimated cost = logged hours × each analyst's hourly rate">Est. cost: ${{ time_summary.total_cost_fmt if time_summary else '0.00' }}</span>
+                          <span class="badge badge-success ml-1" style="font-size: 14px;" title="Estimated cost = logged hours × each analyst's hourly rate">Est. cost: ${{ time_summary.total_cost_fmt if time_summary else '0.00' }}</span>{{ help_tip('time.estimated_cost') }}
                       </div>
                   </div>
                   {% if time_summary and time_summary.has_unpriced_time %}
@@ -528,20 +534,31 @@
            case server-side without sending the form. Left clickable on purpose: a
            disabled button explains nothing, so close_case() refuses with a message
            naming the field to fill in. #}
-        <button type="button" class="btn btn-outline-warning mr-auto" onclick="close_case('{{ data.case_id }}');"
+        {# Button and (i) share one wrapper that carries the footer's left/right split,
+           so the layout is the same with help icons switched off. #}
+        <span class="d-inline-flex align-items-center mr-auto">
+        <button type="button" class="btn btn-outline-warning" onclick="close_case('{{ data.case_id }}');"
                 id="close_case_info"
                 data-has-reviewer="{{ 'true' if data.reviewer_id else 'false' }}"
                 {% if not data.reviewer_id %}title="Assign a reviewer before closing this case"{% endif %}>Close case</button>
+        {{ help_tip('case.close') }}
+        </span>
     {% else %}
+        <span class="d-inline-flex align-items-center">
         <button type="button" class="btn btn-success" onclick="reopen_case('{{ data.case_id }}');"
                 id="reopen_case_info">Reopen case</button>
+        {{ help_tip('case.close') }}
+        </span>
     {% endif %}
     {# iris-next: portable case export — encrypted .iris-case download #}
-    <button type="button" class="btn btn-outline-primary mr-2"
+    <span class="d-inline-flex align-items-center mr-2">
+    <button type="button" class="btn btn-outline-primary"
             onclick="irisExportOpenModal({{ data.case_id }});"
             id="export_case_info" title="Download this case as an encrypted .iris-case file">
         <i class="fa-solid fa-file-export mr-1"></i> Export
     </button>
+    {{ help_tip('case.export') }}
+    </span>
     <button type="button" class="btn btn-outline-dark mr-2" style="display:none;" id="cancel_case_info"  onclick="cancel_case_edit();">Cancel</button>
     <button type="button" class="btn btn-outline-success mr-2" style="display:none;" id="save_case_info" onclick="save_case_edit({{ data.case_id }});">Save</button>
 </div>

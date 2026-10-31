@@ -1,0 +1,13 @@
+{#- iris-ng (i) help icons (2026-10-30), in <head> of every layout with a nav
+   and the guest portal's. help_tips.js always loads, because JS renderers call
+   IrisHelp.icon() and get '' while the icons are off; the glossary script loads
+   only when icons are drawn, and its URL carries the content hash, so the
+   browser keeps it until a release changes the text. Synchronous on purpose:
+   page scripts that build icons run during parsing. -#}
+{%- set _help = help_assets() %}
+	<link rel="stylesheet" href="/static/assets/css/help_tips.css">
+{%- if _help.enabled %}
+	<script>window.IrisHelpConfig = {{ _help.config|tojson }};</script>
+	<script src="{{ _help.src }}"></script>
+{%- endif %}
+	<script src="/static/assets/js/iris/help_tips.js"></script>

@@ -1,0 +1,135 @@
+{
+  "group": "Templates and attributes",
+  "order": 114,
+  "terms": {
+    "tpl.case_template": {
+      "title": "Case template",
+      "text": "A reusable starting point for new cases. A template can prefix the case name, set the classification (replacing one picked when creating the case), append its summary to the case description, add tags, and create tasks (To do, unassigned) and note folders with their notes.\n\nIt is applied once, when a case is created with it from Create case, the API or an alert escalation; editing the template later changes no existing case. An escalated case keeps the alert's classification.",
+      "aka": [
+        "playbook",
+        "case skeleton",
+        "procedure",
+        "json template"
+      ]
+    },
+    "tpl.classification": {
+      "title": "Template classification",
+      "text": "The exact name of an existing case classification, in the family:value form listed under Manage -> Case objects (for example malicious-code:ransomware). A case created with the template gets that classification, replacing the one picked in the form. A name that matches no classification is ignored without a warning, and an alert escalation keeps the alert's classification.",
+      "aka": [
+        "classification name",
+        "category"
+      ]
+    },
+    "tpl.note_directories": {
+      "title": "Template note directories",
+      "text": "Note folders the template creates on the case, each with the notes it lists (a title and optional starting content). A report template or an automation can look a note up by its exact title, so once a report relies on a note, keep that title unchanged in the template and in the case.",
+      "aka": [
+        "note folders",
+        "note groups",
+        "notes",
+        "note titles"
+      ]
+    },
+    "tpl.report_template": {
+      "title": "Report template",
+      "text": "A file IRIS-NG fills with case data when someone generates a report from a case; anyone who can open the case, read-only included, can generate one. A .docx is a Word document containing Jinja tags; a .md or .html file is a Jinja text template, and the report keeps the template's format.\n\nAn uploaded template cannot be edited here: download it, change it and upload it again.",
+      "aka": [
+        "report",
+        "docx",
+        "word",
+        "markdown",
+        "jinja"
+      ]
+    },
+    "tpl.report_type": {
+      "title": "Report type",
+      "text": "Which of the case's report lists offers the template, and what data the template receives.",
+      "items": [
+        {
+          "name": "Investigation",
+          "text": "The case report. Receives the case with its customer, notes, tasks, IOCs, assets, evidence, comments and timeline (without the events whose Add to summary is unticked), plus the generation date, the user and a document id."
+        },
+        {
+          "name": "Activities",
+          "text": "The activity report. Receives the case's name, open date and customer and its activity log: the automatic entries and those typed by hand."
+        }
+      ],
+      "aka": [
+        "investigation",
+        "activities",
+        "report kind"
+      ]
+    },
+    "tpl.language": {
+      "title": "Template language",
+      "text": "A label shown in brackets after the template's name in the case's report lists, so people pick the right one. It does not translate anything.",
+      "aka": [
+        "language",
+        "locale"
+      ]
+    },
+    "tpl.naming_format": {
+      "title": "Report name format",
+      "text": "The name of the generated file, without its extension (the template file decides that). Placeholders: %date% is the generation date (YYYY-MM-DD, UTC), %customer% the customer name, %case_name% the case name, and %code_name% a generation timestamp (yymmdd_HHMM, UTC) that the template also receives as doc_id.",
+      "aka": [
+        "file name",
+        "naming",
+        "placeholders",
+        "code name"
+      ]
+    },
+    "tpl.report_file": {
+      "title": "Report template file",
+      "text": "Accepted: .docx, .md and .html (.doc uploads but cannot generate a report). In a .docx, a tag that renders Markdown, such as {{ case.description|markdown }}, must sit alone in its own paragraph. Inside running text its formatting is lost: IRIS-NG flattens it to plain text so that Word can still open the report.",
+      "aka": [
+        "docx",
+        "upload",
+        "markdown filter",
+        "word rejects"
+      ]
+    },
+    "attr.custom_attributes": {
+      "title": "Custom attributes",
+      "text": "Extra fields, grouped in tabs, that administrators add to one kind of object: cases, customers, IOCs, assets, tasks, notes, evidence or timeline events. They appear as extra tabs in that object's add and edit windows and are stored with each object. Modules such as the MISP and VirusTotal enrichment modules can add tabs of their own to individual objects.",
+      "aka": [
+        "attributes",
+        "custom fields",
+        "extra tabs"
+      ]
+    },
+    "attr.schema": {
+      "title": "Attribute schema (JSON)",
+      "text": "The default tabs and fields for this kind of object, as JSON: each tab name holds its fields, and each field has a type, mandatory (true or false) and a default value. input_select also needs an options list of strings, and input_checkbox takes true or false. raw and html show fixed content instead of a field; html is rendered as written, so paste only markup you trust.",
+      "aka": [
+        "json",
+        "field types",
+        "input_string",
+        "input_select",
+        "taxonomy"
+      ]
+    },
+    "attr.overwrite": {
+      "title": "Save, Partial overwrite, Complete overwrite",
+      "text": "How a schema change reaches the objects that already exist. Native fields are never touched, and an object that has no custom attributes at all receives the defaults.",
+      "items": [
+        {
+          "name": "Save",
+          "text": "Adds the missing tabs and fields to every existing object with their default values and keeps every value already filled in. A tab or field you removed from the schema stays on existing objects."
+        },
+        {
+          "name": "Partial overwrite",
+          "text": "Resets every tab of the schema to its default values on every existing object, and removes from them the tabs and fields you deleted from the schema. Values entered in those tabs are lost."
+        },
+        {
+          "name": "Complete overwrite",
+          "text": "Replaces all the custom attributes of every existing object with the schema's defaults, including tabs added by modules. Every value entered in a custom attribute is lost."
+        }
+      ],
+      "aka": [
+        "migrate",
+        "reset attributes",
+        "overwrite"
+      ]
+    }
+  }
+}

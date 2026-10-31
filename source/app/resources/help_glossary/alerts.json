@@ -1,0 +1,241 @@
+{
+  "group": "Alerts",
+  "order": 70,
+  "terms": {
+    "alert.alert": {
+      "title": "Alert",
+      "text": "A detection that arrived from outside: a SIEM, EDR or other tool posting to the alerts API (for example through n8n), or an e-mail turned into an alert by a mail rule. Each alert belongs to one customer, and only users with access to that customer (and administrators) can see or work it.\n\nAn alert is triaged here, then closed, or escalated or merged into a case. When it arrives it may be grouped into an alert cluster by a clustering rule and get investigation-flow checklists attached.",
+      "aka": [
+        "detection",
+        "alert queue",
+        "triage"
+      ]
+    },
+    "alert.filters": {
+      "title": "Alert filters",
+      "text": "Every field you fill in must match. Title, description, source and tags match any part of the text, ignoring case; source reference matches any part but is case-sensitive. Asset(s) name, IOC(s) and Alert(s) ID take exact values, separated by commas without spaces. A date range applies only when both its start and end dates are set.\n\nThe filter is kept in the page address, so a copied link reproduces the same view.",
+      "aka": [
+        "search",
+        "filter",
+        "query"
+      ]
+    },
+    "alert.source": {
+      "title": "Alert source",
+      "text": "The name of the tool or feed that raised the alert, as the sender wrote it (a SIEM or EDR name, for example). Alerts created by a mail rule carry the rule's source label, Mail by default.\n\nIt is used for filtering, by clustering rules and investigation flows (field alert_source), and as the source of the timeline event when the alert is added to a case timeline.",
+      "aka": [
+        "origin",
+        "feed",
+        "detector"
+      ]
+    },
+    "alert.source_reference": {
+      "title": "Source reference",
+      "text": "The alert's identifier in the system that raised it (a ticket, event or detection ID), so the original can be found there. Alerts created from e-mail carry the message's Message-ID. The filter matches any part of it, case-sensitively.",
+      "aka": [
+        "source ref",
+        "external id",
+        "message-id",
+        "ticket"
+      ]
+    },
+    "alert.source_event_time": {
+      "title": "Source event time",
+      "text": "When the detected activity happened, according to the source, shown in UTC. The alert list is sorted by this time (newest first unless you flip the order), and it becomes the date of the timeline event when the alert is added to a case timeline. Alerts created from e-mail use the message's Date header.\n\nIt can differ from the IRIS creation time, which is when IRIS-NG received the alert.",
+      "aka": [
+        "event time",
+        "occurred",
+        "timestamp"
+      ]
+    },
+    "alert.creation_time": {
+      "title": "IRIS creation time",
+      "text": "When IRIS-NG received and stored the alert, in UTC. Alert-cluster windows are measured on this time rather than on the source event time, because events can arrive late or out of order.",
+      "aka": [
+        "received",
+        "ingest time",
+        "created"
+      ]
+    },
+    "alert.owner": {
+      "title": "Alert owner",
+      "text": "The analyst responsible for triaging the alert. Assigning someone else notifies them (according to their notification settings). Assign to me takes the alert yourself; Unassigned in the filter finds alerts nobody owns.\n\nChanging anything on an alert that has no owner (its status, note or resolution, for example) makes you its owner. With several alerts selected, only the unowned ones become yours; alerts that already have an owner keep them, and an owner picked with Assign goes to every selected alert.",
+      "aka": [
+        "assignee",
+        "assigned to",
+        "unassigned"
+      ],
+      "wiki": "Notifications"
+    },
+    "alert.custom_conditions": {
+      "title": "Custom conditions",
+      "text": "Extra filter conditions written as JSON: a list of {\"field\", \"operator\", \"value\"} objects, which must all match together with the fields above. A field is an alert column (alert_title, alert_severity_id, alert_tags...) or a related field written relation.column (severity.severity_name, status.status_name, customer.name). Show Examples has two to copy.\n\nA field that does not exist makes the search fail. This is not the grammar used by clustering rules and investigation flows.",
+      "items": [
+        {
+          "name": "eq / not",
+          "text": "Equal to / different from the value."
+        },
+        {
+          "name": "in / not_in",
+          "text": "One of / none of the values; the value is a list, for example [1, 2]."
+        },
+        {
+          "name": "like",
+          "text": "Contains the value anywhere, ignoring case."
+        }
+      ],
+      "aka": [
+        "json filter",
+        "advanced filter"
+      ]
+    },
+    "alert.saved_filters": {
+      "title": "Saved filters",
+      "text": "Save as filter stores the current filter form, custom conditions included, under a name; pick it later from the filter list next to the Filter button to apply it again. A private filter is listed only for you. A shared one is listed for every user, and any user can delete it.",
+      "aka": [
+        "preset",
+        "saved search",
+        "private filter"
+      ]
+    },
+    "alert.linked_cases": {
+      "title": "Linked cases",
+      "text": "The cases an alert was escalated or merged into, shown as #number links at the bottom of the alert; the Case ID filter finds the alerts linked to one case. Closing a linked case closes its alerts too, with a resolution matching the case outcome.\n\nUnlinking an alert from a case removes only the link: the IOCs, assets and timeline event already copied into the case stay, and the alert's status does not change.",
+      "aka": [
+        "case id",
+        "merged in case",
+        "unlink"
+      ]
+    },
+    "alert.escalate_merge": {
+      "title": "Escalate or merge into a case",
+      "text": "Moves the alert into a case. The IOCs and assets you tick are copied into the case, the case tags are added, your note goes into the case summary, and the alert keeps a link to the case. Escalating a single alert into a new case notifies its owner, if that is someone else.",
+      "items": [
+        {
+          "name": "Merge into a new case",
+          "text": "Escalates: creates an Open case for the alert's customer, with its classification, a link back to the alert in the summary and the chosen case template. A single alert also gives the case its severity and description and becomes Escalated; when several selected alerts go into one new case, each becomes Merged."
+        },
+        {
+          "name": "Merge into existing case",
+          "text": "Adds the alert to a case you can access and adds a line naming it to the case summary. The alert becomes Merged. Nothing is copied again for an alert already linked to that case."
+        }
+      ],
+      "aka": [
+        "escalate",
+        "merge",
+        "new case",
+        "existing case"
+      ]
+    },
+    "alert.import_iocs_assets": {
+      "title": "IOCs and assets to import",
+      "text": "The alert's IOCs and assets, all ticked by default. Ticked items are copied into the case; unticked ones stay on the alert only. An IOC the case already has (the same normalised value and type) is linked instead of being added twice. Imported assets start with an unspecified analysis status.",
+      "aka": [
+        "import iocs",
+        "import assets"
+      ]
+    },
+    "alert.escalation_note": {
+      "title": "Escalation note",
+      "text": "Free text added to the case summary under an Escalation note heading, for example why the alert was escalated. When several alerts go into a case at once, the note is added once.",
+      "aka": [
+        "note",
+        "reason"
+      ]
+    },
+    "alert.import_as_event": {
+      "title": "Alerts as timeline events",
+      "text": "Adds one event per alert to the case timeline: titled [ALERT] and the alert title, dated at the alert's source event time, with the alert description as content, the raw alert as raw data and the imported IOCs and assets linked. The events are marked to appear in the graph and the summary; flag, edit or delete them like any other event.",
+      "aka": [
+        "timeline",
+        "add as event",
+        "import as event"
+      ]
+    },
+    "alert.case_template": {
+      "title": "Case template",
+      "text": "Applies a case template to the new case: its title prefix is put in front of the case title, its summary text is appended to the case summary, and its tags, tasks and note directories are added. Templates are managed on the Case Templates page. Merging into an existing case applies no template.",
+      "aka": [
+        "template",
+        "playbook"
+      ]
+    },
+    "alert.template_suggestion": {
+      "title": "AI case-template suggestion",
+      "text": "When the dialog opens for a single alert, the AI backend reads the alert (title, description, source, severity, classification, tags and up to 20 IOCs and 20 assets) with the list of case templates, preselects the template it judges the best fit and shows its confidence and reason. Choosing another template dismisses the suggestion.\n\nIt is only a preselection: nothing is created until you confirm, and the suggestion is not saved. It is not offered when several alerts are escalated together.",
+      "aka": [
+        "suggested by ai",
+        "template suggester"
+      ],
+      "wiki": "AI-Features#ai-suggested-case-template-on-alert-escalation"
+    },
+    "alert.close_with_note": {
+      "title": "Close with note",
+      "text": "Closes the alert (status Closed) and records, in the same step, its resolution, note and tags. Close on its own changes the status only; Set in progress reopens a closed alert.\n\nWith several alerts selected, they all get the same resolution, and the note you enter replaces each one's note.",
+      "aka": [
+        "close",
+        "resolve"
+      ]
+    },
+    "alert.alert_note": {
+      "title": "Alert note",
+      "text": "A free-text note kept on the alert itself, shown under Alert note in its details. Saving replaces the previous note (the alert history records that it changed). It is not copied into a case when the alert is escalated; use the escalation note for that.",
+      "aka": [
+        "note",
+        "comment"
+      ]
+    },
+    "alert.relationships": {
+      "title": "Alert relationships",
+      "text": "A graph of other alerts of the same customer that share an asset (same name and type) or an IOC (same value and type) with this one, and of that customer's cases containing those values. It is computed automatically and is an indication, not a confirmed link.",
+      "items": [
+        {
+          "name": "Show open / closed alerts",
+          "text": "Open means New, Assigned, In progress, Pending or Unspecified; closed means Closed, Merged or Escalated."
+        },
+        {
+          "name": "Show open / closed cases",
+          "text": "Adds the customer's open or closed cases that contain the shared IOC values or asset names."
+        },
+        {
+          "name": "Nodes limit",
+          "text": "Caps how many related entries are fetched (100 by default)."
+        },
+        {
+          "name": "Lookback (days)",
+          "text": "Only alerts received within that many days are considered (180 by default)."
+        }
+      ],
+      "aka": [
+        "similar alerts",
+        "related alerts",
+        "graph"
+      ]
+    },
+    "alert.context": {
+      "title": "Alert context",
+      "text": "Free-form key and value details the sender attached to the alert (host names, user names, detection rule names...). Alerts created from e-mail carry the sender, recipients, subject, Message-ID, folder and the name of the mail rule that matched. Clustering rules and investigation flows can match on these as alert_context.<key>.",
+      "aka": [
+        "alert_context",
+        "metadata"
+      ]
+    },
+    "alert.raw_alert": {
+      "title": "Raw alert",
+      "text": "The original alert content as the source sent it, stored unchanged; for alerts created from e-mail, the headers and the first 4 KB of the body. When the alert is added to a case timeline it becomes the event's raw data. Clustering rules and investigation flows can match on it as alert_source_content.<path>.",
+      "aka": [
+        "source content",
+        "alert_source_content",
+        "json"
+      ]
+    },
+    "alert.enrichment": {
+      "title": "Enrichment",
+      "text": "Extra data (JSON) supplied with an IOC or asset through the API, for example by the workflow or module that sent the alert. IRIS-NG stores and shows it; it does not act on it.",
+      "aka": [
+        "view enrichment",
+        "reputation"
+      ]
+    }
+  }
+}

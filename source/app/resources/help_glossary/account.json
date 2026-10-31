@@ -1,0 +1,112 @@
+{
+  "group": "Account and notifications",
+  "order": 98,
+  "terms": {
+    "profile.username": {
+      "title": "Username",
+      "text": "Your login name. It is what @mentions use: a colleague types @ followed by your username to notify you - your display name does not work. Only an administrator can change it.",
+      "aka": ["login", "mention", "user name"]
+    },
+    "profile.email": {
+      "title": "E-mail address",
+      "text": "Where IRIS-NG sends your notification e-mails, for the events whose E-mail switch is on - and only once an administrator has enabled outbound notification e-mails. Only an administrator can change it.",
+      "aka": ["mail", "address"]
+    },
+    "profile.api_key": {
+      "title": "API key",
+      "text": "A secret that lets scripts and integrations (n8n, the REST API) act as you, with your permissions and case access: send it as Authorization: Bearer <key>. A request made with it never asks for MFA, so guard it like a password.\n\nRenew replaces it at once: every script still using the old key stops working until you give it the new one. Shown when the server signs users in locally or through LDAP.",
+      "wiki": "API-Reference",
+      "aka": ["token", "bearer", "api token", "renew"]
+    },
+    "profile.refresh_access": {
+      "title": "Refresh access",
+      "text": "Recomputes which cases you can open and reloads your permissions into this session. Use it after an administrator changed your groups, customers or case access, instead of signing out and in again.",
+      "aka": ["permissions", "case access", "reload"]
+    },
+    "profile.deletion_prompt": {
+      "title": "Confirm before deleting",
+      "text": "Whether IRIS-NG asks \"Are you sure?\" before deleting a case object: an asset, IOC, note or note revision, evidence item, task, timeline event or comment. Turned off, these are deleted on the first click. Other deletions - alerts, saved alert filters, unlinking an alert from a case and more - ask whatever this is set to. The choice is saved on your account.",
+      "aka": ["confirmation", "delete", "prompt"]
+    },
+    "profile.mfa": {
+      "title": "Multi-factor authentication",
+      "text": "When an administrator enforces MFA (Settings -> Security), signing in also asks for a six-digit code from an authenticator app (TOTP). Set up MFA enrols your app from a QR code, confirmed with a code and your password; Reset MFA replaces the enrolled app. There are no recovery codes: if you lose the app, an administrator has to reset it.\n\nThe built-in administrator and service accounts are exempt and never asked; single sign-on (OIDC) logins skip the code.",
+      "wiki": "Multi-Factor-Authentication",
+      "aka": ["mfa", "2fa", "totp", "authenticator", "exempt", "two-factor"]
+    },
+    "profile.hourly_rate": {
+      "title": "Hourly rate",
+      "text": "Your billing rate, used to estimate what a case costs: the time you log on the case times your rate, shown with the case's time summary. The rate is applied when the estimate is shown, so changing it re-prices every hour you have already logged. Blank means no rate: your time counts as 0 and the case's estimate is marked partial. Administrators can also set it for you.",
+      "wiki": "Analyst-Time-Tracking#estimated-case-cost",
+      "aka": ["rate", "cost", "billing", "price"]
+    },
+    "profile.skills": {
+      "title": "Cyber-security skills",
+      "text": "The skills you hold, from this server's skill catalog. They are used to suggest analysts for a case's team (Suggest, in the case's information window) and to propose who should take a task in the AI task suggester. A skill is on or off; there are no levels. Administrators can set them for you too.",
+      "wiki": "Analyst-Skills-and-Teams#skill-catalog",
+      "aka": ["skills", "team", "expertise", "competence"]
+    },
+    "notif.preferences": {
+      "title": "Notification preferences",
+      "text": "How each event reaches you: In-app puts it in My notifications (the inbox icon in the header, and Home); E-mail sends it to your account's e-mail address. A row you have not changed follows the organization default; changing a switch stores your own choice for that event and channel, marked (own). Reset to defaults drops all your choices.\n\nYour own actions never notify you, except mentioning yourself, naming yourself reviewer and assigning yourself a case task.",
+      "wiki": "Notifications#channels-your-preferences-over-org-defaults",
+      "aka": ["notifications", "preferences", "override", "in-app", "channels"]
+    },
+    "notif.events": {
+      "title": "Notification events",
+      "text": "What can notify you. Each event fires on the change itself (becoming the owner, being added), not on later saves.",
+      "items": [
+        {"name": "You are mentioned", "text": "Someone types @ and your username in a comment or in war-room chat, on something you can see."},
+        {"name": "Task assigned to you", "text": "You are added to the assignees of a case task (even by yourself), or someone else gives you a war-room task."},
+        {"name": "Case you own is updated", "text": "Someone else saves changes to the details of a case you own (its notes, IOCs and other contents do not count)."},
+        {"name": "Case assigned to you", "text": "Someone else makes you the owner of a case."},
+        {"name": "Alert assigned to you", "text": "Someone else makes you the owner of an alert."},
+        {"name": "Alert escalated", "text": "Someone else turns an alert you own into a case."},
+        {"name": "Alert cluster assigned to you", "text": "Someone else makes you the owner of an alert cluster."},
+        {"name": "You are asked to review a case", "text": "You are named reviewer of a case, by anyone including yourself."},
+        {"name": "Added to a war room", "text": "Someone adds you to a war room."},
+        {"name": "War-room message", "text": "Every message posted in a war room you belong to. Off by default, because it fires on each message."},
+        {"name": "SitRep published", "text": "A situation report is published in one of your war rooms: a short teaser. Later edits do not notify again."},
+        {"name": "SitRep published (leadership team / room lead)", "text": "The full report, sent instead of the teaser to the room's leadership team (or its leads when it has none). In-app and e-mail by default."},
+        {"name": "Custom module notification", "text": "Reserved for modules that send their own notifications."}
+      ],
+      "wiki": "Notifications#the-event-catalog",
+      "aka": ["mention", "assigned", "escalated", "sitrep", "war room"]
+    },
+    "notif.email": {
+      "title": "E-mail notifications",
+      "text": "E-mail goes out only when an administrator has turned on \"Enable outbound notification emails\" and configured SMTP (Settings -> Mail); until then the E-mail switches are kept but nothing is sent. Each message goes to the recipient's account e-mail address. Turning that setting off also stops messages already queued.",
+      "wiki": "Notifications#channels-your-preferences-over-org-defaults",
+      "aka": ["email", "smtp", "mail", "outbound"]
+    },
+    "notif.org_defaults": {
+      "title": "Notification defaults",
+      "text": "The organization's channels for each event. Everyone follows this matrix wherever they have not set an event's channel on their own profile, so a change here reaches all of them at once; a personal choice always wins. A row nobody has saved shows IRIS-NG's built-in default: in-app on and e-mail off, except war-room messages (both off) and the leadership SitRep (both on).",
+      "wiki": "Notifications#channels-your-preferences-over-org-defaults",
+      "aka": ["org defaults", "organisation", "matrix"]
+    },
+    "notif.inbox": {
+      "title": "My notifications",
+      "text": "What is addressed to you anywhere on the server: mentions, assignments, escalations, review requests, war-room events and SitReps. The badge counts the unread ones and refreshes every minute; clicking one marks it read and opens it; Mark all read clears the badge. Home shows the six newest, read ones faded.\n\nThe bell next to it is a different thing: Case updates lists what changed in the current case.",
+      "wiki": "Notifications#the-bell",
+      "aka": ["inbox", "bell", "unread", "mark all read"]
+    },
+    "follow.following": {
+      "title": "Following",
+      "text": "Cases and alerts you keep an eye on: the Follow button in a case's header, the star on an alert. Home lists them with their latest activity. Following is a private bookmark: it sends no notifications, and an object you can no longer see drops off the list. The number on a case's Follow button is how many people follow it.",
+      "wiki": "Notifications#following-and-home",
+      "aka": ["follow", "star", "watch", "bookmark"]
+    },
+    "notif.update_available": {
+      "title": "Newer release available",
+      "text": "The server checks the project's latest release on GitHub (at most every six hours per server process) and shows this strip on every page but Home when that release is newer than the version running here. The x hides it in this browser until the next release. Release notes and How to upgrade are shown to server administrators only; they can turn the check off under Settings -> System -> Updates.",
+      "wiki": "Getting-Started#update-notifications",
+      "aka": ["update", "upgrade", "release", "version"]
+    },
+    "notif.announcement": {
+      "title": "Announcement",
+      "text": "A message from this server's administrators (Settings -> Banners), shown to every signed-in user on every page while it is active. The x hides it in this browser tab until the tab is closed; to remove it for everyone, an administrator turns it off.",
+      "aka": ["banner", "maintenance", "notice"]
+    }
+  }
+}

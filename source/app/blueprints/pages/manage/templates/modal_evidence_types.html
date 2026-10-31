@@ -1,5 +1,5 @@
 <div class="modal-header">
-    <h4>Evidence Type</h4>
+    <h4>Evidence Type {{ help_tip('common.evidence_type') }}</h4>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
             aria-hidden="true">&times;</span></button>
 </div>
@@ -15,7 +15,7 @@
                     {{ form.name(class='form-control',  autocomplete="off") }}
                 </div>
                 <div class="form-group mt-3">
-                    <label for="description" class="placeholder">Description</label>
+                    <label for="description" class="placeholder">Description</label>{{ help_tip('object.description') }}
                     {{ form.description(class='form-control',  autocomplete="off") }}
                 </div>
 

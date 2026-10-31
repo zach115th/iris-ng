@@ -17,7 +17,7 @@
         <div class="card-header">
             <div class="d-flex align-items-center justify-content-between w-100">
                 <div>
-                    <div class="card-title">Banners</div>
+                    <div class="card-title">Banners {{ help_tip('banner.banners') }}</div>
                     <div class="text-muted"><small>Publish top-of-app messages to every authenticated
                         user (maintenance notices, outages, announcements).</small></div>
                 </div>
@@ -38,7 +38,7 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group col-md-3">
-                        <label for="bn-level">Level</label>
+                        <label for="bn-level">Level</label>{{ help_tip('banner.level') }}
                         <select class="form-control" id="bn-level">
                             <option value="info">Info</option>
                             <option value="warning">Warning</option>
@@ -48,7 +48,7 @@
                     <div class="form-group col-md-3 d-flex align-items-end">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="bn-active" checked>
-                            <label class="form-check-label" for="bn-active">Active</label>
+                            <label class="form-check-label" for="bn-active">Active</label>{{ help_tip('banner.active') }}
                         </div>
                     </div>
                 </div>

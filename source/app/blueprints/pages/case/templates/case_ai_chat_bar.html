@@ -308,6 +308,7 @@
   </div>
   <form class="iris-chat-input-row" id="iris-chat-form" autocomplete="off">
     <span class="iris-chat-spark" aria-hidden="true">✨</span>
+    {{ help_tip('chat.assistant', cls='ml-0') }}
     <input type="text" class="iris-chat-input" id="iris-chat-input"
            placeholder="{{ _chat_placeholder }}"
            autocomplete="off" />
@@ -508,6 +509,8 @@
       box.appendChild(btn);
     });
     if (!box.childNodes.length) return;
+    var followHelp = IrisHelp.el('chat.followups', {cls: 'align-self-center'});
+    if (followHelp) box.appendChild(followHelp);
     msgsEl.appendChild(box);
     scrollMsgs();
   }

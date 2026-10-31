@@ -1,0 +1,474 @@
+{
+  "group": "Timeline",
+  "order": 40,
+  "terms": {
+    "timeline.master": {
+      "title": "Master timeline",
+      "text": "The case's curated record of what happened, in date order. Events arrive when you add them by hand, upload a CSV straight to it, promote them from the working timeline, or escalate or merge an alert into the case with its add-as-event option ticked.\n\nUnless its verdict is False positive, an event here feeds the AI timeline analysis, the case summary and chat, the generated report and the case graph. Times are shown and sorted in UTC.",
+      "aka": [
+        "timeline",
+        "case timeline",
+        "events",
+        "chronology"
+      ],
+      "wiki": "Dual-Timeline#overview"
+    },
+    "timeline.filter": {
+      "title": "Timeline filter",
+      "text": "Filters the master timeline with target:value pairs joined by AND (upper case, with spaces around it); press Enter or Apply filter. Example: source: Windows Security AND asset: WKS-042. There is no OR, and text without a target is ignored.\n\nThe filter is kept in the page address, so the link reopens the same view; Reset clears it. The ? beside it opens the full filter help.",
+      "items": [
+        {
+          "name": "title, description, source, raw, tag",
+          "text": "Match part of the field, ignoring case."
+        },
+        {
+          "name": "asset",
+          "text": "An asset linked to the event, by its exact name (any case). Several asset: values must all be linked to the same event."
+        },
+        {
+          "name": "ioc",
+          "text": "An IOC linked to the event, by its exact value (any case)."
+        },
+        {
+          "name": "category",
+          "text": "The exact event category name, for example category: Lateral Movement."
+        },
+        {
+          "name": "flag",
+          "text": "flag:true lists flagged events, flag:false the ones already reviewed."
+        },
+        {
+          "name": "startDate, endDate",
+          "text": "A date in almost any format, compared with the stored UTC time; both ends are included."
+        },
+        {
+          "name": "event_id, asset_id",
+          "text": "Numeric ids of events or of linked assets."
+        }
+      ],
+      "aka": [
+        "search",
+        "query",
+        "filter syntax",
+        "and"
+      ]
+    },
+    "timeline.csv": {
+      "title": "Timeline CSV import and export",
+      "text": "One event per row under the header event_date, event_tz, event_title, event_category, event_content, event_raw, event_source, event_assets, event_iocs, event_tags. event_date is an ISO date and time (2026-03-26T03:00:30.000) in the offset event_tz gives (+00:00); both imports convert it to UTC. Separate assets with ; and IOCs or tags with |.\n\nInto the master timeline, every asset and IOC named must exist in the case and every category must be an existing name, or the file is refused; into the working timeline nothing is linked. Download as CSV writes each event's time as entered, with its offset, so a file imported back keeps every event at the same moment.",
+      "aka": [
+        "csv",
+        "upload",
+        "download",
+        "export",
+        "import",
+        "sample csv"
+      ],
+      "wiki": "Dual-Timeline#master-timeline-csv--working-timeline"
+    },
+    "timeline.visualize": {
+      "title": "Visualize",
+      "text": "Draws the master timeline on a zoomable time axis (scroll to zoom, drag to move). Only events in the summary are drawn, so false positives are left out, and each bar takes its verdict colour.\n\nNo group puts every event on one track. Group by asset gives every asset linked to an event its own row, so an event with no linked asset is not drawn. Group by category uses the event category.",
+      "aka": [
+        "visualise",
+        "graph timeline",
+        "group by asset",
+        "group by category",
+        "vis"
+      ]
+    },
+    "timeline.day_groups": {
+      "title": "Day groups",
+      "text": "Each date pill, on the master timeline and in the working-timeline panel, starts a day. Click a pill to fold that day's events away; a folded pill shows how many events it hides. Collapse all days and Expand all days act on both timelines, and the violet pill beside the first date switches between oldest and newest first.\n\nFolding only changes the display: filters, exports and the AI see every event. Folded days are remembered for this case in this browser only, and a shared link to an event opens its day.",
+      "aka": [
+        "date pill",
+        "collapse",
+        "fold",
+        "expand",
+        "sort order",
+        "newest first",
+        "oldest first"
+      ],
+      "wiki": "Dual-Timeline#collapsible-day-groups"
+    },
+    "timeline.dedup": {
+      "title": "Find duplicates",
+      "text": "Scans every event of the chosen timeline (on the working timeline, whatever its status) and lists exact duplicates and near-duplicate pairs. Nothing changes until you resolve something.\n\nEvery resolution deletes events for good. A deleted master-timeline event loses its links to assets, IOCs and comments; nothing is moved to the event that is kept.",
+      "aka": [
+        "dedup",
+        "deduplicate",
+        "duplicates",
+        "merge"
+      ],
+      "wiki": "Dual-Timeline#deduplication"
+    },
+    "timeline.dedup_exact": {
+      "title": "Exact duplicates",
+      "text": "Events with the same date and time, the same title and the same description, ignoring case and extra spaces (on the working timeline the host must match as well). Auto-resolve all keeps the event that was added first in each group and deletes the others.",
+      "aka": [
+        "auto-resolve",
+        "identical events"
+      ],
+      "wiki": "Dual-Timeline#exact-duplicates"
+    },
+    "timeline.dedup_near": {
+      "title": "Near duplicates",
+      "text": "Pairs of events no more than 5 minutes apart whose titles are similar but not identical (75% alike or more, word order ignored); descriptions are not compared.\n\nKeep left or Keep right deletes the other event. Merge keeps one event with the title and description you edit and deletes the other: Base on Left or Right fills the editor and decides which event is kept.",
+      "aka": [
+        "similar events",
+        "keep left",
+        "keep right",
+        "merge"
+      ],
+      "wiki": "Dual-Timeline#near-duplicates"
+    },
+    "event.date": {
+      "title": "Event date and time",
+      "text": "When the event happened, not when it was logged. Enter the date, the time (to the millisecond) and, in TZ, the UTC offset of that time.\n\nIRIS-NG stores the time converted to UTC and keeps what you typed: the timeline shows, sorts and filters by the UTC time, and a card whose time was typed with another offset shows an info icon with the original. The wand button parses a pasted date in almost any format.",
+      "aka": [
+        "timestamp",
+        "event time",
+        "utc",
+        "date parser"
+      ]
+    },
+    "event.tz": {
+      "title": "Time zone offset",
+      "text": "The offset from UTC of the time you typed, written +HH:MM (for example +02:00 or -05:00); +00:00 means the time is already UTC. It is applied when the event is saved. It is an offset, not a time zone name, so daylight saving is not worked out for you.\n\nEvents promoted from the working timeline or added from an alert carry +00:00.",
+      "aka": [
+        "timezone",
+        "tz",
+        "offset",
+        "utc offset"
+      ]
+    },
+    "event.category": {
+      "title": "Event category",
+      "text": "The kind of activity the event shows, as an attack phase. The list holds the MITRE ATT&CK tactics, the Unified Kill Chain phases ATT&CK does not have (Delivery, Social Engineering, Exploitation, Pivoting, Objectives) and three IRIS-NG labels: Unspecified (the default, also given to promoted events), Legitimate and Remediation.\n\nThe category is shown on the card, can be filtered with category:, groups the Visualize by category view, and Suggest ATT&CK can set it from its UKC phase.",
+      "aka": [
+        "category",
+        "tactic",
+        "phase",
+        "kill chain",
+        "ukc",
+        "att&ck tactic"
+      ],
+      "wiki": "AI-Features#mitre-attck--unified-kill-chain-suggestion"
+    },
+    "event.parent": {
+      "title": "Parent event",
+      "text": "Makes this event a child of another one, for steps that belong to a larger event (for example the commands run in one session). A child is drawn under its parent instead of in date order, gets no date pill of its own, and shows a warning when it is dated before its parent.\n\nToggle child events, in the side toolbar, hides or shows all children; the Add child event button on a card opens this form with the parent already chosen.",
+      "aka": [
+        "child event",
+        "sub-event",
+        "nested event",
+        "tree"
+      ]
+    },
+    "event.source": {
+      "title": "Event source",
+      "text": "Where the event was observed: the log, sensor or tool it came from (for example Windows Security 4624, EDR or proxy). Free text, filterable with source: and given to the AI surfaces.\n\nEvents promoted from Hayabusa or EvtxECmd get the Windows log name and event ID here; other promoted events get the importer's name.",
+      "aka": [
+        "source",
+        "log source",
+        "sensor"
+      ]
+    },
+    "event.raw": {
+      "title": "Raw event data",
+      "text": "The original record behind the event (a log line, JSON, tool output), kept as text. It is not shown on the card, and neither the timeline analysis panel nor the event analysis drawer reads it, but it can be filtered with raw: and is written to the CSV export.\n\nAn alert added as an event stores the alert's source content here. Promoting a working-timeline event does not copy the tool's record into it.",
+      "aka": [
+        "raw",
+        "original log",
+        "event_raw"
+      ]
+    },
+    "event.assets": {
+      "title": "Linked assets",
+      "text": "The case assets this event involves, such as the hosts and accounts it happened on. A linked asset shows as a badge on the card (highlighted when the asset is compromised), can be filtered with asset:, puts the event on that asset's row in Visualize by asset, and joins the asset to the event's other assets and IOCs on the case graph.\n\nOnly assets already in the case can be chosen.",
+      "aka": [
+        "assets",
+        "hosts",
+        "link asset"
+      ]
+    },
+    "event.iocs": {
+      "title": "Linked IOCs",
+      "text": "The case IOCs this event involves. A linked IOC shows as a badge on the card, can be filtered with ioc:, and joins the IOC to the event's assets on the case graph. With Push IOCs to assets ticked, saving also links each of these IOCs to each linked asset.\n\nSeparately, any case IOC value that appears in an event's title or description is highlighted on the card, linked or not.",
+      "aka": [
+        "iocs",
+        "indicators",
+        "link ioc"
+      ]
+    },
+    "event.sync_iocs_assets": {
+      "title": "Push IOCs to assets",
+      "text": "When ticked (the default), saving the event links every IOC chosen in Link to IOCs to every asset chosen in Link to assets, so each of those assets lists those IOCs.\n\nLinks are only ever added: unticking it later, or removing an asset or IOC from the event, leaves the IOC-asset links already made in place.",
+      "aka": [
+        "ioc asset link",
+        "sync iocs"
+      ]
+    },
+    "event.verdict": {
+      "title": "Verdict",
+      "text": "Your triage decision on this event, and the single control for four things: the card colour, whether the AI considers the event (timeline analysis, case summary, case chat and the context of the event analysis drawer), whether it reaches the generated report, and whether it is used on the case graph.\n\nEvents added, imported or promoted start as To be determined. The CSV download and the case export are not filtered by verdict. To set it on several events, select them with the double-check button and use the gavel.",
+      "items": [
+        {
+          "name": "To be determined",
+          "text": "Purple. Not decided yet; the event counts everywhere."
+        },
+        {
+          "name": "True positive",
+          "text": "Green. Confirmed relevant; the event counts everywhere."
+        },
+        {
+          "name": "False positive",
+          "text": "Red. Ruled out: left out of the AI surfaces, the report, the Visualize view and the case graph, but kept on the timeline and in exports. The AI is told how many events were left out."
+        }
+      ],
+      "aka": [
+        "triage",
+        "true positive",
+        "false positive",
+        "to be determined",
+        "colour",
+        "color"
+      ],
+      "wiki": "Event-Triage#the-three-verdicts"
+    },
+    "event.in_summary": {
+      "title": "In summary / In graph",
+      "text": "Two values every master-timeline event carries, both set by its verdict: on for To be determined and True positive, off for False positive. In summary decides whether the AI surfaces read the event and whether it reaches the report and the Visualize view; in graph decides whether the case graph uses it. The newspaper and share icons on a card show them.\n\nThey replace the old Add to summary and Display in graph checkboxes; the verdict always decides them, even when an API client sends them.",
+      "aka": [
+        "add to summary",
+        "display in graph",
+        "event_in_summary",
+        "event_in_graph",
+        "showed in summary"
+      ],
+      "wiki": "Event-Triage#what-a-verdict-controls",
+      "page_only": true
+    },
+    "event.flag": {
+      "title": "Flag (needs review)",
+      "text": "A flagged event is marked as needing review. Every new event starts flagged (added by hand, promoted, imported from CSV or added from an alert); a duplicated or case-imported event keeps the original's flag. Click the flag on a card to clear it once you have checked the event; each change is recorded in the event history.\n\nThe AI timeline analysis treats unflagged events as reviewed fact and flagged ones as provisional. Filter with flag:true or flag:false.",
+      "aka": [
+        "flagged",
+        "unflag",
+        "needs review",
+        "reviewed"
+      ],
+      "wiki": "Dual-Timeline#master-timeline-flag-by-default"
+    },
+    "event.history": {
+      "title": "Event history",
+      "text": "Every recorded change to this event, newest first, with who made it and when: its creation (marked manual when added by hand, or promoted from the working timeline with the tool's name), each flag and unflag, each update and each comment.\n\nThe Added by line under the event ID names the creator; editing the event never changes it.",
+      "aka": [
+        "history",
+        "audit",
+        "added by",
+        "creator",
+        "provenance"
+      ],
+      "wiki": "Dual-Timeline#event-history"
+    },
+    "event.attack_suggest": {
+      "title": "Suggest ATT&CK (AI)",
+      "text": "Asks the AI which MITRE ATT&CK techniques fit this event, from its title, description, source, category and tags as they are in the form. It returns up to four technique IDs, each with a confidence of 50% or more (weaker or malformed IDs are dropped), and one Unified Kill Chain phase.\n\nNothing changes until you click + add (the technique ID becomes an event tag), Accept all, or Set Event Category. Suggestions are not saved.",
+      "aka": [
+        "mitre",
+        "att&ck",
+        "attack",
+        "technique",
+        "ttp"
+      ],
+      "wiki": "AI-Features#mitre-attck--unified-kill-chain-suggestion"
+    },
+    "event.ukc_phase": {
+      "title": "Unified Kill Chain phase",
+      "text": "The phase of the Unified Kill Chain (UKC v1.3) the AI places this event in. Its 18 phases form three stages: In (1-8, gaining a foothold, from Reconnaissance to Command & Control), Through (9-14, moving through the network, from Pivoting to Lateral Movement) and Out (15-18: Collection, Exfiltration, Impact, Objectives).\n\nSet Event Category picks the event category with the same name.",
+      "aka": [
+        "ukc",
+        "kill chain",
+        "stage",
+        "in through out"
+      ],
+      "wiki": "AI-Features#mitre-attck--unified-kill-chain-suggestion"
+    },
+    "event.sigma_evidence": {
+      "title": "Sigma evidence",
+      "text": "Shown when the server has a Sigma rule index configured: the Sigma detection rules whose text most resembles this event (up to five, with a similarity score) and the ATT&CK techniques they map to. They were given to the AI to ground its suggestion.\n\nA match means the rule's description resembles the event; it does not mean the rule fired on your data.",
+      "aka": [
+        "sigma",
+        "detection rules",
+        "rag",
+        "grounding"
+      ]
+    },
+    "wt.panel": {
+      "title": "Working timeline",
+      "text": "A staging area for bulk tool output (Hayabusa, EZ Tools / KAPE, or a master-timeline CSV), kept apart from the master timeline. Imported events wait as pending until you promote the ones that matter or reject the rest. The AI summaries and chat, the report, the graph and the case export read only the master timeline.\n\nThe number on the Working timeline button counts pending events. The panel shows at most the 500 earliest events of the chosen status; promote or reject them to bring later ones in.",
+      "aka": [
+        "staging",
+        "dual timeline",
+        "pending events",
+        "tool events"
+      ],
+      "wiki": "Dual-Timeline#overview"
+    },
+    "wt.promote": {
+      "title": "Promote, reject and reset",
+      "text": "Promote copies a pending event to the master timeline as a new event: its title, description, tags, date (as UTC) and an event source (the Windows log name and event ID when the tool gave one). The new event is flagged, To be determined, category Unspecified. Promote also creates or reuses case assets for the host and user accounts the tool recorded, asks the AI for IOCs in the event text (70% confidence or more), and links them all to the event.\n\nIt does not copy the raw tool record, the ATT&CK chips or the AI explanation.",
+      "items": [
+        {
+          "name": "Pending",
+          "text": "Imported, not yet reviewed. The Working timeline button counts these."
+        },
+        {
+          "name": "Promoted",
+          "text": "Copied to the master timeline; the card links to the event it created. If the AI IOC step fails, the promote still completes and says so."
+        },
+        {
+          "name": "Rejected",
+          "text": "Ruled out as a false positive. It stays in the panel (Rejected) as a record of the review; Delete removes it for good."
+        },
+        {
+          "name": "Reset",
+          "text": "Puts a promoted or rejected event back to Pending. The master-timeline event a promote created is not deleted, and promoting again creates a second one."
+        }
+      ],
+      "aka": [
+        "promote",
+        "reject",
+        "reset",
+        "pending",
+        "promoted",
+        "rejected",
+        "true positive",
+        "false positive"
+      ],
+      "wiki": "Dual-Timeline#promoting-events"
+    },
+    "wt.explain": {
+      "title": "AI explanation (working event)",
+      "text": "Explain asks the AI for a short briefing on one working event: what the matched rule or artifact detects, what likely happened here, and one thing to check next, to help you decide whether to promote it. It reads that event only.\n\nThe answer is saved with the event and shown again on the next Explain; re-run asks the model again, and hide only hides it. It is not copied to the master timeline on promote.",
+      "aka": [
+        "explain",
+        "explanation",
+        "triage hint"
+      ],
+      "wiki": "Dual-Timeline#reviewing-events"
+    },
+    "wt.import": {
+      "title": "Working-timeline import",
+      "text": "Loads one tool output file into the working timeline as pending events. Nothing reaches the master timeline, and no asset or IOC is created, until you promote an event.",
+      "items": [
+        {
+          "name": "Hayabusa CSV",
+          "text": "A csv-timeline (3.x) or dfir-timeline -t csv (4.x) export, any profile, produced in UTC (--UTC or --utc). Rule matches on the same Windows event (same time, computer, channel, event ID and record ID) become one card, titled by its highest-level rule."
+        },
+        {
+          "name": "EZ Tools / KAPE CSV",
+          "text": "One CSV from EvtxECmd, MFTECmd ($J or $MFT), PECmd, AppCompatCacheParser, AmcacheParser, RBCmd, LECmd or JLECmd, recognised from its column header. PECmd_Output.csv gives one card per program (earlier runs in its text); the PECmd timeline CSV gives one per run. At most the first 25,000 rows are read."
+        },
+        {
+          "name": "AppCompatCache (ShimCache)",
+          "text": "An entry shows that the file was present on the system, not that it ran: cards read \"present on disk\", the time is the file's last-modified time, and no severity is set. Confirm execution with Prefetch, Security 4688 or Sysmon 1."
+        },
+        {
+          "name": "Master-timeline CSV",
+          "text": "From Upload CSV of events with Working timeline chosen. event_date is read in its event_tz and stored in UTC; assets, IOCs and category are kept in the event's raw record but not linked."
+        }
+      ],
+      "aka": [
+        "hayabusa",
+        "kape",
+        "ez tools",
+        "evtxecmd",
+        "mftecmd",
+        "pecmd",
+        "prefetch",
+        "amcache",
+        "appcompatcache",
+        "shimcache",
+        "lecmd",
+        "jlecmd",
+        "rbcmd"
+      ],
+      "wiki": "Dual-Timeline#importing-events"
+    },
+    "wt.gzip": {
+      "title": "Compressed upload",
+      "text": "A file of 1 MB or more is compressed (gzip) in your browser before it is sent, which makes a large Hayabusa run far smaller on the network; the status line shows Compressing, then Uploading, then Parsing on the server.\n\nA .csv.gz you choose is sent as it is, and a browser that cannot compress sends the raw file. The server recognises gzip by its content, not its name, and refuses a damaged one.",
+      "aka": [
+        "gzip",
+        "gz",
+        "compression",
+        "large file",
+        "upload progress"
+      ],
+      "wiki": "Dual-Timeline#large-files"
+    },
+    "wt.import_window": {
+      "title": "Import date and time window",
+      "text": "Optional. Only events whose timestamp falls between From and To are imported, both ends included, in UTC; the others are counted as skipped. With dates alone the window runs from the start of the From day to the end of the To day.\n\nWhere time fields are offered, a From time starts at that minute and a To time includes the whole minute, so 10:00 to 10:00 on one day imports that minute. A time needs its date, and From must not be after To.",
+      "aka": [
+        "date filter",
+        "time window",
+        "begin date",
+        "end date",
+        "from",
+        "to"
+      ],
+      "wiki": "Dual-Timeline#date-and-time-window"
+    },
+    "wt.levels": {
+      "title": "Hayabusa severity filter",
+      "text": "Hayabusa gives every Sigma rule match a level: critical, high, medium, low or info. A card gathers all the rules that fired on one Windows event and is kept when its highest level is ticked, with all its rules.\n\nInfo is off by default because it is most of a full-host run. Tick at least one level; the result counts the events skipped by level.",
+      "aka": [
+        "level",
+        "severity",
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "info",
+        "sigma level"
+      ],
+      "wiki": "Dual-Timeline#hayabusa-csv-timeline"
+    },
+    "wt.cap": {
+      "title": "25,000-event cap",
+      "text": "One import keeps at most 25,000 events. Hayabusa applies the date window and the levels first, so excluded rows never count, and stops at the cap: the result says so, gives the time of the newest event it kept and leaves this dialog open, so you can import the next window from there.\n\nEZ Tools reads only the first 25,000 rows of the file and applies the window to those; it does not report when it stopped.",
+      "aka": [
+        "cap",
+        "limit",
+        "truncated",
+        "25000",
+        "too many events"
+      ],
+      "wiki": "Dual-Timeline#hayabusa-csv-timeline"
+    },
+    "tlai.panel": {
+      "title": "Timeline analysis (AI)",
+      "text": "A running AI reading of the master timeline: what it tells us, what is still uncertain, where to dig next. It sees only the timeline: the first 150 events in date order that are not false positives (title, date, tags, description, source, flag), how many events you excluded, and the case name and description. Unflagged events count as reviewed fact, flagged ones as provisional.\n\nOn opening the page it shows the last saved analysis; it checks again after an event is edited, deleted or promoted, and Re-run forces a new one.",
+      "aka": [
+        "timeline analysis",
+        "ai panel",
+        "narrative",
+        "re-run"
+      ],
+      "wiki": "AI-Features#running-master-timeline-analysis-panel"
+    },
+    "tlai.event_drawer": {
+      "title": "AI event analysis",
+      "text": "Click a master-timeline card (anywhere but its title, links and buttons) for a focused AI reading of that one event: what it implies, a suggested ATT&CK mapping with its confidence, related events in this case, and next steps.\n\nThe event is analysed whatever its verdict, but the context around it leaves out false positives: up to 80 other events (date, title, tags) plus the case's IOCs and assets. The result is saved per event and reused while nothing has changed; Refresh asks the model again.",
+      "aka": [
+        "event drawer",
+        "event analysis",
+        "per-event ai"
+      ],
+      "wiki": "AI-Features#per-event-ai-analysis-drawer"
+    }
+  }
+}

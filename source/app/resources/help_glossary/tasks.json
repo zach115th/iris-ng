@@ -1,0 +1,61 @@
+{
+  "group": "Tasks",
+  "order": 62,
+  "terms": {
+    "task.assignees": {
+      "title": "Assignees",
+      "text": "The people responsible for this task; a task can have several or none. Only users with full access to this case are offered, and the server drops anyone who cannot open the case.\n\nEveryone newly added to a task is notified (Task assigned), including when you assign yourself. People already on the task are not notified again when it is edited.",
+      "aka": [
+        "assigned to",
+        "owner",
+        "assignee",
+        "responsible"
+      ]
+    },
+    "task.views": {
+      "title": "Task views",
+      "text": "Four views of the same task list. Table: sort, filter and export; click a Status cell to change it in place. Cards: pick a task to read, edit or comment on it beside the list. Board: one column per task status; drag a card to another column to change its status. Tree: the Blocks and Depends on links drawn as two trees.\n\nThe view you chose last is remembered in this browser.",
+      "aka": [
+        "kanban",
+        "board",
+        "table",
+        "cards",
+        "tree",
+        "dependency tree"
+      ]
+    },
+    "task.links": {
+      "title": "Task links",
+      "text": "Relationships between two tasks of this case: one task blocks another, or one depends on another. Each link is stored once and shown from both sides (Blocks / Is blocked by, Depends on / Is depended on by), so pick the wording that reads right from this task.\n\nLinks are informational: they never stop a task from being started or closed. A link that closes a loop is still saved, with a cycle warning, so a circular dependency stays visible. The Tree view draws the links.",
+      "aka": [
+        "dependencies",
+        "blocks",
+        "blocked by",
+        "depends on",
+        "cycle",
+        "linked tasks"
+      ]
+    },
+    "task.suggester": {
+      "title": "AI task suggester",
+      "text": "Reads the case and proposes the tasks that are missing, each with a priority, a reason and the skills it needs. Nothing is created until you click Accept or Accept all; accepted tasks start as To do, carry the tag ai-suggested and notify their assignee. Dismiss only hides a card for this session.\n\nThe model never sees your analysts. It tags each task with skills, and IRIS-NG proposes the active user with full case access whose skills match best (ties go to whoever holds fewer open tasks on the case). With no match the picker defaults to you, if you have full access to the case.",
+      "aka": [
+        "suggest tasks",
+        "task suggestions",
+        "ai tasks",
+        "next steps",
+        "ai-suggested"
+      ],
+      "wiki": "AI-Task-Suggester"
+    },
+    "task.global": {
+      "title": "Global task",
+      "text": "A task that belongs to no case, for team work not tied to one incident (renewing a licence, wiping a drive). Every signed-in user can see, edit and delete global tasks, the assignee can be any active user, and assigning one sends no notification; they do not appear in My pending tasks.\n\nCase tasks are different: they live on a case's Tasks tab, can only be assigned to people with access to that case, and notify their assignees.",
+      "aka": [
+        "global tasks",
+        "team task",
+        "non-case task"
+      ]
+    }
+  }
+}

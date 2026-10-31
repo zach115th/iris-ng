@@ -88,3 +88,17 @@ $('input[type=radio][name=user-has-deletion-prompt]').change(function() {
     });
 
 });
+
+// iris-ng: Profile -> "Show help icons" (the (i) icons, 2026-10-30). The page
+// reloads so every icon, and the glossary script, follow the new setting.
+$('input[type=radio][name=user-has-help-tips]').change(function() {
+    if (this.value !== 'true' && this.value !== 'false') {
+        return;
+    }
+    post_request_api(`/user/help-tips/set/${this.value}`)
+    .then((data) => {
+        if (notify_auto_api(data)) {
+            location.reload();
+        }
+    });
+});

@@ -211,6 +211,12 @@ function iris_wroom_render_header() {
         (iris_wroom_can('responder') && iris_wroom_active()) ? '' : 'none';
     document.getElementById('iris-wr-sitrep-ai').style.display =
         (iris_wroom_can('responder') && iris_wroom_active()) ? '' : 'none';
+    /* Its (i) help shows only with the button (guests never get the term). */
+    var aiHelp = document.getElementById('iris-wr-sitrep-ai-help');
+    if (aiHelp) {
+        aiHelp.style.display =
+            (iris_wroom_can('responder') && iris_wroom_active()) ? '' : 'none';
+    }
     /* The Cases tab's + Attach button and the Members tab's + Add member
        button are gated in their own render functions. */
 }
@@ -2353,6 +2359,14 @@ function iris_wroom_nt_show_doc(doc, readOnly) {
             ? 'Download ICS ' + doc.ics_form + ' as the filled FEMA PDF'
             : '';
     }
+    /* The ICS (i) help icons follow the PDF button: ICS room notes only. */
+    ['iris-wr-nt-icshelp', 'iris-wr-nt-icspdfhelp'].forEach(function (id) {
+        var h = document.getElementById(id);
+        if (h) {
+            h.style.display = (doc.ics_form && IRIS_WROOM_NT.sel
+                && IRIS_WROOM_NT.sel.type === 'room') ? '' : 'none';
+        }
+    });
     document.getElementById('iris-wr-nt-meta').textContent = doc.meta || '';
     var view = document.getElementById('iris-wr-nt-view');
     view.innerHTML = doc.content_html
@@ -4756,11 +4770,14 @@ function iris_wroom_render_guests() {
     wrap.style.display = guests.length ? '' : 'none';
     var room = IRIS_WROOM._room || {};
     var addr = room.portal_room_short || room.portal_room_url || '';
+    /* (i) help icons: IrisHelp.icon() returns '' when icons are off, and to a
+       guest for any term that is not a guest term (guest.actions is not). */
+    var hasHelp = !!window.IrisHelp;
     var addrRow = addr
         ? '<div class="iris-wr-rail-hint" style="margin-bottom:6px;">Room address for guests: <code>' + iris_wroom_esc(addr) + '</code>' +
           (room.portal_base_source === 'browser'
               ? ' <span title="No tunnel reported and no public URL in Settings -> Guest Portal">(this instance\'s own address)</span>' : '') +
-          '</div>'
+          (hasHelp ? IrisHelp.icon('guest.room_address') : '') + '</div>'
         : '';
     /* Guests are assignable: refresh the 'g:<id>' options on both task
        assignee selects (users arrive from the analyst-skills fetch). */
@@ -4778,7 +4795,7 @@ function iris_wroom_render_guests() {
             sel.appendChild(opt);
         });
     });
-    list.innerHTML = addrRow + guests.map(function (g) {
+    list.innerHTML = addrRow + guests.map(function (g, gi) {
         var st = g.status || 'active';
         var until = g.expires_at ? ' \u00b7 until ' + iris_wroom_guest_stamp(g.expires_at) : '';
         var seen = g.last_seen_at ? 'seen ' + iris_wroom_guest_stamp(g.last_seen_at) : 'never joined';
@@ -4794,6 +4811,8 @@ function iris_wroom_render_guests() {
                 (st !== 'revoked'
                     ? '<a href="#" class="iris-wr-guest-act" data-act="revoke" data-guest-id="' + g.id + '" title="Revoke access now" style="color:#a04a52;">Revoke</a>' : '') +
                 '<a href="#" class="iris-wr-guest-act" data-act="delete" data-guest-id="' + g.id + '" title="Remove the guest and the invitation" style="color:#a04a52;">Remove</a>' +
+                /* One (i) for the action vocabulary, on the first row only. */
+                (gi === 0 && hasHelp ? IrisHelp.icon('guest.actions') : '') +
                 '</span>';
         }
         return '<div class="iris-wr-mb-row">' +

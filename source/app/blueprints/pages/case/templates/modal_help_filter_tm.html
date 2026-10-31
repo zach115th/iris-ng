@@ -13,14 +13,17 @@
                                 <p>The following target elements can be used to filter :</p>
                                 <ul>
                                     <li><code>asset</code>: Asset linked to the event</li>
+                                    <li><code>asset_id</code>: ID of an asset linked to the event</li>
                                     <li><code>ioc</code>: IOC linked to the event</li>
                                     <li><code>tag</code>: Tag within the event</li>
                                     <li><code>title</code>: Title of the event</li>
                                     <li><code>description</code>: Description of the event</li>
-                                    <li><code>raw</code> : Raw event content</li>
-                                    <li><code>category</code>: Category of the event</li>
+                                    <li><code>raw</code> : Raw event content{{ help_tip('event.raw') }}</li>
+                                    <li><code>category</code>: Category of the event (exact name){{ help_tip('event.category') }}</li>
                                     <li><code>source</code>: Source of the event</li>
-                                    <li><code>startDate</code>: Start date to filter with</li>
+                                    <li><code>flag</code>: <code>flag:true</code> for flagged events, <code>flag:false</code> for reviewed ones{{ help_tip('event.flag') }}</li>
+                                    <li><code>event_id</code>: ID of the event</li>
+                                    <li><code>startDate</code>: Start date to filter with{{ help_tip('event.date') }}</li>
                                     <li><code>endDate</code>: End date to filter with</li>
                                 </ul>
                                 The dates filters uses the same guessing as the date parser in events, so a lots of format are handled.<br/>

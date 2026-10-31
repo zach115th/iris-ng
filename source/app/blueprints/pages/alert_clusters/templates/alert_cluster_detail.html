@@ -188,7 +188,7 @@
 
             <div class="iris-acd-fields">
                 <div class="iris-acd-dd" id="iris-acd-dd-status">
-                    <div class="iris-acd-fieldlabel">Status</div>
+                    <div class="iris-acd-fieldlabel">Status {{ help_tip('cluster.status') }}</div>
                     <span class="iris-acd-dd-trigger" id="iris-acd-status-chip"></span>
                     <div class="iris-acd-dd-panel">
                         <input type="text" class="iris-acd-dd-search" placeholder="Search status&hellip;">
@@ -196,7 +196,7 @@
                     </div>
                 </div>
                 <div class="iris-acd-dd" id="iris-acd-dd-severity">
-                    <div class="iris-acd-fieldlabel">Severity</div>
+                    <div class="iris-acd-fieldlabel">Severity {{ help_tip('cluster.severity', target='#iris-acd-severity-chip') }}</div>
                     <span class="iris-acd-dd-trigger" id="iris-acd-severity-chip"
                           title="Derived from member alerts; picking a value pins it"></span>
                     <div class="iris-acd-dd-panel">
@@ -205,7 +205,7 @@
                     </div>
                 </div>
                 <div class="iris-acd-dd" id="iris-acd-dd-owner">
-                    <div class="iris-acd-fieldlabel">Owner</div>
+                    <div class="iris-acd-fieldlabel">Owner {{ help_tip('cluster.owner') }}</div>
                     <span class="iris-acd-dd-trigger iris-acd-owner-text" id="iris-acd-owner-text"></span>
                     <div class="iris-acd-dd-panel">
                         <input type="text" class="iris-acd-dd-search" placeholder="Search user&hellip;">
@@ -228,7 +228,7 @@
             <div class="iris-acd-pane active" id="iris-acd-pane-summary">
                 <div class="iris-acd-savebar">
                     <span id="iris-acd-save-state" class="iris-acd-saved-ok">&#10003; All changes saved</span>
-                    <span id="iris-acd-save-sub">Synced</span>
+                    <span id="iris-acd-save-sub">Synced</span>{{ help_tip('cluster.summary') }}
                     <span style="flex:1;"></span>
                     <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-summary-refresh">&#8635; Refresh</button>
                     <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-summary-save">&#128190; Save</button>
@@ -239,14 +239,14 @@
                 <div class="row mt-4">
                     <div class="col-md-6">
                         <!-- iris-ng extension: cluster-attached investigation flows -->
-                        <h6 class="mb-2">Investigation flows</h6>
+                        <h6 class="mb-2">Investigation flows {{ help_tip('flow.checklist') }}</h6>
                         <div id="iris-ac-flows" class="text-muted" style="font-size: 0.8rem;">Loading&hellip;</div>
                     </div>
                     <div class="col-md-6">
                         <!-- iris-ng extension: AI triage (ids preserved from the
                              original panel so the moved logic binds unchanged) -->
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0">&#10024; AI triage</h6>
+                            <h6 class="mb-0">&#10024; AI triage {{ help_tip('cluster.triage') }}</h6>
                             <div>
                                 <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-ac-triage-generate">Generate</button>
                                 <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-ac-triage-rerun" style="display: none;">Re-run</button>
@@ -258,8 +258,8 @@
                         <div id="iris-ac-triage-panel" style="display: none;">
                             <div class="mb-1">
                                 <strong id="iris-ac-triage-name"></strong>
-                                <span id="iris-ac-triage-conf" class="ml-2"></span>
-                                <span id="iris-ac-triage-edited-badge" class="ml-2 text-warning" style="display: none;">edited</span>
+                                <span id="iris-ac-triage-conf" class="ml-2"></span>{{ help_tip('ai.cached') }}
+                                <span id="iris-ac-triage-edited-badge" class="ml-2 text-warning" style="display: none;">edited{{ help_tip('ai.manual_edit') }}</span>
                             </div>
                             <div id="iris-ac-triage-narrative" class="mb-2"></div>
                             <div class="text-muted" style="font-size: 0.75rem;" id="iris-ac-triage-footer"></div>
@@ -278,7 +278,7 @@
             <div class="iris-acd-pane" id="iris-acd-pane-alerts">
                 <div class="card"><div class="card-body p-2">
                     <table class="table table-sm iris-acd-table mb-0">
-                        <thead><tr><th>Alert</th><th>Severity</th><th>Source</th><th>Status</th><th>Event time</th><th style="width:40px;"></th></tr></thead>
+                        <thead><tr><th>Alert {{ help_tip('cluster.members') }}</th><th>Severity {{ help_tip('common.severity') }}</th><th>Source {{ help_tip('alert.source') }}</th><th>Status {{ help_tip('common.alert_status') }}</th><th>Event time {{ help_tip('alert.source_event_time') }}</th><th style="width:40px;"></th></tr></thead>
                         <tbody id="iris-acd-alerts-body"></tbody>
                     </table>
                 </div></div>
@@ -288,7 +288,7 @@
             <div class="iris-acd-pane" id="iris-acd-pane-assets">
                 <div class="card"><div class="card-body p-2">
                     <table class="table table-sm iris-acd-table mb-0">
-                        <thead><tr><th>Asset</th><th>Type</th><th>IP / Domain</th><th>Compromise</th></tr></thead>
+                        <thead><tr><th>Asset {{ help_tip('cluster.context') }}</th><th>Type {{ help_tip('common.asset_type') }}</th><th>IP / Domain</th><th>Compromise {{ help_tip('common.compromise_status') }}</th></tr></thead>
                         <tbody id="iris-acd-assets-body"></tbody>
                     </table>
                 </div></div>
@@ -298,7 +298,7 @@
             <div class="iris-acd-pane" id="iris-acd-pane-iocs">
                 <div class="card"><div class="card-body p-2">
                     <table class="table table-sm iris-acd-table mb-0">
-                        <thead><tr><th>Value</th><th>Type</th><th>TLP</th><th>Tags</th></tr></thead>
+                        <thead><tr><th>Value {{ help_tip('cluster.context') }}</th><th>Type {{ help_tip('common.ioc_type') }}</th><th>TLP {{ help_tip('common.tlp') }}</th><th>Tags</th></tr></thead>
                         <tbody id="iris-acd-iocs-body"></tbody>
                     </table>
                 </div></div>
@@ -311,7 +311,7 @@
                            id="iris-acd-graph-search" placeholder="Search alerts, IOCs, assets&hellip;  (Enter to cycle)">
                     <span class="iris-ac-chip iris-ac-sev-high" id="iris-acd-graph-chip-alerts">Alerts 0</span>
                     <span class="iris-ac-chip iris-ac-sev-low" id="iris-acd-graph-chip-iocs">IOCs 0</span>
-                    <span class="iris-ac-chip" style="background:rgba(45,206,137,0.14);border:1px solid rgba(45,206,137,0.45);color:#7be0b0;" id="iris-acd-graph-chip-assets">Assets 0</span>
+                    <span class="iris-ac-chip" style="background:rgba(45,206,137,0.14);border:1px solid rgba(45,206,137,0.45);color:#7be0b0;" id="iris-acd-graph-chip-assets">Assets 0</span>{{ help_tip('cluster.correlation_graph') }}
                     <span style="flex:1;"></span>
                     <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-graph-zoomin" title="Zoom in">+</button>
                     <button type="button" class="btn btn-xs btn-outline-secondary" id="iris-acd-graph-zoomout" title="Zoom out">&minus;</button>
@@ -364,7 +364,7 @@
                     {# data-iris-mention: mention_palette.js attaches the @-palette on first focus (#120) #}
                     <textarea id="iris-acd-comment-input" placeholder="Add a note or update on this alert cluster&hellip;" data-iris-mention="users"></textarea>
                     <div class="text-right mt-2">
-                        <button type="button" class="btn btn-sm btn-primary" id="iris-acd-comment-post">&#9655; Post</button>
+                        <button type="button" class="btn btn-sm btn-primary" id="iris-acd-comment-post">&#9655; Post</button>{{ help_tip('cluster.comments') }}
                     </div>
                     <div id="iris-acd-comments" class="mt-3 text-muted">Loading&hellip;</div>
                 </div>
@@ -378,7 +378,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Escalate or merge cluster</h5>
+                <h5 class="modal-title">Escalate or merge cluster {{ help_tip('cluster.escalate') }}</h5>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
@@ -405,13 +405,13 @@
                     <select class="form-control" id="iris-acd-esc-case"></select>
                 </div>
                 <div class="form-group">
-                    <label for="iris-acd-esc-note">Escalation note (optional)</label>
+                    <label for="iris-acd-esc-note">Escalation note (optional)</label>{{ help_tip('alert.escalation_note') }}
                     <textarea class="form-control" id="iris-acd-esc-note" rows="3"></textarea>
                 </div>
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" id="iris-acd-esc-event" checked>
                     <label class="form-check-label" for="iris-acd-esc-event">
-                        Import member alerts as timeline events</label>
+                        Import member alerts as timeline events</label>{{ help_tip('alert.import_as_event') }}
                 </div>
                 <div class="text-muted" style="font-size: 0.8rem;">All member IOCs and assets are
                     imported. The cluster closes and records the case it escalated to.</div>

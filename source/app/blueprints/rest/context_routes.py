@@ -20,12 +20,18 @@ from flask import Blueprint
 from flask import redirect
 from flask import request
 from flask_login import current_user
+from flask import g as request_globals
+from flask import has_request_context
 
 from app import app
 from app import cache
 from app import db
 from app.datamgmt.context.context_db import ctx_search_user_cases
 from app.models.authorization import Permissions
+from app.blueprints.access_controls import portal_request
+from app.business.help_glossary import GLOSSARY_PAGE
+from app.business.help_glossary import client_script
+from app.business.help_glossary import icon_markup
 from app.models.cases import Cases
 from app.models.models import Client
 from app.blueprints.access_controls import ac_api_requires, not_authenticated_redirection_url
@@ -169,6 +175,57 @@ def top_strips():
     """A callable, not a value: only the pages that render the hook pay for it
     (a context processor runs for every template, modals included)."""
     return dict(top_strips_state=_top_strips_state)
+
+
+_UNSET = object()
+
+
+def _help_viewer():
+    """Who the (i) help icons are drawn for on this request: 'user', 'guest' (the
+    guest portal), 'off' (a user who turned them off in Profile) or None (nobody
+    signed in). Read once per request."""
+    if not has_request_context():
+        return None
+    viewer = getattr(request_globals, 'iris_help_viewer', _UNSET)
+    if viewer is not _UNSET:
+        return viewer
+    viewer = None
+    try:
+        if portal_request() or request.path.startswith('/portal/'):
+            viewer = 'guest'
+        elif current_user.is_authenticated:
+            viewer = 'off' if current_user.has_help_tips is False else 'user'
+    except Exception as exc:
+        app.logger.warning('Help icons left out: %s', exc)
+    request_globals.iris_help_viewer = viewer
+    return viewer
+
+
+def _help_tip(key, target=None, cls=None):
+    """{{ help_tip('common.tlp') }} / {{ help_tip('common.ioc_type', target='#ioc_type_id', cls='mr-4') }}:
+    the (i) button, or nothing for a viewer who is not shown it."""
+    return icon_markup(key, _help_viewer(), target, cls)
+
+
+def _help_assets():
+    """What templates/includes/help_assets.html loads: the per-viewer config and
+    the content-hashed glossary script, or nothing when no icon is drawn."""
+    viewer = _help_viewer()
+    if viewer not in ('user', 'guest'):
+        return {'enabled': False}
+    script = client_script(viewer)
+    if viewer == 'guest':
+        return {'enabled': True, 'config': {'viewer': 'guest'},
+                'src': '/portal/help/glossary.js?v=' + script['hash']}
+    return {'enabled': True,
+            'config': {'viewer': 'user', 'glossary_url': GLOSSARY_PAGE, 'values_url': '/api/v2/help/values/'},
+            'src': '/help/glossary.js?v=' + script['hash']}
+
+
+@app.context_processor
+def help_tips():
+    """Callables, like top_strips: a template that draws no icon pays nothing."""
+    return dict(help_tip=_help_tip, help_assets=_help_assets)
 
 
 def _update_user_case_ctx():

@@ -411,7 +411,8 @@ function iris_ca_ev_tab_html(r) {
         iris_ca_esc(IRIS_CA.evq) + '" style="flex:1 1 auto;">' +
         '<div class="iris-cshell-menuwrap">' +
         '<button type="button" class="iris-cshell-btn" id="iris-ca-ev-linkbtn">&#128279; Link evidence &#9662;</button>' +
-        menu + '</div></div>' +
+        menu + '</div>' +
+        IrisHelp.icon('asset.evidence_links', {cls: 'ml-0'}) + '</div>' +
         '<div id="iris-ca-ev-rows">' + iris_ca_ev_rows_html(r) + '</div>';
 }
 
@@ -477,28 +478,33 @@ function iris_ca_edit_form_html(r) {
             ' autocomplete="off">';
     };
     return '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin-top:6px;">' +
-        iris_ca_field_html('Asset Name',
+        iris_ca_field_html('Asset Name' + IrisHelp.icon('asset.name'),
             inp('iris-ca-f-name', r.asset_name)) +
-        iris_ca_field_html('Asset Type',
+        iris_ca_field_html('Asset Type' +
+            IrisHelp.icon('common.asset_type', {target: '#iris-ca-f-type'}),
             iris_ca_select_html('iris-ca-f-type', typeOpts,
                 r.asset_type_id)) +
-        iris_ca_field_html('Analysis Status',
+        iris_ca_field_html('Analysis Status' +
+            IrisHelp.icon('common.analysis_status'),
             iris_ca_select_html('iris-ca-f-analysis', anaOpts,
                 r.analysis_status_id)) +
-        iris_ca_field_html('Compromise Status',
+        iris_ca_field_html('Compromise Status' +
+            IrisHelp.icon('common.compromise_status'),
             iris_ca_select_html('iris-ca-f-comp', compOpts, compSel)) +
         '</div>' +
         '<div style="color:#9a9aa5; font-size:0.72rem; margin:10px 0 3px;">Description</div>' +
         '<textarea class="form-control form-control-sm" id="iris-ca-f-desc" rows="4">' +
         iris_ca_esc(r.asset_description || '') + '</textarea>' +
-        '<div style="color:#e8e8ee; font-weight:600; font-size:0.82rem; margin:12px 0 6px;">Network Information</div>' +
+        '<div style="color:#e8e8ee; font-weight:600; font-size:0.82rem; margin:12px 0 6px;">Network Information' +
+        IrisHelp.icon('asset.domain_ip') + '</div>' +
         '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px 14px;">' +
         iris_ca_field_html('IP Address', inp('iris-ca-f-ip', r.asset_ip)) +
         iris_ca_field_html('Domain', inp('iris-ca-f-domain',
             r.asset_domain)) +
         '</div>' +
         '<div style="margin-top:10px;">' +
-        iris_ca_field_html('Tags' + iris_ca_tagsugg_pill_html(r),
+        iris_ca_field_html('Tags' + IrisHelp.icon('common.tags') +
+            iris_ca_tagsugg_pill_html(r),
             inp('iris-ca-f-tags', r.asset_tags, 'Add a tag...')) +
         iris_ca_tagsugg_results_html(r) + '</div>' +
         '<div style="margin-top:10px;">' +
@@ -617,18 +623,21 @@ function iris_ca_short_err(msg) {
 function iris_ca_profile_html(r) {
     var st = iris_ca_profile_state(r);
     if (!st || st.state === 'loading') return '';
+    /* one heading for every state, (i) included */
+    var head = '<div class="iris-ca-prof-h">&#x2728; Asset profile' +
+        IrisHelp.icon('asset.profile') + '</div>';
     if (st.state === 'busy') {
-        return '<div class="iris-ca-prof"><div class="iris-ca-prof-h">&#x2728; Asset profile</div>' +
+        return '<div class="iris-ca-prof">' + head +
             '<div class="text-muted" style="font-size:0.78rem;">Reading the asset and everything linked to it&hellip;</div></div>';
     }
     if (st.state === 'none') {
-        return '<div class="iris-ca-prof"><div class="iris-ca-prof-h">&#x2728; Asset profile</div>' +
+        return '<div class="iris-ca-prof">' + head +
             '<div class="text-muted" style="font-size:0.78rem;">No profile yet. ' +
             '<a href="#" class="iris-ca-prof-gen" style="color:#a78bfa;">Generate one</a> ' +
             'from this asset\'s details, linked indicators, evidence, timeline events and comments.</div></div>';
     }
     if (st.state === 'error') {
-        return '<div class="iris-ca-prof"><div class="iris-ca-prof-h">&#x2728; Asset profile</div>' +
+        return '<div class="iris-ca-prof">' + head +
             '<div style="font-size:0.78rem; color:#fca5a5;" title="' +
             iris_ca_esc(st.error) + '">Could not generate: ' +
             iris_ca_esc(iris_ca_short_err(st.error)) + '</div>' +
@@ -636,14 +645,14 @@ function iris_ca_profile_html(r) {
     }
     var a = st.art || {};
     var when = String(a.generated_at || '').replace('T', ' ').slice(0, 16);
-    return '<div class="iris-ca-prof">' +
-        '<div class="iris-ca-prof-h">&#x2728; Asset profile</div>' +
+    return '<div class="iris-ca-prof">' + head +
         '<div class="iris-ca-prof-body">' +
         iris_ca_md(a.content || a.ai_content || '') + '</div>' +
         '<div class="iris-ca-prof-f">' +
         iris_ca_esc([a.model, a.prompt_id, when].filter(Boolean).join(' · ')) +
         (st.cached ? ' · cached' : '') +
-        ' &middot; <a href="#" class="iris-ca-prof-rerun" style="color:#a78bfa;">Re-run</a></div>' +
+        ' &middot; <a href="#" class="iris-ca-prof-rerun" style="color:#a78bfa;">Re-run</a>' +
+        IrisHelp.icon('ai.cached') + '</div>' +
         '</div>';
 }
 
@@ -1129,7 +1138,8 @@ function iris_ca_ioc_tab_html(r) {
         iris_ca_esc(IRIS_CA.iocq) + '" style="flex:1 1 auto;">' +
         '<div class="iris-cshell-menuwrap">' +
         '<button type="button" class="iris-cshell-btn" id="iris-ca-ioc-linkbtn">&#128279; Link IOC &#9662;</button>' +
-        menu + '</div></div>' +
+        menu + '</div>' +
+        IrisHelp.icon('asset.ioc_links', {cls: 'ml-0'}) + '</div>' +
         '<div id="iris-ca-ioc-rows">' + iris_ca_ioc_rows_html(r) + '</div>';
 }
 
@@ -1411,7 +1421,10 @@ function iris_ca_render_detail() {
         ' <span class="iris-ca-comp-chip ' + comp.cls +
         '" style="border-color:' + comp.color + '55; color:' + comp.color +
         '; vertical-align:2px; margin-left:6px;">' + comp.label +
-        '</span></div>' +
+        '</span>' +
+        /* the edit form carries its own (i) on Compromise Status */
+        (IRIS_CA.editing ? '' : IrisHelp.icon('common.compromise_status')) +
+        '</div>' +
         '<div class="text-muted" style="font-size:0.74rem;">' +
         iris_ca_esc(iris_ca_type_name(r)) + ' &middot; #' + r.asset_id +
         '</div></div>' +
@@ -1509,21 +1522,32 @@ function iris_ca_render_detail() {
     } else if (IRIS_CA.editing) {
         body += iris_ca_edit_form_html(r);
     } else {
+        /* one (i) for IP and domain together, on whichever is shown first */
+        var netTip = IrisHelp.icon('asset.domain_ip', {cls: 'mr-1'});
         body +=
             '<div>' +
+            /* the type name sits in its own span so the (i) can show the
+               stored description of exactly this type */
             '<span class="iris-ca-field"><span class="lbl">Type</span>' +
-            iris_ca_esc(iris_ca_type_name(r)) + '</span>' +
+            IrisHelp.icon('common.asset_type',
+                          {target: '#iris-ca-d-type', cls: 'mr-1'}) +
+            '<span id="iris-ca-d-type">' +
+            iris_ca_esc(iris_ca_type_name(r)) + '</span></span>' +
             '<span class="iris-ca-field"><span class="lbl">Analysis</span>' +
+            IrisHelp.icon('common.analysis_status', {cls: 'mr-1'}) +
             iris_ca_esc(analysis) + '</span>' +
             (r.asset_ip
-                ? '<span class="iris-ca-field"><span class="lbl">IP</span><code>' +
+                ? '<span class="iris-ca-field"><span class="lbl">IP</span>' +
+                  netTip + '<code>' +
                   iris_ca_esc(r.asset_ip) + '</code></span>' : '') +
             '</div>' +
             (r.asset_domain
-                ? '<div style="margin-top:6px;"><span class="iris-ca-field"><span class="lbl">Domain</span><code>' +
+                ? '<div style="margin-top:6px;"><span class="iris-ca-field"><span class="lbl">Domain</span>' +
+                  (r.asset_ip ? '' : netTip) + '<code>' +
                   iris_ca_esc(r.asset_domain) + '</code></span></div>' : '') +
             (iris_ca_tags(r).length
                 ? '<div style="margin-top:6px;"><span class="lbl" style="color:#7a7a85; font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase; margin-right:5px;">Tags</span>' +
+                  IrisHelp.icon('common.tags', {cls: 'ml-0 mr-1'}) +
                   iris_ca_tags(r).map(function (t) {
                       return '<span class="iris-ca-tag">' + iris_ca_esc(t) +
                           '</span>';

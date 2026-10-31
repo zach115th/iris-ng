@@ -529,9 +529,11 @@
     <div class="iris-ai-panel-title-row">
       <span class="iris-ai-panel-eyebrow">AI Commentary</span>
       <span aria-hidden="true" style="color: var(--ai-card-border);">|</span>
-      <h4 class="iris-ai-panel-title">Executive Case Summary</h4>
+      <h4 class="iris-ai-panel-title">Executive Case Summary {{ help_tip('summary.executive') }}</h4>
       <span class="iris-ai-pill" id="iris-ai-pill" style="display:none;"><span aria-hidden="true">✨</span> AI Generated</span>
       <span class="iris-ai-pill iris-ai-vpill-draft" id="iris-ai-vpill" style="display:none;" title="Review status"></span>
+      {#- the status pill's (i) is shown and hidden with the pill (setPill) #}
+      <span id="iris-ai-vpill-help" style="display:none; margin-left:-6px;">{{ help_tip('summary.status', cls='ml-0') }}</span>
     </div>
     <div class="iris-ai-panel-actions">
       <button type="button" class="iris-ai-btn" id="iris-ai-refresh" title="Re-run the model and bypass the cache">
@@ -542,6 +544,7 @@
         <span aria-hidden="true">✨</span>
         Generate Summary
       </button>
+      {{ help_tip('summary.generate') }}
     </div>
   </div>
   <div class="iris-ai-tabs" id="iris-ai-tabs" role="tablist" style="display:none;">
@@ -587,6 +590,7 @@
   var emptyEl = document.getElementById('iris-ai-empty');
   var pillEl  = document.getElementById('iris-ai-pill');
   var vpillEl = document.getElementById('iris-ai-vpill');
+  var vpillHelpEl = document.getElementById('iris-ai-vpill-help');
   var badgeEl = document.getElementById('iris-ai-review-count');
   var genBtn  = document.getElementById('iris-ai-generate');
   var refBtn  = document.getElementById('iris-ai-refresh');
@@ -751,10 +755,12 @@
           '<span>Manually edited' +
             (artifact.edited_by ? ' by ' + htmlEscape(artifact.edited_by) : '') +
           '</span>' +
+          IrisHelp.icon('ai.manual_edit') +
         '</div>'
       : '<div class="iris-ai-status">' +
           '<span class="iris-ai-dot dot-success"></span>' +
           '<span>Cached summary</span>' +
+          IrisHelp.icon('ai.cached') +
         '</div>';
 
     var meta = '<div class="iris-ai-meta">' +
@@ -928,7 +934,11 @@
 
   function setPill(v) {
     if (!vpillEl) return;
-    if (!v) { vpillEl.style.display = 'none'; return; }
+    if (!v) {
+      vpillEl.style.display = 'none';
+      if (vpillHelpEl) vpillHelpEl.style.display = 'none';
+      return;
+    }
     var status = v.summary_status || 'draft';
     var open = v.questions_open || 0;
     var verifierOff = !!(v.run && v.run.verifier_status === 'disabled');
@@ -941,6 +951,7 @@
       : v.legacy ? 'Generated before verification existed. Regenerate to review it.'
       : open ? open + ' review question(s) to answer' : 'Draft';
     vpillEl.style.display = '';
+    if (vpillHelpEl) vpillHelpEl.style.display = '';
     if (badgeEl) {
       badgeEl.textContent = String(open);
       badgeEl.style.display = open ? '' : 'none';
@@ -981,7 +992,10 @@
       return;
     }
     if (open.length) {
-      reviewEl.appendChild(el('h5', null, open.length + ' question' + (open.length === 1 ? '' : 's') + ' to answer'));
+      var qHead = el('h5', null, open.length + ' question' + (open.length === 1 ? '' : 's') + ' to answer');
+      var qHelp = IrisHelp.el('summary.review_questions');
+      if (qHelp) qHead.appendChild(qHelp);
+      reviewEl.appendChild(qHead);
       var list = el('div', 'iris-ai-flags');
       list.id = 'iris-ai-questions';
       var order = {high: 0, medium: 1, low: 2};
@@ -1005,6 +1019,8 @@
     var state = v.apply || {};
     apply.disabled = !state.can_apply;
     bar.appendChild(apply);
+    var applyHelp = IrisHelp.el('summary.apply_answers');
+    if (applyHelp) bar.appendChild(applyHelp);
     bar.appendChild(el('span', null, state.can_apply
       ? 'Builds the next pass from your answers: the text is re-rendered and re-checked; anything new comes back as a question.'
       : (state.reason ? 'Apply answers: ' + state.reason + '.' : '')));
@@ -1056,7 +1072,10 @@
       (v.run.verifier_status === 'disabled' ? 'checks only' : (v.run.verifier_status || '').replace(/_/g, ' '))));
     auditEl.appendChild(rows);
 
-    auditEl.appendChild(el('h5', null, 'Steps of this pass'));
+    var stepsHead = el('h5', null, 'Steps of this pass');
+    var auditHelp = IrisHelp.el('summary.audit');
+    if (auditHelp) stepsHead.appendChild(auditHelp);
+    auditEl.appendChild(stepsHead);
     auditEl.appendChild(stepsTable(v.steps));
 
     if (v.passes && v.passes.length) {

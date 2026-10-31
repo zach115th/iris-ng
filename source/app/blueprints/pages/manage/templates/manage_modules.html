@@ -74,7 +74,7 @@
     <div class="iris-co-head">
         <span class="iris-co-head-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></span>
         <div>
-            <div class="iris-co-title">Modules</div>
+            <div class="iris-co-title">Modules {{ help_tip('module.modules') }}</div>
             <div class="iris-co-sub">Install, configure and manage DFIR-IRIS modules and their hooks.</div>
             {{ form.hidden_tag() }}
         </div>
@@ -93,7 +93,7 @@
 
     <div class="iris-mod-panel">
         <div class="iris-mod-flex">
-            <span class="iris-co-eyebrow" style="margin-bottom: 0;">Registered hooks <span id="iris-hook-count"></span></span>
+            <span class="iris-co-eyebrow" style="margin-bottom: 0;">Registered hooks <span id="iris-hook-count"></span></span>{{ help_tip('module.hooks') }}
             <input type="text" class="form-control form-control-sm iris-mod-search" id="iris-hook-search"
                    placeholder="Search hooks..." autocomplete="off">
         </div>

@@ -129,8 +129,8 @@
                     {{ form.hidden_tag() }}
                     <div class="form-group">
                         <div class="row">
-                            <label for="editor_detail" class="mr-4">Case template definition
-                            </label><button type="button" class="btn btn-sm ml-auto" onclick="downloadCaseTemplateDefinition();">Download definition</button>
+                            <label for="editor_detail">Case template definition
+                            </label>{{ help_tip('tpl.case_template', cls='mr-4') }}<button type="button" class="btn btn-sm ml-auto" onclick="downloadCaseTemplateDefinition();">Download definition</button>
                         </div>
                         <div id="editor_detail">{{ form.case_template_json.data|tojsonsafe }}</div>
                     </div>

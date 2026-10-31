@@ -162,6 +162,23 @@ def profile_set_minisidebar(val):
     return response_success('Mini sidebar {}'.format('enabled' if val == 'true' else 'disabled'))
 
 
+@profile_rest_blueprint.route('/user/help-tips/set/<string:val>', methods=['POST'])
+@ac_api_requires()
+def profile_set_help_tips(val):
+    """iris-ng: Profile -> "Show help icons" (the (i) icons, 2026-10-30)."""
+    if val not in ['true', 'false']:
+        return response_error('Invalid data')
+
+    user = get_user(current_user.id)
+    if not user:
+        return response_error("Invalid user ID")
+
+    user.has_help_tips = (val == 'true')
+    db.session.commit()
+
+    return response_success('Help icons {}'.format('shown' if val == 'true' else 'hidden'))
+
+
 @profile_rest_blueprint.route('/user/hourly-rate/update', methods=['POST'])
 @ac_api_requires()
 def profile_set_hourly_rate():

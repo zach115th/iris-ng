@@ -1,0 +1,64 @@
+{
+  "group": "Lookup lists",
+  "order": 116,
+  "terms": {
+    "object.lookup_lists": {
+      "title": "Case objects (lookup lists)",
+      "text": "The value lists analysts pick from: asset types, IOC types, case classifications, case states, evidence types and sectors. Only server administrators can change them, and an asset type, IOC type, classification, case state or evidence type still in use cannot be deleted.\n\nAt every start IRIS-NG re-creates the built-in values that are missing, matched by name (sectors by slug): evidence types always, the others only while Settings -> General \"Prevent post-init step to register default case objects again during boot\" is off. So deleting or renaming a built-in value only sticks with that setting on. Editing a description is always safe.",
+      "aka": ["lookup", "taxonomy", "seeded values", "default objects", "case objects"]
+    },
+    "object.description": {
+      "title": "Value description",
+      "text": "What this value means, in your team's words. The (i) help icons show it when this value is chosen in a form, and the Glossary page lists it. The start-up seeding never overwrites a description you edited.",
+      "aka": ["description", "help text", "meaning"]
+    },
+    "object.ioc_validation": {
+      "title": "IOC type validation",
+      "text": "A regular expression that the whole value of an IOC of this type must match (case-insensitive) whenever the IOC is added or edited, in the interface or through the API. Empty means no check. IOCs already saved are not re-checked when you change it.\n\nThe expectation explanation is what the analyst sees in the error instead of the raw expression, so write it as a description or an example of a valid value.",
+      "aka": ["regex", "validation", "format check", "pattern"]
+    },
+    "object.ioc_taxonomy": {
+      "title": "MISP attribute type of an IOC type",
+      "text": "The MISP attribute type that IOCs of this type become when IRIS-NG sends them to MISP (for example ip-dst or sha256). Left empty, it is filled in at the next start when IRIS-NG can map the type name to a MISP attribute type. Cluster and war-room publishing skip IOCs whose type has no mapping; the MISP sync can fall back to an AI guess when that option is enabled, and otherwise does not send them.",
+      "wiki": "MISP-Integration",
+      "aka": ["taxonomy", "misp type", "attribute type", "mapping"]
+    },
+    "object.asset_icons": {
+      "title": "Asset type icons",
+      "text": "Two images (.png or .svg) for assets of this type: the compromised one is shown when an asset's compromise status is Compromised, the other for every other status. They appear in the case's asset list and on the case graph.",
+      "aka": ["icon", "image", "compromised icon"]
+    },
+    "object.classification_name": {
+      "title": "Classification name",
+      "text": "The MISP incident-classification key, family:value (for example malicious-code:ransomware). Case templates refer to a classification by this exact name, and a case created with it (from Create case or the API) also gets the matching CERT-XLM tag, such as CERT-XLM:malicious-code=\"ransomware\", when that taxonomy has one. The expanded name is the readable label shown in pickers, lists and help icons.",
+      "aka": ["expanded name", "family", "cert-xlm", "misp classification"]
+    },
+    "object.state_protected": {
+      "title": "Protected case state",
+      "text": "Unspecified, Open and Closed are product states: every new case starts Open, and closing a case sets Closed (with everything closing does). They cannot be edited or deleted. The other states are labels you can add, rename or delete while no case uses them.",
+      "wiki": "Case-Lifecycle#states",
+      "aka": ["protected", "open", "closed", "unspecified"]
+    },
+    "sector.catalog": {
+      "title": "Sector catalog",
+      "text": "The critical-infrastructure sectors offered in the customer and case sector pickers. Each is stored on a case as a MISP machine tag (the DHS CIIP sectors, plus other taxonomies such as threatmatch), and sector tags feed the dashboard's sector metrics. A case created without a sector tag is accepted but logged as missing one.",
+      "wiki": "Dashboard-Analytics#sector-enforcement",
+      "aka": ["sectors", "dhs ciip", "critical infrastructure", "industry"]
+    },
+    "sector.slug": {
+      "title": "Sector slug",
+      "text": "The stable key of a sector: customers store this value, not the name. Changing the slug of a sector customers already use orphans their selection; the display name can be changed freely. A built-in sector whose slug is missing is added again at the next start, unless default case objects are prevented from being re-created.",
+      "aka": ["slug", "key", "identifier"]
+    },
+    "sector.tag": {
+      "title": "Sector machine tag",
+      "text": "The tag a case receives for this sector, in MISP form namespace:predicate=\"value\". The dashboard and the missing-sector check recognize sector tags by the part before the =, taken from every row of this catalog.",
+      "aka": ["machine tag", "misp tag", "namespace"]
+    },
+    "sector.enabled": {
+      "title": "Enabled sector",
+      "text": "Enabled sectors are offered in the case and customer pickers. Disabling one hides it from the pickers but keeps it recognized on existing cases and in the metrics. Deleting a sector also stops recognizing its namespace unless another sector or a built-in namespace covers it, so disable a sector to retire it.",
+      "aka": ["disable", "retire", "hidden sector"]
+    }
+  }
+}

@@ -58,7 +58,7 @@
    /api/v2/dashboard/* endpoints it calls are untouched. #}
 <div class="page-inner">
     <form style="display:none;">{{ form.hidden_tag() }}</form>
-    <h4 class="page-title mb-3">Inventory</h4>
+    <h4 class="page-title mb-3">Inventory {{ help_tip('inventory.inventory') }}</h4>
     {# iris-next: Inventory pane — physical evidence-drive lookup + management.
        Scan/key a barcode to resolve the drive's location, current case, and the
        evidence items on it. Open to any logged-in user (evidence-locker flow). #}
@@ -67,7 +67,7 @@
         <div class="col-md-12">
           <div class="card card-round">
             <div class="card-body">
-              <h4 class="card-title">Scan a bar code or search by case or customer</h4>
+              <h4 class="card-title">Scan a bar code or search by case or customer {{ help_tip('inventory.lookup') }}</h4>
               <p class="text-muted small mb-2">Look up a physical evidence drive by its bar code &mdash; or by the name, number or SOC id of a case, or by a customer name &mdash; to see its location, associated case, and the evidence items it holds. Case and customer search cover the drive a case is assigned to and any drive still holding that case's evidence items.</p>
               <div class="input-group input-group-lg" style="max-width: 640px;">
                 <input type="text" class="form-control" id="iris-inv-scan" autocomplete="off"
@@ -111,7 +111,8 @@
                   </div>
                   <div class="iris-inv-stat-tile" style="border-left-color:#f4c430;">
                     <div class="iris-inv-tile-count" id="iris-inv-tile-available">0</div>
-                    <div class="iris-inv-tile-label">Available</div>
+                    {# The counter-intuitive label carries the status (i): Available = awaiting wipe. #}
+                    <div class="iris-inv-tile-label">Available{{ help_tip('inventory.status') }}</div>
                   </div>
                   <div class="iris-inv-stat-tile" style="border-left-color:#5e72e4;">
                     <div class="iris-inv-tile-count" id="iris-inv-tile-in_use">0</div>
@@ -125,7 +126,7 @@
               </div>
               <div id="iris-inv-overdue-alert" style="display:none;margin-top:12px;padding:8px 12px;background:rgba(255,166,0,0.08);border:1px solid rgba(255,166,0,0.3);border-radius:6px;color:#ffad46;font-size:12px;">
                 <i class="fas fa-exclamation-triangle mr-1"></i>
-                <span id="iris-inv-overdue-count"></span> drive(s) have exceeded the configured retention period — consider wiping and rotating them.
+                <span id="iris-inv-overdue-count"></span> drive(s) have exceeded the configured retention period — consider wiping and rotating them.{{ help_tip('inventory.overdue') }}
               </div>
             </div>
           </div>
@@ -140,7 +141,7 @@
             <div class="card-body" style="padding:16px 24px;">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:20px;">
                 <div style="flex-shrink:0;">
-                  <div style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px;">Drive runway</div>
+                  <div style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px;">Drive runway{{ help_tip('inventory.capacity') }}</div>
                   <div id="iris-inv-cap-runway" style="display:inline-block;padding:5px 14px;border-radius:20px;font-weight:700;font-size:16px;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);"></div>
                 </div>
                 <div style="flex:1;min-width:200px;">
@@ -227,7 +228,7 @@
           <div class="modal-body">
             <input type="hidden" id="iris-inv-drive-id" value="">
             <div class="form-group">
-              <label class="placeholder">Bar code *</label>
+              <label class="placeholder">Bar code *</label>{{ help_tip('inventory.barcode') }}
               <input class="form-control" id="iris-inv-f-barcode" placeholder="Bar code number">
             </div>
             <div class="form-group">
@@ -239,11 +240,11 @@
               <input class="form-control" id="iris-inv-f-serial" placeholder="Drive serial number">
             </div>
             <div class="form-group">
-              <label class="placeholder">Physical location</label>
+              <label class="placeholder">Physical location</label>{{ help_tip('inventory.physical_location') }}
               <input class="form-control" id="iris-inv-f-location" placeholder="e.g. Evidence Locker A, Shelf 3, Bin 7">
             </div>
             <div class="form-group">
-              <label class="placeholder">Status</label>
+              <label class="placeholder">Status</label>{{ help_tip('inventory.status') }}
               <select class="form-control" id="iris-inv-f-status">
                 <option value="wiped">Wiped (in rotation)</option>
                 <option value="in_use">In use</option>
@@ -252,7 +253,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="placeholder">Associated case</label>
+              <label class="placeholder">Associated case</label>{{ help_tip('inventory.associated_case') }}
               <select class="form-control" id="iris-inv-f-case" style="width:100%;">
                 <option value="">— none —</option>
               </select>
@@ -268,8 +269,13 @@
             <div id="iris-inv-modal-msg" class="small text-danger"></div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline-danger mr-auto" id="iris-inv-wipe-btn" style="display:none;"
-                    onclick="iris_inventory_wipe();">Wipe &amp; return to rotation</button>
+            {# The wrap is what shows / hides (edit mode only), so the (i)
+               beside the button goes with it. #}
+            <span class="mr-auto" id="iris-inv-wipe-wrap" style="display:none;">
+              <button type="button" class="btn btn-outline-danger" id="iris-inv-wipe-btn"
+                      onclick="iris_inventory_wipe();">Wipe &amp; return to rotation</button>
+              {{ help_tip('inventory.wipe') }}
+            </span>
             <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
             <button type="button" class="btn btn-primary" id="iris-inv-save-btn" onclick="iris_inventory_save();">Save</button>
           </div>
@@ -452,9 +458,10 @@
                 + '      <div class="col-md-4"><small class="text-muted">Notes</small><div>' + (d.notes ? iris_inv_esc(d.notes) : '<span class="text-muted">—</span>') + '</div></div>'
                 + '    </div>'
                 + '    <hr>'
-                + '    <h5>Evidence items on this drive (' + (d.evidences ? d.evidences.length : 0) + ')</h5>'
+                + '    <h5>Evidence items on this drive (' + (d.evidences ? d.evidences.length : 0) + ')'
+                + IrisHelp.icon('inventory.evidence_link') + '</h5>'
                 + '    <div class="table-responsive"><table class="table table-sm table-striped" style="font-size:12px;">'
-                + '      <thead><tr><th>Name</th><th>Type</th><th>Hash</th><th>Size</th></tr></thead>'
+                + '      <thead><tr><th>Name</th><th>Type' + IrisHelp.icon('common.evidence_type') + '</th><th>Hash</th><th>Size</th></tr></thead>'
                 + '      <tbody>' + rows + '</tbody>'
                 + '    </table></div>'
                 + '  </div>'
@@ -510,7 +517,7 @@
                 return '<tr>'
                     + '<td><a href="javascript:void(0);" class="iris-inv-scan-link" data-barcode="' + iris_inv_esc(d.barcode) + '"><code>' + iris_inv_esc(d.barcode) + '</code></a></td>'
                     + '<td>' + iris_inv_esc(d.label || '') + '</td>'
-                    + '<td>' + iris_inv_status_badge(d.status) + (d.overdue ? '<span class="iris-inv-overdue-badge" title="In use longer than the configured retention period"><i class="fas fa-exclamation-triangle"></i> Overdue</span>' : '') + '</td>'
+                    + '<td>' + iris_inv_status_badge(d.status) + (d.overdue ? '<span class="iris-inv-overdue-badge" title="Its case closed longer ago than the configured retention period"><i class="fas fa-exclamation-triangle"></i> Overdue</span>' : '') + '</td>'
                     + '<td>' + iris_inv_esc(d.physical_location || '') + '</td>'
                     + '<td>' + caseTxt + '</td>'
                     + '<td>' + iris_inv_esc(d.capacity || '') + '</td>'
@@ -753,7 +760,7 @@
              * maintainer's vocabulary ('available' = awaiting wipe). */
             $('#iris-inv-f-status').val('wiped');
             $('#iris-inv-modal-msg').text('');
-            $('#iris-inv-wipe-btn').hide();
+            $('#iris-inv-wipe-wrap').hide();
             iris_inv_ensure_cases().always(function () { $('#iris-inv-f-case').val(''); });
             $('#iris-inv-drive-modal').modal({ show: true });
         }
@@ -776,7 +783,7 @@
                     $('#iris-inv-f-capacity').val(d.capacity || '');
                     $('#iris-inv-f-notes').val(d.notes || '');
                     $('#iris-inv-modal-msg').text('');
-                    $('#iris-inv-wipe-btn').show();
+                    $('#iris-inv-wipe-wrap').show();
                     $('#iris-inv-drive-modal').modal({ show: true });
                 });
             });
@@ -816,7 +823,7 @@
         function iris_inventory_wipe() {
             var id = $('#iris-inv-drive-id').val();
             if (!id) { return; }
-            if (!confirm('Wipe this drive and return it to rotation? Evidence records are kept but unlinked from the drive, and the case + location assignment is cleared.')) { return; }
+            if (!confirm('Wipe this drive and return it to rotation? Evidence records are kept but unlinked from the drive, and its case assignment is cleared (its location is kept).')) { return; }
             $.ajax({
                 url: '/api/v2/dashboard/inventory/drives/' + id + '/wipe', method: 'POST',
                 contentType: 'application/json',
@@ -940,7 +947,7 @@
             + '<span class="iris-di-bc">' + iris_inv_esc(d.barcode) + '</span>'
             + '<span class="iris-di-name">' + iris_inv_esc(d.label || '(no label)') + '</span>'
             + '<span class="ml-auto">' + iris_inv_status_badge(d.status)
-            + (d.overdue ? ' <span class="iris-inv-overdue-badge" title="In use longer than the configured retention period"><i class="fas fa-exclamation-triangle"></i> Overdue</span>' : '')
+            + (d.overdue ? ' <span class="iris-inv-overdue-badge" title="Its case closed longer ago than the configured retention period"><i class="fas fa-exclamation-triangle"></i> Overdue</span>' : '')
             + '</span></div>'
             + '<div class="iris-di-meta">'
             + (d.physical_location ? '<span><i class="fas fa-map-marker-alt mr-1"></i>' + iris_inv_esc(d.physical_location) + '</span>' : '')
@@ -957,7 +964,8 @@
     }
 
     function iris_di_ev_html(d) {
-        var h = '<div class="iris-di-flabel">Evidence items on this drive</div>';
+        var h = '<div class="iris-di-flabel">Evidence items on this drive'
+              + IrisHelp.icon('inventory.evidence_link') + '</div>';
         if (IRIS_DI.evFailed[d.id]) {
             return h + '<div class="iris-di-statemsg">'
                  + 'Could not load the evidence list — try reselecting the drive.'
@@ -996,7 +1004,8 @@
             + '<button class="btn btn-sm btn-light" onclick="iris_inventory_open_edit(' + d.id + ');"><i class="fas fa-pen mr-1"></i>Edit</button> '
             + '<button class="btn btn-sm btn-danger" onclick="iris_inventory_delete(' + d.id + ');"><i class="fas fa-trash mr-1"></i>Delete</button>'
             + '</span></div>'
-            + (d.overdue ? '<div class="iris-di-overdue-note"><i class="fas fa-exclamation-triangle mr-1"></i>In use longer than the configured retention period.</div>' : '')
+            + (d.overdue ? '<div class="iris-di-overdue-note"><i class="fas fa-exclamation-triangle mr-1"></i>Its case closed longer ago than the configured retention period.'
+                + IrisHelp.icon('inventory.overdue') + '</div>' : '')
             + iris_di_field('Bar code', '<span class="iris-di-bc">' + iris_inv_esc(d.barcode) + '</span>')
             + iris_di_field('Serial number', d.serial_number ? iris_inv_esc(d.serial_number) : '<span class="text-muted">—</span>')
             + iris_di_field('Physical location', d.physical_location ? iris_inv_esc(d.physical_location) : '<span class="text-muted">—</span>')

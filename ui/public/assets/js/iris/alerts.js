@@ -994,7 +994,7 @@ function renderAlert(alert, expanded=false, modulesOptionsAlertReq,
                 <div class="card-no-pd mt-2">
                     <div class="card-body">
                     <h3 class="title mb-3"><strong>General info</strong></h3>  
-                        ${alert.alert_source ? `<div class="row"><div class="col-md-3"><b>Source:</b></div>
+                        ${alert.alert_source ? `<div class="row"><div class="col-md-3"><b>Source:</b>${IrisHelp.icon('alert.source')}</div>
                         <div class="col-md-9">${alert.alert_source}</div>
                       </div>` : ''}
                       ${alert.alert_source_link ? `<div class="row mt-2">
@@ -1009,7 +1009,7 @@ function renderAlert(alert, expanded=false, modulesOptionsAlertReq,
                           }</div>
                       </div>` : ''}
                       ${alert.alert_source_ref ? `<div class="row mt-2">
-                        <div class="col-md-3"><b>Source Reference:</b></div>
+                        <div class="col-md-3"><b>Source Reference:</b>${IrisHelp.icon('alert.source_reference')}</div>
                         <div class="col-md-9 copy-value">
                             ${alert.alert_source_ref}
                             <button class="copy-btn ml-2" data-value="${filterXSS(alert.alert_source_ref)}">
@@ -1018,7 +1018,7 @@ function renderAlert(alert, expanded=false, modulesOptionsAlertReq,
                         </div>
                       </div>` : ''}
                       ${alert.alert_source_event_time ? `<div class="row mt-2">
-                        <div class="col-md-3"><b>Source Event Time:</b></div>
+                        <div class="col-md-3"><b>Source Event Time:</b>${IrisHelp.icon('alert.source_event_time')}</div>
                         <div class="col-md-9 copy-value">
                             ${formatTime(alert.alert_source_event_time)} UTC
                             <button class="copy-btn ml-2" data-value="${formatTime(alert.alert_source_event_time)}">
@@ -1027,7 +1027,7 @@ function renderAlert(alert, expanded=false, modulesOptionsAlertReq,
                         </div>
                       </div>` : ''}
                       ${alert.alert_creation_time ? `<div class="row mt-2">
-                        <div class="col-md-3"><b>IRIS Creation Time:</b></div>
+                        <div class="col-md-3"><b>IRIS Creation Time:</b>${IrisHelp.icon('alert.creation_time')}</div>
                         <div class="col-md-9 copy-value">
                             ${formatTime(alert.alert_creation_time)} UTC
                             <button class="copy-btn ml-2" data-value="${formatTime(alert.alert_creation_time)}">
@@ -1037,13 +1037,13 @@ function renderAlert(alert, expanded=false, modulesOptionsAlertReq,
                       </div>` : ''}
                     
                     <div class="separator-solid"></div>
-                    <h3 class="title mb-3"><strong>Alert note</strong></h3>
+                    <h3 class="title mb-3"><strong>Alert note</strong>${IrisHelp.icon('alert.alert_note')}</h3>
                     <pre id=alertNote-${alert.alert_id}>${alert.alert_note}</pre>
                     
                     <!-- Alert Context section -->
                     ${
                         alert.alert_context && Object.keys(alert.alert_context).length > 0
-                            ? `<div class="separator-solid"></div><h3 class="title mt-3 mb-3"><strong>Context</strong></h3>
+                            ? `<div class="separator-solid"></div><h3 class="title mt-3 mb-3"><strong>Context</strong>${IrisHelp.icon('alert.context')}</h3>
                                 <dl class="row">
                                 ${renderNestedObject(alert.alert_context)}
                                 </dl>`
@@ -1051,7 +1051,7 @@ function renderAlert(alert, expanded=false, modulesOptionsAlertReq,
                       }
                     
                     <div class="separator-solid"></div>
-                    <h3 class="title mt-3 mb-3"><strong>Relationships</strong></h3>
+                    <h3 class="title mt-3 mb-3"><strong>Relationships</strong>${IrisHelp.icon('alert.relationships')}</h3>
                     <button class="btn btn-sm btn-outline-dark" type="button" data-toggle="collapse" data-target="#relationsAlert-${alert.alert_id}" 
                     aria-expanded="true" aria-controls="relationsAlert-${alert.alert_id}" onclick="fetchSmartRelations(${alert.alert_id});" id="relationsAlertButton-${alert.alert_id}">Toggle Relations</button>
                     <div class="collapse mt-3 show" id="relationsAlert-${alert.alert_id}">
@@ -1111,10 +1111,10 @@ function renderAlert(alert, expanded=false, modulesOptionsAlertReq,
                                              <tr>
                                                <th>Value</th>
                                                <th>Description</th>
-                                               <th>Type</th>
-                                               <th>TLP</th>
+                                               <th>Type${IrisHelp.icon('common.ioc_type')}</th>
+                                               <th>TLP${IrisHelp.icon('common.tlp')}</th>
                                                <th>Tags</th>
-                                               <th>Enrichment</th>
+                                               <th>Enrichment${IrisHelp.icon('alert.enrichment')}</th>
                                                <th></th>
                                              </tr>
                                            </thead>
@@ -1207,7 +1207,7 @@ function renderAlert(alert, expanded=false, modulesOptionsAlertReq,
                     
                     ${
           alert.alert_source_content
-              ? `<div class="separator-solid"></div><h3 class="title mt-3 mb-3"><strong>Raw Alert</strong></h3>
+              ? `<div class="separator-solid"></div><h3 class="title mt-3 mb-3"><strong>Raw Alert</strong>${IrisHelp.icon('alert.raw_alert')}</h3>
                            <button class="btn btn-sm btn-outline-dark" type="button" data-toggle="collapse" data-target="#rawAlert-${alert.alert_id}" 
                            aria-expanded="false" aria-controls="rawAlert-${alert.alert_id}">Toggle Raw Alert</button>
                            <div class="collapse mt-3" id="rawAlert-${alert.alert_id}">

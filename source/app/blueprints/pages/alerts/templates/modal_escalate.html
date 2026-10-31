@@ -16,7 +16,7 @@
           </div>
 
             <div class="form-group">
-              <label class="form-label">Merge options</label><br/>
+              <label class="form-label">Merge options</label>{{ help_tip('alert.escalate_merge') }}<br/>
               <div class="selectgroup ml-auto mr-auto">
 
                 <label class="selectgroup-item">
@@ -44,19 +44,19 @@
             </select>
          </div>
          <div class="form-group" id="mergeAlertCaseTemplateSection">
-             <label for="mergeAlertCaseTemplate" class="d-flex align-items-center" style="gap: 8px;">
-                <span id="iris-tplsugg-label">Select case template</span>
-                <span id="iris-tplsugg-chip" style="display: none; background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; padding: 2px 8px; border-radius: 999px;" title="Auto-suggested by AI based on the alert title, description, IOCs, and assets. Change the dropdown to override.">
-                    &#x2728; <span id="iris-tplsugg-chip-text">Suggested by AI</span>
+             <div class="d-flex align-items-center flex-wrap mb-1" style="gap: 8px;">
+                <label for="mergeAlertCaseTemplateSelect" class="mb-0"><span id="iris-tplsugg-label">Select case template</span></label>{{ help_tip('alert.case_template') }}
+                <span id="iris-tplsugg-chip" style="display: none; background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; padding: 2px 8px; border-radius: 999px;">
+                    &#x2728; <span id="iris-tplsugg-chip-text">Suggested by AI</span>{{ help_tip('alert.template_suggestion') }}
                 </span>
                 <span id="iris-tplsugg-status" style="font-size: 11px; color: #9ca3af;"></span>
-             </label>
+             </div>
             <select class="selectpicker form-control" data-dropup-auto="false" data-live-search="true" id="mergeAlertCaseTemplateSelect">
             </select>
             <div id="iris-tplsugg-reason" style="display: none; font-size: 11.5px; color: #94a3b8; margin-top: 4px; font-style: italic;"></div>
           </div>
           <div class="form-group mt-4" id="ioc-container" style="display:none;">
-            <label>IOCs to import</label>
+            <label>IOCs to import</label>{{ help_tip('alert.import_iocs_assets') }}
             <button type="button" class="btn btn-sm btn-light ml-2 float-right" id="toggle-iocs">Deselect All</button>
             <div class="form-control" id="ioCsList" style="height: auto; overflow-y: scroll; max-height: 150px;"></div>
           </div>
@@ -66,11 +66,11 @@
             <div class="form-control" id="assetsList" style="height: auto; overflow-y: scroll; max-height: 150px;"></div>
           </div>
           <div class="form-group mt-4">
-            <label for="note">Escalation note</label>
+            <label for="note">Escalation note</label>{{ help_tip('alert.escalation_note') }}
             <textarea class="form-control" id="note" rows="3"></textarea>
           </div>
           <div class="form-group">
-            <label for="case_tags">Case tags</label>
+            <label for="case_tags">Case tags</label>{{ help_tip('common.tags') }}
             <input type="text" id="case_tags"
                 class="form-control col-md-12"/>
           </div>
@@ -80,7 +80,7 @@
                         <input checked="" class="form-check-input" id="importAsEvent" name="import_as_event" type="checkbox" value="y">
                         <span class="form-check-sign"> Add alert as event in the timeline
                         </span>
-                    </label>
+                    </label>{{ help_tip('alert.import_as_event') }}
                 </div>
             </div>
       </div>

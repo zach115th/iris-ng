@@ -17,7 +17,7 @@
         <div class="card-header">
             <div class="d-flex align-items-center justify-content-between w-100">
                 <div>
-                    <div class="card-title">War Room Teams</div>
+                    <div class="card-title">War Room Teams {{ help_tip('room.default_teams') }}</div>
                     <div class="text-muted"><small>Default @-mention teams. Every <b>new</b> war room is
                         created with one empty team per enabled template, in this order; the room's lead
                         adds the people. Existing rooms are not changed.</small></div>
@@ -35,7 +35,7 @@
                 <input type="hidden" id="wrt-edit-id" value="">
                 <div class="form-row">
                     <div class="form-group col-md-4">
-                        <label for="wrt-name">Team name</label>
+                        <label for="wrt-name">Team name</label>{{ help_tip('room.leadership_team') }}
                         <div class="input-group">
                             <div class="input-group-prepend"><span class="input-group-text">@</span></div>
                             <input type="text" class="form-control" id="wrt-name" maxlength="64" placeholder="leadership" autocomplete="off">

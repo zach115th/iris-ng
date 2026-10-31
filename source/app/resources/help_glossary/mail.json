@@ -1,0 +1,90 @@
+{
+  "group": "Mail rules",
+  "order": 76,
+  "terms": {
+    "mail.rule": {
+      "title": "Mail rule",
+      "text": "Turns messages from the monitored mailbox into alerts. Each unread message is tested against the enabled rules in priority order, fallback rules last, and the first rule whose conditions match decides: create an alert for the rule's customer, or ignore the message. A message no rule matches creates nothing and is logged as no_match.\n\nThe mailbox itself (IMAP server, folder, poll interval, AI triage) is set on the Server settings page. Mail rules are managed by administrators.",
+      "aka": ["mail ingest", "email to alert", "imap"],
+      "wiki": "Mail-Rules"
+    },
+    "mail.polling": {
+      "title": "Mailbox polling",
+      "text": "A background task wakes every 60 seconds and does nothing unless mail ingest is enabled and an IMAP server and user are set on the Server settings page. It then polls when the configured poll interval has passed (with no interval set, only Poll now polls), reads up to 50 unread messages from the folder and marks each one read once handled, even when handling failed. Only one poll runs at a time.\n\nPoll now starts a poll straight away, ignoring the interval (mail ingest must still be enabled); the activity log below reloads about five seconds later.",
+      "aka": ["poll now", "imap", "interval", "60 seconds"],
+      "wiki": "Mail-Rules#the-polling-loop"
+    },
+    "mail.priority": {
+      "title": "Mail rule priority",
+      "text": "The order in which mail rules are tried, lowest number first (equal numbers in the order the rules were created). The first enabled rule that matches wins, so put narrow rules, and Ignore rules meant to shield create rules, above broad ones. Fallback rules are always tried after every ordinary rule, whatever their number.",
+      "aka": ["order", "first match"],
+      "wiki": "Mail-Rules#rules"
+    },
+    "mail.action": {
+      "title": "Rule action",
+      "text": "What happens to a message this rule matches.",
+      "items": [
+        {"name": "Create alert", "text": "Creates an alert with the rule's customer and defaults (AI triage, when on, may refine them). The alert then goes through clustering rules and investigation flows like any other alert."},
+        {"name": "Ignore", "text": "Creates no alert. The message is marked read and logged as ignored, so silenced mail stays visible in the log."}
+      ],
+      "aka": ["create alert", "ignore", "drop"]
+    },
+    "mail.fallback": {
+      "title": "Fallback rule",
+      "text": "A rule tried only after every ordinary rule has failed to match, whatever its priority, so it can never take a message from an ordinary rule. Leave its conditions empty to catch every remaining message (for example to create a low-severity alert for it, or to ignore the rest explicitly).",
+      "aka": ["catch-all", "default rule"]
+    },
+    "mail.conditions": {
+      "title": "Mail rule conditions",
+      "text": "Regular expressions tested against the message's subject, sender (From), recipients (To) or body; all of a rule's conditions must match. Each pattern is searched for anywhere in the field, ignoring case (anchor it with ^ and $ to match a whole value). The body is the plain-text part, or the text of the HTML part, and only its first 4 KB is searched. A rule with no conditions matches every message.\n\nPatterns are checked when the rule is saved: one that does not compile, is longer than 512 characters or is prone to runaway backtracking is refused, and never matches.",
+      "aka": ["regex", "subject", "from", "body"],
+      "wiki": "Mail-Rules#rules"
+    },
+    "mail.default_severity": {
+      "title": "Default severity",
+      "text": "The severity given to alerts this rule creates; (lowest) means Informational. When AI triage is on and confident enough, its suggested severity is used instead.",
+      "values": "severity",
+      "aka": ["severity"]
+    },
+    "mail.default_classification": {
+      "title": "Default classification",
+      "text": "The classification given to alerts this rule creates; (none) leaves it empty. When AI triage is on and confident enough, its suggested classification is used instead.",
+      "values": "case_classification",
+      "aka": ["classification"]
+    },
+    "mail.title_template": {
+      "title": "Alert title template",
+      "text": "The title of alerts this rule creates. {subject}, {from} and {to} are replaced by the message's values; any other text is kept as typed. Left empty, the title is [Mail] followed by the subject.",
+      "aka": ["title", "subject"]
+    },
+    "mail.source_label": {
+      "title": "Alert source label",
+      "text": "Becomes the Source of alerts this rule creates (Mail by default), so you can filter on it. Every alert created from e-mail is also tagged mail-ingest and carries the Message-ID as its source reference, the sender, recipients and subject in its context, and the headers with the first 4 KB of the body as its raw content. The first 8 KB of the body become the alert description.",
+      "aka": ["source", "mail-ingest"]
+    },
+    "mail.test": {
+      "title": "Test sample",
+      "text": "Checks the conditions in the editor against the sample subject line and answers MATCH or no match. Only the subject is filled in: conditions on From, To or body are tested against an empty value. Nothing is saved, and the other rules and priorities are not considered.",
+      "aka": ["dry run", "test conditions"]
+    },
+    "mail.ingest_log": {
+      "title": "Mail ingest log",
+      "text": "One row for every message the poller handled, whatever happened, newest first (the latest 25 are shown). Deleting a rule or an alert keeps its rows. When AI triage ran, what it suggested is stored with the row.",
+      "items": [
+        {"name": "alert_created", "text": "A Create alert rule matched; the Alert column gives the new alert's number."},
+        {"name": "ignored", "text": "An Ignore rule matched; no alert."},
+        {"name": "no_match", "text": "No enabled rule matched; no alert. Add or loosen a rule, or add a fallback."},
+        {"name": "duplicate", "text": "The message was already handled (same Message-ID, or the same IMAP number and folder when it has none) and was skipped."},
+        {"name": "error", "text": "Handling failed; the Error column says why. The message is still marked read, so it cannot block the mailbox."}
+      ],
+      "aka": ["recent ingest activity", "outcome", "audit"],
+      "wiki": "Mail-Rules#the-ingest-log"
+    },
+    "mail.ai_triage": {
+      "title": "AI mail triage",
+      "text": "When switched on in Server settings, a message matched by a Create alert rule is first given to the AI backend. Its severity and classification (checked by name against this server's lists) replace the rule's defaults only when its confidence is at least 0.5; its one-line summary is put at the top of the alert description; the IOCs it extracts are added only at confidence 0.7 or more. It is advisory: if the AI fails, the alert is created with the rule's defaults.",
+      "aka": ["ai triage", "llm", "mail triage"],
+      "wiki": "Mail-Rules#ai-triage-optional"
+    }
+  }
+}

@@ -19,6 +19,7 @@ from app.blueprints.rest.v2.notifications import notifications_blueprint
 from app.blueprints.rest.v2.war_rooms import war_rooms_blueprint
 from app.blueprints.rest.v2.sponsor import sponsor_blueprint
 from app.blueprints.rest.v2.updates import updates_blueprint
+from app.blueprints.rest.v2.help import help_blueprint as help_rest_blueprint
 
 
 # Create root /api/v2 blueprint
@@ -45,3 +46,4 @@ rest_v2_blueprint.register_blueprint(flows_blueprint)
 rest_v2_blueprint.register_blueprint(customer_assets_blueprint)
 rest_v2_blueprint.register_blueprint(notifications_blueprint)
 rest_v2_blueprint.register_blueprint(war_rooms_blueprint)
+rest_v2_blueprint.register_blueprint(help_rest_blueprint)

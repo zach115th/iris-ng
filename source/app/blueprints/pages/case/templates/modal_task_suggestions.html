@@ -58,6 +58,7 @@
         <h5 class="modal-title" id="iris-tsg-title" style="color:#e2d9f3; font-size:14px; font-weight:600;">
           <span aria-hidden="true" style="color:#8b5cf6;">&#10024;</span> Suggested tasks
           <span class="iris-tsg-badge" id="iris-tsg-count" style="display:none;"></span>
+          {{ help_tip('task.suggester', cls='ml-1') }}
         </h5>
         <button type="button" class="close" data-dismiss="modal" style="color:#94a3b8; opacity:1;">&times;</button>
       </div>
@@ -71,7 +72,7 @@
         <div id="iris-tsg-list"></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="iris-tsg-btn iris-tsg-btn-cancel" id="iris-tsg-regen">Regenerate</button>
+        <button type="button" class="iris-tsg-btn iris-tsg-btn-cancel" id="iris-tsg-regen">Regenerate</button>{{ help_tip('ai.cached', cls='ml-1') }}
         <span style="flex:1 1 auto;"></span>
         <button type="button" class="iris-tsg-btn iris-tsg-btn-cancel" data-dismiss="modal">Close</button>
         <button type="button" class="iris-tsg-btn iris-tsg-btn-primary" id="iris-tsg-accept-all" disabled>Accept all</button>

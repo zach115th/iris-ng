@@ -34,6 +34,7 @@ The pages never touch flask-login: a guest is a portal session, not a user.
 """
 
 from flask import Blueprint
+from flask import Response
 from flask import redirect
 from flask import render_template
 from flask import request
@@ -53,6 +54,7 @@ from app.business.war_room_guests import touch_seen
 from app.business.war_rooms import get_room_by_slug
 from app.business.war_rooms import room_slug
 from app.models.models import WarRoom
+from app.blueprints.pages.help.help_routes import glossary_script_response
 
 portal_page_blueprint = Blueprint('portal', __name__, template_folder='templates')
 
@@ -170,6 +172,16 @@ def portal_leave():
     return render_template(
         'portal_invalid.html',
         message='You have left the room. Use your invitation link to come back.'), 200
+
+
+@portal_page_blueprint.route('/portal/help/glossary.js', methods=['GET'])
+def portal_help_glossary():
+    """The (i) help icons' glossary for the signed-in guest: the war-room terms
+    only (blueprints/pages/help/help_routes.py serves users the whole of it)."""
+    data = session.get(GUEST_SESSION_KEY) or {}
+    if not data.get('room_id') or load_session_guest(int(data['room_id'])) is None:
+        return Response('', status=401, mimetype='application/javascript')
+    return glossary_script_response('guest')
 
 
 @portal_page_blueprint.route('/portal', methods=['GET'])

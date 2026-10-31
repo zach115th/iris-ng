@@ -1,0 +1,27 @@
+{
+  "group": "Customers",
+  "order": 112,
+  "terms": {
+    "customer.sla": {
+      "title": "Customer SLA",
+      "text": "Free text for the service levels agreed with this customer (response or resolution times, reporting duties). It is shown on the customer's pages for reference only: IRIS-NG does not measure or enforce it.",
+      "aka": ["service level", "sla", "response time"]
+    },
+    "customer.sectors": {
+      "title": "Customer sectors",
+      "text": "The critical-infrastructure sectors this customer works in, from the sector catalog (Manage -> Case objects -> Sectors; enabled sectors only). A case created for this customer from Create case or the API that has no sector tag of its own gets these sectors as tags; a case opened by escalating an alert does not. Changing the list later retags no existing case. Sector tags feed the dashboard's sector metrics.",
+      "wiki": "Dashboard-Analytics#sectors-card",
+      "aka": ["sector", "dhs ciip", "critical infrastructure", "industry"]
+    },
+    "customer.contacts": {
+      "title": "Customer contacts",
+      "text": "People to reach at this customer: name, role, e-mail, phones and a note. They are kept for reference; IRIS-NG never e-mails or notifies them. A customer with contacts cannot be deleted until its contacts are removed.",
+      "aka": ["contact", "phone", "email", "point of contact"]
+    },
+    "customer.delete": {
+      "title": "Deleting a customer",
+      "text": "Possible only when no case, alert, alert cluster, mail rule or contact refers to the customer; otherwise IRIS-NG refuses. The customer's user associations and its entries in the customer asset registry are deleted with it.",
+      "aka": ["delete customer", "remove customer", "referenced customer"]
+    }
+  }
+}

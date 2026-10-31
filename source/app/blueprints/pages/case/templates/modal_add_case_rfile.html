@@ -52,14 +52,19 @@
                                 </div>
                                 <div class="iris-evm-grid">
                                 <div class="form-group">
-                                    <label for="file_type_id" class="d-flex align-items-center" style="gap: 8px;">
-                                        <i class="fa-solid fa-tag iris-evm-ico"></i>
-                                        <span id="iris-evtype-label">Type</span>
+                                    {# The (i) icons sit beside the label, not inside it (a
+                                       button inside a <label> is invalid HTML); the ids the
+                                       suggester script below drives are unchanged. #}
+                                    <div class="d-flex align-items-center mb-2" style="gap: 8px;">
+                                        <label for="file_type_id" class="mb-0">
+                                            <i class="fa-solid fa-tag iris-evm-ico"></i><span id="iris-evtype-label">Type</span>
+                                        </label>{{ help_tip('common.evidence_type', target='#file_type_id') }}
                                         <span id="iris-evtype-chip" style="display: none; background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; padding: 2px 8px; border-radius: 999px;" title="Auto-suggested by AI based on filename + magic bytes + description. Change the dropdown to override.">
                                             &#x2728; <span id="iris-evtype-chip-text">Suggested by AI</span>
+                                            {{ help_tip('evidence.type_suggestion', cls='ml-1') }}
                                         </span>
                                         <span id="iris-evtype-status" style="font-size: 11px; color: #9ca3af;"></span>
-                                    </label>
+                                    </div>
                                     <span style="display: none" data-file-type-id="{{rfile.type_id}}" id=store_type_id></span>
                                     <select class="selectpicker form-control" id="file_type_id"></select>
                                     <div id="iris-evtype-reason" style="display: none; font-size: 11.5px; color: #94a3b8; margin-top: 4px; font-style: italic;"></div>
@@ -70,7 +75,7 @@
                                 </div>
                                 </div>
                                 <div class="form-group">
-                                    <label for="file_hash" class="placeholder"><i class="fa-solid fa-hashtag iris-evm-ico"></i>Hash</label>
+                                    <label for="file_hash" class="placeholder"><i class="fa-solid fa-hashtag iris-evm-ico"></i>Hash</label>{{ help_tip('evidence.hash') }}
                                     <input class="form-control" placeholder="Hash" id="file_hash" name="file_hash" value="{{ rfile.file_hash }}"/>
                                 </div>
                                 {# iris-next: physical chain-of-custody metadata.
@@ -78,7 +83,7 @@
                                    but the analyst can type any free value for an external custodian. #}
                                 <div class="iris-evm-grid">
                                 <div class="form-group">
-                                    <label for="evidence_created_by" class="placeholder"><i class="fa-solid fa-user iris-evm-ico"></i>Created by</label>
+                                    <label for="evidence_created_by" class="placeholder"><i class="fa-solid fa-user iris-evm-ico"></i>Created by</label>{{ help_tip('evidence.custodian') }}
                                     <select class="form-control" id="evidence_created_by" name="created_by" style="width: 100%;">
                                         {% if rfile and rfile.created_by %}
                                             <option value="{{ rfile.created_by }}" selected>{{ rfile.created_by }}</option>
@@ -91,7 +96,7 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="evidence_barcode" class="placeholder"><i class="fa-solid fa-barcode iris-evm-ico"></i>Bar code number</label>
+                                    <label for="evidence_barcode" class="placeholder"><i class="fa-solid fa-barcode iris-evm-ico"></i>Bar code number</label>{{ help_tip('evidence.barcode') }}
                                     <input class="form-control" placeholder="Bar code number" id="evidence_barcode" name="barcode" value="{{ rfile.barcode if rfile and rfile.barcode is not none else '' }}"/>
                                 </div>
                                 </div>
@@ -101,12 +106,14 @@
                                    physical_location is on the drive, not the evidence row — removed
                                    from the evidence form; the inline editor below updates the drive. #}
                                 <div class="form-group">
-                                    <label for="evidence_drive_id" class="d-flex align-items-center" style="gap: 8px;">
-                                        <i class="fa-solid fa-hdd iris-evm-ico"></i>
-                                        <span>On physical drive</span>
-                                        <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">— links to the Inventory drive holding this evidence</span>
+                                    <div class="d-flex align-items-center flex-wrap mb-2" style="gap: 8px;">
+                                        <label for="evidence_drive_id" class="d-flex align-items-center mb-0" style="gap: 8px;">
+                                            <i class="fa-solid fa-hdd iris-evm-ico"></i>
+                                            <span>On physical drive</span>
+                                            <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">— links to the Inventory drive holding this evidence</span>
+                                        </label>{{ help_tip('evidence.drive') }}
                                         <span id="iris-drive-lookup-chip" style="display: none; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: normal;"></span>
-                                    </label>
+                                    </div>
                                     <select class="form-control" id="evidence_drive_id" name="drive_id" style="width: 100%;">
                                         <option value="">— none —</option>
                                         {% for d in drives if drives is defined %}
@@ -138,11 +145,11 @@
                                    picks this input up by name — the save paths
                                    only add an ''-to-null coercion. #}
                                 <div class="form-group">
-                                    <label for="acquisition_date" class="placeholder"><i class="fa-solid fa-calendar iris-evm-ico"></i>Acquisition date (UTC)</label>
+                                    <label for="acquisition_date" class="placeholder"><i class="fa-solid fa-calendar iris-evm-ico"></i>Acquisition date (UTC)</label>{{ help_tip('evidence.acquisition_date') }}
                                     <input class="form-control" type="datetime-local" id="acquisition_date" name="acquisition_date" {% if rfile.acquisition_date %}value="{{ rfile.acquisition_date.strftime('%Y-%m-%dT%H:%M') }}"{% endif %}/>
                                 </div>
                 <div class="form-group" id="dates_details">
-                                    <a class="btn btn-light btn-sm" data-toggle="collapse" href="#collapseAddDates" role="button" aria-expanded="false" aria-controls="collapseAddInfo"><i class="fa-solid fa-clock iris-evm-ico"></i>Coverage window (start / end)</a>
+                                    <a class="btn btn-light btn-sm" data-toggle="collapse" href="#collapseAddDates" role="button" aria-expanded="false" aria-controls="collapseAddInfo"><i class="fa-solid fa-clock iris-evm-ico"></i>Coverage window (start / end)</a>{{ help_tip('evidence.coverage', cls='ml-1') }}
                                     <div class="collapse {% if (rfile.start_date or rfile.end_date) %}show{% endif %}" id="collapseAddDates">
                                         <label for="start_date" class="placeholder mt-2">Evidence start date time (UTC)</label>
                                         <div class="row ml-1" id="start_date_inputs">
@@ -213,7 +220,7 @@
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <p>Locally compute file information by selecting it below. <span class="text-danger">The file is not be uploaded on the server nor saved.</span></p>
+                                    <p>Locally compute file information by selecting it below. <span class="text-danger">The file is not uploaded to the server or saved; with an AI backend configured, its first 4 KB are sent to suggest a type.</span> {{ help_tip('evidence.local_compute') }}</p>
                                     <label for="input_autofill" class="sr-only">Select file to compute hash locally</label>
                                     <input id="input_autofill" name="input_autofill" type="file">
                                     <button class="btn btn-sm" type="button" onclick="get_hash()" id="btn_rfile_proc">Process</button>
@@ -225,10 +232,12 @@
                                    asset_details() loader on case_assets.html, with `cid` so the legacy
                                    guard accepts the request. #}
                                 <div class="form-group">
-                                    <label class="d-flex align-items-center" style="gap: 8px;">
-                                        <span>Linked Assets</span>
-                                        <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">— assets this evidence pertains to</span>
-                                    </label>
+                                    <div class="d-flex align-items-center mb-2" style="gap: 8px;">
+                                        <label class="d-flex align-items-center mb-0" style="gap: 8px;">
+                                            <span>Linked Assets</span>
+                                            <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">— assets this evidence pertains to</span>
+                                        </label>{{ help_tip('evidence.asset_links') }}
+                                    </div>
                                     <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                                     {% for la in linked_assets %}
                                         <a href="/case/assets?cid={{ rfile.case_id }}&shared={{ la.asset_id }}"

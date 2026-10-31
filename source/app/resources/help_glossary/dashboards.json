@@ -1,0 +1,429 @@
+{
+  "group": "Home and dashboards",
+  "order": 96,
+  "terms": {
+    "home.my_open_cases": {
+      "title": "My open cases",
+      "text": "Cases you own (you are the case owner) that are not closed. The Dashboard calls them attributed open cases. Owning a case also brings you the \"Case you own is updated\" notification when someone else edits its details.\n\nOn the Dashboard, Show closed cases lists every case you own, closed ones included.",
+      "aka": [
+        "attributed cases",
+        "owner",
+        "owned cases",
+        "assigned cases"
+      ]
+    },
+    "home.my_open_alerts": {
+      "title": "My open alerts",
+      "text": "Alerts you own whose status is not Closed, Merged or Escalated. Home looks at the 50 newest alerts you own (by event time) and counts the open ones among them; the Alerts page has the full list.",
+      "aka": [
+        "assigned alerts",
+        "alert owner"
+      ]
+    },
+    "home.pending_tasks": {
+      "title": "My pending tasks",
+      "text": "Case tasks you are an assignee of whose status is neither Done nor Canceled, in cases that are still open. Global tasks and war-room tasks are not included.\n\nThe Dashboard calls them attributed open tasks; there you can change a task's status in place by clicking its Status cell, and the table refreshes every 30 seconds.",
+      "aka": [
+        "attributed tasks",
+        "assigned tasks",
+        "to do",
+        "open tasks"
+      ]
+    },
+    "home.closed_30d": {
+      "title": "Closed in the last 30 days",
+      "text": "Cases you own whose close date falls within the last 30 days.",
+      "aka": [
+        "closed cases",
+        "30d"
+      ]
+    },
+    "home.my_reviews": {
+      "title": "My reviews",
+      "text": "Cases that name you as reviewer and whose review status is neither Not reviewed nor Reviewed - in practice, reviews pending or in progress. The interface will not close a case that has no reviewer (the API does not check), and being named reviewer sends you the review-request notification.",
+      "wiki": "Case-Lifecycle#reviewer-and-review-status",
+      "aka": [
+        "review",
+        "reviewer",
+        "pending review",
+        "review in progress"
+      ]
+    },
+    "home.current_case": {
+      "title": "Current case",
+      "text": "The case you are working in, named by cid= in the page address; pages outside a case carry the last one along. These shortcuts, Add task log and the Case updates bell work on it; Switch case picks another one.",
+      "aka": [
+        "context",
+        "cid",
+        "switch case",
+        "case context",
+        "quick actions"
+      ]
+    },
+    "dashboard.page": {
+      "title": "Dashboard",
+      "text": "Your operational view: the cases you can open, the cases, tasks and reviews attributed to you, and the team's global tasks. The two task tables refresh every 30 seconds, the others when you press Refresh.\n\nThe curve in the header counts the cases opened each day over the last 12 months, across every case on the server.",
+      "wiki": "Dashboard-Analytics#where-these-views-live",
+      "aka": [
+        "operational view",
+        "attributed"
+      ]
+    },
+    "dashboard.case_counts": {
+      "title": "Cases (open / all)",
+      "text": "Open cases, then all cases including closed ones, counted over the cases you can open. A case you have no access to is not counted.",
+      "aka": [
+        "case count",
+        "open cases"
+      ]
+    },
+    "dashboard.import_case": {
+      "title": "Import case",
+      "text": "Creates a new case from an .iris-case file made by Export in a case's information window, decrypted with the password chosen at export. Notes, IOCs, assets, tasks, evidence records and timeline events come across; evidence files, working-timeline rows, comments and saved AI results do not.\n\nThe customer and the lookup values are matched by name. A customer that does not exist here falls back to the first customer on this server, so check it after the import.",
+      "wiki": "Case-Export-Import#import",
+      "aka": [
+        "iris-case",
+        "export",
+        "portability",
+        "transfer"
+      ]
+    },
+    "metrics.page": {
+      "title": "Metrics",
+      "text": "Figures computed live, each time the page loads, from every case on this server - not only the cases you can open. Cases of the IrisInitialClient bootstrap customer are left out of every figure.\n\nFigures marked (range) follow the date range; (now) and (all cases) figures are current snapshots; the Case tagging and Sectors cards use a whole calendar year.",
+      "wiki": "Dashboard-Analytics#metrics",
+      "aka": [
+        "statistics",
+        "kpi",
+        "reporting",
+        "management"
+      ]
+    },
+    "metrics.date_range": {
+      "title": "Metrics date range",
+      "text": "The window for every figure marked (range): 7, 30 or 90 days back from today, the year to date, or two dates of your choice followed by Apply. Cases count by their open or close date, notes by creation date and logged time by the day it was logged for. Snapshot figures ignore it; the Case tagging and Sectors cards show the whole calendar year of its end date, and changing the range resets a year picked on those cards.",
+      "aka": [
+        "period",
+        "7d",
+        "30d",
+        "90d",
+        "ytd"
+      ]
+    },
+    "metrics.mttr": {
+      "title": "Median MTTR",
+      "text": "Median time to resolve: over the cases closed within the date range, the middle value of close date minus open date, in days (a case opened and closed on the same day counts as 0). My median MTTR does the same over the cases you own.",
+      "aka": [
+        "mean time to resolve",
+        "time to close",
+        "resolution time"
+      ]
+    },
+    "metrics.untriaged_wt": {
+      "title": "Untriaged working-timeline rows",
+      "text": "Rows imported into working timelines (Hayabusa, EZ Tools and the other import sources) that nobody has promoted to the case timeline or rejected yet, across every case, open or closed. The Working-timeline backlog table under Investigation quality lists the ten cases with the most.",
+      "wiki": "Dual-Timeline#reviewing-events",
+      "aka": [
+        "working timeline",
+        "pending",
+        "backlog",
+        "triage"
+      ]
+    },
+    "metrics.your_activity": {
+      "title": "Your activity",
+      "text": "Your own figures: the cases you own and the work you did.",
+      "items": [
+        {
+          "name": "My open cases",
+          "text": "Cases you own that are not closed."
+        },
+        {
+          "name": "My closed (range)",
+          "text": "Cases you own that were closed within the date range."
+        },
+        {
+          "name": "My median MTTR",
+          "text": "Median days from open to close over those cases."
+        },
+        {
+          "name": "My notes (range)",
+          "text": "Case notes you created within the date range."
+        },
+        {
+          "name": "My working-timeline reviews (range)",
+          "text": "Working-timeline rows you reviewed within the date range, counted by the status you gave them (promoted, rejected...)."
+        }
+      ],
+      "aka": [
+        "my metrics",
+        "personal"
+      ]
+    },
+    "metrics.team_throughput": {
+      "title": "Team throughput",
+      "text": "How work moves through the whole team.",
+      "items": [
+        {
+          "name": "Cases opened vs closed",
+          "text": "Per day within the date range: cases opened (by open date) and cases closed (by close date)."
+        },
+        {
+          "name": "Classification mix",
+          "text": "Every case by classification, whatever its state or dates; Unclassified means none is set."
+        },
+        {
+          "name": "Severity mix",
+          "text": "Every case by severity, whatever its state or dates."
+        },
+        {
+          "name": "Top owners",
+          "text": "The ten owners with the most cases opened within the date range."
+        },
+        {
+          "name": "Top customers",
+          "text": "The ten customers with the most cases opened within the date range."
+        }
+      ],
+      "aka": [
+        "throughput",
+        "workload",
+        "opened",
+        "closed"
+      ]
+    },
+    "metrics.case_tagging": {
+      "title": "Case tagging",
+      "text": "How cases are tagged, over a whole calendar year: the year of the date range's end, or the one picked on the card. Sector tags are left out because the Sectors card counts them, and tlp:* tags because nearly every case carries one, which would drown every other tag. Click the card to cycle through table, donut and multi-year bar views.",
+      "items": [
+        {
+          "name": "Tagged / Untagged cases (all time)",
+          "text": "Cases with at least one remaining tag, and cases with none, over every year."
+        },
+        {
+          "name": "YTD top tag",
+          "text": "The tag on the most cases opened in the chosen year."
+        },
+        {
+          "name": "Unique tags / applications",
+          "text": "How many distinct tags are in use, and how many case-tag pairs they make, over every year."
+        },
+        {
+          "name": "Top case tag per quarter",
+          "text": "The tag on the most cases opened in each quarter of the chosen year."
+        },
+        {
+          "name": "Cases by tag x quarter",
+          "text": "The 15 tags on the most cases opened in the chosen year, counted per quarter."
+        }
+      ],
+      "wiki": "Dashboard-Analytics#case-tagging-card",
+      "aka": [
+        "tags",
+        "tlp",
+        "tagging"
+      ]
+    },
+    "metrics.sectors": {
+      "title": "Sectors",
+      "text": "Cases per industry sector, over a whole calendar year: the year of the date range's end, or the one picked on the card. The sector comes from the case's sector tag (the DHS critical-infrastructure sectors and the other sectors of the catalog); a case with several sectors counts in each. Click the card to cycle through table, donut and multi-year bar views.",
+      "items": [
+        {
+          "name": "Tagged cases",
+          "text": "Cases opened in the chosen year that carry a sector tag, out of all cases opened that year."
+        },
+        {
+          "name": "Missing sector tag",
+          "text": "Cases opened in the chosen year with no sector tag."
+        },
+        {
+          "name": "YTD cases",
+          "text": "All cases opened in the chosen year, with or without a sector tag."
+        },
+        {
+          "name": "YTD top sector",
+          "text": "The sector with the most cases opened in the chosen year."
+        }
+      ],
+      "wiki": "Dashboard-Analytics#sectors-card",
+      "aka": [
+        "sector",
+        "critical infrastructure",
+        "dhs",
+        "ciip",
+        "industry"
+      ]
+    },
+    "metrics.investigation_quality": {
+      "title": "Investigation quality",
+      "text": "Gaps in case work, across every case on the server (the date range does not apply).",
+      "items": [
+        {
+          "name": "Open cases missing notes/IOCs/assets/events",
+          "text": "Open cases with no note, no IOC, no asset or no timeline event - one gap is enough. The red-flag table lists the 25 most recently opened."
+        },
+        {
+          "name": "Timeline events",
+          "text": "Events on the case timelines of every case (working-timeline rows are not counted)."
+        },
+        {
+          "name": "Events with cross-links",
+          "text": "The share of timeline events linked to an asset, or to an IOC, whichever share is larger - a lower bound of the events with any link."
+        },
+        {
+          "name": "Working-timeline backlog",
+          "text": "The ten cases with the most working-timeline rows still waiting for review."
+        }
+      ],
+      "aka": [
+        "red flags",
+        "quality",
+        "gaps"
+      ]
+    },
+    "metrics.time_tracking": {
+      "title": "Time tracking",
+      "text": "Time analysts logged on cases, in 15-minute steps, for days within the date range. The breakdown tables show the average time per case in each group - its total minutes divided by the number of its cases with time logged - so a customer with many cases does not dominate; CSV downloads the totals and the per-case figures.\n\nSector and incident type come from the case's sector tag and classification when the report is made; a case with several sectors counts in each.",
+      "wiki": "Analyst-Time-Tracking#cross-case-dashboard",
+      "aka": [
+        "hours",
+        "logged time",
+        "effort",
+        "billing"
+      ]
+    },
+    "overview.cases": {
+      "title": "Case overview",
+      "text": "The cases you can open: the open ones, or all of them with Show closed cases. Click a title for a quick view; the arrow opens the case in a new tab. A closed case shows its review status next to Closed, unless that is Not reviewed.\n\nAdd filter can also match columns that are not shown: outcome, case ID, classification, days open and tasks done.",
+      "aka": [
+        "overview",
+        "all cases",
+        "case list"
+      ]
+    },
+    "search.page": {
+      "title": "Search across cases",
+      "text": "Searches every case on this server at once, whatever case you are in and whether or not you can open it; the search_across_cases permission is what gives you this page. Each search is written to the activity log with the term you searched. Results name the case and customer they come from.",
+      "aka": [
+        "global search",
+        "find",
+        "context-free"
+      ]
+    },
+    "search.scope": {
+      "title": "Search within",
+      "text": "Which kind of object to search, and which of its fields. % is a wildcard everywhere.",
+      "items": [
+        {
+          "name": "IOC",
+          "text": "The exact IOC value, case-sensitive: add % for a partial match (%evil% finds every value containing evil). IOCs with no TLP set are not found."
+        },
+        {
+          "name": "Notes",
+          "text": "Note content (not the title) containing the term, case-sensitive."
+        },
+        {
+          "name": "Comments",
+          "text": "Comment text containing the term, case-sensitive."
+        },
+        {
+          "name": "Assets",
+          "text": "Name, description, IP or domain containing the term, case-insensitive."
+        },
+        {
+          "name": "Tasks",
+          "text": "Title or description containing the term, case-insensitive."
+        },
+        {
+          "name": "Evidence",
+          "text": "File name, description or hash containing the term, case-insensitive."
+        },
+        {
+          "name": "Timeline events",
+          "text": "Title, content or source containing the term, case-insensitive."
+        },
+        {
+          "name": "Cases",
+          "text": "Name, description, SOC ID or closing note containing the term, case-insensitive."
+        }
+      ],
+      "aka": [
+        "wildcard",
+        "search type"
+      ]
+    },
+    "activity.log": {
+      "title": "Activity log",
+      "text": "IRIS-NG's record of who did what: case objects created, edited and deleted, case updates, searches and more. The Activities page shows the newest 10,000 entries meant for display, from every case on the server and from none, and needs the activities_read (or all_activities_read) permission; Home shows the newest ten.",
+      "items": [
+        {
+          "name": "Manual input",
+          "text": "Typed by a person with Add task log (in the header or the quick actions) and stored on the current case. Like every entry, it is saved with only its first letter upper-case."
+        },
+        {
+          "name": "From API",
+          "text": "Made with an API key - a script or an n8n workflow - rather than from a browser session."
+        },
+        {
+          "name": "Quick actions, Activities tab",
+          "text": "The current case's entries only; the blue ones came from the API."
+        }
+      ],
+      "aka": [
+        "activities",
+        "audit",
+        "history",
+        "task log",
+        "user activity"
+      ]
+    },
+    "activity.non_case": {
+      "title": "Show non case related activity",
+      "text": "Switches to the full log: it adds the entries normally hidden from activity views - sign-ins, failed sign-ins, MFA events, sign-outs, datastore downloads and the like. Up to 10,000 entries tied to a case plus up to 10,000 tied to none; those show the user's id number instead of a name. Needs the all_activities_read permission.",
+      "aka": [
+        "all activities",
+        "unbound",
+        "logins",
+        "audit"
+      ]
+    },
+    "dim.tasks": {
+      "title": "DIM tasks",
+      "text": "The background jobs the workers have run, newest first: module hooks (enrichment, MISP sync and the other modules) and the other jobs IRIS-NG runs in the background; updater jobs are left out. This page lists up to 1,000, the Quick actions tab the latest 100. Click a task ID (in Quick actions, the module name) for its details and the module's logs.",
+      "items": [
+        {
+          "name": "State",
+          "text": "The worker's state for the job. A tick means it ran to the end, which does not mean the module succeeded - open it to see Success; a cross means the job itself failed; a clock means pending, retrying or revoked. In Quick actions, green is a finished job and orange anything else."
+        },
+        {
+          "name": "Case",
+          "text": "The case the module ran for, when the job carried one."
+        },
+        {
+          "name": "Processing module",
+          "text": "The module and hook, for module jobs."
+        },
+        {
+          "name": "Initiating user",
+          "text": "Who triggered the job; Shadow Iris when no user was recorded."
+        }
+      ],
+      "aka": [
+        "module tasks",
+        "modules",
+        "background jobs",
+        "hooks",
+        "celery"
+      ]
+    },
+    "dim.module_verdict": {
+      "title": "Module result (Success)",
+      "text": "Success or Failure as reported by the module itself. It can say Failure while Task state says success: the job ran to the end, but the module reported a problem, and the Logs below say what. Task state is the worker's view of the job; this line is the module's.",
+      "aka": [
+        "task state",
+        "failure",
+        "verdict"
+      ]
+    }
+  }
+}

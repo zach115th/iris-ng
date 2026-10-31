@@ -63,7 +63,7 @@
                                         {{ form.user_name(class='form-control',  autocomplete="off") }}
                                     </div>
                                     <div class="form-group mt-3">
-                                        <label for="user_login" class="placeholder">Login</label>
+                                        <label for="user_login" class="placeholder">Login</label>{{ help_tip('user.login') }}
                                         {{ form.user_login(class='form-control',  autocomplete="off") }}
                                     </div>
                                     <div class="form-group mt-3">
@@ -106,10 +106,8 @@
                                         <div class="form-check">
                                             <label class="form-check-label mt-3" >
                                                 {{ form.user_is_service_account(class="form-check-input", type="checkbox") }}
-                                                <span class="form-check-sign" id="formCheckIsServiceAccount">  Use as service account
-                                                    <i class="ml-1 mt-1 fa-regular fa-circle-question" title="If checked, the user won't appear in the attribution suggestions and won't be able to connect on the UI" style="cursor:pointer;"></i>
-                                                </span>
-                                            </label>
+                                                <span class="form-check-sign" id="formCheckIsServiceAccount">  Use as service account</span>
+                                            </label>{{ help_tip('user.service_account') }}
                                         </div>
                                     </div>
                                     {% endif %}
@@ -123,7 +121,7 @@
                                             <input autocomplete="off" class="form-control" type="text" value="{{ user.user_uuid }}" disabled>
                                         </div>
                                         <div class="form-group mt-3">
-                                            <label for="userApiKey" class="placeholder">User API Key</label>
+                                            <label for="userApiKey" class="placeholder">User API Key</label>{{ help_tip('user.api_key') }}
                                             <div class="input-group">
                                                 <input autocomplete="off" class="form-control" type="text" value="{{ user.user_api_key }}" id="userApiKey" disabled>
                                                 <div class="input-group-append">
@@ -142,15 +140,20 @@
                                     {% else %}
                                     <button type="button" class="btn btn-outline-success mt-5"
                                     onclick="activate_user('{{ user.user_id }}');">Activate</button>
-                                    {% endif %}
+                                    {% endif %}{{ help_tip('user.active') }}
 
                                     <button type="button" class="btn btn-outline-success ml-1 mt-5 float-right"
                                     id="submit_new_user">Update</button>
 
+                                    {# iris-ng (i) icons beside floated buttons: a float-right
+                                       placed BEFORE its button in the markup renders to the
+                                       button's right, i.e. right after its label. #}
+                                    <span class="float-right mt-5 pt-2">{{ help_tip('user.refresh_access', cls='mr-2') }}</span>
                                     <button type="button" class="btn btn-dark mt-5 float-right"
                                     onclick="refresh_user_ac('{{ user.user_id }}');" id="users_refresh_ac_btn">Refresh access</button>
 
                                     {% if server_settings.enforce_mfa %}
+                                    <span class="float-right mt-5 pt-2">{{ help_tip('user.reset_mfa', cls='mr-2') }}</span>
                                         {# iris-ng: disabled rather than hidden for exempt
                                            accounts (the built-in administrator and service
                                            accounts) -- they are never prompted for a second
@@ -184,7 +187,7 @@
                             <table class="table table-striped" id="user_permissions_table">
                                 <thead>
                                     <tr>
-                                        <th>Permission</th>
+                                        <th>Permission {{ help_tip('access.permissions') }}</th>
                                         <th>Value</th>
                                         <th>Inherited from groups</th>
                                     </tr>
@@ -204,7 +207,7 @@
                     <div class="tab-pane" id="user_groups_tab">
                         <div class="row">
                             <div class="container col-md-12">
-                                <span class="ml-2 mt-3">Groups the user is member of.</span>
+                                <span class="ml-2 mt-3">Groups the user is member of.</span>{{ help_tip('group.group') }}
                                 <button class="btn btn-dark btn-sm pull-right mr-2" onclick="manage_user_groups({{ user.user_id }});">
                                     <span class="menu-title">Manage</span>
                                 </button>
@@ -236,7 +239,7 @@
                     <div class="tab-pane" id="user_clients_tab">
                         <div class="row">
                             <div class="container col-md-12">
-                                <span class="ml-2 mt-3">Customers the user belongs to.</span>
+                                <span class="ml-2 mt-3">Customers the user belongs to.</span>{{ help_tip('user.customers') }}
                                 <button class="btn btn-dark btn-sm pull-right mr-2" onclick="manage_user_clients({{ user.user_id }});">
                                     <span class="menu-title">Manage</span>
                                 </button>
@@ -267,7 +270,7 @@
                         <div class="container col-md-12" >
                               <div class="row d-flex mb-4">
                                 <div class="col-8">
-                                    <span>Cases accesses are usually inherited from groups memberships. These are not displayed here. This tab allows to add granular case access if necessary.</span>
+                                    <span>Cases accesses are usually inherited from groups memberships. These are not displayed here. This tab allows to add granular case access if necessary.</span>{{ help_tip('access.case_access_order') }}
                                 </div>
                                 <div class="col-4 pull-right">
                                     <button class="btn btn-dark btn-sm pull-right" onclick="refresh_user_cac({{ user.user_id }});">
@@ -284,7 +287,7 @@
                                   <tr>
                                       <th>Case ID</th>
                                       <th>Case Name</th>
-                                      <th>Access</th>
+                                      <th>Access {{ help_tip('common.case_access') }}</th>
                                   </tr>
                                 </thead>
                                 <tfoot>
@@ -305,7 +308,7 @@
                         <div class="container col-md-12">
                             <p class="mb-4"><i class="fa-solid fa-circle-info mr-2"></i>Set this analyst's hourly billing rate. It is multiplied by the time they log against a case to produce the case's estimated cost (shown on a case's <b>Time</b> tab). Leave blank to mark the analyst as unpriced.</p>
                             <div class="form-group" style="max-width: 360px;">
-                                <label for="user_hourly_rate" class="placeholder">Hourly rate ($/hr)</label>
+                                <label for="user_hourly_rate" class="placeholder">Hourly rate ($/hr)</label>{{ help_tip('user.hourly_rate') }}
                                 <div class="input-group">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text">$</span>
@@ -328,7 +331,7 @@
                     <div class="tab-pane" id="user_skills_tab">
                         <div class="container col-md-12">
                             <div class="d-flex align-items-center mb-3">
-                                <p class="mb-0"><i class="fa-solid fa-circle-info mr-2"></i>Enable the cyber-security skills this analyst holds. Used to build teams and match the right people to cases.</p>
+                                <p class="mb-0"><i class="fa-solid fa-circle-info mr-2"></i>Enable the cyber-security skills this analyst holds. Used to build teams and match the right people to cases.{{ help_tip('skill.skills') }}</p>
                                 <button type="button" class="btn btn-outline-success btn-sm ml-auto" onclick="save_user_skills('{{ user.user_id }}');">Save skills</button>
                             </div>
                             <span id="user_skills_status" class="d-block mb-2"></span>

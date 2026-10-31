@@ -13,10 +13,7 @@
 
                     <div class="form-group">
                         <div class="form-group">
-                         <label for="update_pipeline_selector" class="placeholder">Processing pipeline</label>
-                            <i class="fas fa-question-circle mr-2" data-toggle="popover"
-                                    title="Pipelines"
-                                    data-content="Pipelines are the way files dropped below are processed. Each pipelines handles a different type of file."></i>
+                         <label for="update_pipeline_selector" class="placeholder">Processing pipeline</label>{{ help_tip('case.pipelines', cls='mr-2') }}
 
                         {{ form.pipeline(class="selectpicker pl--6 btn-outline-white", id="update_pipeline_selector") }}
                         </div>

@@ -1,0 +1,103 @@
+/* iris-ng (i) help icons (2026-10-30) - ui/public/assets/js/iris/help_tips.js.
+   The icon is a fixed 16px box drawn in CSS (no icon font: it has its width
+   before any font arrives, so it never shifts the line it sits on). Its "i" is
+   generated content, not text: a DataTables export or column toggle reading a
+   header, or code reading a label's textContent, never sees it. */
+.iris-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    margin: 0 0 0 5px;
+    padding: 0;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    background: transparent;
+    color: #93a0bd;
+    font: italic 700 10.5px/1 Georgia, "Times New Roman", serif;
+    vertical-align: -2px;
+    cursor: help;
+    text-transform: none;
+    letter-spacing: 0;
+    user-select: none;
+}
+.iris-help::before { content: "i"; display: block; line-height: 1; margin-top: 0.5px; pointer-events: none; }
+.iris-help:hover,
+.iris-help[aria-expanded="true"] { color: #d6dcff; background: rgba(120, 140, 255, 0.16); }
+.iris-help:focus { outline: none; }
+.iris-help:focus-visible { outline: 2px solid #7f96ff; outline-offset: 1px; }
+th .iris-help { vertical-align: -3px; }
+
+.iris-help-pop {
+    position: fixed;
+    z-index: 1070;
+    box-sizing: border-box;
+    max-width: 360px;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+    padding: 10px 12px 9px;
+    background: #2a3250;
+    color: #e6e9f4;
+    border: 1px solid #45507a;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    font: 400 13px/1.45 Lato, "Helvetica Neue", Arial, sans-serif;
+    text-align: left;
+    white-space: normal;
+    letter-spacing: normal;
+    text-transform: none;
+}
+.iris-help-pop[hidden] { display: none; }
+.iris-help-pop:focus { outline: none; }
+.iris-help-pop-head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+.iris-help-pop-title { flex: 1 1 auto; font-weight: 700; font-size: 13.5px; color: #ffffff; }
+.iris-help-pop-close {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    margin: -3px -5px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #c3cae0;
+    font: 400 17px/18px Arial, sans-serif;
+    cursor: pointer;
+}
+.iris-help-pop-close:hover { background: rgba(255, 255, 255, 0.1); color: #ffffff; }
+.iris-help-pop-close:focus-visible { outline: 2px solid #7f96ff; outline-offset: 0; }
+.iris-help-pop-body p { margin: 0 0 6px; color: #e6e9f4; font-size: 13px; line-height: 1.45; }
+.iris-help-pop-items { margin: 2px 0 6px; }
+.iris-help-pop-items dt { margin: 4px 0 0; font-weight: 700; color: #ffffff; font-size: 12.5px; }
+.iris-help-pop-items dd { margin: 0 0 0 10px; color: #d4d9ea; font-size: 12.5px; }
+.iris-help-pop-items .is-selected { color: #ffe27a; }
+.iris-help-pop-values { margin-top: 4px; padding-top: 6px; border-top: 1px solid #45507a; }
+.iris-help-pop-vhead { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #aab3d0; }
+.iris-help-pop-selected { margin: 0 0 6px; }
+.iris-help-pop-selected strong { color: #ffe27a; }
+.iris-help-pop-vnote { margin: 0 0 6px; color: #c3cae0; font-size: 12.5px; }
+.iris-help-pop-foot { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #45507a; }
+.iris-help-pop-link { color: #b4c0ff; font-size: 12.5px; text-decoration: underline; }
+.iris-help-pop-link:hover, .iris-help-pop-link:focus { color: #ffffff; }
+
+/* The glossary page (/help/glossary). */
+.iris-gl-search { max-width: 420px; }
+.iris-gl-group { margin-top: 26px; }
+.iris-gl-group > h2 { font-size: 1.15rem; font-weight: 700; color: #ffffff; margin: 0 0 10px; }
+.iris-gl-term { padding: 12px 16px; margin-bottom: 10px; border: 1px solid #2e3a5f; border-radius: 6px; background: #1b2238; }
+.iris-gl-term:target { border-color: #7f96ff; box-shadow: 0 0 0 2px rgba(127, 150, 255, 0.35); }
+.iris-gl-term > h3 { font-size: 1rem; font-weight: 700; color: #ffffff; margin: 0 0 6px; }
+.iris-gl-term p { margin: 0 0 6px; color: #e2e6f2; }
+.iris-gl-term dl { margin: 4px 0 6px; }
+.iris-gl-term dt { font-weight: 700; color: #ffffff; margin-top: 4px; }
+.iris-gl-term dd { margin: 0 0 0 14px; color: #d4d9ea; }
+.iris-gl-term .iris-gl-values { margin-top: 6px; }
+.iris-gl-term table { width: 100%; margin: 4px 0; font-size: 0.85rem; }
+.iris-gl-term th, .iris-gl-term td { padding: 3px 8px; border-top: 1px solid #2e3a5f; vertical-align: top; color: #e2e6f2; }
+.iris-gl-term summary { cursor: pointer; color: #b4c0ff; text-decoration: underline; }
+.iris-gl-term .iris-gl-links a { color: #b4c0ff; text-decoration: underline; margin-right: 14px; }
+.iris-gl-term .iris-gl-key { color: #93a0bd; font-size: 0.75rem; font-family: monospace; margin-left: 6px; }
+.iris-gl-empty { color: #c3cae0; }

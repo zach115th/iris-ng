@@ -17,7 +17,7 @@
         <div class="card-header">
             <div class="d-flex align-items-center justify-content-between w-100">
                 <div>
-                    <div class="card-title">Clustering Rules</div>
+                    <div class="card-title">Clustering Rules {{ help_tip('crule.rule') }}</div>
                     <div class="text-muted"><small>Auto-stack alerts into alert clusters on match.</small></div>
                 </div>
                 <div></div>
@@ -37,7 +37,7 @@
                                     <button type="button" class="btn btn-sm btn-primary ml-2" onclick="iris_clu_rule_new();">New rule</button>
                                 </div>
                                 <table class="table table-sm table-striped" id="iris-clu-rules-table">
-                                    <thead><tr><th>Priority</th><th>Name</th><th>Conditions</th><th>Correlation keys</th><th>Window (min)</th><th>Enabled</th><th class="text-right">Actions</th></tr></thead>
+                                    <thead><tr><th>Priority {{ help_tip('crule.priority') }}</th><th>Name</th><th>Conditions {{ help_tip('crule.conditions') }}</th><th>Correlation keys {{ help_tip('cluster.fingerprint') }}</th><th>Window (min) {{ help_tip('crule.window') }}</th><th>Enabled</th><th class="text-right">Actions</th></tr></thead>
                                     <tbody id="iris-clu-rules-body"><tr><td colspan="7" class="text-muted">Loading…</td></tr></tbody>
                                 </table>
 
@@ -50,11 +50,11 @@
                                             <input type="text" class="form-control" id="cr-name" maxlength="256">
                                         </div>
                                         <div class="col-md-2">
-                                            <label for="cr-priority">Priority <small class="text-muted">asc</small></label>
+                                            <label for="cr-priority">Priority <small class="text-muted">asc</small></label>{{ help_tip('crule.priority') }}
                                             <input type="number" class="form-control" id="cr-priority" value="100" min="1">
                                         </div>
                                         <div class="col-md-2">
-                                            <label for="cr-window">Window (min)</label>
+                                            <label for="cr-window">Window (min)</label>{{ help_tip('crule.window') }}
                                             <input type="number" class="form-control" id="cr-window" value="1440" min="1">
                                         </div>
                                         <div class="col-md-3 pt-4">
@@ -68,19 +68,19 @@
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-6">
-                                            <label for="cr-keys">Correlation keys <small class="text-muted">— comma-separated dotted paths; rule + customer are always part of the grouping</small></label>
+                                            <label for="cr-keys">Correlation keys <small class="text-muted">— comma-separated dotted paths; rule + customer are always part of the grouping</small></label>{{ help_tip('crule.correlation_keys') }}
                                             <input type="text" class="form-control" id="cr-keys" placeholder="alert_context.hostname, alert_source">
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="cr-title-template">Cluster title template <small class="text-muted">— {path} tokens, e.g. {alert_context.hostname}</small></label>
+                                            <label for="cr-title-template">Cluster title template <small class="text-muted">— {path} tokens, e.g. {alert_context.hostname}</small></label>{{ help_tip('crule.title_template') }}
                                             <input type="text" class="form-control" id="cr-title-template" placeholder="Repeated alerts on {alert_context.hostname}">
                                         </div>
                                     </div>
-                                    <label>Match conditions</label>
+                                    <label>Match conditions</label>{{ help_tip('crule.conditions') }}
                                     <div id="cr-conditions" class="mb-2"></div>
                                     <div class="row mb-2">
                                         <div class="col-md-4">
-                                            <label for="cr-test-lastn">Dry-run against newest N alerts</label>
+                                            <label for="cr-test-lastn">Dry-run against newest N alerts</label>{{ help_tip('crule.test') }}
                                             <input type="number" class="form-control" id="cr-test-lastn" value="20" min="1" max="200">
                                         </div>
                                         <div class="col-md-8 pt-4">
@@ -97,7 +97,7 @@
                                 </div>
 
                                 <p class="text-muted" style="font-size: 0.85rem;">
-                                    <b>Backfill</b> runs full first-match clustering over every alert not yet in a
+                                    <b>Backfill</b>{{ help_tip('crule.backfill') }} runs full first-match clustering over every alert not yet in a
                                     cluster, oldest first — use it after creating or changing rules. It never
                                     re-clusters an alert that already belongs to a cluster.
                                 </p>

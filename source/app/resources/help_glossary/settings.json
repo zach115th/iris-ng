@@ -1,0 +1,312 @@
+{
+  "group": "Settings",
+  "order": 100,
+  "terms": {
+    "settings.rail": {
+      "title": "Manage IRIS menu",
+      "text": "The administration pages. Each entry appears only to users who hold the permission behind it: most need Server administrator; Customers needs Customers read, Case Templates needs Case templates read and Activities an activities-read permission. DIM Tasks, the background jobs that modules and pipelines ran with their results, is listed for everyone and opens with the Standard user permission.",
+      "aka": ["administration", "admin", "advanced", "manage"]
+    },
+    "settings.proxy": {
+      "title": "Server proxy",
+      "text": "The HTTP and HTTPS proxies IRIS-NG uses for its own outbound calls: the update check, the Sponsor tab, and modules that read the server proxy (VirusTotal, for example). HTTPS Proxy carries https:// requests, which is most of them. Enter each as a URL, such as http://<host>:<port>; leave both empty for direct connections.\n\nThe AI backends, Pinecone and the MISP modules do not read these fields; the MISP modules have proxy parameters of their own.",
+      "aka": ["http proxy", "https proxy", "outbound", "internet access"]
+    },
+    "settings.prevent_post_mod_repush": {
+      "title": "Prevent re-registering default modules at boot",
+      "text": "At every boot IRIS-NG registers each bundled module that is not registered yet (VirusTotal, MISP, MISP sync, MISP cluster, IntelOwl, webhooks and the check module), disabled and with its default configuration. So removing a bundled module only sticks while this is ticked.\n\nEither way, the configuration schema of every module already registered is refreshed from its code at each boot, keeping the values you set.",
+      "aka": ["post-init", "default modules", "repush", "boot"]
+    },
+    "settings.prevent_post_objects_repush": {
+      "title": "Prevent re-creating default case objects at boot",
+      "text": "At every boot IRIS-NG re-creates the seeded lookup values that are missing, matched by name. Severities, alert statuses, resolutions, task statuses and evidence types are always re-created; IOC types, asset types, classifications, sectors and case states only while this is unticked.\n\nSo deleting or renaming a seeded value of the second group only sticks with this ticked, and one of the first group always comes back. Editing a seeded value's description is safe: your text is kept.",
+      "aka": ["post-init", "seed", "lookup values", "default objects", "repush", "boot"]
+    },
+    "settings.password_policy": {
+      "title": "Password policy",
+      "text": "The rules a password must meet when IRIS-NG stores it: a user created or edited by an administrator, a user changing their own password, and a war-room guest password set by a room lead (a guest password also needs at least 8 characters). Existing passwords keep working until they are changed. A password checked by LDAP or an SSO provider is not subject to it.",
+      "items": [
+        {"name": "Minimum Password Length", "text": "The password needs at least this many characters."},
+        {"name": "Include Special chars", "text": "The characters that count as special: the password must contain at least one of them. Leave it empty for no special-character rule."},
+        {"name": "Uppercase, lowercase, digits", "text": "Each ticked box requires at least one character of that kind."}
+      ],
+      "aka": ["password rules", "complexity", "length"]
+    },
+    "settings.enforce_mfa": {
+      "title": "Enforce MFA for all users",
+      "text": "When on, every user who signs in with a password must enrol an authenticator app (TOTP, 6-digit codes) at their next sign-in and give a code at every sign-in after that. It applies at once, to local and LDAP sign-ins alike.\n\nNever prompted: the built-in administrator (user #1, a break-glass account) and service accounts, which use API keys. SSO (OIDC) sign-ins bypass it; enforce MFA at the identity provider. There are no recovery codes: a user who loses the device needs an administrator to reset their MFA.",
+      "wiki": "Multi-Factor-Authentication",
+      "aka": ["mfa", "2fa", "two-factor", "totp", "authenticator"]
+    },
+    "aib.enable": {
+      "title": "Enable AI features",
+      "text": "The master switch for every AI surface. While it is off, each one reports that the AI backend is not configured instead of calling a model, and mail-ingest triage keeps the rule defaults. Results saved earlier are not deleted, and nothing else changes.",
+      "aka": ["ai on", "ai off", "disable ai"]
+    },
+    "aib.provider": {
+      "title": "Provider",
+      "text": "Which API this backend speaks. It decides the request shape and how the URL and Model fields are read.",
+      "items": [
+        {"name": "OpenAI-compatible", "text": "Anything that serves /v1/chat/completions with the classic request: LM Studio, OpenRouter, vLLM, Ollama and most gateways. If the service rejects max_tokens or temperature, IRIS-NG resends once in the shape it asks for and remembers that for this URL and model."},
+        {"name": "OpenAI (api.openai.com)", "text": "OpenAI's own API. Sends max_completion_tokens from the first call and drops temperature after the first rejection, as OpenAI's reasoning models require."},
+        {"name": "AWS Bedrock", "text": "The Bedrock Converse API with a Bedrock API key. The model's reasoning text is dropped from the answer, and IRIS-NG applies no Bedrock Guardrail."}
+      ],
+      "wiki": "AI-Features#supported-backends",
+      "aka": ["openai", "bedrock", "lm studio", "openrouter", "ollama", "vllm"]
+    },
+    "aib.url": {
+      "title": "URL / Region",
+      "text": "Where the backend is. OpenAI-compatible and OpenAI: the API base URL, ending in /v1 (IRIS-NG appends /chat/completions), such as https://api.openai.com/v1 or http://<host>:1234/v1 for a local server.\n\nAWS Bedrock: a region code such as us-west-2, from which IRIS-NG builds the inference and listing hosts, or a full https:// endpoint URL for a VPC or private endpoint (Load models then works only if the host follows the public bedrock-runtime.<region> pattern).",
+      "aka": ["base url", "endpoint", "region", "host"]
+    },
+    "aib.model": {
+      "title": "Model",
+      "text": "The exact model identifier the backend expects; a near match fails. OpenAI-compatible: the id the service lists (for example openai/gpt-oss-20b). OpenAI: the model name.\n\nAWS Bedrock: an inference profile ARN (plain or URL-encoded, as the console copies it), a system-defined profile id (us.anthropic.<model>, for example) or a model id. After Load models, pick it by name, or choose Other to paste one. The short id at the end of an application profile ARN does not work on its own.",
+      "aka": ["model id", "arn", "inference profile", "model name"]
+    },
+    "aib.api_key": {
+      "title": "API key",
+      "text": "Sent with every request: a bearer token for the OpenAI-style providers (it can be empty for a local server), a Bedrock API key for AWS Bedrock (a long-term key suits a server; short-term keys expire within 12 hours).\n\nWrite-only: a stored key is never shown again or returned by the API, and the green stored badge says one is set. Leave the field blank on Save backend to keep it, or type a new one to replace it. A stored key cannot be cleared from the page; delete the backend instead.",
+      "aka": ["token", "bearer", "secret", "write-only"]
+    },
+    "aib.load_models": {
+      "title": "Load models",
+      "text": "AWS Bedrock only. Lists the inference profiles the region and key can see (your application profiles by name, then the system-defined cross-region ones) and saves the list on the backend, so the Model dropdown renders without calling AWS. Save the backend once first; it uses the region and key typed in the card, else the stored ones.\n\nThe key's IAM user needs bedrock:ListInferenceProfiles and bedrock:GetInferenceProfile, which a console-generated long-term key lacks. Meanwhile, choose Other and paste the profile ARN.",
+      "wiki": "AI-Features#aws-bedrock",
+      "aka": ["inference profiles", "catalog", "iam", "ListInferenceProfiles"]
+    },
+    "aib.active": {
+      "title": "Use this backend",
+      "text": "Marks the active backend: it answers every AI feature that is not pinned to another backend under Per-feature backend overrides. The choice is saved with Save changes at the bottom of the page, not with Save backend, and applies without a restart. A backend added while none is active becomes the active one. The active backend cannot be deleted: make another one active and save first.",
+      "wiki": "AI-Features#admin-ui",
+      "aka": ["active backend", "default backend", "radio"]
+    },
+    "aib.save": {
+      "title": "Save backend / Delete",
+      "text": "Each card is saved and deleted with its own buttons; Save changes at the bottom of the page does not save the cards. Labels must be unique, ignoring case, and are how the override table names each backend. Delete is refused for the active backend; any other backend can be deleted, down to none, and every feature pinned to it goes back to Default.",
+      "aka": ["add backend", "delete backend", "label"]
+    },
+    "aib.confidence_threshold": {
+      "title": "Confidence threshold",
+      "text": "Stored with the settings, but no AI feature reads it in this version: each feature applies its own fixed floor (for example 0.5 for IOCs extracted from notes, 0.7 for IOCs that mail triage adds to an alert). Changing it has no effect.",
+      "aka": ["threshold", "confidence"]
+    },
+    "aib.summary_verify": {
+      "title": "Verify executive summaries",
+      "text": "On by default. After the executive case summary is written, the verifier (the Case Summary verifier role in the override table) checks each claim against the case objects it cites and reads the whole document for contradictions; what it finds becomes review questions, with options it proposes.\n\nOff: only the deterministic checks run. Their findings still become review questions, with fixed options, and the summary still reaches Verified once they are answered, marked checks only. Neither setting blocks a report.",
+      "wiki": "AI-Features#roles-settings-budgets",
+      "aka": ["verifier", "verification", "claim checks", "executive summary"]
+    },
+    "aib.feature_overrides": {
+      "title": "Per-feature backend overrides",
+      "text": "Pins one AI feature to a specific backend instead of the active one, for example a larger model for the executive summary, or a second backend to verify it. Default follows whichever backend is active. The table is saved with Save changes. Deleting a backend resets every pin to it to Default.",
+      "wiki": "AI-Features#admin-ui",
+      "aka": ["pin", "override", "per feature", "routing"]
+    },
+    "aib.verifier_role": {
+      "title": "Case Summary verifier",
+      "text": "The backend that checks the executive summary's claims and proposes the options of its review questions. With no pin, the active backend checks the summary it wrote itself, which is a weaker check: pin a different backend here. If no backend can serve the role, the summary carries a high-severity flag saying its claims were not verified.",
+      "wiki": "AI-Features#roles-settings-budgets",
+      "aka": ["verifier", "second opinion", "claim checks"]
+    },
+    "settings.pinecone": {
+      "title": "Vector database (Pinecone)",
+      "text": "Optional grounding. When enabled with an API key and an index host, the ATT&CK suggester, the case-template suggester and IOC extraction's noise flags first look up matching Sigma rules in your Pinecone Sigma index; when off or unreachable they use the model alone. Only the Sigma index is queried in this version; the ATT&CK and Atomic hosts are stored but unused.\n\nThe embedding model must match the one the index was built with. Unlike the AI backend keys, the Pinecone key is not write-only: it is filled into this page.",
+      "aka": ["rag", "sigma", "embeddings", "vector"]
+    },
+    "settings.time_nudge": {
+      "title": "Time-logging nudge",
+      "text": "Off by default. When on, opening a case page shows each analyst, once per browser tab, a reminder with the number of open cases where they have logged no time: cases they own or opened that were opened in the last 7 days, and cases holding a task assigned to them. It only reminds; nothing is blocked or reported.",
+      "wiki": "Analyst-Time-Tracking#optional-nudge",
+      "aka": ["time tracking", "reminder", "logged time"]
+    },
+    "settings.mail_ingest": {
+      "title": "Mail ingest (IMAP)",
+      "text": "When enabled, IRIS-NG checks this IMAP folder for unread messages, up to 50 per poll, and runs each through the ordered rules on the Mail rules page: a matching create rule makes an alert, an ignore rule drops the message. Every message it handles, matched or not, is marked read and recorded in the ingest log; a message already ingested (same Message-ID) is skipped.\n\nTest IMAP signs in with the last saved values.",
+      "wiki": "Mail-Rules#the-polling-loop",
+      "aka": ["imap", "mailbox", "email alerts", "inbox"]
+    },
+    "settings.mail_poll_interval": {
+      "title": "Poll interval",
+      "text": "The minimum number of minutes between automatic polls. The scheduler ticks every 60 seconds, so 1 is the shortest interval. Blank turns automatic polling off; Poll now on the Mail rules page still works. Only one poll runs at a time.",
+      "wiki": "Mail-Rules#the-polling-loop",
+      "aka": ["polling", "schedule", "frequency"]
+    },
+    "settings.mail_password": {
+      "title": "Write-only mail password",
+      "text": "Saved and used, but never shown again or returned by the API; the green stored badge says one is set. Leave the field blank to keep the stored password, or type a new one to replace it. A stored password cannot be cleared to empty: to stop using the mailbox, turn mail ingest off. The SMTP password follows the same rule.",
+      "wiki": "Mail-Rules#where-things-live",
+      "aka": ["password", "write-only", "stored"]
+    },
+    "settings.smtp": {
+      "title": "Outbound mail (SMTP)",
+      "text": "The server IRIS-NG sends e-mail through. Two kinds of mail use it: notification e-mails to users, sent only while Enable outbound notification emails (below) is on, and war-room guest e-mails (invitations, mentions, leadership SitRep copies), which need only an SMTP host and are sent even with that switch off.\n\nTest SMTP connects and signs in with the last saved values; it sends no message. Without a From address, the username is used.",
+      "wiki": "Notifications#channels-your-preferences-over-org-defaults",
+      "aka": ["smtp", "email", "outbound mail", "from address"]
+    },
+    "settings.smtp_security": {
+      "title": "SMTP security",
+      "text": "How the connection to the SMTP server is protected. IRIS-NG signs in only when a username is set.",
+      "items": [
+        {"name": "TLS", "text": "Encrypted from the first byte (SMTPS). Port 465 when the Port field is blank."},
+        {"name": "STARTTLS", "text": "Connects in clear, then switches to encryption before signing in. Port 587 when the Port field is blank."},
+        {"name": "None", "text": "No encryption: the password and the messages cross the network in clear."}
+      ],
+      "aka": ["tls", "starttls", "ssl", "encryption"]
+    },
+    "settings.mail_ai_triage": {
+      "title": "AI triage on ingest",
+      "text": "When on, every message a rule turns into an alert is first sent to the AI backend (pinnable as Mail-ingest triage). A confident answer can replace the rule's default severity and classification, matched by name against your lists, and indicators found in the body are added at a stricter bar; otherwise the rule defaults stand. A failure never blocks the alert, and what the model suggested is recorded in the ingest log. The message text is sent to the AI backend.",
+      "wiki": "Mail-Rules#ai-triage-optional",
+      "aka": ["mail triage", "ai triage", "email triage"]
+    },
+    "settings.email_notifications": {
+      "title": "Enable outbound notification emails",
+      "text": "The master switch for notification e-mails to users, off by default. While it is off, no user gets a notification e-mail, whatever the matrices say: they only decide which events may use e-mail (the organization defaults under Settings -> Notifications, overridden by each user's own choices on their profile). The switch is read at send time, so turning it off also stops e-mails already queued. War-room guest e-mails do not depend on it.",
+      "wiki": "Notifications#channels-your-preferences-over-org-defaults",
+      "aka": ["email notifications", "notification emails", "org defaults", "matrix"]
+    },
+    "settings.retention": {
+      "title": "Retention period",
+      "text": "How long an evidence drive may stay In use after its case closed. When set, a drive still In use whose case closed more than this many months ago (a month counts as 30 days) shows an Overdue indicator on the Inventory page. It is an indicator only: nothing is wiped, released or changed automatically. Blank means no policy and no indicator; a drive of an open case is never overdue.",
+      "wiki": "Evidence-Inventory#data-retention-policy",
+      "aka": ["retention", "overdue", "wipe", "drive rotation"]
+    },
+    "settings.capacity_planning": {
+      "title": "Capacity planning",
+      "text": "Drives the order-more indicator on the Inventory page. Intake = the cases opened in the rolling window, per month. Supply = Wiped drives (in rotation) + Available drives (awaiting wipe) + In use drives whose case closed within 30 days of the retention limit (none without a retention period). Runway = supply / intake. When the runway is below the target, the page recommends ordering enough drives to cover the target.",
+      "items": [
+        {"name": "Rolling window", "text": "How many months of case openings are averaged. Blank = 3."},
+        {"name": "Target runway", "text": "The minimum months of supply you want on hand. Blank = 2."}
+      ],
+      "aka": ["drives", "order", "runway", "inventory"]
+    },
+    "settings.versions": {
+      "title": "Server versions",
+      "text": "What this server runs. Quote these when reporting a problem.",
+      "items": [
+        {"name": "IRIS server version", "text": "The IRIS-NG release, IRIS-NG-v<major>.<minor>.<patch>."},
+        {"name": "Database revision", "text": "The newest database migration applied. Migrations are one-way: back up the database before an upgrade."},
+        {"name": "API version", "text": "The range of API versions this server supports, for API clients that check compatibility."},
+        {"name": "Module interface version", "text": "The range of module interface versions accepted; a module written for a version outside it fails its health check when added."}
+      ],
+      "aka": ["version", "database revision", "api version", "about"]
+    },
+    "settings.db_backup": {
+      "title": "Database backup",
+      "text": "Backup database runs pg_dump of the IRIS-NG database into a compressed SQL file (backup-<date>.sql.gz) in the database folder of the backup path inside the app container (by default /home/iris/server_data/backup/database, on the server_data volume). It holds the database only: uploaded files and the datastore are not included. Copy the file off the server; scripts/update.sh takes a dump of its own before an upgrade.",
+      "aka": ["backup", "pg_dump", "dump", "BACKUP_PATH"]
+    },
+    "settings.sponsor": {
+      "title": "Sponsor",
+      "text": "Optional sponsorship links for the project. IRIS-NG is free (LGPL-3.0) and sponsoring unlocks nothing. The links are read from the project's FUNDING.yml on GitHub the first time you open this tab (never when the page loads), through the server proxy, and cached for 6 hours; when GitHub cannot be reached the tab says so and nothing else is affected.",
+      "wiki": "Security#secure-by-default",
+      "aka": ["funding", "donate", "support"]
+    },
+    "update.check": {
+      "title": "Check for new releases",
+      "text": "On by default. IRIS-NG asks GitHub for the newest IRIS-NG release, through the server proxy, and keeps the answer for up to 6 hours. When a newer version exists, a strip appears at the top of every page except Home: everyone sees it and can hide it in their browser until the next release, but only server administrators get the release link and the How to upgrade instructions. Turn it off for an air-gapped server: no request is then made.",
+      "wiki": "Getting-Started#update-notifications",
+      "aka": ["update banner", "new version", "release check", "air-gapped"]
+    },
+    "update.check_now": {
+      "title": "Check now",
+      "text": "Asks GitHub right away, skipping the 6-hour cache, and reports here whether a newer release exists, the server is up to date, or the check could not run. The check must be on and saved first.",
+      "aka": ["refresh", "check for updates"]
+    },
+    "update.upgrade": {
+      "title": "How IRIS-NG is upgraded",
+      "text": "There is no in-app updater: an upgrade runs on the host. On a clone-based install, scripts/update.sh backs the database up with pg_dump, moves the checkout to the release (--ref <tag>), and rebuilds and recreates the containers; a Helm install sets the new image tag and upgrades the release. A rebuild is required (a restart keeps the old image). Back up first: database migrations are one-way.",
+      "wiki": "Getting-Started#upgrading-iris-ng",
+      "aka": ["upgrade", "update.sh", "update server", "updater"]
+    },
+    "banner.banners": {
+      "title": "Announcement banners",
+      "text": "Messages from administrators, shown in a strip at the top of every page with the navigation bar (Home included) to every signed-in user while they are active; war-room guests on the portal do not see them. Active banners stack oldest first, below any update notice. A user can hide a banner with its close button; it stays hidden in that browser tab until the tab is closed. The message is shown as plain text.",
+      "aka": ["announcement", "maintenance notice", "banner", "outage"]
+    },
+    "banner.level": {
+      "title": "Banner level",
+      "text": "The colour of the strip. It changes nothing else.",
+      "items": [
+        {"name": "Info", "text": "Blue."},
+        {"name": "Warning", "text": "Amber."},
+        {"name": "Danger", "text": "Red."}
+      ],
+      "aka": ["info", "warning", "danger", "colour"]
+    },
+    "banner.active": {
+      "title": "Active banner",
+      "text": "Only active banners are shown. There is no schedule: a banner shows from the moment it is saved active until it is unticked or deleted. Untick it to keep the text for later.",
+      "aka": ["schedule", "hide banner", "enable banner"]
+    },
+    "module.modules": {
+      "title": "Modules",
+      "text": "Python packages installed on the server that extend IRIS-NG, each registered here, configured, and enabled or disabled. A module runs with IRIS-NG's own trust: it can read everything IRIS-NG stores and run code on the server, so review one before adding it.\n\nProcessor modules react to hooks (an IOC was saved, a user picked an action); pipeline modules process files dropped on a case's Pipelines. The bundled modules are registered disabled on first boot.",
+      "wiki": "Troubleshooting#modules-and-webhooks",
+      "aka": ["module", "plugin", "integration", "extension"]
+    },
+    "module.add": {
+      "title": "Add a module",
+      "text": "Enter the name of a Python package already installed in the server's image (for example iris_evtx); nothing is downloaded. IRIS-NG imports it, runs a health check (its interface version must be in the range shown under Settings -> System, and its type and pipelines must be valid), registers it with its default configuration and subscribes its hooks. It starts enabled, but is switched off while any mandatory parameter is empty.",
+      "aka": ["install module", "register module", "pip package"]
+    },
+    "module.status": {
+      "title": "Module status",
+      "text": "Whether the module runs.",
+      "items": [
+        {"name": "Active", "text": "Enabled: its hooks run and its pipelines are offered on cases."},
+        {"name": "Inactive", "text": "Registered but disabled: nothing of it runs. Its configuration is kept."},
+        {"name": "Misconfigured", "text": "A mandatory parameter is empty. IRIS-NG switches the module off every time this list loads until the parameter is set; open the module to complete it."}
+      ],
+      "aka": ["active", "inactive", "misconfigured", "enabled", "disabled"]
+    },
+    "module.pipeline": {
+      "title": "Pipeline",
+      "text": "Yes when the module provides a processing pipeline: while the module is enabled it appears in a case's Pipelines dialog (in the case actions menu), and files dropped there are handed to it, for example to import logs. The processing runs in the background; follow it under DIM Tasks.",
+      "aka": ["pipeline", "processing", "import files"]
+    },
+    "module.interface_version": {
+      "title": "Interface version",
+      "text": "The version of the module interface the module was written for. The server accepts modules within the range shown under Settings -> System (Min. and Max. module interface version); a module outside it fails its health check when added.",
+      "aka": ["interface", "compatibility"]
+    },
+    "module.hooks": {
+      "title": "Registered hooks",
+      "text": "A hook is a named point in IRIS-NG that a module subscribes to, such as on_postload_ioc_create (after an IOC is saved). Automatic hooks run on that event in every case; manual hooks (Manual: Yes) appear as actions in the menus of case objects such as IOCs and assets and run only when someone picks them. They usually run in the background (see DIM Tasks).\n\nActive shows whether the subscribing module is enabled. A module picks its hooks from its configuration, so saving a parameter can add or remove rows here.",
+      "aka": ["hook", "trigger", "manual hook", "automatic"]
+    },
+    "module.configuration": {
+      "title": "Module configuration",
+      "text": "The parameters the module declares: server URLs, API keys, switches. Mandatory ones must be set before the module can be enabled; sensitive values are masked here. The list itself (names, types, defaults) comes from the module's code and is refreshed at every boot, keeping the values you set.\n\nExport writes every parameter with its value, API keys included: treat the file as a secret. Import overwrites the parameters named in the file.",
+      "wiki": "Development-Guide#module-config-schemas-are-frozen-at-first-registration",
+      "aka": ["parameters", "export configuration", "import configuration", "module settings"]
+    },
+    "module.parameter": {
+      "title": "Module parameter",
+      "text": "The module defines the description, default, whether the parameter is mandatory and its type. The type picks the editor: bool is a checkbox, a textfield type opens a text editor (with JSON, HTML or Markdown highlighting), anything else is one line; a sensitive_string value is masked in the list. Saving applies at once and re-subscribes the module's hooks, so a trigger switch takes effect immediately.",
+      "aka": ["parameter", "expected type", "mandatory"]
+    },
+    "module.enable": {
+      "title": "Enable or disable a module",
+      "text": "Enabling turns the module on and subscribes its hooks as its configuration asks; disabling stops all of its hooks and pipelines at once and keeps its configuration. In this dialog the buttons appear only once every mandatory parameter is set; a module enabled from the list while one is missing is switched off again when the list reloads.",
+      "aka": ["enable", "disable", "turn off"]
+    },
+    "module.remove": {
+      "title": "Remove module",
+      "text": "Deletes the module's registration, its hook subscriptions and its saved configuration. The package stays installed on the server and can be added again, with its default configuration. A bundled module is registered again, disabled, at the next boot unless Prevent post-init step to register default modules is ticked under Settings -> General.",
+      "aka": ["delete module", "uninstall"]
+    },
+    "module.misp": {
+      "title": "MISP modules",
+      "text": "IRIS-NG ships three MISP modules, each with its own connection settings (MISP address, API key, proxy, TLS verification).",
+      "items": [
+        {"name": "IrisMISP", "text": "Looks IOCs up in MISP and attaches a MISP Report tab to the IOC: on IOC create or update, and through the Get MISP insight action, as its switches allow."},
+        {"name": "IrisMISPSync", "text": "Copies cases and their IOCs to MISP events and attributes as they are created or updated, per its Trigger switches; its TLP distribution policy maps each IOC's TLP to a MISP distribution."},
+        {"name": "IrisMISPCluster", "text": "Publishes a cross-case correlation cluster to MISP as one event with the shared IOCs, their tags and linked notes. Only TLP:GREEN and TLP:CLEAR indicators are sent."}
+      ],
+      "wiki": "MISP-Integration",
+      "aka": ["misp", "sync", "threat sharing"]
+    }
+  }
+}

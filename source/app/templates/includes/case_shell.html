@@ -36,20 +36,21 @@
         <div class="iris-cshell-menuwrap">
             <button type="button" class="iris-cshell-chip iris-cshell-chipbtn" id="iris-cshell-state" style="display:none;" title="Change case state"></button>
             <div class="iris-cshell-menu" id="iris-cshell-statemenu" style="display:none;">
-                <div class="iris-cshell-mh">Change case state</div>
+                <div class="iris-cshell-mh">Change case state {{ help_tip('common.case_state', target='#iris-cshell-state') }}</div>
                 <div id="iris-cshell-statemenu-items"></div>
             </div>
         </div>
         <div class="iris-cshell-menuwrap">
             <button type="button" class="iris-cshell-chip iris-cshell-chipbtn" id="iris-cshell-sev" style="display:none;" title="Change case severity"></button>
             <div class="iris-cshell-menu" id="iris-cshell-sevmenu" style="display:none;">
-                <div class="iris-cshell-mh">Change case severity</div>
+                <div class="iris-cshell-mh">Change case severity {{ help_tip('common.severity', target='#iris-cshell-sev') }}</div>
                 <div id="iris-cshell-sevmenu-items"></div>
             </div>
         </div>
         <button type="button" class="iris-cshell-btn iris-follow-btn" title="Follow this case"
                 data-object-type="case" data-object-id="{{ _cs_cid }}"><span class="iris-fb-star">&#9734;</span>
             <span class="iris-fb-cnt">&ndash;</span> <span class="iris-fb-lbl">Follow</span></button>
+        {{ help_tip('follow.following') }}
         {# v3: the current tab's primary action is promoted into the header
            (e.g. Add Asset on the Assets tab). Tabs opt in by setting
            cshell_primary_label + cshell_primary_onclick before including,
@@ -124,15 +125,15 @@
                 <div class="iris-cshell-mh">Manage Case</div>
                 <a href="#" onclick="case_detail('{{ _cs_cid }}');return false;">Edit Case Details</a>
                 {% if cshell_summary %}
-                <div class="iris-cshell-mh">Reports</div>
+                <div class="iris-cshell-mh">Reports {{ help_tip('case.reports') }}</div>
                 <a href="#" onclick="report_template_selector();return false;">Generate report</a>
                 <a href="#" onclick="act_report_template_selector();return false;">Activity report</a>
-                <div class="iris-cshell-mh">Workflow</div>
+                <div class="iris-cshell-mh">Workflow {{ help_tip('case.pipelines') }}</div>
                 <a href="#" id="case_pipeline" onclick="case_pipeline_popup();return false;">Pipelines</a>
-                <div class="iris-cshell-mh">Processors</div>
+                <div class="iris-cshell-mh">Processors {{ help_tip('case.processors') }}</div>
                 <div id="case_modal_quick_actions" class="iris-cshell-qa"></div>
                 {% if case.review_status is none or case.review_status.status_name == "Not reviewed" %}
-                <div class="iris-cshell-mh">Review</div>
+                <div class="iris-cshell-mh">Review {{ help_tip('review.request') }}</div>
                 <a href="#" id="request_review">Request review</a>
                 {% endif %}
                 {% else %}

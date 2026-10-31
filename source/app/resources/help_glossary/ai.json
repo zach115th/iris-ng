@@ -1,0 +1,30 @@
+{
+  "group": "AI features",
+  "order": 20,
+  "terms": {
+    "ai.generated": {
+      "title": "AI-generated content",
+      "text": "Written by the AI backend configured under Settings, from the case data shown to it. It can be wrong or incomplete: check it against the evidence before relying on it. AI output is advisory and never publishes, closes or shares anything by itself.",
+      "aka": ["llm", "model", "machine generated"],
+      "wiki": "AI-Features"
+    },
+    "ai.cached": {
+      "title": "Saved AI result",
+      "text": "IRIS-NG saves each AI result and shows the saved one when you come back, with the time it was made. Asking again over unchanged data returns the saved result instead of calling the model; asking for a new one replaces it. A failed or unreadable reply is never saved.",
+      "aka": ["cached", "regenerate", "refresh", "stale"],
+      "wiki": "AI-Features"
+    },
+    "ai.manual_edit": {
+      "title": "Edited by hand",
+      "text": "An AI result can be corrected by hand. The original AI text is kept alongside your version, and generating a new result asks before it replaces your edit.",
+      "aka": ["override", "correction", "manual"],
+      "wiki": "AI-Features#manual-override"
+    },
+    "ai.backend": {
+      "title": "AI backend",
+      "text": "The model service that answers AI requests: an OpenAI-compatible endpoint, OpenAI itself or AWS Bedrock, each with its own model. Settings -> AI lists the backends; one is active for every feature, and a feature can be pinned to a different one.",
+      "aka": ["provider", "model", "llm", "openai", "bedrock"],
+      "wiki": "AI-Features#backend-configuration"
+    }
+  }
+}

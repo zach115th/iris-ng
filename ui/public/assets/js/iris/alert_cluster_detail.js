@@ -107,7 +107,8 @@ function iris_acd_render_header() {
     $('#iris-acd-meta').html(
         '<span>&#128337; Opened ' + iris_ac_esc(iris_ac_ts(d.created_at)) + '</span>'
         + '<span>&#127970; ' + iris_ac_esc(d.customer_name || d.customer_id) + '</span>'
-        + '<span>&#128278; Rule: ' + iris_ac_esc(d.rule_name || '(rule deleted)') + '</span>');
+        + '<span>&#128278; Rule: ' + iris_ac_esc(d.rule_name || '(rule deleted)')
+        + IrisHelp.icon('crule.rule') + '</span>');
     iris_acd_render_status_chip();
     iris_acd_render_severity_chip();
     iris_acd_render_owner_text();

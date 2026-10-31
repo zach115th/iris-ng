@@ -1,0 +1,101 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Glossary {% endblock title %}
+
+{% block content %}
+{#- iris-ng (i) help icons (2026-10-30): every term the icons explain, on one
+   page. Server-rendered from business/help_glossary.py; the search below only
+   hides what does not match. Values come from this server's lookup tables. -#}
+<div class="page-inner">
+    <div class="card">
+        <div class="card-header">
+            <h1 class="card-title mb-1" style="font-size:1.35rem;">Glossary {{ help_tip('common.help_icons') }}</h1>
+            <p class="mb-0 text-muted">What each term in IRIS-NG means. The (i) icon next to a field opens the same definition; you can hide the icons under My settings.</p>
+        </div>
+        <div class="card-body">
+            <label for="iris-gl-search" class="d-block mb-1">Search the glossary</label>
+            <input type="search" id="iris-gl-search" class="form-control iris-gl-search" autocomplete="off"
+                   placeholder="A term, a word in its definition, or a value">
+            <p class="mt-2 mb-0 text-muted" id="iris-gl-count" aria-live="polite"></p>
+
+            {%- for group in groups %}
+            <section class="iris-gl-group" data-iris-gl-group>
+                <h2>{{ group.name }}</h2>
+                {%- for t in group.terms %}
+                {%- set rows = values.get(t['values']) if t['values'] else None %}
+                <article class="iris-gl-term" id="term-{{ t.key }}"
+                         data-iris-gl-text="{{ ([t.title, t.text] + t.aka + (t['items']|map(attribute='name')|list) + (t['items']|map(attribute='text')|list) + ((rows or [])|map(attribute='label')|list))|join(' ')|lower }}">
+                    <h3>{{ t.title }}<span class="iris-gl-key">{{ t.key }}</span></h3>
+                    {%- for para in t.paragraphs %}
+                    <p>{{ para }}</p>
+                    {%- endfor %}
+                    {%- if t['items'] %}
+                    <dl>
+                        {%- for item in t['items'] %}
+                        <dt>{{ item.name }}</dt>
+                        <dd>{{ item.text }}</dd>
+                        {%- endfor %}
+                    </dl>
+                    {%- endif %}
+                    {%- if rows is not none %}
+                    <div class="iris-gl-values">
+                        {%- if rows|length > fold_over %}
+                        <details>
+                            <summary>Show the {{ rows|length }} values on this server</summary>
+                        {%- else %}
+                        <p class="mb-1"><strong>On this server</strong></p>
+                        {%- endif %}
+                        {%- if rows %}
+                        <table>
+                            <thead><tr><th scope="col">Value</th><th scope="col">What it means</th></tr></thead>
+                            <tbody>
+                            {%- for row in rows %}
+                            {%- set meaning = row.description if row.description and row.description|lower != row.name|lower else '' %}
+                            <tr><td>{{ row.label }}</td><td>{% if meaning %}{{ meaning }}{% else %}&mdash;{% endif %}</td></tr>
+                            {%- endfor %}
+                            </tbody>
+                        </table>
+                        {%- else %}
+                        <p class="iris-gl-empty">No values are defined on this server yet.</p>
+                        {%- endif %}
+                        {%- if rows|length > fold_over %}
+                        </details>
+                        {%- endif %}
+                    </div>
+                    {%- endif %}
+                    {%- if t.wiki %}
+                    <p class="iris-gl-links mb-0"><a href="{{ wiki_base }}{{ t.wiki }}" target="_blank" rel="noopener noreferrer">Learn more on the wiki</a></p>
+                    {%- endif %}
+                </article>
+                {%- endfor %}
+            </section>
+            {%- endfor %}
+            <p class="iris-gl-empty mt-3" id="iris-gl-none" hidden>No term matches that search.</p>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var input = document.getElementById('iris-gl-search');
+    var count = document.getElementById('iris-gl-count');
+    var none = document.getElementById('iris-gl-none');
+    var terms = Array.prototype.slice.call(document.querySelectorAll('.iris-gl-term'));
+    var groups = Array.prototype.slice.call(document.querySelectorAll('[data-iris-gl-group]'));
+    function apply() {
+        var words = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+        var shown = 0;
+        terms.forEach(function (t) {
+            var text = t.getAttribute('data-iris-gl-text') || '';
+            var hit = words.every(function (w) { return text.indexOf(w) !== -1; });
+            t.hidden = !hit;
+            if (hit) { shown += 1; }
+        });
+        groups.forEach(function (g) { g.hidden = !g.querySelector('.iris-gl-term:not([hidden])'); });
+        none.hidden = shown !== 0;
+        count.textContent = words.length ? shown + ' of ' + terms.length + ' terms match.' : terms.length + ' terms.';
+    }
+    input.addEventListener('input', apply);
+    apply();
+}());
+</script>
+{% endblock content %}

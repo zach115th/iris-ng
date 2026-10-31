@@ -756,7 +756,7 @@ function build_timeline(data) {
     var standard_filters = [
                 {value: 'asset:', score: 10, meta: 'Match assets name of events'},
                 {value: 'asset_id:', score: 10, meta: 'Match assets ID of events'},
-                {value: 'startDate:', score: 10, meta: 'Match end date of events'},
+                {value: 'startDate:', score: 10, meta: 'Match start date of events'},
                 {value: 'endDate:', score: 10, meta: 'Match end date of events'},
                 {value: 'tag:', score: 10, meta: 'Match tag of events'},
                 {value: 'description:', score: 10, meta: 'Match description of events'},

@@ -17,7 +17,7 @@
         <div class="card-header">
             <div class="d-flex align-items-center justify-content-between w-100">
                 <div>
-                    <div class="card-title">Investigation flows</div>
+                    <div class="card-title">Investigation flows {{ help_tip('flow.flow') }}</div>
                     <div class="text-muted"><small>Guided triage checklists, attached to alerts and/or alert clusters on match.</small></div>
                 </div>
                 <div></div>
@@ -37,10 +37,10 @@
                                 <div class="mb-2">
                                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="iris_flw_load();">Refresh</button>
                                     <button type="button" class="btn btn-sm btn-primary ml-2" onclick="iris_flw_new();">New flow</button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="iris_flw_deploy();">Deploy to existing</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="iris_flw_deploy();">Deploy to existing</button>{{ help_tip('flow.deploy') }}
                                 </div>
                                 <table class="table table-sm table-striped" id="iris-flw-table">
-                                    <thead><tr><th>Priority</th><th>Name</th><th>Target</th><th>Steps</th><th>Conditions</th><th>Enabled</th><th class="text-right">Actions</th></tr></thead>
+                                    <thead><tr><th>Priority {{ help_tip('flow.priority') }}</th><th>Name</th><th>Target {{ help_tip('flow.target') }}</th><th>Steps {{ help_tip('flow.steps') }}</th><th>Conditions {{ help_tip('crule.conditions') }}</th><th>Enabled</th><th class="text-right">Actions</th></tr></thead>
                                     <tbody id="iris-flw-body"><tr><td colspan="7" class="text-muted">Loading…</td></tr></tbody>
                                 </table>
 
@@ -53,11 +53,11 @@
                                             <input type="text" class="form-control" id="fw-name" maxlength="256">
                                         </div>
                                         <div class="col-md-2">
-                                            <label for="fw-priority">Priority <small class="text-muted">asc</small></label>
+                                            <label for="fw-priority">Priority <small class="text-muted">asc</small></label>{{ help_tip('flow.priority') }}
                                             <input type="number" class="form-control" id="fw-priority" value="100" min="1">
                                         </div>
                                         <div class="col-md-2">
-                                            <label for="fw-target">Attach to</label>
+                                            <label for="fw-target">Attach to</label>{{ help_tip('flow.target') }}
                                             <select class="form-control" id="fw-target">
                                                 <option value="alert">Alerts</option>
                                                 <option value="cluster">Clusters</option>
@@ -77,14 +77,14 @@
                                         <label for="fw-description">Description</label>
                                         <input type="text" class="form-control" id="fw-description">
                                     </div>
-                                    <label>Steps <small class="text-muted">— order is display order; * = required (advisory)</small></label>
+                                    <label>Steps <small class="text-muted">— order is display order; * = required (advisory)</small></label>{{ help_tip('flow.steps') }}
                                     <div id="fw-steps" class="mb-1"></div>
                                     <button type="button" class="btn btn-xs btn-outline-secondary mb-2" onclick="iris_flw_step_add();">+ step</button>
-                                    <label>Match conditions <small class="text-muted">— evaluated on the triggering alert</small></label>
+                                    <label>Match conditions <small class="text-muted">— evaluated on the triggering alert</small></label>{{ help_tip('crule.conditions') }}
                                     <div id="fw-conditions" class="mb-2"></div>
                                     <div class="row mb-2">
                                         <div class="col-md-4">
-                                            <label for="fw-test-lastn">Dry-run against newest N alerts</label>
+                                            <label for="fw-test-lastn">Dry-run against newest N alerts</label>{{ help_tip('crule.test') }}
                                             <input type="number" class="form-control" id="fw-test-lastn" value="20" min="1" max="200">
                                         </div>
                                         <div class="col-md-8 pt-4">

@@ -31,8 +31,10 @@
         var banner = att.required_incomplete > 0
             ? '<div class="mb-1" style="color: #f4c430; font-size: 0.8rem;">&#9888; '
               + att.required_incomplete + ' required step'
-              + (att.required_incomplete === 1 ? '' : 's') + ' incomplete</div>'
-            : '<div class="mb-1" style="color: #2dce89; font-size: 0.8rem;">All required steps complete</div>';
+              + (att.required_incomplete === 1 ? '' : 's') + ' incomplete'
+              + IrisHelp.icon('flow.required_steps') + '</div>'
+            : '<div class="mb-1" style="color: #2dce89; font-size: 0.8rem;">All required steps complete'
+              + IrisHelp.icon('flow.required_steps') + '</div>';
         var steps = (att.steps || []).map(function (s) {
             var who = s.done_by
                 ? ' <span class="text-muted" style="font-size: 0.72rem;">'
@@ -57,7 +59,8 @@
         return '<div class="iris-fc-attachment mb-2" data-attachment-id="' + att.attachment_id + '">'
             + '<div style="font-weight: 600;">' + esc(att.flow_name)
             + ' <span class="text-muted" style="font-size: 0.75rem;">'
-            + att.steps_done + '/' + att.steps_total + '</span></div>'
+            + att.steps_done + '/' + att.steps_total + '</span>'
+            + IrisHelp.icon('flow.step_state') + '</div>'
             + (att.flow_description
                 ? '<div class="text-muted" style="font-size: 0.75rem;">'
                   + esc(att.flow_description) + '</div>'

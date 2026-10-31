@@ -59,7 +59,7 @@
                             {# ── GENERAL ─────────────────────────────────────────────── #}
                             <div class="tab-pane fade show active" id="tab-general" role="tabpanel">
 
-                                <h2>Proxy</h2>
+                                <h2>Proxy {{ help_tip('settings.proxy') }}</h2>
                                 <p>Proxy settings can be used by modules to access external resources.</p>
                                 <div class="row mb-4">
                                     <div class="col-6">
@@ -75,7 +75,7 @@
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text">HTTPS Proxy</span>
                                             </div>
-                                            <input class="form-control" name="https_proxy" placeholder="HTTPS Proxy" value="{{ settings.http_proxy }}">
+                                            <input class="form-control" name="https_proxy" placeholder="HTTPS Proxy" value="{{ settings.https_proxy }}">
                                         </div>
                                     </div>
                                 </div>
@@ -87,12 +87,14 @@
                                             <input class="form-check-input" type="checkbox" id="prevent_post_mod_repush" name="prevent_post_mod_repush" {% if settings.prevent_post_mod_repush %}checked{% endif %}>
                                             <span class="form-check-sign">Prevent post-init step to register default modules again during boot</span>
                                         </label>
+                                        {{ help_tip('settings.prevent_post_mod_repush') }}
                                     </div>
                                     <div class="form-check">
                                         <label class="form-check-label">
                                             <input class="form-check-input" type="checkbox" id="prevent_post_objects_repush" name="prevent_post_objects_repush" {% if settings.prevent_post_objects_repush %}checked{% endif %}>
                                             <span class="form-check-sign">Prevent post-init step to register default case objects again during boot</span>
                                         </label>
+                                        {{ help_tip('settings.prevent_post_objects_repush') }}
                                     </div>
                                 </div>
 
@@ -101,7 +103,7 @@
                             {# ── SECURITY ─────────────────────────────────────────────── #}
                             <div class="tab-pane fade" id="tab-security" role="tabpanel">
 
-                                <h2>Password Policy</h2>
+                                <h2>Password Policy {{ help_tip('settings.password_policy') }}</h2>
                                 <p>A password policy change applies to new or updated passwords.</p>
                                 <div class="row mb-2">
                                     <div class="col-4">
@@ -144,7 +146,7 @@
                                     </div>
                                 </div>
 
-                                <h2 class="mt-4">Multi-Factor Authentication</h2>
+                                <h2 class="mt-4">Multi-Factor Authentication {{ help_tip('settings.enforce_mfa') }}</h2>
                                 <p>If set, requires all users of the platform to register and use MFA.</p>
                                 <div class="row mb-4">
                                     <div class="col-12">
@@ -174,7 +176,7 @@
                                    build_default_client() uses unless a per-feature override pins a
                                    surface to another id. The two slots of e9d2c5a3f8b1 were imported
                                    once; their columns stay unread. #}
-                                <h2>AI Backend</h2>
+                                <h2>AI Backend {{ help_tip('ai.backend') }}</h2>
                                 <p>Backend used by the Tier-1 AI features (case summary, chat assistant, per-event analysis). Defaults seed from <code>AI_BACKEND_*</code> environment variables on first install; values here take precedence afterwards. Add as many backends as you need with <strong>+ Add backend</strong>; each card saves and deletes on its own, the radio picks the active one and is saved with this tab (the active backend cannot be deleted). Each backend names its provider: <strong>OpenAI-compatible</strong> talks to anything that exposes <code>/v1/chat/completions</code> with the classic request shape (LM Studio, OpenRouter, vLLM, Ollama); <strong>OpenAI</strong> talks to OpenAI's own API, whose current models want <code>max_completion_tokens</code> and whose reasoning models take no explicit temperature (either shape also adapts itself after one rejected call); <strong>AWS Bedrock</strong> talks to the Converse API with a Bedrock API key — URL is the runtime endpoint (<code>https://bedrock-runtime.&lt;region&gt;.amazonaws.com</code>), Model is an inference profile ARN / ID or a model ID, pasted as the console shows it. No Bedrock Guardrail is applied. Stored API keys are never shown again; leave the field blank to keep the stored key.</p>
                                 <div class="row mb-3">
                                     <div class="col-12">
@@ -183,6 +185,7 @@
                                                 <input class="form-check-input" type="checkbox" id="ai_backend_enabled" {% if settings.ai_backend_enabled %}checked{% endif %}>
                                                 <span class="form-check-sign">Enable AI features</span>
                                             </label>
+                                            {{ help_tip('aib.enable') }}
                                             <small class="form-text text-muted">When off, all in-tree AI surfaces fail with "AI backend is not configured" instead of erroring.</small>
                                         </div>
                                     </div>
@@ -196,7 +199,7 @@
                                    entry's id (ARN / profile id). "Other" reveals the text input. The
                                    markup renders the stored state; #iris-ai-provider-hints keeps it in
                                    step with the Provider select before Save. #}
-                                {% macro ai_slot_rows(prefix, provider, url_value, model_value, catalog, ph_url_openai, ph_model_openai) %}
+                                {% macro ai_slot_rows(prefix, provider, url_value, model_value, catalog, ph_url_openai, ph_model_openai, tips=false) %}
                                 {% set _cat = catalog or [] %}
                                 {% set _is_bedrock = (provider == 'bedrock') %}
                                 {% set _is_openai_api = (provider == 'openai_api') %}
@@ -205,13 +208,13 @@
                                 {% set _select_shown = _is_bedrock and (_cat | length) > 0 %}
                                 <div class="input-group mb-2">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text" id="{{ prefix }}_url_label" data-iris-label-openai="URL" data-iris-label-openai_api="URL" data-iris-label-bedrock="Region">{% if _is_bedrock %}Region{% else %}URL{% endif %}</span>
+                                        <span class="input-group-text"><span id="{{ prefix }}_url_label" data-iris-label-openai="URL" data-iris-label-openai_api="URL" data-iris-label-bedrock="Region">{% if _is_bedrock %}Region{% else %}URL{% endif %}</span>{% if tips %}{{ help_tip('aib.url') }}{% endif %}</span>
                                     </div>
                                     <input class="form-control" id="{{ prefix }}_url" name="{{ prefix }}_url" placeholder="{% if _is_bedrock %}us-west-2{% elif _is_openai_api %}https://api.openai.com/v1{% else %}{{ ph_url_openai }}{% endif %}" data-iris-ph-openai="{{ ph_url_openai }}" data-iris-ph-openai_api="https://api.openai.com/v1" data-iris-ph-bedrock="us-west-2" value="{{ url_value or '' }}">
                                 </div>
                                 <div class="input-group mb-2">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text">Model</span>
+                                        <span class="input-group-text">Model{% if tips %}{{ help_tip('aib.model') }}{% endif %}</span>
                                     </div>
                                     <select class="form-control iris-ai-model-select{% if not _select_shown %} d-none{% endif %}" id="{{ prefix }}_model_select" data-iris-slot="{{ prefix }}" aria-label="Bedrock inference profile">
                                         {% for e in _cat if e.type == 'APPLICATION' %}
@@ -230,6 +233,7 @@
                                     <input class="form-control{% if _select_shown and _in_cat %} d-none{% endif %}" id="{{ prefix }}_model" name="{{ prefix }}_model" placeholder="{% if _is_bedrock %}inference profile ARN / ID or model ID{% elif _is_openai_api %}gpt-6.1-sol{% else %}{{ ph_model_openai }}{% endif %}" data-iris-ph-openai="{{ ph_model_openai }}" data-iris-ph-openai_api="gpt-6.1-sol" data-iris-ph-bedrock="inference profile ARN / ID or model ID" value="{{ _model }}">
                                     <div class="input-group-append">
                                         <button class="btn btn-outline-secondary iris-ai-bedrock-load{% if not _is_bedrock %} d-none{% endif %}" type="button" id="{{ prefix }}_bedrock_load" data-iris-slot="{{ prefix }}" title="List the inference profiles this region and key can see">Load models</button>
+                                        {% if tips %}{% set _load_tip = help_tip('aib.load_models') %}{% if _load_tip %}<span class="input-group-text iris-ai-bedrock-tip{% if not _is_bedrock %} d-none{% endif %}" id="{{ prefix }}_load_tip">{{ _load_tip }}</span>{% endif %}{% endif %}
                                     </div>
                                 </div>
                                 <small class="form-text text-muted mt-0 mb-2 iris-ai-bedrock-note{% if not _is_bedrock %} d-none{% endif %}" id="{{ prefix }}_catalog_note">{% if _cat %}{{ _cat | selectattr('type', 'equalto', 'APPLICATION') | list | length }} application + {{ _sys | length if _sys is defined else 0 }} cross-region profiles cached. Load models to refresh.{% else %}Enter the region and API key, then Load models to pick a profile by name.{% endif %}</small>
@@ -242,7 +246,7 @@
                                    with the prefix ai_backend_new<n>; its radio stays disabled until
                                    the backend exists. #}
                                 {% set _active_id = settings.ai_backend_active_id %}
-                                {% macro ai_backend_card(b, prefix) %}
+                                {% macro ai_backend_card(b, prefix, tips=false) %}
                                 <div class="col-md-6 mb-3 iris-ai-backend-card" data-iris-backend-id="{{ b.id if b else '' }}" data-iris-prefix="{{ prefix }}">
                                     <div class="card card-stats" style="border: 1px solid rgba(139, 92, 246, 0.25); padding: 14px;">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -251,13 +255,14 @@
                                                     <input class="form-check-input" type="radio" id="{{ prefix }}_active" name="ai_backend_active_id" value="{{ b.id if b else '' }}" {% if b and b.id == _active_id %}checked{% endif %} {% if not b %}disabled{% endif %}>
                                                     <span class="form-check-sign">Use this backend</span>
                                                 </label>
+                                                {% if tips %}{{ help_tip('aib.active') }}{% endif %}
                                             </div>
                                             <input class="form-control form-control-sm ml-2" id="{{ prefix }}_label" placeholder="e.g. LM Studio" value="{{ b.label if b else '' }}" maxlength="120" style="max-width: 200px;">
                                         </div>
                                         {% set _prov = (b.provider if b else 'openai') or 'openai' %}
                                         <div class="input-group mb-2">
                                             <div class="input-group-prepend">
-                                                <span class="input-group-text">Provider</span>
+                                                <span class="input-group-text">Provider{% if tips %}{{ help_tip('aib.provider') }}{% endif %}</span>
                                             </div>
                                             <select class="form-control iris-ai-provider" id="{{ prefix }}_provider" data-iris-slot="{{ prefix }}">
                                                 <option value="openai" {% if _prov == 'openai' %}selected{% endif %}>OpenAI-compatible (LM Studio, OpenRouter, vLLM, Ollama)</option>
@@ -265,16 +270,17 @@
                                                 <option value="bedrock" {% if _prov == 'bedrock' %}selected{% endif %}>AWS Bedrock (Converse API)</option>
                                             </select>
                                         </div>
-                                        {{ ai_slot_rows(prefix, _prov, b.url if b else '', b.model if b else '', b.model_catalog if b else none, 'http://<your-lm-studio-host>:1234/v1', 'openai/gpt-oss-20b') }}
+                                        {{ ai_slot_rows(prefix, _prov, b.url if b else '', b.model if b else '', b.model_catalog if b else none, 'http://<your-lm-studio-host>:1234/v1', 'openai/gpt-oss-20b', tips) }}
                                         <div class="input-group mb-2">
                                             <div class="input-group-prepend">
-                                                <span class="input-group-text">API Key {% if b and b.api_key %}<span class="badge badge-success ml-1" id="{{ prefix }}_key_badge">stored</span>{% endif %}</span>
+                                                <span class="input-group-text">API Key{% if tips %}{{ help_tip('aib.api_key') }}{% endif %} {% if b and b.api_key %}<span class="badge badge-success ml-1" id="{{ prefix }}_key_badge">stored</span>{% endif %}</span>
                                             </div>
                                             <input class="form-control" id="{{ prefix }}_api_key" placeholder="{% if b and b.api_key %}Leave blank to keep the stored key{% else %}Bearer token / Bedrock API key (or empty){% endif %}" type="password" autocomplete="new-password" value="">
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center">
                                             <small class="form-text text-muted mt-0 iris-ai-backend-note" id="{{ prefix }}_note">{% if not b %}Not saved yet.{% endif %}</small>
                                             <div>
+                                                {% if tips %}{{ help_tip('aib.save', cls='mr-2') }}{% endif %}
                                                 <button class="btn btn-sm btn-outline-danger iris-ai-backend-delete" type="button" id="{{ prefix }}_delete" data-iris-slot="{{ prefix }}" title="Delete this backend">Delete</button>
                                                 <button class="btn btn-sm btn-primary ml-1 iris-ai-backend-save" type="button" id="{{ prefix }}_save" data-iris-slot="{{ prefix }}">Save backend</button>
                                             </div>
@@ -283,18 +289,18 @@
                                 </div>
                                 {% endmacro %}
                                 <div class="row mb-2" id="iris-ai-backends">
-                                    {% for b in (ai_backends or []) %}{{ ai_backend_card(b, 'ai_backend_' ~ b.id) }}{% endfor %}
+                                    {% for b in (ai_backends or []) %}{{ ai_backend_card(b, 'ai_backend_' ~ b.id, loop.first) }}{% endfor %}
                                 </div>
                                 <div class="mb-3">
                                     <button class="btn btn-sm btn-outline-primary" type="button" id="iris-ai-backend-add" title="Add a backend">+ Add backend</button>
                                     <small class="form-text text-muted d-inline ml-2" id="iris-ai-backends-empty"{% if ai_backends %} style="display:none"{% endif %}>No backend configured — every AI surface reports "AI backend is not configured" until one is saved and active.</small>
                                 </div>
-                                <template id="iris-ai-backend-card-template">{{ ai_backend_card(none, 'ai_backend_newX') }}</template>
+                                <template id="iris-ai-backend-card-template">{{ ai_backend_card(none, 'ai_backend_newX', not ai_backends) }}</template>
                                 <div class="row mb-4">
                                     <div class="col-md-4">
                                         <div class="input-group mb-3">
                                             <div class="input-group-prepend">
-                                                <span class="input-group-text">Confidence threshold</span>
+                                                <span class="input-group-text">Confidence threshold{{ help_tip('aib.confidence_threshold') }}</span>
                                             </div>
                                             <input class="form-control" id="ai_backend_confidence_threshold" name="ai_backend_confidence_threshold" type="number" min="0" max="1" step="0.05" placeholder="0.70" value="{{ settings.ai_backend_confidence_threshold if settings.ai_backend_confidence_threshold is not none else '' }}">
                                         </div>
@@ -312,7 +318,8 @@
                                                 <input class="form-check-input" type="checkbox" id="ai_summary_verify" {% if settings.ai_summary_verify is not sameas false %}checked{% endif %}>
                                                 <span class="form-check-sign">Verify executive summaries</span>
                                             </label>
-                                            <small class="form-text text-muted">Run the verifier (the "Case Summary verifier" role below) on every generated executive summary: per-claim verdicts against the cited case objects plus a whole-document pass. When off, only the deterministic checks run; their high-severity flags still gate Mark final and the investigation report.</small>
+                                            {{ help_tip('aib.summary_verify') }}
+                                            <small class="form-text text-muted">Run the verifier (the "Case Summary verifier" role below) on every generated executive summary: per-claim verdicts against the cited case objects plus a whole-document pass. When off, only the deterministic checks run; their findings still become review questions.</small>
                                         </div>
                                     </div>
                                 </div>
@@ -352,6 +359,7 @@
                                             aria-expanded="false" style="font-size:0.8rem;">
                                         Per-feature backend overrides
                                     </button>
+                                    {{ help_tip('aib.feature_overrides') }}
                                     <div class="collapse mt-3" id="ai-feature-overrides-panel">
                                         <p class="text-muted" style="font-size:0.82rem; margin-bottom:0.6rem;">
                                             Pin individual AI surfaces to a specific backend instead of following
@@ -370,7 +378,7 @@
                                                 {% for feat_key, feat_label in _features %}
                                                 {% set _cur = _overrides.get(feat_key) or '' %}
                                                 <tr>
-                                                    <td>{{ feat_label }}</td>
+                                                    <td>{{ feat_label }}{% if feat_key == 'case_summary_verifier' %}{{ help_tip('aib.verifier_role') }}{% endif %}</td>
                                                     <td>
                                                         <select class="form-control form-control-sm iris-feat-override"
                                                                 name="feature_override_{{ feat_key }}"
@@ -394,7 +402,7 @@
                                    flagging features. Reads via pinecone_client._config() — DB takes
                                    precedence over PINECONE_* env vars at this point. Empty/disabled =
                                    all RAG-grounded features fall back to model-only suggestions. #}
-                                <h2 class="mt-4">Vector Database (Pinecone)</h2>
+                                <h2 class="mt-4">Vector Database (Pinecone) {{ help_tip('settings.pinecone') }}</h2>
                                 <p>Pinecone-hosted vector indexes used to ground AI suggestions in real Sigma rules / ATT&amp;CK techniques / Atomic Red Team tests. Defaults seed from <code>PINECONE_*</code> environment variables on first install; values here take precedence afterwards. When disabled, the ATT&amp;CK suggester, IOC noise-flagging, and case-template suggester all fall back to model-only output with no degradation in core behaviour.</p>
                                 <div class="row mb-2">
                                     <div class="col-12">
@@ -464,7 +472,7 @@
 
                                 {# iris-next: time-tracking nudge toggle. OFF by default. #}
                                 <h2>Time Tracking</h2>
-                                <p>Analyst time is logged per case in 15-minute increments (the clock icon in the case header). Breakdowns by case / person / sector / incident type appear on the dashboard <b>Metrics</b> tab. The optional nudge below reminds analysts about cases they touched recently but logged no time on.</p>
+                                <p>Analyst time is logged per case in 15-minute increments (the clock icon in the case header). Breakdowns by case / person / sector / incident type appear on the <b>Metrics</b> page. The optional nudge below reminds analysts about cases they touched recently but logged no time on.</p>
                                 <div class="row mb-3">
                                     <div class="col-12">
                                         <div class="form-check">
@@ -472,6 +480,7 @@
                                                 <input class="form-check-input" type="checkbox" id="time_tracking_nudge_enabled" {% if settings.time_tracking_nudge_enabled %}checked{% endif %}>
                                                 <span class="form-check-sign">Enable "you haven't logged time" nudge</span>
                                             </label>
+                                            {{ help_tip('settings.time_nudge') }}
                                             <small class="form-text text-muted">When on, analysts see a dismissible reminder on cases they own or are assigned tasks on (active in the last 7 days) with no time logged. Off by default to avoid adding overhead.</small>
                                         </div>
                                     </div>
@@ -483,7 +492,7 @@
                             {# ── STORAGE ──────────────────────────────────────────────── #}
                             <div class="tab-pane fade" id="tab-mail" role="tabpanel">
 
-                                <h2>Mail Ingest (IMAP)</h2>
+                                <h2>Mail Ingest (IMAP) {{ help_tip('settings.mail_ingest') }}</h2>
                                 <p>iris-ng polls this mailbox and turns matching messages into alerts via the ordered rules below. Passwords are <b>write-only</b>: once saved they are never shown again — leave the field blank to keep the stored value.</p>
                                 <div class="form-check mb-2">
                                     <label class="form-check-label">
@@ -520,11 +529,11 @@
                                         <input type="text" class="form-control" id="mail_imap_username" name="mail_imap_username" value="{{ settings.mail_imap_username or '' }}" autocomplete="off">
                                     </div>
                                     <div class="col-md-4">
-                                        <label for="mail_imap_password">Password {% if settings.mail_imap_password %}<span class="badge badge-success ml-1">stored</span>{% endif %}</label>
+                                        <label for="mail_imap_password">Password {% if settings.mail_imap_password %}<span class="badge badge-success ml-1">stored</span>{% endif %}</label>{{ help_tip('settings.mail_password') }}
                                         <input type="password" class="form-control" id="mail_imap_password" name="mail_imap_password" value="" placeholder="{% if settings.mail_imap_password %}Leave blank to keep stored password{% else %}Not set{% endif %}" autocomplete="new-password">
                                     </div>
                                     <div class="col-md-4">
-                                        <label for="mail_poll_interval_minutes">Poll interval (minutes)</label>
+                                        <label for="mail_poll_interval_minutes">Poll interval (minutes)</label>{{ help_tip('settings.mail_poll_interval') }}
                                         <input type="number" class="form-control" id="mail_poll_interval_minutes" name="mail_poll_interval_minutes" min="1" max="1440" placeholder="Blank = no automatic polling" value="{{ settings.mail_poll_interval_minutes or '' }}">
                                         <small class="form-text text-muted">Effective floor is 60s (the scheduler tick). Blank disables automatic polling; Poll now still works.</small>
                                     </div>
@@ -534,7 +543,7 @@
                                     <span id="iris-mail-imap-test-result" class="ml-2"></span>
                                 </div>
 
-                                <h2 class="mt-4">Outbound Mail (SMTP)</h2>
+                                <h2 class="mt-4">Outbound Mail (SMTP) {{ help_tip('settings.smtp') }}</h2>
                                 <p>Used by the notification email channel. Same write-only password rule.</p>
                                 <div class="row mb-2">
                                     <div class="col-md-4">
@@ -546,7 +555,7 @@
                                         <input type="number" class="form-control" id="mail_smtp_port" name="mail_smtp_port" placeholder="465 / 587" value="{{ settings.mail_smtp_port or '' }}">
                                     </div>
                                     <div class="col-md-2">
-                                        <label for="mail_smtp_security">Security</label>
+                                        <label for="mail_smtp_security">Security</label>{{ help_tip('settings.smtp_security') }}
                                         <select class="form-control" id="mail_smtp_security" name="mail_smtp_security">
                                             <option value="tls" {% if settings.mail_smtp_security == 'tls' %}selected{% endif %}>TLS</option>
                                             <option value="starttls" {% if settings.mail_smtp_security == 'starttls' %}selected{% endif %}>STARTTLS</option>
@@ -578,12 +587,14 @@
                                         <input class="form-check-input" type="checkbox" id="mail_ai_triage_enabled" name="mail_ai_triage_enabled" {% if settings.mail_ai_triage_enabled %}checked{% endif %}>
                                         <span class="form-check-sign">AI triage on ingest — suggest severity/classification and extract IOCs before the alert is created (needs a configured AI backend; failures fall back to rule defaults)</span>
                                     </label>
+                                    {{ help_tip('settings.mail_ai_triage') }}
                                 </div>
                                 <div class="form-check mb-3">
                                     <label class="form-check-label">
                                         <input class="form-check-input" type="checkbox" id="email_notifications_enabled" name="email_notifications_enabled" {% if settings.email_notifications_enabled %}checked{% endif %}>
                                         <span class="form-check-sign">Enable outbound notification emails (consumed by the notification channel)</span>
                                     </label>
+                                    {{ help_tip('settings.email_notifications') }}
                                 </div>
                                 <p class="text-muted"><small>Remember to <b>Save changes</b> below — the fields above are part of the settings form. The buttons act on the last <i>saved</i> values.</small></p>
 
@@ -593,19 +604,19 @@
                             <div class="tab-pane fade" id="tab-storage" role="tabpanel">
 
                                 <h2>Data Retention</h2>
-                                <p>When a retention period is configured, evidence drives with <b>In use</b> status whose case has been closed for longer than the specified period receive an overdue indicator on the dashboard <b>Inventory</b> tab, prompting a wipe-and-rotate cycle. When the retention period expires the drive is returned to rotation after wiping.</p>
+                                <p>When a retention period is configured, evidence drives with <b>In use</b> status whose case has been closed for longer than the specified period receive an overdue indicator on the <b>Inventory</b> page, prompting a wipe-and-rotate cycle. When the retention period expires the drive is returned to rotation after wiping.</p>
                                 <div class="row mb-3">
                                     <div class="col-md-4">
-                                        <label for="retention_months">Retention period (months)</label>
+                                        <label for="retention_months">Retention period (months)</label>{{ help_tip('settings.retention') }}
                                         <input type="number" class="form-control" id="retention_months" name="retention_months"
                                                min="1" max="120" placeholder="No policy (leave blank)"
                                                value="{{ settings.retention_months or '' }}">
-                                        <small class="form-text text-muted">Leave blank to disable. Drives whose case closed more than this many months ago show an <span style="color:#ffad46;"><i class="fas fa-exclamation-triangle"></i> Overdue</span> indicator on the Inventory tab.</small>
+                                        <small class="form-text text-muted">Leave blank to disable. Drives whose case closed more than this many months ago show an <span style="color:#ffad46;"><i class="fas fa-exclamation-triangle"></i> Overdue</span> indicator on the Inventory page.</small>
                                     </div>
                                 </div>
 
-                                <h2 class="mt-4">Capacity Planning</h2>
-                                <p>Controls the order-more indicator on the dashboard <b>Inventory</b> tab. The indicator compares the effective 30-day drive supply (available + wipe-eligible within 30 days) against the average case intake rate. An order recommendation with quantity is shown when the runway falls below the target threshold.</p>
+                                <h2 class="mt-4">Capacity Planning {{ help_tip('settings.capacity_planning') }}</h2>
+                                <p>Controls the order-more indicator on the <b>Inventory</b> page. The indicator compares the effective 30-day drive supply (available + wipe-eligible within 30 days) against the average case intake rate. An order recommendation with quantity is shown when the runway falls below the target threshold.</p>
                                 <div class="row mb-3">
                                     <div class="col-md-4">
                                         <label for="capacity_planning_window_months">Rolling window (months)</label>
@@ -628,7 +639,7 @@
                             {# ── SYSTEM ───────────────────────────────────────────────── #}
                             <div class="tab-pane fade" id="tab-system" role="tabpanel">
 
-                                <h2>Server Versions</h2>
+                                <h2>Server Versions {{ help_tip('settings.versions') }}</h2>
                                 <div class="col-12 mb-4">
                                     <dl class="row">
                                         <dt class="col-sm-3">IRIS server version:</dt>
@@ -659,7 +670,7 @@
                                    GET /api/v2/updates/latest, which every page's banner strip
                                    also calls; "Check now" forces past its 6h cache. #}
                                 <h2 class="mt-4">Updates</h2>
-                                <p>When enabled, IRIS-NG reads the newest release from the project's GitHub releases feed (through the proxy configured on the General tab, if any) and shows a banner at the top of every page - except Home, which is reserved for your own announcements - when a newer version exists. Only server administrators see the upgrade instructions. Turn it off for air-gapped deployments.</p>
+                                <p>When enabled, IRIS-NG reads the newest release from the project's GitHub releases feed (through the proxy configured on the General tab, if any) and shows a banner at the top of every page - except Home, which is reserved for your own announcements - when a newer version exists. Only server administrators see the upgrade instructions. Turn it off for air-gapped deployments.{{ help_tip('update.upgrade') }}</p>
                                 <div class="row mb-2">
                                     <div class="col-12">
                                         <div class="form-check">
@@ -667,6 +678,7 @@
                                                 <input class="form-check-input" type="checkbox" id="enable_updates_check" {% if settings.enable_updates_check is not sameas false %}checked{% endif %}>
                                                 <span class="form-check-sign">Check for new releases</span>
                                             </label>
+                                            {{ help_tip('update.check') }}
                                         </div>
                                     </div>
                                 </div>
@@ -675,10 +687,11 @@
                                     {# window. + an id that differs from the function name: this button
                                        sits inside form_srv_settings (see the backup button below). #}
                                     <button class="btn btn-outline-primary" id="iris_upd_check_now_btn" type="button" onclick="window.iris_upd_check_now();">Check now</button>
+                                    {{ help_tip('update.check_now') }}
                                     <span id="iris-upd-check-result" class="ml-2" style="font-size:13px;"></span>
                                 </div>
 
-                                <h2 class="mt-4">Database</h2>
+                                <h2 class="mt-4">Database {{ help_tip('settings.db_backup') }}</h2>
                                 <p>Initiate a database backup. The backup file is stored on the configured path <code>BACKUP_PATH</code>.</p>
                                 <div class="mt-3 mb-4">
                                     {# window. is load-bearing: this button sits inside form_srv_settings and
@@ -699,7 +712,7 @@
                                reports failure in its body rather than raising. #}
                             <div class="tab-pane fade" id="tab-sponsor" role="tabpanel">
 
-                                <h2>Support IRIS-NG</h2>
+                                <h2>Support IRIS-NG {{ help_tip('settings.sponsor') }}</h2>
                                 <div class="col-12 mb-4">
                                     <p class="text-muted" style="max-width: 70ch;">
                                         IRIS-NG is the Community Edition — LGPL-3.0, no feature gates,
@@ -866,6 +879,7 @@
             if (text !== null) label.textContent = text;
         }
         show(byId(prefix + '_bedrock_load'), isBedrock);
+        show(byId(prefix + '_load_tip'), isBedrock);      // the (i) beside Load models, first card only
         show(byId(prefix + '_catalog_note'), isBedrock);
         syncModelRow(prefix, isBedrock);
     }

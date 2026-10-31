@@ -1,0 +1,69 @@
+{
+  "group": "Evidence inventory",
+  "order": 94,
+  "terms": {
+    "inventory.inventory": {
+      "title": "Evidence inventory",
+      "text": "The physical drives that hold evidence, each identified by its bar code. A drive holds the evidence items of one case at a time and goes back into rotation when it is wiped. The inventory is shared: any logged-in user can look up, register, edit, wipe and delete drives, and sees the cases and evidence items on them whatever their case access.",
+      "aka": ["drives", "evidence locker", "media", "chain of custody"],
+      "wiki": "Evidence-Inventory"
+    },
+    "inventory.lookup": {
+      "title": "Bar code and case lookup",
+      "text": "A scanned or typed bar code finds its drive: an exact match first, then one ignoring letter case. The same text is also matched against any part of a case name, SOC id or customer name, and against case numbers (19 or #19), through both the case a drive is assigned to and any case whose evidence items are stored on it. A bar-code hit and case matches are shown separately, and a list cut at 25 matches says so.\n\nEach result shows the drive's location, case and evidence items.",
+      "aka": ["scan", "barcode", "find drive", "search"],
+      "wiki": "Evidence-Inventory#barcode-and-case-lookup"
+    },
+    "inventory.status": {
+      "title": "Drive status",
+      "text": "Where the drive is in its lifecycle. Read the labels carefully: Wiped means ready for reuse, and Available means the opposite, a drive still holding old data that is waiting to be wiped.\n\nChanging the status by hand does not unlink evidence or clear the case. To free a drive for another case, use Wipe & return to rotation.",
+      "items": [
+        {"name": "Wiped (in rotation)", "text": "Wiped and back in rotation, ready for a new case. New drives start here and Wipe sets it. Linking an evidence item to a wiped drive with no case makes it In use."},
+        {"name": "In use", "text": "Holds the evidence of its assigned case. Flagged Overdue when that case closed longer ago than the retention period."},
+        {"name": "Available (awaiting wipe)", "text": "Retention is over but the old data is still on it. New evidence cannot be linked to it until it is wiped, except evidence of a case it is still assigned to. IRIS-NG never sets this by itself: overdue drives are only flagged."},
+        {"name": "Retired", "text": "Out of service. Linking evidence to it does not change its status."}
+      ],
+      "aka": ["wiped", "available", "in use", "retired", "awaiting wipe", "rotation"]
+    },
+    "inventory.overdue": {
+      "title": "Overdue (retention)",
+      "text": "An In use drive whose case was closed longer ago than the retention period set under Settings -> Storage (each month counted as 30 days). The clock starts when the case closes, so a drive on an open case is never overdue, and with no retention period set nothing is flagged. The flag is a reminder to wipe the drive; it changes nothing by itself.",
+      "aka": ["retention", "overdue", "wipe due"],
+      "wiki": "Evidence-Inventory#data-retention-policy"
+    },
+    "inventory.capacity": {
+      "title": "Drive runway",
+      "text": "An estimate of how long your drives will last, assuming each new case needs one. Runway = effective supply / the average number of cases opened per month on the server over the rolling window (3 months unless set under Settings -> Storage). Effective supply = Wiped drives + Available drives (one wipe away) + In use drives whose case closed at least the retention period minus 30 days ago (only when a retention period is set).\n\nBelow the target runway (2 months unless set) it suggests how many drives to order; amber means under one and a half times the target.",
+      "aka": ["capacity", "runway", "order drives", "supply"]
+    },
+    "inventory.barcode": {
+      "title": "Bar code",
+      "text": "The drive's identifier, usually the label scanned at the evidence locker. It must be unique: a bar code that already exists, even in different letter case, is refused. Typing this bar code in an evidence item's Bar code number field links the item to this drive when the item is saved.",
+      "aka": ["barcode", "label", "scan"],
+      "wiki": "Evidence-Inventory#registering-a-drive"
+    },
+    "inventory.physical_location": {
+      "title": "Physical location",
+      "text": "Where the drive is kept, for example a locker, shelf and bin. The evidence items on this drive show it as their physical location in the case's evidence list, and it can also be updated from the evidence form once a bar code links the drive. Wiping the drive does not clear it.",
+      "aka": ["location", "locker", "shelf"],
+      "wiki": "Evidence-Inventory#editing-a-drive"
+    },
+    "inventory.associated_case": {
+      "title": "Associated case",
+      "text": "The case whose evidence the drive holds. A drive holds evidence of one case only: linking an evidence item from another case is refused until the drive is wiped. Linking evidence to a drive with no case claims it for that case, unless the drive is Available (awaiting wipe).\n\nSetting a case here records the assignment but does not change Status (set In use yourself), and choosing none does not remove an existing assignment: Wipe & return to rotation does.",
+      "aka": ["one case per drive", "assigned case", "case"],
+      "wiki": "Evidence-Inventory#linking-evidence-to-a-drive"
+    },
+    "inventory.wipe": {
+      "title": "Wipe and return to rotation",
+      "text": "Records that the drive has been wiped: its status becomes Wiped (in rotation), the wipe date is stamped, its case assignment is cleared and every evidence item is unlinked from it. The evidence records stay in their cases; only their link to this drive is removed. Location and the other drive details are kept.\n\nThis does not erase the physical drive: wipe it with your usual tooling first, then record it here.",
+      "aka": ["wipe", "sanitize", "rotate", "reuse"]
+    },
+    "inventory.evidence_link": {
+      "title": "Evidence on a drive",
+      "text": "The case evidence items recorded as stored on this drive. An item is linked from its evidence form, by choosing the drive in On physical drive or by typing the drive's bar code in Bar code number (matched when the item is saved). Linking is refused when the drive is assigned to another case, or is Available (awaiting wipe) with no case.\n\nWiping or deleting the drive unlinks its items; the evidence records themselves are kept.",
+      "aka": ["custody", "chain of custody", "evidence items", "drive link", "on physical drive"],
+      "wiki": "Evidence-Inventory#linking-evidence-to-a-drive"
+    }
+  }
+}

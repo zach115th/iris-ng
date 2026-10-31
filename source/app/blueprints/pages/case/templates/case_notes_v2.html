@@ -53,6 +53,7 @@
 								<button class="btn btn-light btn-sm" title="Refresh list" onclick="refresh_folders();return false;">
 									<i class="fa fa-refresh"></i>
 								</button>
+								{{ help_tip('note.folders', cls='ml-1') }}
 							</div>
 						</div>
 
@@ -85,12 +86,13 @@
 								<i class="text-muted" id="currentNoteIDLabel"></i>
 								<i class="fa fa-cloud-upload-alt ml-2" title="Auto saving enabled"></i>
 								<a class="bg-transparent" onclick="load_note_revisions()"><i class="fa-solid fa-clock-rotate-left ml-2 mt-2" style="cursor: pointer;" title="Modifications history"></i></a>
+								{{ help_tip('note.revisions', cls='ml-1') }}
 							</small>
 							{# iris-ng #129: note tags — manual (autocomplete from /manage/tags/suggest)
 							   + the AI tag suggester with object_type=note. The pill renders once with
 							   a placeholder id; case.notes.js rewrites data-iris-tagsuggest-id per note. #}
 							<div id="iris-nt-tagrow" class="mt-1 d-flex align-items-center flex-wrap">
-								<label for="note_tags" class="mb-0 mr-2 text-muted" style="font-size: 11px;">Tags</label>
+								<label for="note_tags" class="mb-0 text-muted" style="font-size: 11px;">Tags</label>{{ help_tip('note.tags', cls='ml-1 mr-2') }}
 								<input type="text" id="note_tags" name="note_tags" class="form-control form-control-sm" style="max-width: 520px;" placeholder="Add tags" autocomplete="off">
 								<span class="ml-2">
 								{% set tagsuggest_object_type = "note" %}
@@ -162,18 +164,19 @@
 									<div class="btn btn-sm btn-light mr-1" title="Insert numbered list" onclick="note_editor.insertSnippet('\n1. a  \n2. b  \n3. c  ');note_editor.focus();"><i class="fa-solid fa-list-ol"></i></div>
 									<div class="btn btn-sm btn-light mr-1" title="Toggle editor expansion" onclick="toggle_max_editor();" id="btn_max_editor"><i class="fa-solid fa-maximize"></i></div>
 									<div class="btn btn-sm btn-transparent mr-1" title="Help" onclick="get_md_helper_modal();"><i class="fa-solid fa-question-circle"></i></div>
+									{{ help_tip('note.markdown', cls='mr-1') }}
 									<button type="button" id="iris-ioc-extract-btn"
 										title="Extract IOCs from this note's text using AI"
 										style="background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; line-height: 1; padding: 4px 10px; border-radius: 999px; cursor: pointer; margin-left: 4px;">
 										&#x2728; Extract IOCs
-									</button>
+									</button>{{ help_tip('note.ioc_extraction', cls='ml-1') }}
 									<span id="iris-ioc-extract-status" style="font-size: 11px; color: #9ca3af; margin-left: 6px;"></span>
 									{# iris-ng #130: link every case IOC mentioned in this note, no model call #}
 									<button type="button" id="iris-nil-link-btn"
 										title="Turn every mention of an IOC already in this case into a link to it (no AI call)"
 										style="background: rgba(139, 92, 246, 0.10); border: 1px solid rgba(139, 92, 246, 0.35); color: #d4c4ff; font-size: 11px; line-height: 1; padding: 4px 10px; border-radius: 999px; cursor: pointer; margin-left: 4px;">
 										<i class="fa-solid fa-link" style="font-size: 10px;"></i> Link known IOCs
-									</button>
+									</button>{{ help_tip('note.link_iocs', cls='ml-1') }}
 									<span id="iris-nil-link-status" style="font-size: 11px; color: #9ca3af; margin-left: 6px;"></span>
 							</div>
 							<div class="col">

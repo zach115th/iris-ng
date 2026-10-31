@@ -13,9 +13,9 @@
 				<div class="tab-chat tab-pane fade" id="activities" role="tabpanel">
 					<div class="row">
 						<div class="col">
-							<button type="button" class="float-right btn btn-round btn-xs btn-icon btn-outline-default mr-3 ml-3" onclick="load_case_activity();">
+							<button type="button" class="float-right btn btn-round btn-xs btn-icon btn-outline-default mr-3 ml-3" onclick="load_case_activity();" aria-label="Refresh">
 								<i class="fas fa-sync rotate"></i>
-							</button>
+							</button>{{ help_tip('activity.log', cls='float-right mt-1') }}
 							<ol class="activity-feed" id="case_activities">
 							</ol>
 						</div>
@@ -25,9 +25,9 @@
 				<div class="tab-chat tab-pane fade" id="dim_tasks" role="tabpanel">
 					<div class="row">
 						<div class="col">
-							<button type="button" class="float-right btn btn-round btn-xs btn-icon btn-outline-default mr-3 ml-3" onclick="load_dim_limited_tasks();">
+							<button type="button" class="float-right btn btn-round btn-xs btn-icon btn-outline-default mr-3 ml-3" onclick="load_dim_limited_tasks();" aria-label="Refresh">
 								<i class="fas fa-sync rotate"></i>
-							</button>
+							</button>{{ help_tip('dim.tasks', cls='float-right mt-1') }}
 							<ol class="activity-feed" id="dim_tasks_feed">
 							</ol>
 						</div>
@@ -38,7 +38,7 @@
 					<div class="messages-contact">
 						<div class="quick-wrapper">
                             <div class="quick-content settings-content">
-							<span class="category-title mt-0">Shortcuts</span>
+							<span class="category-title mt-0">Shortcuts{{ help_tip('home.current_case') }}</span>
 							<div class="quick-actions quick-actions-primary">
 								<div class="quick-actions-items">
                                     <div class="quick-actions quick-actions-black">

@@ -1,0 +1,30 @@
+{
+  "group": "Knowledge map",
+  "order": 58,
+  "terms": {
+    "graph.layers": {
+      "title": "Graph layers",
+      "text": "Each layer is one kind of object on the map. Unticking a layer hides its nodes and every line touching them; this only filters what is already loaded, the choice is remembered in this browser, and all layers start ticked.\n\nAssets and IOCs come from the timeline: one is drawn only when it is attached to an event included in the graph (events with the False positive verdict are left out). An asset or IOC on no such event is missing from the map, whatever links it has.",
+      "items": [
+        {"name": "Assets", "text": "Case assets, drawn with their type's icon; a compromised asset uses the type's compromised icon."},
+        {"name": "IOCs", "text": "Case indicators, drawn with the virus icon."},
+        {"name": "Notes (violet boxes)", "text": "Notes recorded as a source of an IOC. A note with no such record is not drawn, and notes have no link to assets or evidence. A note box floats unconnected when its IOC is not on the map."},
+        {"name": "Evidence (amber boxes)", "text": "Evidence items linked to an asset. Evidence linked to no asset is not drawn; a box floats unconnected when its asset is not on the map."}
+      ],
+      "aka": ["knowledge map", "graph", "nodes", "filter"],
+      "wiki": "Knowledge-Map#layers"
+    },
+    "graph.edges": {
+      "title": "Graph links",
+      "text": "The counter shows how many nodes and lines are drawn for the layers ticked. Hover a line to see the event or link it stands for.",
+      "items": [
+        {"name": "Timeline link", "text": "Both objects are attached to the same timeline event. Solid between two assets, dashed when an IOC is at either end. Two IOCs are joined only when they are the only two objects on that event."},
+        {"name": "Note to IOC (violet, dashed)", "text": "The note is a recorded source of the IOC."},
+        {"name": "Evidence to asset (amber, dashed)", "text": "The evidence item is linked to the asset."},
+        {"name": "IOC to asset (grey, dashed)", "text": "An IOC-asset link. Not drawn when a timeline link already joins the same two."}
+      ],
+      "aka": ["edges", "links", "lines", "event", "direct link"],
+      "wiki": "Knowledge-Map#edge-kinds"
+    }
+  }
+}

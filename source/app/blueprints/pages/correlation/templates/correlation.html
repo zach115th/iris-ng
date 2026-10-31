@@ -64,7 +64,7 @@
    invariant. #}
 <div class="page-inner">
     <form style="display:none;">{{ form.hidden_tag() }}</form>
-    <h4 class="page-title mb-3">Cross-case correlation</h4>
+    <h4 class="page-title mb-3">Cross-case correlation {{ help_tip('corr.workspace') }}</h4>
     {# iris-next: Correlation pane — IOC cross-case overlap table + force-directed graph + campaign tag tool. #}
     <div class="tab-pane fade show active" id="iris-dash-correlation" role="tabpanel">
 
@@ -78,7 +78,7 @@
           <div class="d-flex align-items-center p-3"
                style="border: 1px solid rgba(139,92,246,0.35); border-radius: 8px; background: rgba(139,92,246,0.07);">
             <div style="flex: 1 1 auto;">
-              <strong>Correlated case groups can now be promoted to War Rooms.</strong>
+              <strong>Correlated case groups can now be promoted to War Rooms.</strong>{{ help_tip('room.discovery') }}
               <span class="text-muted">A room carries the cluster's cases, narrative, campaign tag,
               shared-IOC view, STIX export and MISP publishing — plus chat, members and SitReps.</span>
             </div>
@@ -101,13 +101,15 @@
             <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="180">180d</button>
             <button type="button" class="btn btn-outline-dark iris-corr-range-btn" data-days="0">All time</button>
           </div>
+          {{ help_tip('corr.date_range') }}
           {# Custom date range #}
           <label class="mb-0 small text-muted">From</label>
           <input type="date" id="iris-corr-start" class="form-control form-control-sm" style="width:140px;">
           <label class="mb-0 small text-muted">To</label>
           <input type="date" id="iris-corr-end" class="form-control form-control-sm" style="width:140px;">
           {# Min-shared threshold #}
-          <label class="mb-0 small text-muted ml-2" title="How many distinct IOC values two cases must have in common before they are linked. This governs CLUSTERING only - the Shared IOCs table below always lists every IOC appearing in 2 or more cases.">Min shared IOCs <span class="text-muted">per case pair</span></label>
+          <label class="mb-0 small text-muted ml-2">Min shared IOCs <span class="text-muted">per case pair</span></label>
+          {{ help_tip('corr.min_shared') }}
           <input type="number" id="iris-corr-min-shared" class="form-control form-control-sm" style="width:70px;" value="2" min="1" max="50">
           <button class="btn btn-primary btn-sm" onclick="iris_correlation_run();">
             <i class="fas fa-sync-alt mr-1"></i> Refresh
@@ -185,9 +187,22 @@
         <div class="col-md-12">
           <section class="card">
             <div class="card-header">
-              <div class="card-title">Case clusters
+              <div class="card-title">Case clusters {{ help_tip('corr.clusters') }}
                 <small class="text-muted ml-2">Cases are linked when a <em>pair</em> of them shares at least the threshold number of distinct IOCs; linked cases form a cluster. The count shown per cluster is every IOC held by 2 or more of its cases. Apply a campaign tag to all cases in a cluster with one click.</small>
               </div>
+              {# (i) key for what every cluster card carries — one icon per
+                 concept here rather than one per card; drawn only when the
+                 viewer is shown help icons. #}
+              {% if help_tip('corr.decay') %}
+              <div class="small text-muted mt-1">On each cluster:
+                decay {{ help_tip('corr.decay') }} &middot;
+                confidence {{ help_tip('corr.confidence') }} &middot;
+                campaign tag {{ help_tip('corr.campaign_tag') }} &middot;
+                Analyze cluster {{ help_tip('corr.narrative') }} &middot;
+                Export STIX {{ help_tip('corr.stix') }} &middot;
+                Push to MISP {{ help_tip('corr.misp_push') }}
+              </div>
+              {% endif %}
             </div>
             <div class="card-body" id="iris-corr-clusters-body">
               <p class="text-muted">No clusters found.</p>
@@ -201,7 +216,7 @@
         <div class="col-md-12">
           <section class="card">
             <div class="card-header d-flex align-items-center justify-content-between flex-wrap">
-              <div class="card-title mb-0">Shared IOCs
+              <div class="card-title mb-0">Shared IOCs {{ help_tip('corr.shared_iocs') }}
                 <small class="text-muted ml-2" id="iris-corr-table-subtitle">The IOCs behind the clusters above &mdash; each one is shared by 2 or more cases of a cluster, and every IOC here is a reason those cases are linked. Raising the threshold requires a case <em>pair</em> to have <em>more indicators in common</em> before it links; it does not require each individual indicator to appear in more cases.</small>
               </div>
               <div class="d-flex align-items-center" style="gap:8px;">
@@ -214,6 +229,11 @@
                     Clear filter
                   </button>
                 </div>
+                {# (i) for the TLP badge on every card / row — one icon for the
+                   section, not one per card. #}
+                {% if help_tip('common.tlp') %}
+                <span class="text-muted" style="font-size:11px;">TLP badges{{ help_tip('common.tlp') }}</span>
+                {% endif %}
                 {# Safety valve: the legacy table stays in the DOM hidden-but-alive,
                    the platform's standard escape hatch for a card overlay. #}
                 <button class="btn btn-sm btn-link text-muted p-0" id="iris-corr-legacy-toggle" style="font-size:11px;">Table view</button>
@@ -241,7 +261,7 @@
                 <div class="iris-cioc-detailwrap">
                   <div class="iris-cioc-detail">
                     <div class="iris-cioc-detail-head">
-                      <div class="iris-cioc-detail-eyebrow">IOC &mdash; Cross-case details</div>
+                      <div class="iris-cioc-detail-eyebrow">IOC &mdash; Cross-case details{{ help_tip('corr.ioc_context') }}</div>
                       <div class="iris-cioc-detail-val" id="iris-corr-detail-val"></div>
                       <div class="iris-cioc-detail-type" id="iris-corr-detail-type"></div>
                     </div>
@@ -261,7 +281,7 @@
         <div class="col-md-12">
           <section class="card">
             <div class="card-header">
-              <div class="card-title">Case relationship graph
+              <div class="card-title">Case relationship graph {{ help_tip('corr.graph') }}
                 <small class="text-muted ml-2">Nodes = cases, edges = shared IOCs (thicker = more shared). Click a node to open the case.</small>
               </div>
             </div>
@@ -1076,6 +1096,8 @@
                         + iris_corr_esc(clusterId) + '" style="' + btnStyle + '">Revert to AI</button>'
                         + actions;
             }
+            // (i) beside the edit controls, never inside a button.
+            actions += IrisHelp.icon('ai.manual_edit');
 
             var html = '<div style="'
                 + 'background: rgba(139,92,246,0.07);'
@@ -1104,6 +1126,7 @@
                 + (resp.model ? ' · ' + iris_corr_esc(resp.model) : '')
                 + (resp.cached ? ' · <span title="Served from cache">cached</span>' : '')
                 + ' · ' + (resp.generated_at ? new Date(resp.generated_at).toLocaleString() : new Date().toLocaleString())
+                + IrisHelp.icon('ai.cached')
                 + ' · #' + iris_corr_narrative_hash(body)
                 + ' · <a href="javascript:void(0);" class="text-muted iris-corr-narrative-rerun" data-cluster-id="' + iris_corr_esc(clusterId) + '">Re-run</a>'
                 + (edited && resp.edited_at ? ' · edited ' + new Date(resp.edited_at).toLocaleString() : '')

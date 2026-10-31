@@ -74,7 +74,7 @@
                 </div>
                 <div class="iris-home-tile">
                     <div class="num" id="iris-home-t-closed">&ndash;</div>
-                    <div class="lbl">Closed (30d)</div>
+                    <div class="lbl">Closed (30d){{ help_tip('home.closed_30d') }}</div>
                 </div>
             </div>
         </div>
@@ -84,7 +84,7 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="iris-home-sec">
-                            <span class="t">My open cases<span class="count" id="iris-home-c-cases"></span></span>
+                            <span class="t">My open cases<span class="count" id="iris-home-c-cases"></span>{{ help_tip('home.my_open_cases') }}</span>
                             <a class="viewall" href="/overview?cid={{ caseid }}">View all &rarr;</a>
                         </div>
                         <div id="iris-home-cases"><div class="iris-home-empty">Loading&hellip;</div></div>
@@ -95,7 +95,7 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="iris-home-sec">
-                            <span class="t">My open alerts<span class="count" id="iris-home-c-alerts"></span></span>
+                            <span class="t">My open alerts<span class="count" id="iris-home-c-alerts"></span>{{ help_tip('home.my_open_alerts') }}</span>
                             <a class="viewall" href="/alerts?cid={{ caseid }}">View all &rarr;</a>
                         </div>
                         <div id="iris-home-alerts"><div class="iris-home-empty">Loading&hellip;</div></div>
@@ -108,7 +108,7 @@
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-body">
-                        <div class="iris-home-sec"><span class="t">My pending tasks<span class="count" id="iris-home-c-tasks"></span></span></div>
+                        <div class="iris-home-sec"><span class="t">My pending tasks<span class="count" id="iris-home-c-tasks"></span>{{ help_tip('home.pending_tasks') }}</span></div>
                         <div id="iris-home-tasks"><div class="iris-home-empty">Loading&hellip;</div></div>
                     </div>
                 </div>
@@ -117,7 +117,7 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="iris-home-sec">
-                            <span class="t">&#9733; Following<span class="count" id="iris-home-c-follow"></span></span>
+                            <span class="t">&#9733; Following<span class="count" id="iris-home-c-follow"></span>{{ help_tip('follow.following') }}</span>
                         </div>
                         <div id="iris-home-feed"><div class="iris-home-empty">Loading&hellip;</div></div>
                     </div>
@@ -130,7 +130,7 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="iris-home-sec">
-                            <span class="t">Case activities</span>
+                            <span class="t">Case activities{{ help_tip('activity.log') }}</span>
                             <a class="viewall" href="/activities?cid={{ caseid }}">View all &rarr;</a>
                         </div>
                         <div id="iris-home-activities"><div class="iris-home-empty">Loading&hellip;</div></div>
@@ -140,13 +140,13 @@
             <div class="col-lg-4">
                 <div class="card">
                     <div class="card-body">
-                        <div class="iris-home-sec"><span class="t">My reviews</span></div>
+                        <div class="iris-home-sec"><span class="t">My reviews{{ help_tip('home.my_reviews') }}</span></div>
                         <div id="iris-home-reviews"><div class="iris-home-empty">Loading&hellip;</div></div>
                     </div>
                 </div>
                 <div class="card">
                     <div class="card-body">
-                        <div class="iris-home-sec"><span class="t">Latest notifications</span></div>
+                        <div class="iris-home-sec"><span class="t">Latest notifications{{ help_tip('notif.inbox') }}</span></div>
                         <div id="iris-home-notifs"><div class="iris-home-empty">Loading&hellip;</div></div>
                     </div>
                 </div>

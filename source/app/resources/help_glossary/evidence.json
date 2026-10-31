@@ -1,0 +1,149 @@
+{
+  "group": "Evidence and files",
+  "order": 64,
+  "terms": {
+    "evidence.item": {
+      "title": "Evidence register",
+      "text": "One entry per piece of evidence collected for the case: what it is, its hash, who collected it, when, and which physical drive holds it. Registering an item records this information only; the file itself is not uploaded. To keep a copy of a file on the server, use the datastore.\n\nItems can be linked to assets, and the AI case summary and the evidence chat read this register.",
+      "aka": [
+        "evidence",
+        "received files",
+        "artifacts",
+        "chain of custody"
+      ]
+    },
+    "evidence.type_suggestion": {
+      "title": "AI evidence-type suggestion",
+      "text": "When you click Process with a file selected, IRIS-NG also asks the AI backend which evidence type fits. Only the file's name, its size, its first 4 KB (as hex) and the description you typed are sent; the rest of the file never leaves your browser. The suggested type is selected for you, with the model's confidence and reason.\n\nChoosing another type removes the chip. The suggestion itself is not saved; only the type you save counts.",
+      "aka": [
+        "suggested type",
+        "suggested by ai",
+        "magic bytes"
+      ],
+      "wiki": "AI-Features#ai-suggested-evidence-type"
+    },
+    "evidence.local_compute": {
+      "title": "Compute file information locally",
+      "text": "Select the evidence file here and click Process: your browser reads it and fills in its name, its size and an MD5 hash. IRIS-NG does not upload or keep the file; a large file takes a while to hash.\n\nIf an AI backend is configured, the evidence-type suggestion runs at the same time and sends the first 4 KB of the file with its name and size.",
+      "aka": [
+        "process",
+        "md5",
+        "compute hash",
+        "autofill"
+      ]
+    },
+    "evidence.hash": {
+      "title": "Evidence hash",
+      "text": "The hash that identifies this exact copy of the evidence, for integrity checks and chain of custody. Any algorithm can be recorded; the details pane names it from its length (MD5, SHA1, SHA256 or SHA512). Process fills in an MD5 computed in your browser.\n\nAn item without a hash is flagged No hash recorded in the evidence list.",
+      "aka": [
+        "md5",
+        "sha1",
+        "sha256",
+        "checksum",
+        "integrity",
+        "no hash recorded"
+      ]
+    },
+    "evidence.custodian": {
+      "title": "Created by (custodian)",
+      "text": "Who collected or produced the evidence: pick an IRIS-NG user or type any name, such as a custodian outside the team. The details pane shows it as Collected by.\n\nIt is not the account that registered the item in IRIS-NG; that is recorded on its own (Added by).",
+      "aka": [
+        "collected by",
+        "custodian",
+        "chain of custody",
+        "added by"
+      ]
+    },
+    "evidence.barcode": {
+      "title": "Bar code",
+      "text": "The label number of the drive or media that holds this evidence. When you leave the field, IRIS-NG looks the bar code up in the drive inventory: a match selects that drive under On physical drive and offers to update its location; no match is only a warning.\n\nOn save, a bar code that matches an inventory drive links the item to that drive.",
+      "aka": [
+        "barcode",
+        "label",
+        "asset tag",
+        "inventory"
+      ],
+      "wiki": "Evidence-Inventory#barcode-auto-link-in-the-register-evidence-modal"
+    },
+    "evidence.drive": {
+      "title": "Physical drive",
+      "text": "The inventory drive that holds this evidence. A drive holds evidence from one case only: linking claims a free drive for this case and marks it in use, while a drive assigned to another case, or one awaiting wipe (status available), is refused. The location is the drive's, so changing it here changes it for every item on that drive.\n\nWiping the drive in the inventory unlinks its evidence; the evidence records are kept.",
+      "aka": [
+        "on physical drive",
+        "inventory",
+        "storage",
+        "location",
+        "wipe"
+      ],
+      "wiki": "Evidence-Inventory#linking-evidence-to-a-drive"
+    },
+    "evidence.acquisition_date": {
+      "title": "Acquisition date",
+      "text": "When the evidence was collected, in UTC. It is informational: it appears in the evidence details and goes to the AI case summary and the case export.",
+      "aka": [
+        "collected on",
+        "acquired",
+        "collection date"
+      ]
+    },
+    "evidence.coverage": {
+      "title": "Coverage window",
+      "text": "The period the evidence itself covers, in UTC: for example the first and last entries of a log export, or the time a memory image was taken. It is informational and filters nothing; it appears as Coverage in the details and goes to the AI case summary and the case export.",
+      "aka": [
+        "start date",
+        "end date",
+        "time span",
+        "coverage"
+      ]
+    },
+    "evidence.asset_links": {
+      "title": "Linked assets",
+      "text": "The assets this evidence pertains to. The link is made from the asset side (Related Evidence in the asset's editor on the Assets tab) and is shown here read-only.\n\nEvidence has no IOC links of its own: its IOCs tab lists the IOCs of the linked assets. The links also draw edges on the case Graph.",
+      "aka": [
+        "related evidence",
+        "assets",
+        "evidence links"
+      ]
+    },
+    "datastore.case_files": {
+      "title": "Datastore (case files)",
+      "text": "The case's file store: virtual folders and files kept on the IRIS-NG server, visible to everyone who can open the case. A file's menu copies a link or a Markdown link to paste into notes and other Markdown fields (a picture without a password shows inline), downloads it, or edits it.\n\nPictures pasted into a note land in the Notes Upload folder. The search box takes field:value filters such as name: .exe AND is_ioc: true; the question-mark button lists them.",
+      "aka": [
+        "datastore",
+        "case files",
+        "file store",
+        "virtual folder",
+        "attachments",
+        "upload"
+      ]
+    },
+    "datastore.password": {
+      "title": "File password",
+      "text": "When set at upload, IRIS-NG stores the file inside a password-protected zip, and downloading it gives you that zip. The password is kept in clear text on the server and shown in the file's Info to anyone who can open the case: it prevents accidental opening (of malware, say), it does not keep a secret.\n\nA protected file cannot be shown inline in a note; its Markdown link downloads the zip. A file uploaded as an IOC always gets one: infected, unless you set another.",
+      "aka": [
+        "zip",
+        "encrypted",
+        "infected",
+        "password protected"
+      ]
+    },
+    "datastore.file_is_ioc": {
+      "title": "File is IOC",
+      "text": "Marks the file as malicious or suspicious. Uploaded this way, it is kept in a separate IOC area on the server and zipped with a password (infected, unless you set another in Password), so downloads never hand out the raw file.\n\nIts SHA-256 is also added to this case's IOCs (type sha256, TLP:AMBER, tag datastore) unless the case already holds that hash. The datastore shows the file with an IOC icon, and the is_ioc: search filter finds it.",
+      "aka": [
+        "malware",
+        "sample",
+        "infected",
+        "ioc file"
+      ]
+    },
+    "datastore.file_is_evidence": {
+      "title": "File is evidence",
+      "text": "Uploaded this way, the file is kept in a separate evidence area on the server (the IOC area if it is also marked IOC). Saving it with this box ticked registers it on this case's Evidence tab with its name, size and SHA-256; no evidence item is created when one with the same SHA-256 already exists, in this case or any other.\n\nThe datastore shows the file with an evidence icon, and the is_evidence: search filter finds it.",
+      "aka": [
+        "evidence file",
+        "register evidence"
+      ]
+    }
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "group": "Users, groups and access",
+  "order": 110,
+  "terms": {
+    "access.permissions": {
+      "title": "Permissions",
+      "text": "What a user may do across IRIS-NG, as opposed to which cases they may open (that is case access). Permissions are set on groups only: a user holds every permission of every group they are in, and a user in no group holds none.\n\nA change reaches someone who is already signed in at their next sign-in, or when they press Refresh access on their own profile page.",
+      "items": [
+        {"name": "standard_user", "text": "Create cases and manage them as a whole: edit, close, reopen and delete cases, and import case files. Which cases still depends on case access. Working inside a case (notes, IOCs, tasks, timeline) needs only case access."},
+        {"name": "server_administrator", "text": "Every administration page and action: users, groups and access control, server settings, modules, case objects, custom attributes, report templates, mail and clustering rules, and more. It does not open cases by itself; the built-in Administrators group gives its members full access to every new case."},
+        {"name": "alerts_read", "text": "See the Alerts and Alert clusters pages and open alerts. Only alerts of customers the user is associated with are shown, unless the user is a server administrator."},
+        {"name": "alerts_write", "text": "Edit, assign, comment on, merge, unmerge and escalate alerts, create alerts through the API, and work alert clusters (with the same customer limit)."},
+        {"name": "alerts_delete", "text": "Delete alerts."},
+        {"name": "search_across_cases", "text": "Use the Search page. It searches the IOCs, notes, comments, assets and more of every case on the server, including cases the user cannot open, and names the case and customer of each match."},
+        {"name": "customers_read", "text": "Open Manage -> Customers and the customer pages, for the customers the user is associated with (server administrators see them all)."},
+        {"name": "customers_write", "text": "Add, edit and delete customers and their contacts."},
+        {"name": "case_templates_read", "text": "Open Manage -> Case templates and read the templates."},
+        {"name": "case_templates_write", "text": "Add, edit, import and delete case templates."},
+        {"name": "activities_read", "text": "Open the Activities page: the newest 10,000 recorded actions of every user, for every case. The list is not limited by case access."},
+        {"name": "all_activities_read", "text": "Open the Activities page and also see the entries not tied to a case and normally hidden (sign-ins, failed sign-ins and the like), with Show non case related activity."}
+      ],
+      "aka": ["rights", "roles", "privileges", "standard_user", "server_administrator", "admin"]
+    },
+    "access.case_access_order": {
+      "title": "How case access is decided",
+      "text": "For every case IRIS-NG starts from No access and applies, in order: the user's groups, then the user's customer associations (Full access to every case of that customer), then access granted to the user directly. Each layer replaces the one before, so a direct grant always wins. Whoever creates a case is given Full access to it directly.\n\nWhen two of a user's groups grant the same case different levels, either one can end up applied; it is not necessarily the more permissive. Grant the user directly when the level matters.",
+      "aka": ["acl", "precedence", "inheritance", "direct grant", "override", "case access"]
+    },
+    "access.user_audit": {
+      "title": "Users audit",
+      "text": "Shows, for one user, which group gives each permission and, for every case, the access the user ends up with and where each layer comes from: the default, a group, a customer or a direct grant. Layers replaced by a later one are marked as overwritten.\n\nThe audit reads the grants as they stand now. If the user can actually open more or less than it shows, press Refresh access on the user.",
+      "aka": ["audit", "trace", "access path", "who can see"]
+    },
+    "group.group": {
+      "title": "Group",
+      "text": "A set of users that share permissions and, optionally, access to cases. A user holds the permissions of every group they belong to, and a group's case access is one of the layers that decide which cases its members can open. IRIS-NG will not let you leave or delete the last group that gives you server_administrator, and deleting a group leaves the case access it gave in place until Refresh access is used on each member.\n\nAt every start IRIS-NG resets the built-in Administrators group (every permission, full access to each new case) and Analysts group (the standard analyst permissions) to their defaults, so keep custom permission sets in groups of your own.",
+      "aka": ["groups", "team", "role", "administrators", "analysts", "membership"]
+    },
+    "group.auto_follow": {
+      "title": "Apply to current and future cases",
+      "text": "Gives every member of the group the chosen access to all existing cases and to every case created from now on. Setting access on a list of cases instead turns this off; the cases granted while it was on keep their access until you remove them from the group's Cases access tab.",
+      "aka": ["auto follow", "all cases", "future cases", "new cases"]
+    },
+    "user.login": {
+      "title": "Login",
+      "text": "The unique user name typed at sign-in. It is also what @mentions use: colleagues notify this user with @ followed by the login, not the full name.",
+      "aka": ["username", "user name", "mention"]
+    },
+    "user.service_account": {
+      "title": "Service account",
+      "text": "An account for an integration (an n8n workflow, a SOAR, a script) that works through its API key. It needs no password, the local password sign-in refuses it, and it is never asked for MFA; its permissions and case access apply as for anyone else. The choice is offered only when the account is created.\n\nThe war-room member picker, the Teams page and the AI task suggester's assignee proposals leave service accounts out.",
+      "wiki": "Multi-Factor-Authentication#exempt-accounts",
+      "aka": ["api account", "integration", "bot", "automation"]
+    },
+    "user.active": {
+      "title": "Active, deactivate and delete",
+      "text": "A deactivated account cannot sign in and its API key is refused; its name stays on everything it did, and Activate restores it. You cannot deactivate yourself.\n\nDelete works only on a deactivated account, and fails while records such as the cases it opened, owns or reviews still point to it. Its activity-log entries are kept without a name. Deactivating is the safe way to remove someone who has worked cases.",
+      "aka": ["disable", "deactivate", "disabled", "remove user", "delete user"]
+    },
+    "user.api_key": {
+      "title": "API key",
+      "text": "Lets a script or integration act as this user through the REST API, sent as Authorization: Bearer <key>. It carries the user's permissions and case access and is never asked for MFA, so treat it like a password. Renew replaces it immediately: anything still using the old key stops working. A deactivated user's key is refused.",
+      "wiki": "API-Reference",
+      "aka": ["token", "bearer", "renew"]
+    },
+    "user.refresh_access": {
+      "title": "Refresh access",
+      "text": "Recomputes the cases this user can open from their current groups, customer associations and direct grants. IRIS-NG does this itself after most changes made on these pages, but not when a group is deleted: its former members keep the case access it gave until refreshed. Use it too when the users audit and what the user can actually open disagree. It does not reload their permissions: those update at their next sign-in.",
+      "aka": ["recompute", "effective access", "case access"]
+    },
+    "user.reset_mfa": {
+      "title": "Reset MFA",
+      "text": "Clears this user's authenticator-app enrolment, so they set it up again at their next sign-in; use it when someone has lost their device. Shown while MFA is enforced (Settings -> Security). The built-in administrator and service accounts are never asked for a second factor, so the button is disabled for them.",
+      "wiki": "Multi-Factor-Authentication#reset-a-single-user-instead",
+      "aka": ["mfa", "2fa", "totp", "authenticator", "lost phone"]
+    },
+    "user.hourly_rate": {
+      "title": "Analyst hourly rate",
+      "text": "This analyst's billing rate. It is multiplied by the time they log on a case to give the case's estimated cost, shown with the case's time entries. The current rate prices every hour already logged, so changing it re-prices past work. Left blank, the analyst is unpriced: their time counts as zero and the estimate is marked as partial. Analysts can also set their own rate on their profile page.",
+      "wiki": "Analyst-Time-Tracking#estimated-case-cost",
+      "aka": ["rate", "billing", "cost", "price"]
+    },
+    "user.customers": {
+      "title": "Customer membership",
+      "text": "Associating a user with a customer gives them Full access to every case of that customer, current and future, and opens the customer's alerts to them (reading and working alerts still needs the alert permissions). It overrides the access the user's groups give on those cases; only a direct grant to the user beats it. Removing the association removes that access.",
+      "aka": ["associated users", "customer access", "client membership"]
+    }
+  }
+}

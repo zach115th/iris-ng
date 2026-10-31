@@ -51,7 +51,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="iris-idd-title" style="color:#e2d9f3; font-size:14px; font-weight:600;">
-          <i class="fas fa-clone mr-2" style="color:#8b5cf6;"></i>Find Duplicates &mdash; Indicators
+          <i class="fas fa-clone mr-2" style="color:#8b5cf6;"></i>Find Duplicates &mdash; Indicators{{ help_tip('ioc.dedup') }}
           <span class="iris-idd-badge iris-idd-badge-violet" id="iris-idd-count"></span>
         </h5>
         <button type="button" class="close" data-dismiss="modal" style="color:#94a3b8; opacity:1;">&times;</button>
@@ -68,7 +68,7 @@
           <div style="margin-bottom:20px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
               <div>
-                <span class="iris-idd-title">Exact duplicates</span>
+                <span class="iris-idd-title">Exact duplicates</span>{{ help_tip('ioc.dedup_exact') }}
                 <span class="iris-idd-badge iris-idd-badge-violet" id="iris-idd-exact-badge">0 groups</span>
                 <span style="font-size:11px; color:#64748b; margin-left:10px;">Same type, same value after trimming, refanging and case-folding — the first entry is kept, its duplicates' links move onto it</span>
               </div>
@@ -84,7 +84,7 @@
 
           <div style="margin-bottom:20px;">
             <div style="display:flex; align-items:center; margin-bottom:10px;">
-              <span class="iris-idd-title">Near duplicates</span>
+              <span class="iris-idd-title">Near duplicates</span>{{ help_tip('ioc.dedup_near') }}
               <span class="iris-idd-badge iris-idd-badge-amber" id="iris-idd-near-badge">0 pairs</span>
               <span style="font-size:11px; color:#64748b; margin-left:10px;">URL host vs domain, host:port vs host, same value under two types, close spellings — review required</span>
             </div>
@@ -97,7 +97,7 @@
           <div>
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
               <div>
-                <span class="iris-idd-title">AI pass</span>
+                <span class="iris-idd-title">AI pass</span>{{ help_tip('ioc.dedup_ai') }}
                 <span class="iris-idd-badge iris-idd-badge-green" id="iris-idd-ai-badge" style="display:none;">0 pairs</span>
                 <span style="font-size:11px; color:#64748b; margin-left:10px;" id="iris-idd-ai-hint">The configured model judges the whole list for indicators written two ways — advisory, nothing is applied</span>
               </div>

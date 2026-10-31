@@ -1,0 +1,382 @@
+{
+  "group": "War rooms",
+  "order": 80,
+  "terms": {
+    "room.war_room": {
+      "title": "War room",
+      "text": "A shared workspace for an incident that spans several cases: one stream, room tasks, notes, timelines, situation reports and ICS forms around the cases attached to it. The room coordinates; the cases stay where they are and remain the source of truth.\n\nOnly the room's members, its guests and server administrators see it; anyone else gets 'not found'. A room is created from the War Rooms page, or promoted from a correlated group of cases.",
+      "aka": ["room", "war rooms", "crisis room", "coordination"],
+      "wiki": "War-Rooms",
+      "guest": true
+    },
+    "room.status": {
+      "title": "Room status",
+      "text": "The room's state, set by a lead (status menu or /state). Open, active and standby are labels: they differ in meaning, not in what they allow.\n\nClosed is not a label. A closed room's content is read-only for everyone, its guests lose access, its operational summary stops refreshing, and a room promoted from a correlation group frees that group to be promoted again. Choosing another status reopens the room and restores guest access. Deleting a room (lead only, also when closed) removes the room and everything in it; the attached cases are not touched.",
+      "items": [
+        {"name": "Open", "text": "The state of a new room."},
+        {"name": "Active", "text": "Response under way."},
+        {"name": "Standby", "text": "Paused or monitoring."},
+        {"name": "Closed", "text": "Read-only; guest access ends until the room is reopened."}
+      ],
+      "aka": ["state", "open", "active", "standby", "closed", "archive", "delete room"],
+      "wiki": "War-Rooms#membership-roles-statuses",
+      "guest": true
+    },
+    "room.role": {
+      "title": "Room role",
+      "text": "What someone may do in this room. Roles belong to the room and grant nothing outside it. A room always keeps at least one lead: the last lead cannot be demoted or removed, and anyone else can leave. Server administrators see every room and act as its lead even without being a member.",
+      "items": [
+        {"name": "Lead", "text": "Everything a responder does, plus the room's name, slug, severity, status and export description, members and guests, publishing and deleting SitReps, deleting room timelines, the MISP push and deleting the room."},
+        {"name": "Responder", "text": "Takes part: posts, creates and edits room tasks, notes, SitRep drafts, timelines and teams, attaches cases they can open, detaches cases, runs the AI features."},
+        {"name": "Observer", "text": "Reads the room and votes in polls; cannot post or change anything."},
+        {"name": "Guest", "text": "An outside participant signed in through the guest portal: works at responder level on the room's own content, never as a lead, and uses no AI feature."}
+      ],
+      "aka": ["lead", "responder", "observer", "last lead", "permissions", "member"],
+      "wiki": "War-Rooms#membership-roles-statuses",
+      "guest": true
+    },
+    "room.membership_access": {
+      "title": "Membership is not case access",
+      "text": "Adding someone to a war room gives them the room, not its cases. Each attached case keeps its own access rules: a member who cannot open a case sees its name with a lock, but none of its timeline, tasks, notes, activity or indicators in the room, and cannot peek into it.\n\nGuests are the exception: every case attached to a room is shared read-only with that room's guests, so attaching a case to a room with guests is the decision to share it with them.",
+      "aka": ["case access", "acl", "permissions", "lock", "inaccessible"],
+      "wiki": "War-Rooms#the-one-rule-that-governs-everything"
+    },
+    "room.attached_cases": {
+      "title": "Attached cases",
+      "text": "The cases this room coordinates. Attaching needs a responder role and your own access to the case. It puts the case's name in the room for every member, shares its content read-only with the room's guests, and creates any ICS forms the room does not have yet. Detaching removes only the link; the case itself is never changed.\n\nMembers see the details of the cases they can open; the others show a lock. The note under a case describes its place in this room (for example 'primary case'). Members click a row to peek at a case they can open.",
+      "aka": ["attach", "detach", "linked cases", "peek", "attachment note", "/attach"],
+      "wiki": "War-Rooms#the-one-rule-that-governs-everything",
+      "guest": true
+    },
+    "room.linked_case_content": {
+      "title": "Linked case content",
+      "text": "Read-only material from the cases attached to the room: their timelines, tasks or notes, depending on the tab. The room only reads it; changes are made on the case, which stays the source of truth. A member sees only the cases they can open; a guest sees every attached case.",
+      "aka": ["case timelines", "case tasks", "case notes", "read-only"],
+      "wiki": "War-Rooms#tasks-timelines-notes",
+      "guest": true
+    },
+    "room.stream": {
+      "title": "Stream",
+      "text": "The room's shared feed: messages, decisions, pinned notes and polls, entries IRIS-NG writes itself (members added, guests invited or joining, cases attached, room tasks created and completed, SitReps published) and the activity of the linked cases. It refreshes every 5 seconds and holds the latest 200 entries.\n\nThe filters on this rail and the search box change only what you see, and reset when the page reloads.",
+      "aka": ["chat", "feed", "messages", "filters"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.stream_lanes": {
+      "title": "Stream lanes",
+      "text": "Turn kinds of stream entries on or off for your view. Activity from the linked cases is filtered per case under Cases, below.",
+      "items": [
+        {"name": "Messages", "text": "Chat messages and polls."},
+        {"name": "Tasks", "text": "Room tasks created and completed."},
+        {"name": "SitReps", "text": "SitReps being published."},
+        {"name": "Notes / Pins", "text": "Decisions, notes and pinned messages."},
+        {"name": "System", "text": "Members added; guests invited, joining or revoked."},
+        {"name": "Case attached / detached", "text": "Cases attached to the room. Detaching a case removes its entry with the link."}
+      ],
+      "aka": ["lanes", "system lane", "filter"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.case_activity": {
+      "title": "Case activity in the stream",
+      "text": "What happens on the linked cases (notes, IOCs, assets, evidence, tasks, timeline events, lifecycle) is mirrored into the stream. Untick a case to hide its activity, or open it with the arrow to hide single kinds. The kinds are sorted by keywords in the activity text, so some entries land in Other. A member sees activity only from the cases they can open; a guest sees every attached case.",
+      "aka": ["sub-lanes", "case lanes", "activity"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.topics": {
+      "title": "Topics",
+      "text": "Channels inside the stream; # Main always exists. Use + or /topic <name> to post to a new topic: it appears in this list once a message has been posted to it. Untick topics to hide their messages; 'Posting to' above the message box shows where your next message goes.",
+      "aka": ["channel", "/topic", "main"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.threads": {
+      "title": "Threads",
+      "text": "A thread is a message and its replies. Reply (hover a message) answers it once; /thread <title> starts a named thread and keeps your messages going to it until you clear the target with the x next to 'Posting to'. Threads are one level deep: a reply to a reply joins the same thread. Untick threads to hide them.",
+      "aka": ["reply", "/thread", "conversation"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.decisions_pins": {
+      "title": "Decisions and pins",
+      "text": "/decision <text> records a decision; /pin <text> posts a pinned note, and Pin (hover a message) pins an existing one. They are counted here and shown in the Notes / Pins lane, and they are copied into the ICS 214 activity log when the ICS forms are created.",
+      "aka": ["/decision", "/pin", "pinned", "decision log"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.slash_commands": {
+      "title": "Slash commands",
+      "text": "Type / at the start of the message box to run a command instead of sending a message; the full list opens under this heading. A command does what the matching button does and follows the same rules: /state and /priority need a lead, /attach and /detach need access to the case, /summary starts an AI SitRep draft. Arguments may span several lines; for /note the first line becomes the note's title.",
+      "aka": ["commands", "/note", "/task", "/assign", "/sitrep", "/state", "/priority"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.mentions": {
+      "title": "@mentions in the room",
+      "text": "Type @ to mention someone; Tab or Enter completes. A mention reaches room members by their login, guests by their handle and teams by name (every current member and guest of that team). Members are notified in IRIS-NG under their notification settings, also when they mention themselves; guests are emailed when SMTP is configured. A mention of someone outside the room notifies nobody.",
+      "aka": ["mention", "@", "notify", "handle"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.resource_tokens": {
+      "title": "Resource references",
+      "text": "The paperclip inserts a reference to an event, IOC, asset or task of a linked case you can open. It shows in the message as a chip that links to that page of the case. Everyone in the room sees the chip and its title; the link opens only for people who can open that case.",
+      "aka": ["#resource", "chip", "reference", "link"],
+      "wiki": "War-Rooms#the-stream"
+    },
+    "room.polls": {
+      "title": "Polls",
+      "text": "A question with 2 to 20 options posted to the stream. Everyone in the room votes, observers and guests included; clicking your choice again removes the vote. Multiple selections lets a voter pick several options.\n\nAnonymous voting hides who chose what from everyone, the poll's creator and leads included; the server never sends the names, and the counts stay visible. A poll closes when its creator or a lead closes it, or at the automatic close time, which is read as UTC. A closed room stops all voting.",
+      "aka": ["vote", "anonymous", "survey"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.operational_summary": {
+      "title": "Operational summary",
+      "text": "An AI-maintained picture of the incident in ICS 209 sections (situation, significant events, life safety and threat, projected activity, objectives, resource needs, planned actions, cooperating agencies), built from the attached cases, room tasks, ICS forms and stream. Responders and leads generate it; after the first Generate it refreshes itself when a case is attached or detached, the status changes, a SitRep is published or an ICS form is saved.\n\nEditing it stops the refresh until Revert to AI. The amber badge means its inputs changed since it was written. It never reads the SitReps, and SitRep drafts never read it.",
+      "aka": ["summary tab", "ics 209", "ai summary", "stale"],
+      "wiki": "War-Rooms#the-summary-tab",
+      "guest": true
+    },
+    "room.esf": {
+      "title": "Emergency Support Functions",
+      "text": "The California Emergency Support Functions this incident involves, worked out by IRIS-NG (not the AI) from the sector tags of the attached cases: water adds CA-ESF 12 Utilities, healthcare CA-ESF 8, and so on. CA-ESF 18 Cybersecurity is listed for every room. Hover a chip to see which sector added it; the list follows the cases attached right now.",
+      "aka": ["esf", "ca-esf", "sectors", "cybersecurity"],
+      "wiki": "AI-Features#war-room-operational-summary",
+      "guest": true
+    },
+    "room.export_description": {
+      "title": "Export description",
+      "text": "A short description of the room, separate from the operational summary. It becomes the campaign description in the room's STIX export and the event description of its MISP push (client and case names are removed on the push), and it is written into ICS 201 and 202 when those forms are created. A lead edits it with the room's Edit button; a room promoted from a correlation group starts with that group's reviewed narrative.",
+      "aka": ["room summary", "campaign description", "stix", "misp"],
+      "wiki": "War-Rooms#the-summary-tab",
+      "guest": true
+    },
+    "room.timelines": {
+      "title": "Room timelines",
+      "text": "Timelines that belong to the room, for coordination entries such as decisions, notifications and handovers, each with its own colour (an entry without a colour takes its timeline's). Responders, leads and guests add, edit and delete entries; only a lead deletes a whole timeline. Tick a timeline to show or hide it. The linked case timelines below are read-only.",
+      "aka": ["timeline", "coordination timeline", "events"],
+      "wiki": "War-Rooms#tasks-timelines-notes",
+      "guest": true
+    },
+    "room.timeline_utc": {
+      "title": "Times in UTC",
+      "text": "This tab shows every time in UTC, for room and case entries alike, and the From / To filters are UTC too. A room entry is typed as a date, a time and the +HH:MM offset it was given in (default +00:00). IRIS-NG stores the UTC instant and remembers the offset, so the editor reopens with what was typed, and an entry typed in another zone shows its local time on the info mark next to its time.",
+      "aka": ["time zone", "offset", "utc", "+00:00"],
+      "wiki": "War-Rooms#tasks-timelines-notes",
+      "guest": true
+    },
+    "room.tasks": {
+      "title": "Room tasks",
+      "text": "Coordination tasks that belong to the room, separate from the cases' own tasks (listed read-only below). A task can have one level of subtasks, a due date, tags and one assignee: an IRIS-NG user or an active guest of the room. Assigning a user notifies them unless they assign themselves; assigning a guest emails them. Deleting a task deletes its subtasks. On the board, drag a card to another column to change its status.",
+      "aka": ["kanban", "board", "subtask", "assignee", "/task"],
+      "wiki": "War-Rooms#tasks-timelines-notes",
+      "guest": true
+    },
+    "room.task_status": {
+      "title": "Room task status",
+      "text": "Where a room task stands. These statuses belong to the room and are separate from the case task statuses. Done and Cancelled count as finished: they move to the Done section and leave the count on the Tasks tab.",
+      "items": [
+        {"name": "No status", "text": "Not triaged yet; the status of a new task."},
+        {"name": "To do", "text": "Accepted, not started."},
+        {"name": "In progress", "text": "Being worked on."},
+        {"name": "On hold", "text": "Waiting on something."},
+        {"name": "Done", "text": "Finished. Who completed it and when is recorded and posted to the stream."},
+        {"name": "Cancelled", "text": "Dropped without being done."}
+      ],
+      "aka": ["to do", "in progress", "on hold", "done", "cancelled"],
+      "wiki": "War-Rooms#tasks-timelines-notes",
+      "guest": true
+    },
+    "room.notes": {
+      "title": "Room notes",
+      "text": "Notes that belong to the room, in Markdown, saved automatically as you type, in folders one level deep. Deleting a folder moves its notes to the top level; no note is deleted with it. Right-click a note, a folder or the empty rail for more actions; Copy link gives an address that opens the note directly. Responders, leads and guests write; for observers and in a closed room the notes are read-only. The linked case notes below are read-only.",
+      "aka": ["notes", "folders", "/note", "copy link"],
+      "wiki": "War-Rooms#tasks-timelines-notes",
+      "guest": true
+    },
+    "room.teams": {
+      "title": "Room teams",
+      "text": "Named groups of this room's members and guests that can be mentioned as one: @team-name notifies every current member of the team and emails its guests. Teams belong to this room and grant nothing. Responders, leads and guests create teams and add people; Hide only folds a team's list on your screen. New rooms start with the default teams an administrator set up.",
+      "aka": ["team", "group", "@team", "mention group"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.leadership_team": {
+      "title": "The leadership team",
+      "text": "A room team named exactly leadership receives every published SitRep in full: its members in IRIS-NG and by email, its guests by email. When a room has no leadership team, or an empty one, the room's leads receive it instead. A default team named leadership under Settings -> War Room Teams gives every new room one, for its lead to fill.",
+      "aka": ["leadership", "@leadership", "sitrep recipients"],
+      "wiki": "War-Rooms#situation-reports"
+    },
+    "room.default_teams": {
+      "title": "Default war-room teams",
+      "text": "The teams every new war room starts with, whether created or promoted from Discovery: one empty team per enabled template, in this order, with this name, description and colour. The room's lead then adds the people. Existing rooms never change: editing, disabling or deleting a template leaves the teams rooms already have, and a seeded team is an ordinary room team afterwards. Only server administrators manage this list.",
+      "aka": ["team templates", "default teams", "seeded teams"],
+      "wiki": "War-Rooms#the-stream"
+    },
+    "room.correlation": {
+      "title": "Room correlation",
+      "text": "The indicators shared by two or more of the room's attached cases, as the same cards the correlation workspace shows; click a card for its cross-case context. Only the cases you can open count, and the note above the cards says how many are outside your access.\n\nApply campaign tag (responders and leads) adds the room's campaign tag to those cases and to the shared indicators in them: the tag of the correlation group the room was promoted from, else campaign:war-room-<id>.",
+      "aka": ["shared iocs", "campaign tag", "correlation tab"],
+      "wiki": "War-Rooms#correlation-in-the-room"
+    },
+    "room.outbound_sharing": {
+      "title": "Sharing the room's indicators",
+      "text": "Export STIX downloads a STIX 2.1 bundle of the room's shared indicators. Push to MISP (lead only) publishes them as one MISP campaign event; pushing again creates a new event after you confirm. Both send only TLP:GREEN and TLP:CLEAR indicators (the most restrictive TLP across the cases wins, an unset TLP is withheld): the push says how many were held back, and the export refuses when nothing may be shared. The room name and export description become the campaign text; the push removes client and case names from it, never indicator values.",
+      "aka": ["stix", "misp", "export", "push", "tlp", "withheld"],
+      "wiki": "MISP-Cluster-Publishing"
+    },
+    "room.discovery": {
+      "title": "Discovery",
+      "text": "Groups of cases that share indicators, computed from the cases you can open each time the panel loads.\n\nPromote to war room creates a room with you as lead, attaches the group's cases, and carries over the group's campaign tag; when the group has a reviewed AI narrative, it also supplies the room's name, export description and a first SitRep draft. A group that already has a room that is not closed shows Open room instead (it opens for that room's members). Rooms are never created automatically.",
+      "aka": ["promote", "clusters", "correlated groups"],
+      "wiki": "War-Rooms#correlation-in-the-room"
+    },
+    "room.min_shared": {
+      "title": "Min shared IOCs",
+      "text": "How many distinct indicator values two cases must share before Discovery links them (1 to 50, default 2); linked cases form a group. A higher number gives fewer, tighter groups. Promoting uses the same number, so the room gets the group you see.",
+      "aka": ["threshold", "min_shared"],
+      "wiki": "War-Rooms#correlation-in-the-room"
+    },
+    "room.severity": {
+      "title": "Room severity",
+      "text": "The room's own severity (low, medium, high, critical, or unset), shown as a chip in the room header. A lead sets it here or with /priority. It labels the room and is passed to ICS 201 when the forms are created, to the operational summary and to the ICS AI pass; it changes no case's severity and gates nothing.",
+      "aka": ["priority", "/priority", "critical"]
+    },
+    "sitrep.sitreps": {
+      "title": "Situation reports (SitReps)",
+      "text": "The room's periodic reports for people outside the response. Responders, leads and guests write drafts; only a lead publishes one, which notifies the room. Published SitReps stay editable: every save keeps the previous text as a revision. A lead can delete any SitRep, published ones included.\n\nDownload a SitRep as Markdown, HTML or print-to-PDF; the files hold the last saved text. AI draft (responders and leads) writes a new draft for review; AI never publishes.",
+      "aka": ["sitrep", "situation report", "/sitrep", "export"],
+      "wiki": "War-Rooms#situation-reports",
+      "guest": true
+    },
+    "sitrep.status": {
+      "title": "SitRep version and status",
+      "text": "vN counts the saves: v1 is the first text, and every save keeps the previous text as a revision and adds one. The date is the publication time once published, else the last save.",
+      "items": [
+        {"name": "Draft", "text": "Being written; creating or saving a draft notifies nobody."},
+        {"name": "Published", "text": "A lead published it and the room was notified once. Later edits write revisions and notify nobody."}
+      ],
+      "aka": ["version", "revision", "draft", "published"],
+      "wiki": "War-Rooms#situation-reports",
+      "guest": true
+    },
+    "sitrep.ai_draft": {
+      "title": "AI SitRep draft",
+      "text": "Asks the AI backend for a SitRep built from the attached cases (their saved AI summaries) and the room's own activity, and opens it as a new draft for you to review. A room's first draft is the full picture; once a SitRep has been published, drafts cover only what changed since the latest published one and open with a 'Delta since ...' line written by IRIS-NG. The status line warns when draft lines repeat the previous SitRep word for word. AI never publishes.",
+      "aka": ["ai draft", "delta", "/summary"],
+      "wiki": "War-Rooms#situation-reports"
+    },
+    "sitrep.publish": {
+      "title": "Publishing a SitRep",
+      "text": "Publishing (lead only) marks the SitRep as published and notifies the room once. The members of the room's leadership team get the full report, by default in IRIS-NG and by email; everyone else in the room gets a short notice; guests in the leadership team get the full report by email. Without a leadership team, or with an empty one, the room's leads get the full report. The publisher is not notified.\n\nThe SitRep stays editable; later edits are kept as revisions and notify nobody. Emails to users also need outbound notification emails switched on under Settings -> Mail.",
+      "aka": ["publish", "leadership", "notification"],
+      "wiki": "War-Rooms#situation-reports"
+    },
+    "ics.forms": {
+      "title": "ICS forms",
+      "text": "Incident Command System forms kept as room notes: ICS 201, 202, 203, 204, 205A, 209 and 214. They are created in an ICS folder when the first case is attached (or with the clipboard button), prefilled with what the room already knows, and are edited by people from then on: creating them again adds only missing forms and never rewrites an existing one.\n\nAn analyst can run the AI pass (sparkle button): it fills only fields still at their seeded dash, from the attached cases, and marks each fill 'AI draft - review before relying on it'. The note title names the form; keep it.",
+      "aka": ["ics", "fema", "201", "202", "203", "204", "205a", "209", "214", "incident command"],
+      "wiki": "ICS-Forms",
+      "guest": true
+    },
+    "ics.pdf_export": {
+      "title": "ICS PDF export",
+      "text": "Downloads this note as the official FEMA fillable PDF of the form, filled from the note's text; anyone who can read the note can export it. A seeded dash exports as an empty field, and signatures stay blank. Unsaved typing is saved first.\n\nAfter the download the status line reports what the file cannot show: rows that did not fit the form's lines (per block), AI-drafted fields still carrying their review line, and note sections that have no place on the form.",
+      "aka": ["pdf", "fema form", "overflow", "unreviewed"],
+      "wiki": "ICS-Forms#exporting-the-official-pdf",
+      "guest": true
+    },
+    "guest.guests": {
+      "title": "Guests",
+      "text": "Outside participants (the affected organisation's contact, a partner agency) invited into this one room. They are not IRIS-NG users: they sign in on the guest portal with email and password and reach nothing outside the room.\n\nA guest works at responder level on the room's own content (stream, polls, room tasks, notes, SitRep drafts, timelines, teams, ICS forms) and reads every case attached to the room. A guest cannot publish or delete SitReps, manage members, attach or detach cases, change the room's settings, use correlation or exports, or use any AI feature.",
+      "aka": ["guest", "external", "partner", "portal user"],
+      "wiki": "Guest-Portal#what-a-guest-is",
+      "guest": true
+    },
+    "guest.status": {
+      "title": "Guest status",
+      "text": "Whether a guest can get in, worked out on every request. What a guest wrote stays in the room whatever happens to their access.",
+      "items": [
+        {"name": "Active", "text": "Can sign in and take part until the date shown."},
+        {"name": "Expired", "text": "The validity period ended. A lead issues a new link, which also restarts a 14-day validity."},
+        {"name": "Revoked", "text": "A lead ended the access. A new link restores it."},
+        {"name": "Closed", "text": "The room is closed, which ends every guest's access; reopening the room restores it."},
+        {"name": "Locked", "text": "Ten failed sign-ins in a row lock the guest out for 15 minutes; a password reset clears it at once."}
+      ],
+      "aka": ["active", "expired", "revoked", "locked", "lockout"],
+      "wiki": "Guest-Portal#inviting-a-guest",
+      "guest": true
+    },
+    "guest.actions": {
+      "title": "Managing a guest",
+      "text": "What a lead can do with each guest. Every action takes effect at once; none is offered in a closed room.",
+      "items": [
+        {"name": "+14d", "text": "Extends the expiry by 14 days."},
+        {"name": "Handle", "text": "Changes the guest's @-mention handle (unique in the room; blank derives it again from the name)."},
+        {"name": "New link", "text": "A new invitation link, shown to you once and emailed when SMTP is configured; the previous link stops working. The password stays. Also lifts a revoke and restarts an expired guest's 14 days."},
+        {"name": "Reset password", "text": "A new random password, shown to you once and emailed when SMTP is configured; the old one stops working and a lockout is cleared. The link stays."},
+        {"name": "Revoke", "text": "Ends the guest's access on their next request."},
+        {"name": "Remove", "text": "Deletes the guest and the invitation; their messages stay in the stream."}
+      ],
+      "aka": ["extend", "new link", "reset password", "revoke", "remove guest", "handle"],
+      "wiki": "Guest-Portal#inviting-a-guest"
+    },
+    "guest.invitation": {
+      "title": "Inviting a guest",
+      "text": "Creates the guest's access to this room only and gives you two secrets, each shown once: the invitation link and the password. With 'Email the link' ticked and an SMTP host on Server settings, both are emailed to the guest; otherwise relay them yourself.\n\nThe link opens the sign-in form with the email filled in; it never admits anyone without the password. Leave the password blank for a random 16-character one; a typed password must meet the instance's password policy. Valid for: 1 to 90 days (default 14).",
+      "aka": ["invite", "invitation link", "password", "smtp"],
+      "wiki": "Guest-Portal#inviting-a-guest"
+    },
+    "guest.room_address": {
+      "title": "Room address on the guest portal",
+      "text": "Where guests reach this room: <portal address>/<slug>, or <address>/portal/r/<slug> when no portal address is set. A guest who has lost the invitation opens it and signs in with email and password.\n\nThe portal address comes from Settings -> Guest Portal: the Public URL, else the hostname a connected tunnel reports, else this instance's own address, which outside guests usually cannot reach. A lead sets the slug in the room's Edit dialog (lowercase letters, digits and hyphens; blank derives it from the name). A new slug changes the address; invitation links keep working.",
+      "aka": ["slug", "portal address", "room url", "short link"],
+      "wiki": "Guest-Portal#room-addresses",
+      "guest": true
+    },
+    "guest.portal": {
+      "title": "Guest portal",
+      "text": "How war-room guests reach this instance from outside. nginx serves a portal-only listener (PORTAL_PORT, default 8081) that answers only the portal pages, the war-room API and static files, and refuses a user session or API key that arrives through it. A tunnel agent container runs cloudflared against that listener in the mode chosen here, picks up changes within about 15 seconds and reports back.\n\nThe agent needs PORTAL_TUNNEL_AGENT_KEY in .env, the same value for the app and the agent; without it the agent cannot read these settings and links fall back to this instance's own address. Only server administrators see this page.",
+      "aka": ["portal", "tunnel", "cloudflare", "cloudflared", "agent key"],
+      "wiki": "Guest-Portal#how-the-portal-is-exposed"
+    },
+    "guest.tunnel_mode": {
+      "title": "Tunnel mode",
+      "text": "Which Cloudflare tunnel the agent runs. A quick tunnel needs no account, but its random trycloudflare.com hostname changes on every agent restart and nothing can sit in front of it: use it for testing. A named tunnel comes from your Cloudflare account, keeps a fixed hostname across restarts and can sit behind Cloudflare Access; it needs the tunnel token and the public URL.\n\nSwitching modes changes the hostname guests use: existing invitation links stop working, so use New link on each room afterwards.",
+      "items": [
+        {"name": "Quick tunnel", "text": "Anonymous, random hostname, testing only."},
+        {"name": "Named tunnel", "text": "Your Cloudflare tunnel: fixed hostname, can be protected by Cloudflare Access."}
+      ],
+      "aka": ["quick tunnel", "named tunnel", "trycloudflare", "zero trust"],
+      "wiki": "Guest-Portal#settings--guest-portal"
+    },
+    "guest.public_url": {
+      "title": "Portal public URL",
+      "text": "The base address guests use, scheme and host only (for example https://rooms.example.com); invitation links and room addresses are built from it. IRIS-NG uses, in order: this field, then the hostname a connected agent reports (a quick tunnel's random name), then this instance's own address, which outside guests usually cannot reach. Required for a named tunnel; leave it empty for a quick tunnel.",
+      "aka": ["public url", "hostname", "base url"],
+      "wiki": "Guest-Portal#settings--guest-portal"
+    },
+    "guest.tunnel_token": {
+      "title": "Tunnel token",
+      "text": "The token of your named tunnel, from the cloudflared install command in Cloudflare Zero Trust. It is write-only: never shown again, and sent only to the tunnel agent, only in named mode. Leave the field blank to keep the stored token; type clear to remove it. Named mode cannot be saved without a token.",
+      "aka": ["token", "cloudflared token"],
+      "wiki": "Guest-Portal#settings--guest-portal"
+    },
+    "guest.tunnel_status": {
+      "title": "Tunnel status",
+      "text": "The tunnel agent's last report; this page reloads it every 10 seconds.",
+      "items": [
+        {"name": "Agent", "text": "Reporting when a report arrived in the last two minutes; silent otherwise (container stopped, cannot reach the app, or a different agent key)."},
+        {"name": "Running mode", "text": "The mode the agent runs now; it follows a saved change within about 15 seconds."},
+        {"name": "Connected", "text": "Whether the tunnel is up at Cloudflare."},
+        {"name": "Hostname", "text": "The public hostname the agent reports; with a quick tunnel, the random name the links are built from."},
+        {"name": "cloudflared", "text": "The cloudflared version inside the agent."},
+        {"name": "Last error", "text": "The agent's last error message, if any."}
+      ],
+      "aka": ["agent", "silent", "connected", "cloudflared version"],
+      "wiki": "Guest-Portal#troubleshooting"
+    }
+  }
+}

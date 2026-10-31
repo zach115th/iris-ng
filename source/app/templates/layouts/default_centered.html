@@ -48,6 +48,7 @@
 	   also serves anonymous pages (login, errors, MFA) where current_user has
 	   no in_dark_mode, so the old gate left those rendering light. #}
 	<link rel="stylesheet" href="/static/assets/css/dark-theme.css">
+	{% include 'includes/help_assets.html' %}
 </head>
 <body>
 	<div class="wrapper {% block layout %}{% endblock layout %} {% include 'includes/sidebar_handler.html' %}">

@@ -278,7 +278,7 @@
 <div class="iris-evdrawer-backdrop" id="iris-evdrawer-backdrop"></div>
 <div class="iris-evdrawer" id="iris-evdrawer" data-case-id="{{ case.case_id }}" aria-hidden="true">
   <div class="iris-evdrawer-header">
-    <span class="iris-evdrawer-eyebrow"><span aria-hidden="true">✨</span> AI Event Analysis</span>
+    <span class="iris-evdrawer-eyebrow"><span aria-hidden="true">✨</span> AI Event Analysis{{ help_tip('tlai.event_drawer') }}</span>
     <div class="iris-evdrawer-actions">
       <button type="button" class="iris-evdrawer-iconbtn" id="iris-evdrawer-refresh" title="Re-run the model">Refresh</button>
       <button type="button" class="iris-evdrawer-close" id="iris-evdrawer-close" aria-label="Close">×</button>
@@ -439,9 +439,11 @@
   function showArtifact(artifact) {
     var html =
       '<div class="iris-evdrawer-meta">' +
-        '<span class="iris-evdrawer-pill"><span aria-hidden="true">✨</span> AI Generated</span>' +
+        '<span><span class="iris-evdrawer-pill"><span aria-hidden="true">✨</span> AI Generated</span>' +
+          (window.IrisHelp ? IrisHelp.icon('ai.generated') : '') + '</span>' +
         '<span><span class="iris-evdrawer-meta-label">Model</span><span class="iris-evdrawer-meta-value">' + htmlEscape(artifact.model) + '</span></span>' +
-        '<span><span class="iris-evdrawer-meta-label">Generated</span><span class="iris-evdrawer-meta-value">' + htmlEscape(fmtTime(artifact.generated_at)) + '</span></span>' +
+        '<span><span class="iris-evdrawer-meta-label">Generated</span><span class="iris-evdrawer-meta-value">' + htmlEscape(fmtTime(artifact.generated_at)) + '</span>' +
+          (window.IrisHelp ? IrisHelp.icon('ai.cached') : '') + '</span>' +
       '</div>' +
       '<div class="iris-evdrawer-content">' + renderMarkdown(artifact.content) + '</div>';
     bodyEl.innerHTML = html;

@@ -135,13 +135,16 @@ function iris_rt_render_detail() {
         $wrap.append($('<div class="iris-rt-desc">').text(row.description));
     }
     var $meta = $('<dl class="iris-rt-meta">');
-    [['Report type', row.type_name],
-     ['Language', row.code],
-     ['Naming format', row.naming_format],
+    // kv[2]: the (i) help icon node for the label (null when icons are off).
+    [['Report type', row.type_name, IrisHelp.el('tpl.report_type')],
+     ['Language', row.code, IrisHelp.el('tpl.language')],
+     ['Naming format', row.naming_format, IrisHelp.el('tpl.naming_format')],
      ['Created by', row.created_by],
      ['Date created', iris_rt_date(row.date_created) + (row.date_created ? ' UTC' : '')]
     ].forEach(function (kv) {
-        $meta.append($('<dt>').text(kv[0]));
+        var $dt = $('<dt>').text(kv[0]);
+        if (kv[2]) { $dt.append(kv[2]); }
+        $meta.append($dt);
         $meta.append($('<dd>').text(kv[1] || '—'));
     });
     $wrap.append($meta);

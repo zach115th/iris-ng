@@ -1,0 +1,62 @@
+{
+  "group": "Investigation flows",
+  "order": 74,
+  "terms": {
+    "flow.flow": {
+      "title": "Investigation flow",
+      "text": "A named checklist of steps that attaches itself to matching alerts and/or new alert clusters when they are created, so the analyst finds it already there. Every enabled flow whose conditions match attaches; flows are not exclusive. A checklist guides and records, it never blocks escalating or closing anything.\n\nDeleting a flow removes its checklists, with their recorded progress, from every alert and cluster. Flows are managed by administrators.",
+      "aka": ["checklist", "playbook", "runbook"],
+      "wiki": "Investigation-Flows"
+    },
+    "flow.target": {
+      "title": "Attach to",
+      "text": "What the flow's checklist is attached to. Flows attach when the alert is created; use Deploy to existing for alerts and clusters that already exist.",
+      "items": [
+        {"name": "Alerts", "text": "Every matching new alert gets its own checklist."},
+        {"name": "Clusters", "text": "A cluster gets one checklist when an alert creates it and that alert matches the conditions; alerts that join later add none."},
+        {"name": "Both", "text": "Each matching alert, and each cluster such an alert creates."}
+      ],
+      "aka": ["target", "alerts", "clusters"],
+      "wiki": "Investigation-Flows#defining-a-flow"
+    },
+    "flow.priority": {
+      "title": "Flow priority",
+      "text": "Orders the checklists when several flows are attached to the same alert or cluster, lowest number first. Unlike a clustering rule's priority, it does not decide whether a flow attaches.",
+      "aka": ["order"]
+    },
+    "flow.steps": {
+      "title": "Flow steps",
+      "text": "The checklist items, in display order. Steps belong to the flow, so editing a flow changes its checklist everywhere it is attached. Recorded progress survives renaming, reordering and adding steps; removing a step deletes its recorded progress everywhere. A required step is advisory: it is counted until done, and nothing is blocked.",
+      "aka": ["checklist items", "required"],
+      "wiki": "Investigation-Flows#editing-a-deployed-flow"
+    },
+    "flow.checklist": {
+      "title": "Investigation-flow checklist",
+      "text": "The checklists that investigation flows attached to this alert or cluster. Progress is shared: everyone who can work the alert or cluster sees and updates the same steps, with who did each one and when. On the Alerts page this section appears only when a flow is attached.",
+      "aka": ["checklist", "flows"],
+      "wiki": "Investigation-Flows#working-a-checklist"
+    },
+    "flow.step_state": {
+      "title": "Step state",
+      "text": "Click a step to mark it done, or click a done step to set it back to pending; Shift-click marks it skipped. Done and skipped record who and when; going back to pending clears that.",
+      "items": [
+        {"name": "Pending", "text": "Not done yet (an empty box)."},
+        {"name": "Done", "text": "Completed (a check mark, title struck through)."},
+        {"name": "Skipped", "text": "Deliberately not done (a crossed circle). A skipped required step still counts as incomplete."}
+      ],
+      "aka": ["done", "skipped", "pending", "shift-click"],
+      "wiki": "Investigation-Flows#working-a-checklist"
+    },
+    "flow.required_steps": {
+      "title": "Required steps",
+      "text": "Steps marked required (shown with *) are counted here until they are done; a skipped required step still counts. The count is advisory: an alert or cluster can be escalated, merged or closed with required steps open.",
+      "aka": ["required", "incomplete", "advisory"]
+    },
+    "flow.deploy": {
+      "title": "Deploy to existing",
+      "text": "Attaches flows to alerts and clusters that already exist, in the background. All enabled flows are evaluated against every alert, and every cluster is evaluated on its earliest member alert. Anything already attached is skipped, so running it twice is harmless. Without it, a new or changed flow only reaches alerts and clusters created afterwards.",
+      "aka": ["backfill", "re-run"],
+      "wiki": "Investigation-Flows#deploy-time-backfill"
+    }
+  }
+}

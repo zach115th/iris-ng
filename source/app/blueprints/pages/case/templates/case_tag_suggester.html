@@ -54,7 +54,10 @@
    trails the pill in the default block) #}
 <div id="iris-tagsuggest-results" style="margin-top: 10px; display: none;{% if tagsuggest_results_only %} padding: 10px 12px; background: #15151a; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px; font-size: 12.5px;{% endif %}">
     <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
-        <span style="font-size: 11px; color: #94a3b8; margin-right: 6px;">Suggested:</span>
+        <span style="font-size: 11px; color: #94a3b8;">Suggested:</span>
+        {#- results-only (and default) mode: this box sits below the tag input, never
+            inside the label that hosts the pill, so the (i) is valid here -#}
+        {{ help_tip('tagsugg.suggestions', cls='ml-0 mr-1') }}
         <span id="iris-tagsuggest-chips" style="display: inline-flex; flex-wrap: wrap; gap: 6px;"></span>
         <button type="button"
                 class="btn btn-sm btn-link"

@@ -88,7 +88,7 @@
     <div class="iris-co-head">
         <span class="iris-co-head-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg></span>
         <div>
-            <div class="iris-co-title">Custom Attributes</div>
+            <div class="iris-co-title">Custom Attributes {{ help_tip('attr.custom_attributes') }}</div>
             <div class="iris-co-sub">Extend the default fields of cases, IOCs, assets, tasks, notes, evidence, timeline events and customers.</div>
             {{ form.hidden_tag() }}
         </div>
@@ -112,6 +112,7 @@
                         <button type="button" class="btn btn-sm btn-primary" id="iris-attr-save">Save</button>
                         <button type="button" class="btn btn-sm btn-outline-warning" id="iris-attr-partial">Partial overwrite</button>
                         <button type="button" class="btn btn-sm btn-outline-danger" id="iris-attr-complete">Complete overwrite</button>
+                        {{ help_tip('attr.overwrite', cls='align-self-center') }}
                     </div>
                 </div>
                 <div id="iris-attr-editor-wrap" style="display: none;">
@@ -128,7 +129,7 @@
                         </div>
                     </div>
                     <div class="iris-attr-json-head">
-                        <span class="iris-attr-field-label" style="margin-bottom: 0;">Schema JSON</span>
+                        <span class="iris-attr-field-label" style="margin-bottom: 0;">Schema JSON {{ help_tip('attr.schema') }}</span>
                         <span class="iris-attr-valid" id="iris-attr-valid"></span>
                     </div>
                     <div id="iris-attr-editor"></div>

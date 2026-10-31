@@ -949,6 +949,7 @@ function iris_ci_intel_tab_html(r) {
     }
     var out = '<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">' +
         '<span style="color:#9a9aa5; font-size:0.74rem;">Enrichment recorded by modules</span>' +
+        IrisHelp.icon('ioc.enrichment', {cls: 'ml-0'}) +
         '<div class="iris-cshell-menuwrap" style="margin-left:auto;">' +
         '<button type="button" class="iris-cshell-btn" id="iris-ci-modbtn">Run enrichment &#9662;</button>' +
         menu + '</div></div>';
@@ -984,7 +985,8 @@ function iris_ci_intel_tab_html(r) {
     /* --- MISP publication state --- */
     var misp = iris_ci_links_for(r).misp;
     out += '<div class="iris-ci-intel-block">' +
-        '<div class="iris-ci-intel-h">MISP</div>' +
+        '<div class="iris-ci-intel-h">MISP' +
+        IrisHelp.icon('ioc.misp_sync') + '</div>' +
         (misp
             ? '<div style="font-size:0.76rem; color:#c8c8d0;">Published as attribute <code style="color:#8fa3ef;">' +
               iris_ci_esc(misp.attribute_id) + '</code>' +
@@ -1257,18 +1259,21 @@ function iris_ci_short_err(msg) {
 function iris_ci_profile_html(r) {
     var st = IRIS_CI.profiles[r.ioc_id];
     if (!st || st.state === 'loading') return '';
+    /* one heading for every state, (i) included */
+    var head = '<div class="iris-ci-prof-h">&#x2728; Indicator profile' +
+        IrisHelp.icon('ioc.profile') + '</div>';
     if (st.state === 'busy') {
-        return '<div class="iris-ci-prof"><div class="iris-ci-prof-h">&#x2728; Indicator profile</div>' +
+        return '<div class="iris-ci-prof">' + head +
             '<div class="text-muted" style="font-size:0.78rem;">Reading the indicator and everything linked to it&hellip;</div></div>';
     }
     if (st.state === 'none') {
-        return '<div class="iris-ci-prof"><div class="iris-ci-prof-h">&#x2728; Indicator profile</div>' +
+        return '<div class="iris-ci-prof">' + head +
             '<div class="text-muted" style="font-size:0.78rem;">No profile yet. ' +
             '<a href="#" class="iris-ci-prof-gen" style="color:#a78bfa;">Generate one</a> ' +
             'from this indicator, the cases it appears in, and the notes, assets and events tied to it.</div></div>';
     }
     if (st.state === 'error') {
-        return '<div class="iris-ci-prof"><div class="iris-ci-prof-h">&#x2728; Indicator profile</div>' +
+        return '<div class="iris-ci-prof">' + head +
             '<div style="font-size:0.78rem; color:#fca5a5;" title="' +
             iris_ci_esc(st.error) + '">Could not generate: ' +
             iris_ci_esc(iris_ci_short_err(st.error)) +
@@ -1277,14 +1282,14 @@ function iris_ci_profile_html(r) {
     }
     var a = st.art || {};
     var when = String(a.generated_at || '').replace('T', ' ').slice(0, 16);
-    return '<div class="iris-ci-prof">' +
-        '<div class="iris-ci-prof-h">&#x2728; Indicator profile</div>' +
+    return '<div class="iris-ci-prof">' + head +
         '<div class="iris-ci-prof-body">' +
         iris_ci_md(a.content || a.ai_content || '') + '</div>' +
         '<div class="iris-ci-prof-f">' +
         iris_ci_esc([a.model, a.prompt_id, when].filter(Boolean).join(' · ')) +
         (st.cached ? ' · cached' : '') +
-        ' &middot; <a href="#" class="iris-ci-prof-rerun" style="color:#a78bfa;">Re-run</a></div></div>';
+        ' &middot; <a href="#" class="iris-ci-prof-rerun" style="color:#a78bfa;">Re-run</a>' +
+        IrisHelp.icon('ai.cached') + '</div></div>';
 }
 
 /* ---- Inline editing (v3): Edit IOC flips Details into a form and swaps
@@ -1342,19 +1347,22 @@ function iris_ci_edit_form_html(r) {
     var curType = (r.ioc_type && r.ioc_type.type_id) || r.ioc_type_id;
     var curTlp = (r.tlp && r.tlp.tlp_id) || r.ioc_tlp_id;
     return '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px 14px;">' +
-        '<div>' + iris_ci_lbl('Type *') +
+        '<div>' + iris_ci_lbl('Type *' +
+            IrisHelp.icon('common.ioc_type', {target: '#iris-ci-f-type'})) +
         iris_ci_select_html('iris-ci-f-type', types, curType) + '</div>' +
-        '<div>' + iris_ci_lbl('TLP *') +
+        '<div>' + iris_ci_lbl('TLP *' + IrisHelp.icon('common.tlp')) +
         iris_ci_select_html('iris-ci-f-tlp', tlps, curTlp) + '</div>' +
         '</div>' +
-        '<div style="margin-top:10px;">' + iris_ci_lbl('IOC value *') +
+        '<div style="margin-top:10px;">' +
+        iris_ci_lbl('IOC value *' + IrisHelp.icon('ioc.value')) +
         '<textarea class="form-control form-control-sm" id="iris-ci-f-value" rows="2">' +
         iris_ci_esc(r.ioc_value || '') + '</textarea></div>' +
         '<div style="margin-top:10px;">' + iris_ci_lbl('Description') +
         '<textarea class="form-control form-control-sm" id="iris-ci-f-desc" rows="4">' +
         iris_ci_esc(r.ioc_description || '') + '</textarea></div>' +
         '<div style="margin-top:10px;">' +
-        iris_ci_lbl('Tags' + iris_ci_tagsugg_pill_html(r)) +
+        iris_ci_lbl('Tags' + IrisHelp.icon('common.tags') +
+            iris_ci_tagsugg_pill_html(r)) +
         '<input type="text" class="form-control form-control-sm" id="iris-ci-f-tags" value="' +
         iris_ci_esc(r.ioc_tags || '') + '" placeholder="Add a tag..." autocomplete="off">' +
         iris_ci_tagsugg_results_html(r) + '</div>' +
@@ -1666,6 +1674,7 @@ function iris_ci_render_detail() {
         iris_ci_load_assets();
         body += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">' +
             '<span style="color:#e8e8ee; font-weight:600; font-size:0.9rem;">Linked assets</span>' +
+            IrisHelp.icon('asset.ioc_links', {cls: 'ml-0'}) +
             '<span class="text-muted" style="font-size:0.74rem;">' +
             assets.length + '</span>' +
             '<span style="margin-left:auto; display:inline-flex; align-items:center; gap:10px;">' +
@@ -1678,12 +1687,18 @@ function iris_ci_render_detail() {
             ? assets.map(iris_ci_asset_card_html).join('')
             : '<div class="text-muted" style="font-size:0.8rem; padding:6px 0;">No assets linked to this indicator.</div>';
     } else if (IRIS_CI.tab === 'notes') {
+        body += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">' +
+            '<span style="color:#e8e8ee; font-weight:600; font-size:0.9rem;">Source notes</span>' +
+            IrisHelp.icon('ioc.source_notes', {cls: 'ml-0'}) +
+            '<span class="text-muted" style="font-size:0.74rem;">' +
+            notes.length + '</span></div>';
         body += notes.length
             ? notes.map(iris_ci_note_row_html).join('')
             : '<div class="text-muted" style="font-size:0.8rem;">No notes cite this indicator.</div>';
     } else if (IRIS_CI.tab === 'cases') {
         body += '<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">' +
             '<span style="color:#e8e8ee; font-weight:600; font-size:0.9rem;">Also seen in</span>' +
+            IrisHelp.icon('ioc.cross_case', {cls: 'ml-0'}) +
             '<span class="text-muted" style="font-size:0.74rem;">' +
             cases.length + ' case' + (cases.length === 1 ? '' : 's') +
             '</span></div>';
@@ -1695,15 +1710,27 @@ function iris_ci_render_detail() {
         body += iris_ci_edit_form_html(r);
     } else {
         var tags = iris_ci_tags(r);
+        /* the (i) rides with the badge — with no TLP there is no badge, and
+           a lone icon would explain nothing on screen */
+        var tlpBadge = iris_ci_tlp_badge(iris_ci_tlp(r));
         body +=
             '<div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">' +
-            iris_ci_tlp_badge(iris_ci_tlp(r)) +
+            (tlpBadge
+                ? '<span style="display:inline-flex; align-items:center;">' +
+                  tlpBadge + IrisHelp.icon('common.tlp') + '</span>'
+                : '') +
+            /* the type name sits in its own span so the (i) can show the
+               stored description of exactly this type */
             '<span class="iris-ci-field"><span class="lbl">Type</span>' +
-            iris_ci_esc(iris_ci_type(r)) + '</span>' +
+            IrisHelp.icon('common.ioc_type',
+                          {target: '#iris-ci-d-type', cls: 'mr-1'}) +
+            '<span id="iris-ci-d-type">' +
+            iris_ci_esc(iris_ci_type(r)) + '</span></span>' +
             '</div>' +
             (tags.length
                 ? '<div style="margin-top:8px; display:flex; gap:4px; flex-wrap:wrap; align-items:center;">' +
                   '<span class="lbl" style="color:#7a7a85; font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase; margin-right:4px;">Tags</span>' +
+                  IrisHelp.icon('common.tags', {cls: 'ml-0 mr-1'}) +
                   tags.map(function (t) {
                       return '<span class="iris-ci-tag">' + iris_ci_esc(t) +
                           '</span>'; }).join('') + '</div>' : '') +

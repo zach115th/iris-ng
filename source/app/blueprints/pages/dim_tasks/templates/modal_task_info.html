@@ -5,7 +5,7 @@
         {% if element != "Logs" %}
         {% if data[element] != None %}
           <div class="input-group">
-            <label for="en">{{ element }}: </label>
+            <label for="en">{{ element }}: </label>{% if element == 'Success' %}{{ help_tip('dim.module_verdict', cls='mr-1') }}{% endif %}
             <span type="text" class="text-faded ml-1" id="en"> {{ data[element] }}</span>
           </div>
       {% endif %}

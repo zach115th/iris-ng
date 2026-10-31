@@ -35,7 +35,7 @@
         var $existing = $pane.find('.iris-af-section');
         if (!$existing.length) {
             $existing = $('<div class="iris-af-section card mt-2 mb-2"><div class="card-body py-2">'
-                + '<h6 class="mb-1">Investigation flows</h6>'
+                + '<h6 class="mb-1">Investigation flows' + IrisHelp.icon('flow.checklist') + '</h6>'
                 + '<div class="iris-af-body text-muted" style="font-size: 0.8rem;">Loading…</div>'
                 + '</div></div>');
             $pane.prepend($existing);

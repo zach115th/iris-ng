@@ -81,8 +81,9 @@ function iris_mod_render() {
         return;
     }
     var html = '<table class="iris-mod-table"><thead><tr>'
-        + '<th>ID</th><th>Module</th><th>Pipeline</th><th>Version</th><th>Interface</th>'
-        + '<th>Date added</th><th>Added by</th><th>Status</th><th></th></tr></thead><tbody>';
+        + '<th>ID</th><th>Module</th><th>Pipeline' + IrisHelp.icon('module.pipeline') + '</th><th>Version</th>'
+        + '<th>Interface' + IrisHelp.icon('module.interface_version') + '</th>'
+        + '<th>Date added</th><th>Added by</th><th>Status' + IrisHelp.icon('module.status') + '</th><th></th></tr></thead><tbody>';
     mods.forEach(function (m) {
         html += '<tr>'
             + '<td class="iris-mod-id">' + iris_mod_esc(m.id) + '</td>'

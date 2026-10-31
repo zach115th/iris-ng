@@ -86,7 +86,7 @@
                          already-fetched payload client-side; no API round-trip. -->
                     <li class="nav-item">
                         <div class="iris-graph-layers" id="iris-graph-layer-panel">
-                            <span class="iris-graph-layers-title">Layers</span>
+                            <span class="iris-graph-layers-title">Layers{{ help_tip('graph.layers') }}</span>
                             <label class="iris-graph-layer" for="iris-graph-layer-asset">
                                 <input type="checkbox" id="iris-graph-layer-asset" checked>
                                 <span class="iris-graph-swatch" style="background:#5e72e4;"></span>Assets
@@ -103,7 +103,7 @@
                                 <input type="checkbox" id="iris-graph-layer-evidence" checked>
                                 <span class="iris-graph-swatch" style="background:#f4c430;"></span>Evidence
                             </label>
-                            <span class="iris-graph-counts" id="iris-graph-counts"></span>
+                            <span class="iris-graph-counts" id="iris-graph-counts"></span>{{ help_tip('graph.edges', cls='ml-0') }}
                         </div>
                     </li>
                     <li class="nav-item hidden-caret">

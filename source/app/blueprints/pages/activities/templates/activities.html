@@ -19,7 +19,7 @@
             <div class="loader1 text-center ml-mr-auto" id="loading_msg">Loading...</div>
             <div class="card" id="card_main_load" style="display:none;">
                 <div class="card-header">
-                    <div class="card-title">User activities ( max 10k entries + unbound )
+                    <div class="card-title">User activities ( max 10k entries + unbound ){{ help_tip('activity.log') }}
                         <button type="button" class="btn btn-sm btn-outline-dark float-right ml-2" onclick="refresh_activities();">
                                 Refresh
                         </button>
@@ -30,7 +30,7 @@
                             <label class="form-check-label">
                                 <input class="form-check-input" type="checkbox" value="" id="non_case_related_act">
                                 <span class="form-check-sign">Show non case related activity</span>
-                            </label>
+                            </label>{{ help_tip('activity.non_case') }}
                     </div>
                     <div class="table-responsive" id="activities_table_wrapper">
                         <div class="selectgroup">

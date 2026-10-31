@@ -12,11 +12,11 @@
                 {{ form.hidden_tag() }}
                 {% if file.file_id %}
                 <div class="row ml-2">
-                    <p>The file is currently saved in virtual folder <code>{{ dsp.path_name }}</code>.</p>
+                    <p>The file is currently saved in virtual folder <code>{{ dsp.path_name }}</code>. {{ help_tip('datastore.case_files') }}</p>
                 </div>
                 {% else %}
                 <div class="row ml-2">
-                     <p>The file will be saved in virtual folder <code>{{ dsp.path_name }}</code>.</p>
+                     <p>The file will be saved in virtual folder <code>{{ dsp.path_name }}</code>. {{ help_tip('datastore.case_files') }}</p>
                  </div>
                 {% endif %}
                 <div class="form-row ml-2">
@@ -39,12 +39,7 @@
                 </div>
                 <div class="form-row ml-2">
                     <div class="form-group col-6 col-xs-12">
-                        <label for="file_password" class="placeholder">Password<i class="ml-1 mt-1 fa-regular text-dark fa-circle-question"
-                                                                                  title="Help" data-toggle="popover" data-html="true"
-                                                                                  data-trigger="hover" style="cursor: pointer;"
-                                                                                  data-content="If set, the file is locally encrypted with this password.<br/><b class='text-danger'>Passwords are stored in clear text server side. Do not put sensitive password here.</b><br/>Encrypted files cannot be used in notes.<br/>IOC are automatically encrypted with password <code>infected</code> unless specified otherwise here.">
-
-                        </i></label>
+                        <label for="file_password" class="placeholder">Password</label>{{ help_tip('datastore.password') }}
                          <div class="input-group mb-2 mr-sm-2">
                              {{ form.file_password(class='form-control',  autocomplete="off", type="password") }}
                              <div class="input-group-append">
@@ -53,7 +48,7 @@
                          </div>
                     </div>
                     <div class="form-group col-6 col-xs-12">
-                        <label for="file_tags">File tags</label>
+                        <label for="file_tags">File tags</label>{{ help_tip('common.tags') }}
                         <input type="text" id="file_tags" name="file_tags"
                             class="form-control col-md-12" {% if file.file_tags %} value="{{ file.file_tags }}" {% endif %}/>
                     </div>
@@ -63,26 +58,16 @@
                         <div class="form-check">
                             <label class="form-check-label">
                                 {{ form.file_is_ioc(class="form-check-input", type="checkbox") }}
-                                <span class="form-check-sign"> File is IOC <i class="ml-1 mt-1 fa-regular text-dark fa-circle-question"
-                                                                                  title="Help" data-toggle="popover" data-html="true"
-                                                                                  data-trigger="hover" style="cursor: pointer;"
-                                                                                  data-content="If set, the file is stored in a dedicated IOC folder on the server and is encrypted with password <code>infected</code> unless specified otherwise in the password field.<br/> The file is also added to the case IOC.">
-
-                                </i></span>
-                            </label>
+                                <span class="form-check-sign"> File is IOC</span>
+                            </label>{{ help_tip('datastore.file_is_ioc', cls='ml-1') }}
                         </div>
                     </div>
                     <div class="form-group col-6 col-xs-12">
                         <div class="form-check">
                             <label class="form-check-label">
                                 {{ form.file_is_evidence(class="form-check-input", type="checkbox") }}
-                                <span class="form-check-sign"> File is Evidence <i class="ml-1 mt-1 fa-regular text-dark fa-circle-question"
-                                                                                  title="Help" data-toggle="popover" data-html="true"
-                                                                                  data-trigger="hover" style="cursor: pointer;"
-                                                                                  data-content="If set, the file is stored in a dedicated Evidence folder on the server and added to the case Evidence.">
-
-                                </i></span>
-                            </label>
+                                <span class="form-check-sign"> File is Evidence</span>
+                            </label>{{ help_tip('datastore.file_is_evidence', cls='ml-1') }}
                         </div>
                     </div>
                 </div>
@@ -96,7 +81,6 @@
     </div>
 </div>
 <script>
-    $('[data-toggle="popover"]').popover();
     $('#toggle_file_password').on('click', function (e) {
         const type = $('#file_password').attr('type') === 'password' ? 'text' : 'password';
         $('#file_password').attr('type', type);

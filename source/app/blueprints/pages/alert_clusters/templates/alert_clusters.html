@@ -41,8 +41,8 @@
     <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
             <div class="d-flex align-items-baseline">
-                <div class="card-title mb-0 mr-2">Alert Clusters</div>
-                <span class="iris-ac-subtle" id="iris-ac-headline"></span>
+                <div class="card-title mb-0 mr-2">Alert Clusters {{ help_tip('cluster.cluster') }}</div>
+                <span class="iris-ac-subtle" id="iris-ac-headline"></span>{{ help_tip('cluster.awaiting_triage') }}
             </div>
             <div class="iris-ac-toolbar">
                 <select id="iris-ac-status-filter" class="form-control form-control-sm" style="width: 130px;">
@@ -78,12 +78,12 @@
                         <thead>
                             <tr>
                                 <th>Alert cluster</th>
-                                <th>Severity</th>
-                                <th>Status</th>
+                                <th>Severity {{ help_tip('cluster.severity') }}</th>
+                                <th>Status {{ help_tip('cluster.status') }}</th>
                                 <th class="text-right">Alerts</th>
-                                <th>Customer</th>
-                                <th>Owner</th>
-                                <th>Source rule</th>
+                                <th>Customer {{ help_tip('common.customer') }}</th>
+                                <th>Owner {{ help_tip('cluster.owner') }}</th>
+                                <th>Source rule {{ help_tip('crule.rule') }}</th>
                                 <th>Opened</th>
                             </tr>
                         </thead>

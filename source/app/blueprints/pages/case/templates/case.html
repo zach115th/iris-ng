@@ -31,7 +31,7 @@
                 {% if case.reviewer_id == current_user.id and case.review_status.status_name != "Reviewed" and case.review_status.status_name != "Not reviewed" %}
                     <div class="row row-card-no-pd review-card mt--3 mb--3 bg-warning-gradient" style="display: none;">
                         <div class="col-md-12">
-                            <h4 class="font-weight-bold"><i class="fa-solid fa-triangle-exclamation text-danger ml-2 mr-2"></i>Review requested
+                            <h4 class="font-weight-bold"><i class="fa-solid fa-triangle-exclamation text-danger ml-2 mr-2"></i>Review requested {{ help_tip('review.status') }}
                                 <button class="btn btn-sm float-right btn-dark mr-3 mt-2 btn-start-review">Start review</button>
                                 <button class="btn btn-sm float-right btn-success mr-3 mt-2 btn-confirm-review" style="display:none">Confirm review</button>
                                 <button class="btn btn-sm float-right btn-light mr-3 mt-2 btn-cancel-review" style="display:none">Cancel review</button></h4>
@@ -42,13 +42,13 @@
                 {% elif case.review_status.status_name == "Review in progress" %}
                     <div class="row row-card-no-pd mt--3 mb--3 bg-warning-gradient">
                         <div class="col-md-12">
-                            <h4 class="font-weight-bold mt-1"><i class="fa-solid fa-list-check ml-2 mr-2"></i>Review by {{ case.reviewer.name }} in progress</h4>
+                            <h4 class="font-weight-bold mt-1"><i class="fa-solid fa-list-check ml-2 mr-2"></i>Review by {{ case.reviewer.name }} in progress {{ help_tip('review.status') }}</h4>
                         </div>
                     </div>
                 {% elif case.review_status.status_name == "Pending review" %}
                     <div class="row row-card-no-pd mt--3 mb--3 bg-warning-gradient">
                         <div class="col-md-12">
-                            <h4 class="font-weight-bold mt-1"><i class="fa-solid fa-triangle-exclamation text-danger ml-2 mr-2"></i>Review by {{ case.reviewer.name }} pending</h4>
+                            <h4 class="font-weight-bold mt-1"><i class="fa-solid fa-triangle-exclamation text-danger ml-2 mr-2"></i>Review by {{ case.reviewer.name }} pending {{ help_tip('review.status') }}</h4>
                         </div>
                     </div>
                 {% endif %}
@@ -111,6 +111,7 @@
                         text-decoration: none; min-width: 0;
                     }
                     .iris-cs-titlelink:hover { text-decoration: none; }
+                    .iris-cs-titlewrap { display: flex; align-items: center; min-width: 0; }
                     .iris-cs-eyebrow {
                         font-size: 10.5px; font-weight: 600;
                         letter-spacing: 0.14em; text-transform: uppercase;
@@ -229,11 +230,15 @@
                         <div class="card iris-cs-card" id="rescard1">
                             <div class="card-header iris-cs-header">
                                 {{ form.hidden_tag() }}
+                                {# The (i) sits beside the collapse link, never inside it. #}
+                                <div class="iris-cs-titlewrap">
                                 <a href="#case_summary_card" class="iris-cs-titlelink" data-toggle="collapse" aria-expanded="true" aria-controls="case_summary_card">
                                     <span class="iris-cs-eyebrow">Analyst Commentary</span>
                                     <span aria-hidden="true" class="iris-cs-sep">|</span>
                                     <h4 class="iris-cs-title">Case Summary {{ "(Syncing with DB )" if case.id }}</h4>
                                 </a>
+                                {{ help_tip('case.summary') }}
+                                </div>
                                 <div class="iris-cs-actions">
                                     <small id="content_typing"></small>
                                     <small id="content_last_saved_by"></small>
@@ -282,7 +287,7 @@
                 <div class="modal-lg modal-dialog" role="document">
                   <div class="modal-content">
                       <div class="modal-header">
-                      <h5>Select report template</h5>
+                      <h5>Select report template {{ help_tip('case.reports') }}</h5>
                       <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
                             aria-hidden="true">&times;</span></button>
                       </div>
@@ -325,7 +330,7 @@
                 <div class="modal-lg modal-dialog" role="document">
                   <div class="modal-content">
                       <div class="modal-header">
-                      <h5>Select activity report template</h5>
+                      <h5>Select activity report template {{ help_tip('case.reports') }}</h5>
                       <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
                             aria-hidden="true">&times;</span></button>
                       </div>
@@ -370,7 +375,7 @@
                   <div class="modal-content">
                     <form method="post" action="" id="form_choose_reviewer">
                           <div class="modal-header">
-                          <h5>Choose reviewer</h5>
+                          <h5>Choose reviewer {{ help_tip('review.request') }}</h5>
                           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
                                 aria-hidden="true">&times;</span></button>
                           </div>

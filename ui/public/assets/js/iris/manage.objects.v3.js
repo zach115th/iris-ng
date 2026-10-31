@@ -20,17 +20,22 @@ var IRIS_CO = {
     search: ''
 };
 
+/* (i) help icons: `tip` is the icon beside the list title, a field's f[3] the
+ * icon beside its label. IrisHelp.icon() returns '' when icons are off, and
+ * the keys stay literal so the glossary checker can see them. */
 var IRIS_CO_TYPES = {
     asset: {
         label: 'Asset types', singular: 'asset type',
         url: '/manage/asset-type/list',
         id: 'asset_id', name: 'asset_name', desc: 'asset_description',
         add: 'add_asset_type', edit: 'assettype_detail', del: 'delete_asset_type',
+        tip: function () { return IrisHelp.icon('common.asset_type'); },
         fields: function (r) {
             return [
                 ['ID', '#' + r.asset_id], ['Name', r.asset_name],
-                ['Description', r.asset_description],
-                ['Icon (clean)', r.asset_icon_not_compromised, 'icon:' + (r.asset_icon_not_compromised_path || '')],
+                ['Description', r.asset_description, '', IrisHelp.icon('object.description')],
+                ['Icon (clean)', r.asset_icon_not_compromised, 'icon:' + (r.asset_icon_not_compromised_path || ''),
+                    IrisHelp.icon('object.asset_icons')],
                 ['Icon (compromised)', r.asset_icon_compromised, 'icon:' + (r.asset_icon_compromised_path || '')]
             ];
         }
@@ -41,12 +46,13 @@ var IRIS_CO_TYPES = {
         id: 'type_id', name: 'type_name', desc: 'type_description',
         add: 'add_ioc_type', edit: 'ioc_type_detail', del: 'delete_ioc_type',
         searchExtra: ['type_taxonomy'],
+        tip: function () { return IrisHelp.icon('common.ioc_type'); },
         fields: function (r) {
             return [
                 ['ID', '#' + r.type_id], ['Name', r.type_name],
-                ['Description', r.type_description],
-                ['MISP taxonomy', r.type_taxonomy],
-                ['Validation regex', r.type_validation_regex, 'code'],
+                ['Description', r.type_description, '', IrisHelp.icon('object.description')],
+                ['MISP taxonomy', r.type_taxonomy, '', IrisHelp.icon('object.ioc_taxonomy')],
+                ['Validation regex', r.type_validation_regex, 'code', IrisHelp.icon('object.ioc_validation')],
                 ['Validation hint', r.type_validation_expect]
             ];
         }
@@ -57,11 +63,12 @@ var IRIS_CO_TYPES = {
         id: 'id', name: 'name', desc: 'description',
         add: 'add_classification', edit: 'classification_detail', del: 'delete_case_classification',
         searchExtra: ['name_expanded'],
+        tip: function () { return IrisHelp.icon('common.case_classification'); },
         fields: function (r) {
             return [
-                ['ID', '#' + r.id], ['Name', r.name],
+                ['ID', '#' + r.id], ['Name', r.name, '', IrisHelp.icon('object.classification_name')],
                 ['Expanded name', r.name_expanded],
-                ['Description', r.description],
+                ['Description', r.description, '', IrisHelp.icon('object.description')],
                 ['Created', r.creation_date]
             ];
         }
@@ -74,12 +81,14 @@ var IRIS_CO_TYPES = {
         // Protected states are product machinery (Open, Closed...) — the
         // server refuses their deletion; do not offer the button.
         canDelete: function (r) { return !r.protected; },
+        tip: function () { return IrisHelp.icon('common.case_state'); },
         fields: function (r) {
             return [
                 ['ID', '#' + r.state_id], ['Name', r.state_name],
-                ['Description', r.state_description],
+                ['Description', r.state_description, '', IrisHelp.icon('object.description')],
                 ['Protected', r.protected
-                    ? 'Yes — product state, cannot be deleted' : 'No']
+                    ? 'Yes — product state, cannot be deleted' : 'No', '',
+                    IrisHelp.icon('object.state_protected')]
             ];
         }
     },
@@ -88,10 +97,11 @@ var IRIS_CO_TYPES = {
         url: '/manage/evidence-types/list',
         id: 'id', name: 'name', desc: 'description',
         add: 'add_evidence_type', edit: 'evidence_detail', del: 'delete_evidence_type',
+        tip: function () { return IrisHelp.icon('common.evidence_type'); },
         fields: function (r) {
             return [
                 ['ID', '#' + r.id], ['Name', r.name],
-                ['Description', r.description],
+                ['Description', r.description, '', IrisHelp.icon('object.description')],
                 ['Created', r.creation_date]
             ];
         }
@@ -102,14 +112,16 @@ var IRIS_CO_TYPES = {
         id: 'id', name: 'name', desc: 'tag',
         add: 'add_sector', edit: 'sector_detail', del: 'delete_sector',
         searchExtra: ['slug'],
+        tip: function () { return IrisHelp.icon('sector.catalog'); },
         fields: function (r) {
             return [
                 ['ID', '#' + r.id], ['Name', r.name],
-                ['Slug (stable key)', r.slug, 'code'],
-                ['Machine tag', r.tag, 'code'],
+                ['Slug (stable key)', r.slug, 'code', IrisHelp.icon('sector.slug')],
+                ['Machine tag', r.tag, 'code', IrisHelp.icon('sector.tag')],
                 ['Enabled', r.enabled
                     ? 'Yes — offered in the sector pickers'
-                    : 'No — hidden from pickers, still recognized in metrics']
+                    : 'No — hidden from pickers, still recognized in metrics', '',
+                    IrisHelp.icon('sector.enabled')]
             ];
         }
     }
@@ -160,6 +172,7 @@ function iris_co_render() {
     $('.iris-co-tab').removeClass('active');
     $('.iris-co-tab[data-type="' + type + '"]').addClass('active');
     $('#iris-co-list-title').text(cfg.label);
+    $('#iris-co-list-tip').html(cfg.tip ? cfg.tip() : '');
     $('#iris-co-add').text('+ Add ' + cfg.singular);
 
     var $rows = $('#iris-co-rows');
@@ -244,7 +257,7 @@ function iris_co_render_detail(row) {
         } else {
             rendered = iris_co_esc(value);
         }
-        html += '<div><div class="iris-co-f-label">' + iris_co_esc(label)
+        html += '<div><div class="iris-co-f-label">' + iris_co_esc(label) + (f[3] || '')
             + '</div><div class="iris-co-f-value">' + rendered + '</div></div>';
     });
     html += '</div>';

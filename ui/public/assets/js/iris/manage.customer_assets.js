@@ -162,7 +162,9 @@ function iris_ca_render_summary(a) {
         + iris_ca_kv('Criticality', crit)
         + iris_ca_kv('Environment', a.environment ? iris_ca_esc(a.environment) : null)
         + iris_ca_kv('Owner', a.owner ? iris_ca_esc(a.owner) : null)
-        + iris_ca_kv('IP', obs.ip ? iris_ca_esc(obs.ip) : null)
+        /* IP / domain / tags are live-derived, not stored - one (i) on the
+           first of the three explains all of them. */
+        + iris_ca_kv('IP' + IrisHelp.icon('registry.observed'), obs.ip ? iris_ca_esc(obs.ip) : null)
         + iris_ca_kv('Domain', obs.domain ? iris_ca_esc(obs.domain) : null)
         + iris_ca_kv('Tags', tags || null);
     if (a.notes) {
@@ -195,7 +197,7 @@ function iris_ca_open(assetId) {
             + iris_ca_kv('Last seen', iris_ca_esc(iris_ca_ts(a.last_seen)))
             + iris_ca_kv('Compromise', iris_ca_comp_badge(a)));
         $('#iris-ca-record').html(
-            iris_ca_kv('Origin', a.origin === 'manual'
+            iris_ca_kv('Origin' + IrisHelp.icon('registry.origin'), a.origin === 'manual'
                 ? 'Manual' + (a.created_by ? ' <span class="text-muted">('
                   + iris_ca_esc(a.created_by) + ')</span>' : '')
                 : 'Observed <span class="text-muted">(sync)</span>')

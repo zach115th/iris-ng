@@ -2,7 +2,7 @@
     <div class="col md-12">
         <div class="row">
             <div class="col align-self-center">
-                <h4 class="modal-title mr-4">Add assets</h4>
+                <h4 class="modal-title mr-4">Add assets{{ help_tip('asset.multi') }}</h4>
                 <small><a class="text-muted"></a></small>
             </div>
             {% include 'modals/modal_attributes_nav.html' %}
@@ -34,22 +34,22 @@
                                 {{ form.hidden_tag() }}
                                 <div class="form-group">
                                     <span class="text-muted float-right" style="font-size:0.74rem;">One asset per line</span>
-                                    <label for="assets_name" class="placeholder">Asset Names *</label>
+                                    <label for="assets_name" class="placeholder">Asset Names *</label>{{ help_tip('asset.name') }}
                                     <textarea class="form-control sizable-textarea" autocomplete="off" rows="4" name="assets_name" id="assets_name" placeholder="One asset per line"></textarea>
                                 </div>
                                 <div class="form-row ml-2">
                                     <div class="form-group col-6">
-                                        <label for="asset_type_id" class="placeholder">Asset Type *</label><br/>
+                                        <label for="asset_type_id" class="placeholder">Asset Type *</label>{{ help_tip('common.asset_type', target='#asset_type_id') }}<br/>
                                         {{ form.asset_type_id(class="selectpicker form-control") }}
                                     </div>
                                     <div class="form-group col-6">
-                                        <label for="analysis_status_id" class="placeholder">Analysis Status</label><br/>
+                                        <label for="analysis_status_id" class="placeholder">Analysis Status</label>{{ help_tip('common.analysis_status') }}<br/>
                                         {{ form.analysis_status_id(class="selectpicker col-9") }}
                                     </div>
                                 </div>
                                 <div class="form-row ml-2">
                                     <div class="form-group col-6">
-                                        <label for="asset_compromise_status_id" class="placeholder">Compromise Status</label><br/>
+                                        <label for="asset_compromise_status_id" class="placeholder">Compromise Status</label>{{ help_tip('common.compromise_status') }}<br/>
                                         {{ form.asset_compromise_status_id(class="selectpicker col-9") }}
                                     </div>
                                 </div>
@@ -76,7 +76,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mt-2 mb-1" style="font-weight:600;">Network Information</div>
+                                <div class="mt-2 mb-1" style="font-weight:600;">Network Information{{ help_tip('asset.domain_ip') }}</div>
                                 <div class="form-row ml-2">
                                     <div class="form-group col-6">
                                             <label for="asset_ip" class="placeholder">IP Address</label>
@@ -98,12 +98,12 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="asset_tags">Asset tags
-                                    </label>
+                                    </label>{{ help_tip('common.tags') }}
                                     <input type="text" id="asset_tags"
                                         class="form-control col-md-12"/>
                                 </div>
                                 <div class="form-group" data-select2-id="7">
-                                    <label>Related IOC</label>
+                                    <label>Related IOC</label>{{ help_tip('asset.ioc_links') }}
                                     <div class="select2-input ml-12" data-select2-id="6">
                                         <select id="ioc_links" name="ioc_links" class="form-control select2-hidden-accessible ml-12" multiple="" data-select2-id="ioc_links" tabindex="-1" aria-hidden="true" style="width: 100%">
 
@@ -111,7 +111,7 @@
                                     </div>
                                 </div>
                                 <div class="form-group" data-select2-id="9">
-                                    <label>Related Evidence</label>
+                                    <label>Related Evidence</label>{{ help_tip('asset.evidence_links') }}
                                     <div class="select2-input ml-12" data-select2-id="8">
                                         <select id="evidence_links" name="evidence_links" class="form-control select2-hidden-accessible ml-12" multiple="" data-select2-id="evidence_links" tabindex="-1" aria-hidden="true" style="width: 100%">
 

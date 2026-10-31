@@ -20,7 +20,7 @@
                             <span class="accicon float-left mr-3"><i class="fas fa-angle-right rotate-icon"></i></span>
                             <div class="card-title">
                                 <i class="fas fa-users-cog mr-2" style="color:#a78bfa;"></i>
-                                Analyst Skill Coverage
+                                Analyst Skill Coverage {{ help_tip('team.skill_coverage') }}
                             </div>
                         </div>
                         <div class="col">
@@ -41,7 +41,7 @@
                             <tr>
                                 <th>Analyst</th>
                                 <th>Login</th>
-                                <th>Skills</th>
+                                <th>Skills {{ help_tip('skill.skills') }}</th>
                                 <th>Categories covered</th>
                             </tr>
                         </thead>
@@ -63,7 +63,7 @@
                             <span class="accicon float-left mr-3"><i class="fas fa-angle-right rotate-icon"></i></span>
                             <div class="card-title">
                                 <i class="fa-solid fa-folder-open mr-2" style="color:#a78bfa;"></i>
-                                Active Cases with Team Assignments
+                                Active Cases with Team Assignments {{ help_tip('team.case_teams') }}
                             </div>
                         </div>
                         <div class="col">
@@ -74,7 +74,7 @@
                 </div>
                 <div class="card-body collapse show" id="collapse_case_teams">
                     <p class="text-muted small mb-3">
-                        Open cases with at least one analyst assigned. Click a case row to open the case.
+                        Every open case you can access, with its lead (the case owner) and assigned analysts. Click a case row to open the case.
                     </p>
                     <table class="table display table-striped table-hover" id="iris-teams-cases-table" width="100%">
                         <thead>
@@ -83,8 +83,8 @@
                                 <th>Case name</th>
                                 <th>Lead</th>
                                 <th>Analysts</th>
-                                <th>Required skills</th>
-                                <th>Coverage</th>
+                                <th>Required skills {{ help_tip('skill.required') }}</th>
+                                <th>Coverage {{ help_tip('team.coverage') }}</th>
                             </tr>
                         </thead>
                         <tbody id="iris-teams-cases-tbody">

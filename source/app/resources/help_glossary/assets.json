@@ -1,0 +1,51 @@
+{
+  "group": "Assets",
+  "order": 55,
+  "terms": {
+    "asset.asset": {
+      "title": "Case asset",
+      "text": "Something involved in the incident and recorded in this case: a workstation, a server, a user account, a network device... It carries a type, a compromise status and an analysis status, and can be linked to the case's IOCs, evidence and timeline events.\n\nEvery asset also feeds the customer-asset registry (Manage -> Customer Assets), which joins the same asset across the customer's cases and alerts by name and type. Marking an asset Compromised raises its registry entry to compromised unless the registry already records Compromised or Not compromised for it; changing the status back here never lowers the registry.",
+      "aka": ["host", "machine", "account", "registry", "customer assets"],
+      "wiki": "Customer-Asset-Registry#how-it-fills-itself-in"
+    },
+    "asset.name": {
+      "title": "Asset name",
+      "text": "What the asset is called: a hostname, an account name, a device label. Within a case the name and type together must be unique, ignoring case; adding or saving a second asset with the same name and type is refused.\n\nThe customer-asset registry treats the same customer, name (trimmed, ignoring case) and type as one asset across cases, so spell it the same way everywhere: host and host.corp.local are two different assets. Renaming or retyping an asset files it under a different registry entry; the old entry stays as it was.",
+      "aka": ["hostname", "identity", "duplicate asset"],
+      "wiki": "Customer-Asset-Registry#identity"
+    },
+    "asset.domain_ip": {
+      "title": "Domain and IP",
+      "text": "Where the asset sits on the network: its IP address and its domain (for example the Active Directory or DNS domain it belongs to). Both are free text: they are not validated and are not part of the asset's identity, so the same name with another IP is still the same asset.\n\nThey show in the asset list, in search, in reports and in what the AI reads about the case. The customer-asset registry shows the IP and domain of the most recently updated copy of the asset.",
+      "aka": ["ip address", "domain", "network information", "fqdn"]
+    },
+    "asset.ioc_links": {
+      "title": "IOC-asset links",
+      "text": "Which of the case's IOCs relate to which assets: a C2 address the host contacted, a hash found on it, an account seen using it. Each link is one record shown from both sides, on the asset and on the IOC's Assets tab; changing it from either side saves the asset, so the change appears in the asset's history.\n\nLinks are also made by a timeline event's Push IOCs to assets option and when working-timeline events are promoted. They draw a direct line on the Graph tab and are included in reports, case exports and the asset and IOC profiles.",
+      "aka": ["related ioc", "linked iocs", "linked assets", "push iocs to assets"],
+      "wiki": "Knowledge-Map#populating-the-layers"
+    },
+    "asset.evidence_links": {
+      "title": "Asset-evidence links",
+      "text": "The evidence items (disk images, memory dumps, log exports...) collected from or about this asset. The link is set from the asset, in its add and edit windows or on its Evidence tab; the evidence item's own window lists its linked assets read-only.\n\nOn the Graph tab, linked evidence is drawn as an amber box joined to the asset, and the asset profile reads each linked item's file name, size and whether it has a hash. The asset's Evidence tab flags an item with no hash recorded.",
+      "aka": ["related evidence", "linked evidence"],
+      "wiki": "Knowledge-Map#populating-the-layers"
+    },
+    "asset.multi": {
+      "title": "Adding several assets",
+      "text": "Each non-empty line of the names box becomes its own asset, all with the type, statuses, description, network information, tags and links chosen in this form. Lines are saved one by one: a name the case already has with the same type is refused, and the other lines are still added. To give each asset its own type and details, use CSV upload instead.",
+      "aka": ["bulk add", "add assets", "one asset per line"]
+    },
+    "asset.profile": {
+      "title": "Asset profile (AI)",
+      "text": "A short AI reading of this asset, written from its recorded fields, its linked IOCs and evidence, the timeline events that list it, its comments and a brief case context. Opening an asset only reads the saved profile. The model is called when you click Generate one or the sparkle button, which reuse the saved profile if nothing it reads has changed, or Re-run, which always asks again. Generating needs write access to the case.\n\nThe saved profile is shared with everyone who can open the case.",
+      "aka": ["ai profile", "asset summary"],
+      "wiki": "AI-Features#new-surfaces-in-iris-ng-v200"
+    },
+    "asset.csv_import": {
+      "title": "Asset CSV import",
+      "text": "Adds assets from a CSV file with the columns asset_name, asset_type_name, asset_description, asset_ip, asset_domain, asset_tags, in that order (a header row is optional). The type is matched by name, ignoring case (for example Windows - Server); several tags go in one cell separated by |. Imported assets start with the analysis status Unspecified.\n\nA row with a missing column, an empty name or an unknown type is reported and skipped; the other rows are still imported. The import does not check for assets the case already has, so importing the same file twice adds the assets twice.",
+      "aka": ["csv", "upload", "bulk import"]
+    }
+  }
+}

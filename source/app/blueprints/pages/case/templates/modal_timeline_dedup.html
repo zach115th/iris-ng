@@ -215,7 +215,7 @@
       <div class="modal-header">
         <h5 class="modal-title" id="iris-dedup-title" style="color: #e2d9f3; font-size: 14px; font-weight: 600;">
           <i class="fas fa-clone mr-2" style="color: #8b5cf6;"></i>Find Duplicates &mdash;
-          <span id="iris-dedup-scope-label">Timeline</span>
+          <span id="iris-dedup-scope-label">Timeline</span>{{ help_tip('timeline.dedup') }}
         </h5>
         <button type="button" class="close" data-dismiss="modal" style="color: #94a3b8; opacity:1;">&times;</button>
       </div>
@@ -236,7 +236,7 @@
           <div style="margin-bottom:20px;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
               <div>
-                <span class="iris-dd-section-title">Exact duplicates</span>
+                <span class="iris-dd-section-title">Exact duplicates</span>{{ help_tip('timeline.dedup_exact') }}
                 <span class="iris-dd-badge iris-dd-badge-violet" id="iris-dd-exact-badge">0 groups</span>
               </div>
               <button id="iris-dd-auto-btn" class="iris-dd-btn iris-dd-btn-primary" onclick="irisDedupAutoExact()" style="display:none;">
@@ -254,7 +254,7 @@
           <!-- Near section -->
           <div>
             <div style="display:flex; align-items:center; margin-bottom:10px;">
-              <span class="iris-dd-section-title">Near duplicates</span>
+              <span class="iris-dd-section-title">Near duplicates</span>{{ help_tip('timeline.dedup_near') }}
               <span class="iris-dd-badge iris-dd-badge-amber" id="iris-dd-near-badge">0 pairs</span>
               <span style="font-size:11px; color:#64748b; margin-left:10px;">Title similarity ≥ 75 % within 5 minutes — review required</span>
             </div>

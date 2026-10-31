@@ -110,7 +110,7 @@
 										<p>{{ customer.customer_description }}</p>
 									</div>
 									<div class="col-md-3 info-customer">
-										<h5 class="sub  text-bold"><b>Customer SLAs</b></h5>
+										<h5 class="sub  text-bold"><b>Customer SLAs</b>{{ help_tip('customer.sla') }}</h5>
 										<p>{{ customer.customer_sla }}</p>
 									</div>
 									<div class="col-md-3 info-customer">
@@ -129,7 +129,7 @@
 								<div class="row">
 									<div class="col-12">
 										<div class="row">
-											<h3><strong><i class="ml-1 fa-regular fa-address-book mr-1"></i> Contacts</strong></h3>
+											<h3><strong><i class="ml-1 fa-regular fa-address-book mr-1"></i> Contacts</strong>{{ help_tip('customer.contacts') }}</h3>
 											<button class="btn btn-light btn-sm ml-auto" onclick="add_new_contact({{ customer.customer_id }});">Add Contact</button>
 										</div>
 									</div>
@@ -175,7 +175,7 @@
 										<div class="row">
 											<div class="col col-heading collapsed" href="#collapse_client_users_view" title="Click to unfold"  data-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapse_client_users_view">
 												<span class="accicon float-left mr-3"><i class="fas fa-angle-right rotate-icon"></i></span>
-												<div class="card-title">Associated Users</div>
+												<div class="card-title">Associated Users {{ help_tip('user.customers') }}</div>
 											</div>
 											<div class="col">
 												<a class="btn btn-light btn-sm float-right" href="/manage/access-control">Manage</a>
@@ -199,7 +199,7 @@
 											<th>#ID</th>
 											<th>Name</th>
 											<th>Login Name</th>
-											<th>Service Account</th>
+											<th>Service Account {{ help_tip('user.service_account') }}</th>
 										</tr>
 										</thead>
 										<tfoot>
@@ -240,7 +240,7 @@
 										<tr>
 											<th>Name</th>
 											<th>Opening date</th>
-											<th>State</th>
+											<th>State {{ help_tip('common.case_state') }}</th>
 											<th>Owner</th>
 										</tr>
 										</thead>
@@ -282,7 +282,7 @@
 										<tr>
 											<th>Name</th>
 											<th>Description</th>
-											<th>Type</th>
+											<th>Type {{ help_tip('common.asset_type') }}</th>
 											<th>IP</th>
 											<th>Seen in case</th>
 										</tr>

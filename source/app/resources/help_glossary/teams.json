@@ -1,0 +1,34 @@
+{
+  "group": "Skills and teams",
+  "order": 118,
+  "terms": {
+    "skill.skills": {
+      "title": "Analyst skills",
+      "text": "The DFIR skills an analyst holds, chosen from this server's skill catalog. A skill is held or not; there are no levels. Analysts set their own on their profile page and administrators on the user's Skills tab. Skills decide whom the case team's Suggest button proposes and whom the AI task suggester proposes as a task's assignee.",
+      "wiki": "Analyst-Skills-and-Teams#skill-catalog",
+      "aka": ["skill", "expertise", "competence", "skill catalog"]
+    },
+    "skill.required": {
+      "title": "Required skills",
+      "text": "The skills a case needs. IRIS-NG derives them from the case's classification and tags with fixed rules (no AI): a ransomware classification or tag, for example, calls for ransomware response, disk and memory forensics and malware analysis. They are saved on the case when its team section first loads them.\n\nSuggest, in the case's team section, then proposes up to five analysts by greedy set cover: each pick is the analyst holding the most required skills not yet covered, until nobody adds one. It skips the case owner, the reviewer and anyone already assigned, does not check whether the analyst can open the case, and with no required skills proposes the analysts holding the most skills.",
+      "wiki": "Analyst-Skills-and-Teams#required-skill-derivation",
+      "aka": ["suggest", "set cover", "team suggestion", "derived skills"]
+    },
+    "team.skill_coverage": {
+      "title": "Analyst skill coverage",
+      "text": "Every active user account except service accounts, with the skills each one holds and the skill categories those cover. Use it to spot skills nobody on the team has before a case needs them.",
+      "wiki": "Analyst-Skills-and-Teams#manageteams",
+      "aka": ["coverage", "skills matrix", "gaps"]
+    },
+    "team.case_teams": {
+      "title": "Cases with team assignments",
+      "text": "Every open case you can access, with its lead (the case owner), the analysts assigned to its team, the skills it requires and how much of them the team covers. Click a row to open the case; the team itself is set in the case's information window.",
+      "aka": ["case team", "staffing", "lead", "assigned analysts"]
+    },
+    "team.coverage": {
+      "title": "Team coverage",
+      "text": "The share of the case's required skills held by the case owner or by an analyst assigned to the case: green from 80%, amber from 50%, red below. A dash means no required skills are recorded for the case yet.",
+      "aka": ["coverage", "percentage", "skills covered"]
+    }
+  }
+}

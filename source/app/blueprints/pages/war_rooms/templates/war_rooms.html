@@ -87,7 +87,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
         </span>
         <div>
-            <h3 class="mb-0">War Rooms</h3>
+            <h3 class="mb-0">War Rooms {{ help_tip('room.war_room') }}</h3>
             <div class="iris-wr-subtitle">Multi-case crisis-coordination workspaces.</div>
         </div>
         <div class="ml-auto d-flex align-items-center">
@@ -114,6 +114,7 @@
         <button type="button" class="iris-wr-chip" data-status="closed">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
             Closed</button>
+        {{ help_tip('room.status') }}
     </div>
 
     <div class="row" id="iris-wr-cards"></div>
@@ -123,12 +124,12 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header d-flex align-items-center">
-                    <h4 class="card-title mb-0">Discovery</h4>
+                    <h4 class="card-title mb-0">Discovery {{ help_tip('room.discovery') }}</h4>
                     <span class="text-muted ml-2" style="font-size: 0.8rem;">
                         correlated case groups computed from shared IOCs — promote one to open a war room
                     </span>
                     <div class="ml-auto d-flex align-items-center">
-                        <label class="mb-0 mr-1 text-muted" style="font-size:0.8rem;" for="iris-wr-disc-minshared">Min shared IOCs</label>
+                        <label class="mb-0 mr-1 text-muted" style="font-size:0.8rem;" for="iris-wr-disc-minshared">Min shared IOCs</label>{{ help_tip('room.min_shared', cls='mr-2') }}
                         <input type="number" min="1" max="50" value="2" class="form-control form-control-sm mr-2"
                                id="iris-wr-disc-minshared" style="width: 70px;">
                         <button class="btn btn-sm btn-secondary" id="iris-wr-disc-refresh">Refresh</button>

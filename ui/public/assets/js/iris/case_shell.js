@@ -52,8 +52,19 @@ function iris_cshell_hydrate() {
                 meta.map(function (m) {
                     return '<span>' + m + '</span>';
                 }).join('');
-            document.getElementById('iris-cshell-classif').textContent =
-                h.classification || '';
+            var classif = document.getElementById('iris-cshell-classif');
+            classif.textContent = h.classification || '';
+            /* (i) beside the classification, only when there is one; the
+               popover reads the chosen value from the span's text. */
+            if (h.classification &&
+                    !document.getElementById('iris-cshell-classif-help')) {
+                var classifHelp = IrisHelp.el('common.case_classification',
+                    {target: '#iris-cshell-classif'});
+                if (classifHelp) {
+                    classifHelp.id = 'iris-cshell-classif-help';
+                    classif.insertAdjacentElement('afterend', classifHelp);
+                }
+            }
             var sev = document.getElementById('iris-cshell-sev');
             sev.textContent = h.severity_name || 'Unspecified';
             sev.className = 'iris-cshell-chip iris-cshell-chipbtn sev-' +
@@ -86,7 +97,8 @@ function iris_cshell_hydrate() {
                             iris_cshell_esc(p) + '">' +
                             iris_cshell_esc(iris_cshell_initials(p)) +
                             '</span>';
-                    }).join('');
+                    }).join('') +
+                    IrisHelp.icon('case.people');
             }
             var right = '';
             if (h.alerts_count) {
@@ -95,12 +107,14 @@ function iris_cshell_hydrate() {
                     '" target="_blank" rel="noopener">&#9888; ' +
                     h.alerts_count + ' related alert' +
                     (h.alerts_count === 1 ? '' : 's') + '</a>';
+                right += IrisHelp.icon('case.related_alerts');
             }
             if (h.review_status === 'Reviewed') {
                 right += '<span class="iris-cshell-chip" style="border-color:rgba(45,206,137,0.5); color:#2dce89;">Reviewed' +
                     (h.reviewer_name
                         ? ' by ' + iris_cshell_esc(h.reviewer_name) : '') +
                     '</span>';
+                right += IrisHelp.icon('review.status');
             }
             (h.tags || []).slice(0, 8).forEach(function (t) {
                 right += '<span class="iris-cshell-tag">' +

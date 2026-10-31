@@ -82,7 +82,7 @@
     <div id="iris-event-history-panel" class="card mb-3" style="display:none; border: 1px solid rgba(139, 92, 246, 0.35); background: rgba(139, 92, 246, 0.06);">
         <div class="card-header d-flex align-items-center" style="padding: 8px 14px;">
             <i class="fa-solid fa-clock-rotate-left mr-2" style="color:#b794f6;"></i>
-            <span style="font-weight:600;">Event history</span>
+            <span style="font-weight:600;">Event history</span>{{ help_tip('event.history') }}
             <button type="button" class="btn btn-xs bg-transparent ml-auto" onclick="iris_toggle_event_history();return false;" title="Hide">
                 <i class="fa fa-times"></i>
             </button>
@@ -102,7 +102,7 @@
                 <li class="mb-2 d-flex">
                     <i class="fa-solid {{ icon }} mr-2 mt-1" style="color:{{ col }}; width: 14px; text-align:center;"></i>
                     <div>
-                        <span style="font-weight:600; text-transform:capitalize;">{{ act }}</span>
+                        <span style="font-weight:600; text-transform:capitalize;">{{ act }}</span>{% if 'promoted' in act %}{{ help_tip('wt.promote', cls='mr-1') }}{% endif %}
                         <span class="text-muted">by</span> <code>{{ entry.user }}</code>
                         <div class="text-muted" style="font-size: 11px;">{{ mod|format_datetime('%Y-%m-%d %H:%M:%S') }}</div>
                     </div>
@@ -150,7 +150,7 @@
                                 </div>
                                 <div class="row" id="event_date_inputs">
                                     <div class="form-group col-xl-5 col-md-12">
-                                        <label for="event_date" class="placeholder">Date *</label>
+                                        <label for="event_date" class="placeholder">Date *</label>{{ help_tip('event.date') }}
                                         <input class="form-control" type="date" id="event_date" {% if event.event_date_wtz %} value="{{ event.event_date_wtz.strftime('%Y-%m-%d') }}"{% endif %}>
                                     </div>
                                     <div class="form-group col-xl-4 col-md-8">
@@ -158,7 +158,7 @@
                                         <input class="form-control" type="time" step="0.001" id="event_time" {% if event.event_date_wtz %} value="{{ event.event_date_wtz.strftime('%H:%M:%S.%f')[:-3] }}" {% else %} value="00:00:00.000" {% endif %}>
                                     </div>
                                     <div class="form-group col-xl-3 col-md-4">
-                                        <label for="event_tz" class="placeholder">TZ *</label>
+                                        <label for="event_tz" class="placeholder">TZ *</label>{{ help_tip('event.tz') }}
                                         <div class="d-flex" style="gap: 6px;">
                                             <input class="form-control" type="text" id="event_tz" {% if event.event_tz %} value="{{ event.event_tz }}" {% else %} value="+00:00" {% endif %}>
                                             <button class="btn btn-sm btn-outline-white" type="button" title="Parse a date in any format" onclick="show_time_converter();return false;"><i class="fas fa-magic"></i></button>
@@ -177,13 +177,13 @@
                                 </div>
                                 <div class="row">
                                     <div class="form-group col-6">
-                                        <label for="event_category_id" class="form-label">{{ form.event_category_id.label.text }}</label>
+                                        <label for="event_category_id" class="form-label">{{ form.event_category_id.label.text }}</label>{{ help_tip('event.category') }}
                                         <div class="row col-12">
                                             {{ form.event_category_id(class="selectpicker") }}
                                         </div>
                                     </div>
                                     <div class="form-group col-6">
-                                        <label for="parent_event_id" class="form-label">Parent Event</label>
+                                        <label for="parent_event_id" class="form-label">Parent Event</label>{{ help_tip('event.parent') }}
                                         <div class="row col-12">
                                             <select class="selectpicker form-control" id="parent_event_id"></select>
                                         </div>
@@ -218,17 +218,21 @@
                                 </div>
                                 <div class="row">
                                     <div class="form-group col-xl-6 col-md-12">
-                                        <label for="event_source" class="placeholder">{{ form.event_source.label.text }}</label>
+                                        <label for="event_source" class="placeholder">{{ form.event_source.label.text }}</label>{{ help_tip('event.source') }}
                                         {{ form.event_source(class='form-control',  autocomplete="off", placeholder="Source") }}
                                     </div>
                                     <div class="form-group col-xl-6 col-md-12">
-                                        <label for="event_tags" class="d-flex align-items-center" style="gap: 8px; flex-wrap: wrap;">
-                                            <span>Event tags</span>
+                                        {# The label holds the text only: the AI pills and the (i) icons
+                                           are buttons, and a button inside a <label> is invalid HTML and
+                                           pollutes the field's accessible name. The row keeps the layout
+                                           the label used to provide. #}
+                                        <div class="d-flex align-items-center mb-2" style="gap: 8px; flex-wrap: wrap;">
+                                            <label for="event_tags" class="mb-0">Event tags</label>{{ help_tip('common.tags', cls='ml-0') }}
                                             <button type="button" id="iris-attack-suggest-btn"
                                                 title="Suggest MITRE ATT&CK techniques from the event title + description"
                                                 style="background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.45); color: #d4c4ff; font-size: 11px; line-height: 1; padding: 3px 8px; border-radius: 999px; cursor: pointer;">
                                                 &#x2728; Suggest ATT&amp;CK
-                                            </button>
+                                            </button>{{ help_tip('event.attack_suggest', cls='ml-0') }}
                                             <span id="iris-attack-suggest-status" style="font-size: 11px; color: #9ca3af;"></span>
                                             {# iris-next: AI tag suggester pill — placed inline next to Suggest ATT&CK. #}
                                             {% set tagsuggest_object_type = "event" %}
@@ -236,7 +240,7 @@
                                             {% set tagsuggest_target_input_id = "event_tags" %}
                                             {% set tagsuggest_pill_only = True %}
                                             {% include 'case_tag_suggester.html' %}
-                                        </label>
+                                        </div>
                                         <input type="text" id="event_tags" placeholder="tag1,tag2"
                                             class="form-control" {% if event.event_tags %} value="{{ event.event_tags }}" {% endif %}/>
                                         {# iris-next: tag suggester results panel (paired with the pill in the label above). #}
@@ -263,14 +267,14 @@
                                 </div>
                                 <div class="row">
                                     <div class="form-group col-12 col-md-6">
-                                        <label for="event_assets">Link to assets</label>
+                                        <label for="event_assets">Link to assets</label>{{ help_tip('event.assets') }}
                                         <div class="select2-input" data-select2-id="6">
                                             <select id="event_assets" name="event_assets" class="form-control select2-hidden-accessible" multiple="" data-select2-id="event_assets" tabindex="-1" aria-hidden="true" style="width: 100%">
                                             </select>
                                         </div>
                                     </div>
                                     <div class="form-group col-12 col-md-6">
-                                        <label for="event_iocs">Link to IOCs</label>
+                                        <label for="event_iocs">Link to IOCs</label>{{ help_tip('event.iocs') }}
                                         <div class="select2-input" data-select2-id="6">
                                             <select id="event_iocs" name="event_iocs" class="form-control select2-hidden-accessible" multiple="" data-select2-id="event_iocs" tabindex="-1" aria-hidden="true" style="width: 100%">
                                             </select>
@@ -284,16 +288,12 @@
                                        <div class="form-check">
                                             <label class="form-check-label mt-3">
                                                 <input class="form-check-input" type="checkbox" id="event_sync_iocs_assets" checked>
-                                                    <span class="form-check-sign"> Push IOCs to assets
-                                                        <i class="ml-1 mt-1 fa-regular fa-circle-question" title="If checked, the IOCs related to this event will be associated with the specified assets" style="cursor:pointer;"></i>
-                                                    </span>
-                                            </label>
+                                                    <span class="form-check-sign"> Push IOCs to assets</span>
+                                            </label>{{ help_tip('event.sync_iocs_assets') }}
                                        </div>
                                     </div>
                                     <div class="form-group col-xl-5 col-md-12">
-                                        <label class="form-label" for="event_verdict">Verdict
-                                            <i class="ml-1 fa-regular fa-circle-question" title="Analyst triage state. To be determined and True positive are considered by the AI timeline analysis, the case summary and the report, and appear on the graph. False positive is excluded from all of them." style="cursor:pointer;"></i>
-                                        </label>
+                                        <label class="form-label" for="event_verdict">Verdict</label>{{ help_tip('event.verdict') }}
                                         <select class="form-control" id="event_verdict" name="event_verdict">
                                             {% for value, label in verdict_choices %}
                                             <option value="{{ value }}" {% if (event.event_verdict or default_verdict) == value %}selected{% endif %}>{{ label }}</option>
@@ -304,7 +304,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="form-group col-12 mt-1">
-                                          <a class="iris-evm-raw" data-toggle="collapse" href="#collapseRawEvent" role="button" aria-expanded="false" aria-controls="collapseRawEvent">&#9656; Edit raw event data</a>
+                                          <a class="iris-evm-raw" data-toggle="collapse" href="#collapseRawEvent" role="button" aria-expanded="false" aria-controls="collapseRawEvent">&#9656; Edit raw event data</a>{{ help_tip('event.raw') }}
                                         <div class="collapse" id="collapseRawEvent">
                                             <div class="card card-body">
                                                 <label for="event_raw" class="placeholder">{{ form.event_raw.label.text }}</label>
@@ -480,6 +480,8 @@ $('#event_category_id').selectpicker({
         var conf = (typeof ukc.confidence === 'number') ? '  ·  ' + Math.round(ukc.confidence * 100) + '%' : '';
         pill.textContent = 'UKC #' + ukc.number + '  ' + ukc.name + '  (' + ukc.stage + ' stage)' + conf;
         line.appendChild(pill);
+        var ukcHelp = window.IrisHelp ? IrisHelp.el('event.ukc_phase', {cls: 'ml-0'}) : null;
+        if (ukcHelp) { line.appendChild(ukcHelp); }
 
         var applyBtn = document.createElement('button');
         applyBtn.type = 'button';
@@ -517,6 +519,8 @@ $('#event_category_id').selectpicker({
         var header = document.createElement('div');
         header.style.cssText = 'color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;';
         header.textContent = '✨ Sigma evidence — ' + matches.length + ' detection rule(s) matched semantically';
+        var sigmaHelp = window.IrisHelp ? IrisHelp.el('event.sigma_evidence') : null;
+        if (sigmaHelp) { header.appendChild(sigmaHelp); }
         sigmaEl.appendChild(header);
 
         matches.forEach(function (m) {

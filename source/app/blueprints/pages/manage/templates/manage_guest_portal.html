@@ -18,7 +18,7 @@
             <div class="card">
                 <div class="card-header d-flex align-items-center" style="gap:10px;">
                     <div>
-                        <h4 class="card-title mb-0">Guest Portal</h4>
+                        <h4 class="card-title mb-0">Guest Portal {{ help_tip('guest.portal') }}</h4>
                         <div class="text-muted" style="font-size:0.8rem;">How war-room guests reach this instance from outside. The portal agent container runs the Cloudflare tunnel in the mode chosen here and reports its status; only the guest portal is ever exposed through it.</div>
                     </div>
                     <span class="ml-auto"></span>
@@ -30,7 +30,7 @@
                         <strong>Agent key not configured.</strong> Set <code>PORTAL_TUNNEL_AGENT_KEY</code> in <code>.env</code> (the same value the tunnel container gets) and recreate <code>app</code>; until then the agent cannot read these settings and links fall back to this instance's own address.
                     </div>
 
-                    <h5 style="color:#e8e8ee; font-weight:600;">Tunnel mode</h5>
+                    <h5 style="color:#e8e8ee; font-weight:600;">Tunnel mode {{ help_tip('guest.tunnel_mode') }}</h5>
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="radio" name="iris-gp-mode" id="iris-gp-mode-quick" value="quick">
                         <label class="form-check-label" for="iris-gp-mode-quick">
@@ -58,12 +58,12 @@
 
                     <div class="row">
                         <div class="col-md-6">
-                            <label for="iris-gp-url">Public URL</label>
+                            <label for="iris-gp-url">Public URL</label>{{ help_tip('guest.public_url') }}
                             <input type="text" class="form-control" id="iris-gp-url" placeholder="https://rooms.example.com" autocomplete="off">
                             <small class="form-text text-muted">Base URL guests use. Required for a named tunnel; leave empty for a quick tunnel (the agent reports the random hostname). Invitation links and room addresses are built from it.</small>
                         </div>
                         <div class="col-md-6">
-                            <label for="iris-gp-token">Tunnel token <span class="text-muted" id="iris-gp-token-state"></span></label>
+                            <label for="iris-gp-token">Tunnel token <span class="text-muted" id="iris-gp-token-state"></span></label>{{ help_tip('guest.tunnel_token') }}
                             <input type="password" class="form-control" id="iris-gp-token" placeholder="eyJh..." autocomplete="new-password">
                             <small class="form-text text-muted">Write-only: never shown again. Leave blank to keep the stored token; type <code>clear</code> to remove it.</small>
                         </div>
@@ -73,7 +73,7 @@
 
             <div class="card">
                 <div class="card-header d-flex align-items-center">
-                    <h4 class="card-title mb-0">Tunnel status</h4>
+                    <h4 class="card-title mb-0">Tunnel status {{ help_tip('guest.tunnel_status') }}</h4>
                     <span class="ml-auto text-muted" style="font-size:0.78rem;" id="iris-gp-status-when"></span>
                 </div>
                 <div class="card-body" style="font-size:0.88rem;">

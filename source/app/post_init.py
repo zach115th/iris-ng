@@ -51,7 +51,6 @@ from app.iris_engine.module_handler.module_handler import check_module_health
 from app.iris_engine.module_handler.module_handler import instantiate_module_from_name
 from app.iris_engine.module_handler.module_handler import register_module
 from app.misp_ioc_taxonomy import backfill_ioc_type_taxonomy
-from app.models.models import create_safe_limited
 from app.models.alerts import Severity, AlertStatus, AlertResolutionStatus
 from app.models.authorization import CaseAccessLevel
 from app.models.authorization import Group
@@ -268,6 +267,9 @@ def run_post_init(development=False):
 
             log.info("Creating base review status")
             create_safe_review_status()
+
+            log.info("Upgrading seeded value descriptions")
+            upgrade_seed_descriptions()
 
             log.info("Creating base hooks")
             create_safe_hooks()
@@ -786,7 +788,7 @@ def create_safe_classifications():
             # Iterate over each entry in the classification
             for entry in entries:
                 # Create a new CaseClassification object with the specified name, name_expanded, and description
-                create_safe(db.session, CaseClassification,
+                get_by_value_or_create(db.session, CaseClassification, 'name',
                             name=f"{predicate}:{entry.get('value')}",
                             name_expanded=f"{predicate.title()}: {entry.get('expanded')}",
                             description=entry['description'])
@@ -816,11 +818,16 @@ def create_safe_task_status():
 
     """
     # Create new TaskStatus objects for each status
-    create_safe(db.session, TaskStatus, status_name='To do', status_description="", status_bscolor="danger")
-    create_safe(db.session, TaskStatus, status_name='In progress', status_description="", status_bscolor="warning")
-    create_safe(db.session, TaskStatus, status_name='On hold', status_description="", status_bscolor="muted")
-    create_safe(db.session, TaskStatus, status_name='Done', status_description="", status_bscolor="success")
-    create_safe(db.session, TaskStatus, status_name='Canceled', status_description="", status_bscolor="muted")
+    get_by_value_or_create(db.session, TaskStatus, 'status_name', status_name='To do',
+                           status_description="Not started yet.", status_bscolor="danger")
+    get_by_value_or_create(db.session, TaskStatus, 'status_name', status_name='In progress',
+                           status_description="Someone is working on it.", status_bscolor="warning")
+    get_by_value_or_create(db.session, TaskStatus, 'status_name', status_name='On hold',
+                           status_description="Paused: waiting on something before work can continue.", status_bscolor="muted")
+    get_by_value_or_create(db.session, TaskStatus, 'status_name', status_name='Done',
+                           status_description="Finished.", status_bscolor="success")
+    get_by_value_or_create(db.session, TaskStatus, 'status_name', status_name='Canceled',
+                           status_description="No longer needed; kept for the record.", status_bscolor="muted")
 
 
 def create_safe_severities():
@@ -831,12 +838,18 @@ def create_safe_severities():
 
     """
     # Create new Severity objects for each severity level
-    create_safe(db.session, Severity, severity_name='Unspecified', severity_description="Unspecified")
-    create_safe(db.session, Severity, severity_name='Informational', severity_description="Informational")
-    create_safe(db.session, Severity, severity_name='Low', severity_description="Low")
-    create_safe(db.session, Severity, severity_name='Medium', severity_description="Medium")
-    create_safe(db.session, Severity, severity_name='High', severity_description="High")
-    create_safe(db.session, Severity, severity_name='Critical', severity_description="Critical")
+    get_by_value_or_create(db.session, Severity, 'severity_name', severity_name='Unspecified',
+                           severity_description="No severity has been set yet.")
+    get_by_value_or_create(db.session, Severity, 'severity_name', severity_name='Informational',
+                           severity_description="Activity worth recording that is not expected to have any security impact; review, no response needed.")
+    get_by_value_or_create(db.session, Severity, 'severity_name', severity_name='Low',
+                           severity_description="Minor or contained activity with little potential impact; handle in the normal course of work.")
+    get_by_value_or_create(db.session, Severity, 'severity_name', severity_name='Medium',
+                           severity_description="Suspicious or confirmed activity with limited impact or scope; investigate promptly.")
+    get_by_value_or_create(db.session, Severity, 'severity_name', severity_name='High',
+                           severity_description="Confirmed malicious activity with likely impact on systems, accounts or data; respond urgently.")
+    get_by_value_or_create(db.session, Severity, 'severity_name', severity_name='Critical',
+                           severity_description="Severe, active or widespread impact on critical systems or data; respond immediately.")
 
 
 def create_safe_alert_status():
@@ -847,15 +860,17 @@ def create_safe_alert_status():
 
     """
     # Create new AlertStatus objects for each status
-    create_safe(db.session, AlertStatus, status_name='Unspecified', status_description="Unspecified")
-    create_safe(db.session, AlertStatus, status_name='New', status_description="Alert is new and unassigned")
-    create_safe(db.session, AlertStatus, status_name='Assigned', status_description="Alert is assigned to a user and "
+    get_by_value_or_create(db.session, AlertStatus, 'status_name', status_name='Unspecified',
+                           status_description="No status has been set yet.")
+    get_by_value_or_create(db.session, AlertStatus, 'status_name', status_name='New', status_description="Alert is new and unassigned")
+    get_by_value_or_create(db.session, AlertStatus, 'status_name', status_name='Assigned', status_description="Alert is assigned to a user and "
                                                                                     "pending investigation")
-    create_safe(db.session, AlertStatus, status_name='In progress', status_description="Alert is being investigated")
-    create_safe(db.session, AlertStatus, status_name='Pending', status_description="Alert is in a pending state")
-    create_safe(db.session, AlertStatus, status_name='Closed', status_description="Alert closed, no action taken")
-    create_safe(db.session, AlertStatus, status_name='Merged', status_description="Alert merged into an existing case")
-    create_safe(db.session, AlertStatus, status_name='Escalated', status_description="Alert converted to a new case")
+    get_by_value_or_create(db.session, AlertStatus, 'status_name', status_name='In progress', status_description="Alert is being investigated")
+    get_by_value_or_create(db.session, AlertStatus, 'status_name', status_name='Pending',
+                           status_description="Waiting on something outside the investigation (more information, a third party) before work can continue.")
+    get_by_value_or_create(db.session, AlertStatus, 'status_name', status_name='Closed', status_description="Alert closed, no action taken")
+    get_by_value_or_create(db.session, AlertStatus, 'status_name', status_name='Merged', status_description="Alert merged into an existing case")
+    get_by_value_or_create(db.session, AlertStatus, 'status_name', status_name='Escalated', status_description="Alert converted to a new case")
 
 
 def create_safe_evidence_types():
@@ -866,80 +881,80 @@ def create_safe_evidence_types():
 
     """
     # Create new EvidenceType objects for each status
-    create_safe(db.session, EvidenceTypes, name='Unspecified', description="Unspecified")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Unspecified', description="Unspecified")
 
-    create_safe(db.session, EvidenceTypes, name='HDD image - Generic', description="Generic copy of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - DD - Other', description="DD copy of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - DD - Windows', description="DD copy of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - DD - Unix', description="DD copy of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - DD - MacOS', description="DD copy of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - Generic', description="Generic copy of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - DD - Other', description="DD copy of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - DD - Windows', description="DD copy of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - DD - Unix', description="DD copy of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - DD - MacOS', description="DD copy of an hard drive")
 
-    create_safe(db.session, EvidenceTypes, name='HDD image - E01 - Other', description="E01 acquisition of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - E01 - Windows', description="E01 acquisition of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - E01 - Unix', description="E01 acquisition of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - E01 - MacOS', description="E01 acquisition of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - E01 - Other', description="E01 acquisition of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - E01 - Windows', description="E01 acquisition of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - E01 - Unix', description="E01 acquisition of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - E01 - MacOS', description="E01 acquisition of an hard drive")
 
-    create_safe(db.session, EvidenceTypes, name='HDD image - AFF4 - Other', description="AFF4 acquisition of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - AFF4 - Windows', description="AFF4 acquisition of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - AFF4 - Unix', description="AFF4 acquisition of an hard drive")
-    create_safe(db.session, EvidenceTypes, name='HDD image - AFF4 - MacOS', description="AFF4 acquisition of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - AFF4 - Other', description="AFF4 acquisition of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - AFF4 - Windows', description="AFF4 acquisition of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - AFF4 - Unix', description="AFF4 acquisition of an hard drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='HDD image - AFF4 - MacOS', description="AFF4 acquisition of an hard drive")
 
-    create_safe(db.session, EvidenceTypes, name='SSD image - Generic', description="Generic copy of an solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - DD - Other', description="DD copy of an solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - DD - Windows', description="DD copy of an solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - DD - Unix', description="DD copy of an solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - DD - MacOS', description="DD copy of an solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - Generic', description="Generic copy of an solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - DD - Other', description="DD copy of an solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - DD - Windows', description="DD copy of an solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - DD - Unix', description="DD copy of an solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - DD - MacOS', description="DD copy of an solid state drive")
 
-    create_safe(db.session, EvidenceTypes, name='SSD image - E01 - Other', description="EO1 copy of a solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - E01 - Windows', description="EO1 copy of a solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - E01 - Unix', description="EO1 copy of a solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - E01 - MacOS', description="EO1 copy of MacOS on a solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - E01 - Other', description="EO1 copy of a solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - E01 - Windows', description="EO1 copy of a solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - E01 - Unix', description="EO1 copy of a solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - E01 - MacOS', description="EO1 copy of MacOS on a solid state drive")
 
-    create_safe(db.session, EvidenceTypes, name='SSD image - AFF4 - Other', description="AFF4 copy of an solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - AFF4 - Windows', description="AFF4 copy of an solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - AFF4 - Unix', description="AFF4 copy of an solid state drive")
-    create_safe(db.session, EvidenceTypes, name='SSD image - AFF4 - MacOS', description="AFF4 copy of an solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - AFF4 - Other', description="AFF4 copy of an solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - AFF4 - Windows', description="AFF4 copy of an solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - AFF4 - Unix', description="AFF4 copy of an solid state drive")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='SSD image - AFF4 - MacOS', description="AFF4 copy of an solid state drive")
 
-    create_safe(db.session, EvidenceTypes, name='VM image - Generic', description="Generic copy of a VM ")
-    create_safe(db.session, EvidenceTypes, name='VM image - Linux Server', description="Copy of a Linux Server VM")
-    create_safe(db.session, EvidenceTypes, name='VM image - Windows Server', description="Copy of a Windows Server VM")
-    create_safe(db.session, EvidenceTypes, name='VM image - Windows Server', description="Copy of a Windows Server VM")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='VM image - Generic', description="Generic copy of a VM ")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='VM image - Linux Server', description="Copy of a Linux Server VM")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='VM image - Windows Server', description="Copy of a Windows Server VM")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='VM image - Windows Server', description="Copy of a Windows Server VM")
 
-    create_safe(db.session, EvidenceTypes, name='Phone Image - Android', description="Copy of an Android phone")
-    create_safe(db.session, EvidenceTypes, name='Phone Image - iPhone', description="Copy of an iPhone")
-    create_safe(db.session, EvidenceTypes, name='Phone backup - Android (adb)', description="adb backup of an Android")
-    create_safe(db.session, EvidenceTypes, name='Phone backup - iPhone (iTunes)', description="iTunes backup of an iPhone")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Phone Image - Android', description="Copy of an Android phone")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Phone Image - iPhone', description="Copy of an iPhone")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Phone backup - Android (adb)', description="adb backup of an Android")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Phone backup - iPhone (iTunes)', description="iTunes backup of an iPhone")
 
-    create_safe(db.session, EvidenceTypes, name='Tablet Image - Android', description="Copy of an Android tablet")
-    create_safe(db.session, EvidenceTypes, name='Tablet Image - iPad', description="Copy of an iPad tablet")
-    create_safe(db.session, EvidenceTypes, name='Tablet backup - Android (adb)', description="adb backup of an Android tablet")
-    create_safe(db.session, EvidenceTypes, name='Tablet backup - iPad (iTunes)', description="iTunes backup of an iPad")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Tablet Image - Android', description="Copy of an Android tablet")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Tablet Image - iPad', description="Copy of an iPad tablet")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Tablet backup - Android (adb)', description="adb backup of an Android tablet")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Tablet backup - iPad (iTunes)', description="iTunes backup of an iPad")
 
-    create_safe(db.session, EvidenceTypes, name='Collection - Velociraptor', description="Velociraptor collection")
-    create_safe(db.session, EvidenceTypes, name='Collection - ORC', description="ORC collection")
-    create_safe(db.session, EvidenceTypes, name='Collection - KAPE', description="KAPE collection")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Collection - Velociraptor', description="Velociraptor collection")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Collection - ORC', description="ORC collection")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name='Collection - KAPE', description="KAPE collection")
 
-    create_safe(db.session, EvidenceTypes, name="Memory acquisition - Physical RAM", description="Physical RAM acquisition")
-    create_safe(db.session, EvidenceTypes, name="Memory acquisition - VMEM", description="vmem file")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Memory acquisition - Physical RAM", description="Physical RAM acquisition")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Memory acquisition - VMEM", description="vmem file")
 
-    create_safe(db.session, EvidenceTypes, name="Logs - Linux", description="Standard Linux logs")
-    create_safe(db.session, EvidenceTypes, name="Logs - Windows EVTX", description="Standard Windows EVTX logs")
-    create_safe(db.session, EvidenceTypes, name="Logs - Windows EVT", description="Standard Windows EVT logs")
-    create_safe(db.session, EvidenceTypes, name="Logs - MacOS", description="Standard MacOS logs")
-    create_safe(db.session, EvidenceTypes, name="Logs - Generic", description="Generic logs")
-    create_safe(db.session, EvidenceTypes, name="Logs - Firewall", description="Firewall logs")
-    create_safe(db.session, EvidenceTypes, name="Logs - Proxy", description="Proxy logs")
-    create_safe(db.session, EvidenceTypes, name="Logs - DNS", description="DNS logs")
-    create_safe(db.session, EvidenceTypes, name="Logs - Email", description="Email logs")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Logs - Linux", description="Standard Linux logs")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Logs - Windows EVTX", description="Standard Windows EVTX logs")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Logs - Windows EVT", description="Standard Windows EVT logs")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Logs - MacOS", description="Standard MacOS logs")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Logs - Generic", description="Generic logs")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Logs - Firewall", description="Firewall logs")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Logs - Proxy", description="Proxy logs")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Logs - DNS", description="DNS logs")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Logs - Email", description="Email logs")
 
-    create_safe(db.session, EvidenceTypes, name="Executable - Windows (PE)", description="Generic Windows executable")
-    create_safe(db.session, EvidenceTypes, name="Executable - Linux (ELF)", description="Generic Linux executable")
-    create_safe(db.session, EvidenceTypes, name="Executable - MacOS (Mach-O)", description="Generic MacOS executable")
-    create_safe(db.session, EvidenceTypes, name="Executable - Generic", description="Generic executable")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Executable - Windows (PE)", description="Generic Windows executable")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Executable - Linux (ELF)", description="Generic Linux executable")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Executable - MacOS (Mach-O)", description="Generic MacOS executable")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Executable - Generic", description="Generic executable")
 
-    create_safe(db.session, EvidenceTypes, name="Script - Generic", description="Generic script")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Script - Generic", description="Generic script")
 
-    create_safe(db.session, EvidenceTypes, name="Generic - Data blob", description="Generic blob of data")
+    get_by_value_or_create(db.session, EvidenceTypes, 'name', name="Generic - Data blob", description="Generic blob of data")
 
 
 # iris-ng: curated cyber-security / DFIR skill catalog seeded on boot. Grouped
@@ -1025,17 +1040,17 @@ def create_safe_alert_resolution_status():
     and resolution_status_description if they do not already exist in the database.
 
     """
-    create_safe(db.session, AlertResolutionStatus, resolution_status_name='False Positive',
+    get_by_value_or_create(db.session, AlertResolutionStatus, 'resolution_status_name', resolution_status_name='False Positive',
                 resolution_status_description="The alert was a false positive")
-    create_safe(db.session, AlertResolutionStatus, resolution_status_name='True Positive With Impact',
+    get_by_value_or_create(db.session, AlertResolutionStatus, 'resolution_status_name', resolution_status_name='True Positive With Impact',
                 resolution_status_description="The alert was a true positive and had an impact")
-    create_safe(db.session, AlertResolutionStatus, resolution_status_name='True Positive Without Impact',
+    get_by_value_or_create(db.session, AlertResolutionStatus, 'resolution_status_name', resolution_status_name='True Positive Without Impact',
                 resolution_status_description="The alert was a true positive but had no impact")
-    create_safe(db.session, AlertResolutionStatus, resolution_status_name='Not Applicable',
+    get_by_value_or_create(db.session, AlertResolutionStatus, 'resolution_status_name', resolution_status_name='Not Applicable',
                 resolution_status_description="The alert is not applicable")
-    create_safe(db.session, AlertResolutionStatus, resolution_status_name='Unknown',
+    get_by_value_or_create(db.session, AlertResolutionStatus, 'resolution_status_name', resolution_status_name='Unknown',
                 resolution_status_description="Unknown resolution status")
-    create_safe(db.session, AlertResolutionStatus, resolution_status_name='Legitimate',
+    get_by_value_or_create(db.session, AlertResolutionStatus, 'resolution_status_name', resolution_status_name='Legitimate',
                 resolution_status_description="The alert is acceptable and expected")
 
 
@@ -1047,15 +1062,50 @@ def create_safe_case_states():
 
     """
     # Create new CaseState objects for each state
-    create_safe(db.session, CaseState, state_name='Unspecified', state_description="Unspecified", protected=True)
-    create_safe(db.session, CaseState, state_name='In progress', state_description="Case is being investigated")
-    create_safe(db.session, CaseState, state_name='Open', state_description="Case is open", protected=True)
-    create_safe(db.session, CaseState, state_name='Containment', state_description="Containment is in progress")
-    create_safe(db.session, CaseState, state_name='Eradication', state_description="Eradication is in progress")
-    create_safe(db.session, CaseState, state_name='Recovery', state_description="Recovery is in progress")
-    create_safe(db.session, CaseState, state_name='Post-Incident', state_description="Post-incident phase")
-    create_safe(db.session, CaseState, state_name='Reporting', state_description="Reporting is in progress")
-    create_safe(db.session, CaseState, state_name='Closed', state_description="Case is closed", protected=True)
+    get_by_value_or_create(db.session, CaseState, 'state_name', state_name='Unspecified', state_description="Unspecified", protected=True)
+    get_by_value_or_create(db.session, CaseState, 'state_name', state_name='In progress', state_description="Case is being investigated")
+    get_by_value_or_create(db.session, CaseState, 'state_name', state_name='Open', state_description="Case is open", protected=True)
+    get_by_value_or_create(db.session, CaseState, 'state_name', state_name='Containment', state_description="Containment is in progress")
+    get_by_value_or_create(db.session, CaseState, 'state_name', state_name='Eradication', state_description="Eradication is in progress")
+    get_by_value_or_create(db.session, CaseState, 'state_name', state_name='Recovery', state_description="Recovery is in progress")
+    get_by_value_or_create(db.session, CaseState, 'state_name', state_name='Post-Incident', state_description="Post-incident phase")
+    get_by_value_or_create(db.session, CaseState, 'state_name', state_name='Reporting', state_description="Reporting is in progress")
+    get_by_value_or_create(db.session, CaseState, 'state_name', state_name='Closed', state_description="Case is closed", protected=True)
+
+
+# iris-ng 2026-10-30: the seeded descriptions the (i) help icons show for a
+# chosen value. (model, name column, description column, name, the text an
+# earlier release seeded, the text it seeds now). A row is rewritten only while
+# its description is still the old seed (or empty, for task statuses), so an
+# admin's own wording is never replaced.
+_SEED_DESCRIPTION_UPGRADES = (
+    (Severity, 'severity_name', 'severity_description', 'Unspecified', 'Unspecified', 'No severity has been set yet.'),
+    (Severity, 'severity_name', 'severity_description', 'Informational', 'Informational', 'Activity worth recording that is not expected to have any security impact; review, no response needed.'),
+    (Severity, 'severity_name', 'severity_description', 'Low', 'Low', 'Minor or contained activity with little potential impact; handle in the normal course of work.'),
+    (Severity, 'severity_name', 'severity_description', 'Medium', 'Medium', 'Suspicious or confirmed activity with limited impact or scope; investigate promptly.'),
+    (Severity, 'severity_name', 'severity_description', 'High', 'High', 'Confirmed malicious activity with likely impact on systems, accounts or data; respond urgently.'),
+    (Severity, 'severity_name', 'severity_description', 'Critical', 'Critical', 'Severe, active or widespread impact on critical systems or data; respond immediately.'),
+    (AlertStatus, 'status_name', 'status_description', 'Unspecified', 'Unspecified', 'No status has been set yet.'),
+    (AlertStatus, 'status_name', 'status_description', 'Pending', 'Alert is in a pending state', 'Waiting on something outside the investigation (more information, a third party) before work can continue.'),
+    (TaskStatus, 'status_name', 'status_description', 'To do', '', 'Not started yet.'),
+    (TaskStatus, 'status_name', 'status_description', 'In progress', '', 'Someone is working on it.'),
+    (TaskStatus, 'status_name', 'status_description', 'On hold', '', 'Paused: waiting on something before work can continue.'),
+    (TaskStatus, 'status_name', 'status_description', 'Done', '', 'Finished.'),
+    (TaskStatus, 'status_name', 'status_description', 'Canceled', '', 'No longer needed; kept for the record.'),
+)
+
+
+def upgrade_seed_descriptions():
+    """Rewrite each seeded description from _SEED_DESCRIPTION_UPGRADES that still
+    reads as an earlier release left it. Idempotent; one commit."""
+    changed = 0
+    for model, name_col, desc_col, name, old, new in _SEED_DESCRIPTION_UPGRADES:
+        column = getattr(model, desc_col)
+        still_seed = column == old if old else (column.is_(None) | (column == ''))
+        changed += model.query.filter(getattr(model, name_col) == name, still_seed).update(
+            {desc_col: new}, synchronize_session=False)
+    db.session.commit()
+    return changed
 
 
 def create_safe_review_status():
@@ -1377,470 +1427,483 @@ def create_safe_attributes():
                      attribute_content={})
 
 
+def _seed_ioc_type(type_name, type_description=None, **_ignored):
+    """Seed one IOC type unless one with this NAME exists (iris-ng 2026-10-30).
+
+    Was create_safe_limited(["type_name", "type_description"]): it matched on the
+    description too, so an IOC type whose description an admin had edited under
+    Manage no longer matched and the next boot inserted the seed again (a second
+    type of the same name). Like create_safe_limited, only the name and the
+    description are written; the taxonomy is backfilled separately.
+    """
+    get_by_value_or_create(db.session, IocType, 'type_name', type_name=type_name,
+                           type_description=type_description)
+
+
 def create_safe_ioctypes():
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="AS",
+    _seed_ioc_type( type_name="AS",
                         type_description="Autonomous system", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="aba-rtn",
+    _seed_ioc_type( type_name="aba-rtn",
                         type_description="ABA routing transit number",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="account",
+    _seed_ioc_type( type_name="account",
                         type_description="Account of any type",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="anonymised",
+    _seed_ioc_type( type_name="anonymised",
                         type_description="Anonymised value - described with the anonymisation object via a relationship",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="attachment",
+    _seed_ioc_type( type_name="attachment",
                         type_description="Attachment with external information",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="authentihash",
+    _seed_ioc_type( type_name="authentihash",
                         type_description="Authenticode executable signature hash", type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{64}", type_validation_expect="64 hexadecimal characters"
                         )
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="boolean",
+    _seed_ioc_type( type_name="boolean",
                         type_description="Boolean value - to be used in objects",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="btc",
+    _seed_ioc_type( type_name="btc",
                         type_description="Bitcoin Address", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="campaign-id",
+    _seed_ioc_type( type_name="campaign-id",
                         type_description="Associated campaign ID",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="campaign-name",
+    _seed_ioc_type( type_name="campaign-name",
                         type_description="Associated campaign name",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="cdhash",
+    _seed_ioc_type( type_name="cdhash",
                         type_description="An Apple Code Directory Hash, identifying a code-signed Mach-O executable file",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="chrome-extension-id",
+    _seed_ioc_type( type_name="chrome-extension-id",
                         type_description="Chrome extension id",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="community-id",
+    _seed_ioc_type( type_name="community-id",
                         type_description="a community ID flow hashing algorithm to map multiple traffic monitors into common flow id",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="cookie",
+    _seed_ioc_type( type_name="cookie",
                         type_description="HTTP cookie as often stored on the user web client. This can include authentication cookie or session cookie.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="dash",
+    _seed_ioc_type( type_name="dash",
                         type_description="Dash Address", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="datetime",
+    _seed_ioc_type( type_name="datetime",
                         type_description="Datetime in the ISO 8601 format",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="dkim",
+    _seed_ioc_type( type_name="dkim",
                         type_description="DKIM public key", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="dkim-signature",
+    _seed_ioc_type( type_name="dkim-signature",
                         type_description="DKIM signature", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="dns-soa-email",
+    _seed_ioc_type( type_name="dns-soa-email",
                         type_description="RFC1035 mandates that DNS zones should have a SOA (Statement Of Authority) record that contains an email address where a PoC for the domain could be contacted. This can sometimes be used for attribution/linkage between different domains even if protected by whois privacy",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="domain",
+    _seed_ioc_type( type_name="domain",
                         type_description="A domain name used in the malware",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="domain|ip",
+    _seed_ioc_type( type_name="domain|ip",
                         type_description="A domain name and its IP address (as found in DNS lookup) separated by a |",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email",
+    _seed_ioc_type( type_name="email",
                         type_description="An e-mail address", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-attachment",
+    _seed_ioc_type( type_name="email-attachment",
                         type_description="File name of the email attachment.", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-body",
+    _seed_ioc_type( type_name="email-body",
                         type_description="Email body", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-dst",
+    _seed_ioc_type( type_name="email-dst",
                         type_description="The destination email address. Used to describe the recipient when describing an e-mail.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-dst-display-name",
+    _seed_ioc_type( type_name="email-dst-display-name",
                         type_description="Email destination display name", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-header",
+    _seed_ioc_type( type_name="email-header",
                         type_description="Email header", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-message-id",
+    _seed_ioc_type( type_name="email-message-id",
                         type_description="The email message ID",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-mime-boundary",
+    _seed_ioc_type( type_name="email-mime-boundary",
                         type_description="The email mime boundary separating parts in a multipart email",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-reply-to",
+    _seed_ioc_type( type_name="email-reply-to",
                         type_description="Email reply to header",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-src",
+    _seed_ioc_type( type_name="email-src",
                         type_description="The source email address. Used to describe the sender when describing an e-mail.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-src-display-name",
+    _seed_ioc_type( type_name="email-src-display-name",
                         type_description="Email source display name",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-subject",
+    _seed_ioc_type( type_name="email-subject",
                         type_description="The subject of the email",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-thread-index",
+    _seed_ioc_type( type_name="email-thread-index",
                         type_description="The email thread index header",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="email-x-mailer",
+    _seed_ioc_type( type_name="email-x-mailer",
                         type_description="Email x-mailer header",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="favicon-mmh3",
+    _seed_ioc_type( type_name="favicon-mmh3",
                         type_description="favicon-mmh3 is the murmur3 hash of a favicon as used in Shodan.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename",
+    _seed_ioc_type( type_name="filename",
                         type_description="Filename", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename-pattern",
+    _seed_ioc_type( type_name="filename-pattern",
                         type_description="A pattern in the name of a file",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|authentihash",
+    _seed_ioc_type( type_name="filename|authentihash",
                         type_description="A checksum in md5 format",
                         type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{64}',
                         type_validation_expect="filename|64 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|impfuzzy",
+    _seed_ioc_type( type_name="filename|impfuzzy",
                         type_description="Import fuzzy hash - a fuzzy hash created based on the imports in the sample.",
                         type_taxonomy="", )
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|imphash",
+    _seed_ioc_type( type_name="filename|imphash",
                         type_description="Import hash - a hash created based on the imports in the sample.",
                         type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{32}',
                         type_validation_expect="filename|32 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|md5",
+    _seed_ioc_type( type_name="filename|md5",
                         type_description="A filename and an md5 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{32}',
                         type_validation_expect="filename|32 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|pehash",
+    _seed_ioc_type( type_name="filename|pehash",
                         type_description="A filename and a PEhash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{40}',
                         type_validation_expect="filename|40 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha1",
+    _seed_ioc_type( type_name="filename|sha1",
                         type_description="A filename and an sha1 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{40}',
                         type_validation_expect="filename|40 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha224",
+    _seed_ioc_type( type_name="filename|sha224",
                         type_description="A filename and a sha-224 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{56}',
                         type_validation_expect="filename|56 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha256",
+    _seed_ioc_type( type_name="filename|sha256",
                         type_description="A filename and an sha256 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{64}',
                         type_validation_expect="filename|64 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha3-224",
+    _seed_ioc_type( type_name="filename|sha3-224",
                         type_description="A filename and an sha3-224 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{56}',
                         type_validation_expect="filename|56 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha3-256",
+    _seed_ioc_type( type_name="filename|sha3-256",
                         type_description="A filename and an sha3-256 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{64}',
                         type_validation_expect="filename|64 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha3-384",
+    _seed_ioc_type( type_name="filename|sha3-384",
                         type_description="A filename and an sha3-384 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{96}',
                         type_validation_expect="filename|96 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha3-512",
+    _seed_ioc_type( type_name="filename|sha3-512",
                         type_description="A filename and an sha3-512 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{128}',
                         type_validation_expect="filename|128 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha384",
+    _seed_ioc_type( type_name="filename|sha384",
                         type_description="A filename and a sha-384 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{96}',
                         type_validation_expect="filename|96 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha512",
+    _seed_ioc_type( type_name="filename|sha512",
                         type_description="A filename and a sha-512 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{128}',
                         type_validation_expect="filename|128 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha512/224",
+    _seed_ioc_type( type_name="filename|sha512/224",
                         type_description="A filename and a sha-512/224 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{56}',
                         type_validation_expect="filename|56 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|sha512/256",
+    _seed_ioc_type( type_name="filename|sha512/256",
                         type_description="A filename and a sha-512/256 hash separated by a |", type_taxonomy="",
                         type_validation_regex=r'.+\|[a-f0-9]{64}',
                         type_validation_expect="filename|64 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|ssdeep",
+    _seed_ioc_type( type_name="filename|ssdeep",
                         type_description="A checksum in ssdeep format",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|tlsh",
+    _seed_ioc_type( type_name="filename|tlsh",
                         type_description="A filename and a Trend Micro Locality Sensitive Hash separated by a |",
                         type_taxonomy="",
                         type_validation_regex=r'.+\|t?[a-f0-9]{35,}',
                         type_validation_expect="filename|at least 35 hexadecimal characters, optionally starting with t1 instead of hexadecimal characters"
                         )
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="filename|vhash",
+    _seed_ioc_type( type_name="filename|vhash",
                         type_description="A filename and a VirusTotal hash separated by a |", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="first-name",
+    _seed_ioc_type( type_name="first-name",
                         type_description="First name of a natural person",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="float",
+    _seed_ioc_type( type_name="float",
                         type_description="A floating point value.", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="full-name",
+    _seed_ioc_type( type_name="full-name",
                         type_description="Full name of a natural person",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="gene",
+    _seed_ioc_type( type_name="gene",
                         type_description="GENE - Go Evtx sigNature Engine",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="git-commit-id",
+    _seed_ioc_type( type_name="git-commit-id",
                         type_description="A git commit ID.", type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{40}", type_validation_expect="40 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="github-organisation",
+    _seed_ioc_type( type_name="github-organisation",
                         type_description="A github organisation",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="github-repository",
+    _seed_ioc_type( type_name="github-repository",
                         type_description="A github repository",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="github-username",
+    _seed_ioc_type( type_name="github-username",
                         type_description="A github user name",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="hassh-md5",
+    _seed_ioc_type( type_name="hassh-md5",
                         type_description="hassh is a network fingerprinting standard which can be used to identify specific Client SSH implementations. The fingerprints can be easily stored, searched and shared in the form of an MD5 fingerprint.",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{32}", type_validation_expect="32 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="hasshserver-md5",
+    _seed_ioc_type( type_name="hasshserver-md5",
                         type_description="hasshServer is a network fingerprinting standard which can be used to identify specific Server SSH implementations. The fingerprints can be easily stored, searched and shared in the form of an MD5 fingerprint.",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{32}", type_validation_expect="32 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="hex",
+    _seed_ioc_type( type_name="hex",
                         type_description="A value in hexadecimal format",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="hostname",
+    _seed_ioc_type( type_name="hostname",
                         type_description="A full host/dnsname of an attacker",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="hostname|port",
+    _seed_ioc_type( type_name="hostname|port",
                         type_description="Hostname and port number separated by a |", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="http-method",
+    _seed_ioc_type( type_name="http-method",
                         type_description="HTTP method used by the malware (e.g. POST, GET, …).", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="iban",
+    _seed_ioc_type( type_name="iban",
                         type_description="International Bank Account Number",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="identity-card-number",
+    _seed_ioc_type( type_name="identity-card-number",
                         type_description="Identity card number",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="impfuzzy",
+    _seed_ioc_type( type_name="impfuzzy",
                         type_description="A fuzzy hash of import table of Portable Executable format", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="imphash",
+    _seed_ioc_type( type_name="imphash",
                         type_description="Import hash - a hash created based on the imports in the sample.",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{32}", type_validation_expect="32 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="ip-any",
+    _seed_ioc_type( type_name="ip-any",
                         type_description="A source or destination IP address of the attacker or C&C server",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="ip-dst",
+    _seed_ioc_type( type_name="ip-dst",
                         type_description="A destination IP address of the attacker or C&C server", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="ip-dst|port",
+    _seed_ioc_type( type_name="ip-dst|port",
                         type_description="IP destination and port number separated by a |", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="ip-src",
+    _seed_ioc_type( type_name="ip-src",
                         type_description="A source IP address of the attacker",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="ip-src|port",
+    _seed_ioc_type( type_name="ip-src|port",
                         type_description="IP source and port number separated by a |", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="ja3-fingerprint-md5",
+    _seed_ioc_type( type_name="ja3-fingerprint-md5",
                         type_description="JA3 is a method for creating SSL/TLS client fingerprints that should be easy to produce on any platform and can be easily shared for threat intelligence.",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{32}", type_validation_expect="32 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="jabber-id",
+    _seed_ioc_type( type_name="jabber-id",
                         type_description="Jabber ID", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="jarm-fingerprint",
+    _seed_ioc_type( type_name="jarm-fingerprint",
                         type_description="JARM is a method for creating SSL/TLS server fingerprints.", type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{62}", type_validation_expect="62 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="kusto-query",
+    _seed_ioc_type( type_name="kusto-query",
                         type_description="Kusto query - Kusto from Microsoft Azure is a service for storing and running interactive analytics over Big Data.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="link",
+    _seed_ioc_type( type_name="link",
                         type_description="Link to an external information",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="mac-address",
+    _seed_ioc_type( type_name="mac-address",
                         type_description="Mac address", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="mac-eui-64",
+    _seed_ioc_type( type_name="mac-eui-64",
                         type_description="Mac EUI-64 address", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="malware-sample",
+    _seed_ioc_type( type_name="malware-sample",
                         type_description="Attachment containing encrypted malware sample", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="malware-type",
+    _seed_ioc_type( type_name="malware-type",
                         type_description="Malware type", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="md5",
+    _seed_ioc_type( type_name="md5",
                         type_description="A checksum in md5 format", type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{32}", type_validation_expect="32 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="middle-name",
+    _seed_ioc_type( type_name="middle-name",
                         type_description="Middle name of a natural person",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="mime-type",
+    _seed_ioc_type( type_name="mime-type",
                         type_description="A media type (also MIME type and content type) is a two-part identifier for file formats and format contents transmitted on the Internet",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="mobile-application-id",
+    _seed_ioc_type( type_name="mobile-application-id",
                         type_description="The application id of a mobile application", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="mutex",
+    _seed_ioc_type( type_name="mutex",
                         type_description="Mutex, use the format \\BaseNamedObjects<Mutex>", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="named pipe",
+    _seed_ioc_type( type_name="named pipe",
                         type_description="Named pipe, use the format .\\pipe<PipeName>", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="other",
+    _seed_ioc_type( type_name="other",
                         type_description="Other attribute", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="file-path",
+    _seed_ioc_type( type_name="file-path",
                         type_description="Path of file", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="pattern-in-file",
+    _seed_ioc_type( type_name="pattern-in-file",
                         type_description="Pattern in file that identifies the malware", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="pattern-in-memory",
+    _seed_ioc_type( type_name="pattern-in-memory",
                         type_description="Pattern in memory dump that identifies the malware", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="pattern-in-traffic",
+    _seed_ioc_type( type_name="pattern-in-traffic",
                         type_description="Pattern in network traffic that identifies the malware", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="pdb",
+    _seed_ioc_type( type_name="pdb",
                         type_description="Microsoft Program database (PDB) path information", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="pehash",
+    _seed_ioc_type( type_name="pehash",
                         type_description="PEhash - a hash calculated based of certain pieces of a PE executable file",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{40}", type_validation_expect="40 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="pgp-private-key",
+    _seed_ioc_type( type_name="pgp-private-key",
                         type_description="A PGP private key",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="pgp-public-key",
+    _seed_ioc_type( type_name="pgp-public-key",
                         type_description="A PGP public key", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="phone-number",
+    _seed_ioc_type( type_name="phone-number",
                         type_description="Telephone Number", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="port",
+    _seed_ioc_type( type_name="port",
                         type_description="Port number", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="process-state",
+    _seed_ioc_type( type_name="process-state",
                         type_description="State of a process", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="prtn",
+    _seed_ioc_type( type_name="prtn",
                         type_description="Premium-Rate Telephone Number",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="regkey",
+    _seed_ioc_type( type_name="regkey",
                         type_description="Registry key or value", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="regkey|value",
+    _seed_ioc_type( type_name="regkey|value",
                         type_description="Registry value + data separated by |",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha1",
+    _seed_ioc_type( type_name="sha1",
                         type_description="A checksum in sha1 format", type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{40}", type_validation_expect="40 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha224",
+    _seed_ioc_type( type_name="sha224",
                         type_description="A checksum in sha-224 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{56}", type_validation_expect="56 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha256",
+    _seed_ioc_type( type_name="sha256",
                         type_description="A checksum in sha256 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{64}", type_validation_expect="64 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha3-224",
+    _seed_ioc_type( type_name="sha3-224",
                         type_description="A checksum in sha3-224 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{56}", type_validation_expect="56 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha3-256",
+    _seed_ioc_type( type_name="sha3-256",
                         type_description="A checksum in sha3-256 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{64}", type_validation_expect="64 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha3-384",
+    _seed_ioc_type( type_name="sha3-384",
                         type_description="A checksum in sha3-384 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{96}", type_validation_expect="96 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha3-512",
+    _seed_ioc_type( type_name="sha3-512",
                         type_description="A checksum in sha3-512 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{128}", type_validation_expect="128 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha384",
+    _seed_ioc_type( type_name="sha384",
                         type_description="A checksum in sha-384 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{96}", type_validation_expect="96 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha512",
+    _seed_ioc_type( type_name="sha512",
                         type_description="A checksum in sha-512 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{128}", type_validation_expect="128 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha512/224",
+    _seed_ioc_type( type_name="sha512/224",
                         type_description="A checksum in the sha-512/224 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{56}", type_validation_expect="56 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sha512/256",
+    _seed_ioc_type( type_name="sha512/256",
                         type_description="A checksum in the sha-512/256 format",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{64}", type_validation_expect="64 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="sigma",
+    _seed_ioc_type( type_name="sigma",
                         type_description="Sigma - Generic Signature Format for SIEM Systems", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="size-in-bytes",
+    _seed_ioc_type( type_name="size-in-bytes",
                         type_description="Size expressed in bytes",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="snort",
+    _seed_ioc_type( type_name="snort",
                         type_description="An IDS rule in Snort rule-format",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="ssdeep",
+    _seed_ioc_type( type_name="ssdeep",
                         type_description="A checksum in ssdeep format",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="ssh-fingerprint",
+    _seed_ioc_type( type_name="ssh-fingerprint",
                         type_description="A fingerprint of SSH key material",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="stix2-pattern",
+    _seed_ioc_type( type_name="stix2-pattern",
                         type_description="STIX 2 pattern", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="target-email",
+    _seed_ioc_type( type_name="target-email",
                         type_description="Attack Targets Email(s)",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="target-external",
+    _seed_ioc_type( type_name="target-external",
                         type_description="External Target Organizations Affected by this Attack", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="target-location",
+    _seed_ioc_type( type_name="target-location",
                         type_description="Attack Targets Physical Location(s)", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="target-machine",
+    _seed_ioc_type( type_name="target-machine",
                         type_description="Attack Targets Machine Name(s)",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="target-org",
+    _seed_ioc_type( type_name="target-org",
                         type_description="Attack Targets Department or Organization(s)", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="target-user",
+    _seed_ioc_type( type_name="target-user",
                         type_description="Attack Targets Username(s)",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="telfhash",
+    _seed_ioc_type( type_name="telfhash",
                         type_description="telfhash is symbol hash for ELF files, just like imphash is imports hash for PE files.",
                         type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{70}", type_validation_expect="70 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="text",
+    _seed_ioc_type( type_name="text",
                         type_description="Name, ID or a reference", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="threat-actor",
+    _seed_ioc_type( type_name="threat-actor",
                         type_description="A string identifying the threat actor",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="tlsh",
+    _seed_ioc_type( type_name="tlsh",
                         type_description="A checksum in the Trend Micro Locality Sensitive Hash format",
                         type_taxonomy="",
                         type_validation_regex=r"^t?[a-f0-9]{35,}",
                         type_validation_expect="at least 35 hexadecimal characters, optionally starting with t1 instead of hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="travel-details",
+    _seed_ioc_type( type_name="travel-details",
                         type_description="Travel details", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="twitter-id",
+    _seed_ioc_type( type_name="twitter-id",
                         type_description="Twitter ID", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="uri",
+    _seed_ioc_type( type_name="uri",
                         type_description="Uniform Resource Identifier", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="url", type_description="url",
+    _seed_ioc_type( type_name="url", type_description="url",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="user-agent",
+    _seed_ioc_type( type_name="user-agent",
                         type_description="The user-agent used by the malware in the HTTP request.", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="vhash",
+    _seed_ioc_type( type_name="vhash",
                         type_description="A VirusTotal checksum", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="vulnerability",
+    _seed_ioc_type( type_name="vulnerability",
                         type_description="A reference to the vulnerability used in the exploit", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="weakness",
+    _seed_ioc_type( type_name="weakness",
                         type_description="A reference to the weakness used in the exploit", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="whois-creation-date",
+    _seed_ioc_type( type_name="whois-creation-date",
                         type_description="The date of domain’s creation, obtained from the WHOIS information.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="whois-registrant-email",
+    _seed_ioc_type( type_name="whois-registrant-email",
                         type_description="The e-mail of a domain’s registrant, obtained from the WHOIS information.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="whois-registrant-name",
+    _seed_ioc_type( type_name="whois-registrant-name",
                         type_description="The name of a domain’s registrant, obtained from the WHOIS information.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="whois-registrant-org",
+    _seed_ioc_type( type_name="whois-registrant-org",
                         type_description="The org of a domain’s registrant, obtained from the WHOIS information.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="whois-registrant-phone",
+    _seed_ioc_type( type_name="whois-registrant-phone",
                         type_description="The phone number of a domain’s registrant, obtained from the WHOIS information.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="whois-registrar",
+    _seed_ioc_type( type_name="whois-registrar",
                         type_description="The registrar of the domain, obtained from the WHOIS information.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="windows-scheduled-task",
+    _seed_ioc_type( type_name="windows-scheduled-task",
                         type_description="A scheduled task in windows",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="windows-service-displayname",
+    _seed_ioc_type( type_name="windows-service-displayname",
                         type_description="A windows service’s displayname, not to be confused with the windows-service-name. This is the name that applications will generally display as the service’s name in applications.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="windows-service-name",
+    _seed_ioc_type( type_name="windows-service-name",
                         type_description="A windows service name. This is the name used internally by windows. Not to be confused with the windows-service-displayname.",
                         type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="x509-fingerprint-md5",
+    _seed_ioc_type( type_name="x509-fingerprint-md5",
                         type_description="X509 fingerprint in MD5 format", type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{32}", type_validation_expect="32 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="x509-fingerprint-sha1",
+    _seed_ioc_type( type_name="x509-fingerprint-sha1",
                         type_description="X509 fingerprint in SHA-1 format", type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{40}", type_validation_expect="40 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="x509-fingerprint-sha256",
+    _seed_ioc_type( type_name="x509-fingerprint-sha256",
                         type_description="X509 fingerprint in SHA-256 format", type_taxonomy="",
                         type_validation_regex=r"[a-f0-9]{64}", type_validation_expect="64 hexadecimal characters")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="xmr",
+    _seed_ioc_type( type_name="xmr",
                         type_description="Monero Address", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="yara",
+    _seed_ioc_type( type_name="yara",
                         type_description="Yara signature", type_taxonomy="")
-    create_safe_limited(db.session, IocType, ["type_name", "type_description"], type_name="zeek",
+    _seed_ioc_type( type_name="zeek",
                         type_description="An NIDS rule in the Zeek rule-format",
                         type_taxonomy="")
 

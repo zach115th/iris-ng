@@ -115,6 +115,9 @@ let OverviewTable = $("#overview_table").DataTable({
         }
       },
       {
+        /* searchBuilderTitle: the header carries an (i) help icon, whose "i"
+           would otherwise end up in the Add filter column names. */
+        searchBuilderTitle: 'SOC ID',
         "data": "soc_id",
         "render": function (data, type, row, meta) {
             if (type === 'display') {
@@ -144,6 +147,7 @@ let OverviewTable = $("#overview_table").DataTable({
           }
       },
       {
+        searchBuilderTitle: 'Customer',
         "data": "client",
         "render": function (data, type, row, meta) {
           if (type === 'display') {
@@ -168,6 +172,7 @@ let OverviewTable = $("#overview_table").DataTable({
         }
       },
       {
+        searchBuilderTitle: 'State',
         "data": "state",
         "render": function (data, type, row, meta) {
             if (type === 'display' && data != null) {
@@ -188,6 +193,7 @@ let OverviewTable = $("#overview_table").DataTable({
         }
       },
       {
+        searchBuilderTitle: 'Severity',
         "data": "severity",
         "render": function (data, type, row, meta) {
             if (type === 'display') {
@@ -201,6 +207,7 @@ let OverviewTable = $("#overview_table").DataTable({
         }
       },
       {
+        searchBuilderTitle: 'Owner',
         "data": "owner",
         "render": function (data, type, row, meta) {
             let sdata;
@@ -219,6 +226,7 @@ let OverviewTable = $("#overview_table").DataTable({
         }
       },
      {
+        searchBuilderTitle: 'Tags',
         "data": "tags",
         "render": function (data, type, row, meta) {
             if (type === 'display' && data != null) {

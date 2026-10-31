@@ -510,9 +510,17 @@ function iris_tk_render_detail() {
  * form sends only what it edits. task_assignees_id is the exception:
  * tasks_update() rejects a payload without it.
  * ------------------------------------------------------------------ */
-function iris_tk_field(label, $control) {
+/* `help` (optional): an (i) icon node from IrisHelp.el(), placed after the
+ * label - never inside it (a button inside a <label> is invalid HTML). The
+ * label is a block here, so the two share a line through a flex row. */
+function iris_tk_field(label, $control, help) {
+    const $label = $('<label>').addClass('iris-tk-meta-k').text(label);
+    const $head = help
+        ? $('<div>').css({display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px'})
+            .append($label.css('margin-bottom', 0)).append(help)
+        : $label;
     return $('<div>').addClass('iris-tk-fld')
-        .append($('<label>').addClass('iris-tk-meta-k').text(label))
+        .append($head)
         .append($control);
 }
 
@@ -533,7 +541,8 @@ function iris_tk_edit_body(task) {
             if (s.id === task.task_status_id) { $o.attr('selected', 'selected'); }
             $status.append($o);
         });
-    $row.append(iris_tk_field('Status *', $status));
+    $row.append(iris_tk_field('Status *', $status,
+        IrisHelp.el('common.task_status', {target: '#iris-tk-f-status'})));
 
     const $assignees = $('<select>').attr({id: 'iris-tk-f-assignees', multiple: 'multiple',
                                            size: 4})
@@ -556,7 +565,7 @@ function iris_tk_edit_body(task) {
             $assignees.append($o);
         });
     }
-    $row.append(iris_tk_field('Assignees', $assignees));
+    $row.append(iris_tk_field('Assignees', $assignees, IrisHelp.el('task.assignees')));
     $body.append($row);
 
     $body.append($('<div>').addClass('iris-tk-section')
@@ -644,9 +653,15 @@ function iris_tk_save_edit(task) {
     .always(function () { $('#iris-tk-f-save').removeAttr('disabled'); });
 }
 
-function iris_tk_meta(label, $value) {
+/* `help` (optional): an (i) icon node from IrisHelp.el(), drawn beside the
+ * label (the label span is a block, so they share a flex row). */
+function iris_tk_meta(label, $value, help) {
+    const $label = $('<span>').addClass('iris-tk-meta-k').text(label);
     return $('<div>')
-        .append($('<span>').addClass('iris-tk-meta-k').text(label))
+        .append(help
+            ? $('<div>').css({display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px'})
+                .append($label.css('margin-bottom', 0)).append(help)
+            : $label)
         .append($value);
 }
 
@@ -656,7 +671,9 @@ function iris_tk_details_body(task) {
     const st = iris_tk_status_of(task);
     const $meta = $('<div>').addClass('iris-tk-meta');
     $meta.append(iris_tk_meta('Status', $('<span>').addClass('iris-tk-chip iris-tk-chip-status')
-        .text(st ? st.status_name : 'Unknown')));
+        .attr('id', 'iris-tk-d-status')
+        .text(st ? st.status_name : 'Unknown'),
+        IrisHelp.el('common.task_status', {target: '#iris-tk-d-status'})));
 
     const $as = $('<span>');
     const assignees = task.task_assignees || [];
@@ -667,7 +684,7 @@ function iris_tk_details_body(task) {
     } else {
         $as.append($('<span>').addClass('iris-tk-chip iris-tk-chip-none').text('Unassigned'));
     }
-    $meta.append(iris_tk_meta('Assignees', $as));
+    $meta.append(iris_tk_meta('Assignees', $as, IrisHelp.el('task.assignees')));
 
     const opened = iris_task_utc_label(task.task_open_date, true);
     $meta.append(iris_tk_meta('Opened', $('<span>').css({color: '#c8c8d0', fontSize: '0.78rem'})
@@ -732,7 +749,9 @@ function iris_tk_links_for(taskId) {
 
 function iris_tk_links_block(task) {
     const $wrap = $('<div>').addClass('iris-tk-links');
-    $wrap.append($('<span>').addClass('iris-tk-meta-k').text('Linked tasks'));
+    $wrap.append($('<div>').css({display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '3px'})
+        .append($('<span>').addClass('iris-tk-meta-k').css('margin-bottom', 0).text('Linked tasks'))
+        .append(IrisHelp.el('task.links')));
 
     // Three distinct states. Saying "no linked tasks" before the lookup has
     // run would be a claim about this task's dependencies that we cannot
@@ -821,6 +840,7 @@ function iris_tk_comments_body(task) {
         .addClass('btn btn-sm btn-primary mt-2')
         .text('Comment')
         .on('click', function () { iris_tk_post_comment(task.task_id); }));
+    $form.append(IrisHelp.el('note.mentions', {cls: 'ml-2 mt-2'}));
     $body.append($form);
     return $body;
 }

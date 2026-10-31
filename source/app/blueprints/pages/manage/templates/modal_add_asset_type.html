@@ -1,5 +1,5 @@
 <div class="modal-header">
-    <h4>Add Asset Type</h4>
+    <h4>Add Asset Type {{ help_tip('common.asset_type', target='#asset_name') }}</h4>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
             aria-hidden="true">&times;</span></button>
 </div>
@@ -15,7 +15,7 @@
                     {{ form.asset_name(class='form-control',  autocomplete="off") }}
                 </div>
                 <div class="form-group mt-3">
-                    <label for="asset_description" class="placeholder">Asset Type description</label>
+                    <label for="asset_description" class="placeholder">Asset Type description</label>{{ help_tip('object.description') }}
                     {{ form.asset_description(class='form-control',  autocomplete="off") }}
                 </div>
                 <div class="row ml-2">
@@ -27,14 +27,14 @@
                         </div>
                     </div>
                     <div class="form-group col">
-                        <label for="asset_icon_compromised" class="mr-4">Asset Icon - not compromised
-                        </label>
+                        <label for="asset_icon_compromised">Asset Icon - not compromised
+                        </label>{{ help_tip('object.asset_icons', cls='mr-4') }}
                         {{ form.asset_icon_not_compromised(class='form-control',type='file', accept='.svg, .png') }}
                     </div>
                 {% else %}
                     <div class="form-group col">
-                        <label for="asset_icon_compromised" class="mr-4">Asset Icon - not compromised
-                        </label>
+                        <label for="asset_icon_compromised">Asset Icon - not compromised
+                        </label>{{ help_tip('object.asset_icons', cls='mr-4') }}
                         {{ form.asset_icon_not_compromised(class='form-control',type='file', required='false', value=assettype.asset_icon_not_compromised, accept='.svg, .png') }}
                     </div>
                 {% endif %}

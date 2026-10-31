@@ -60,7 +60,7 @@
                                         <div class="form-group iris-tkm-row">
                                             <span class="iris-tkm-ico"><i class="fa-solid fa-circle-check"></i></span>
                                             <div class="iris-tkm-field">
-                                                <label for="task_status_id" class="placeholder">Status *</label>
+                                                <label for="task_status_id" class="placeholder">Status *</label>{{ help_tip('common.task_status', target='#task_status_id') }}
                                                 {{ form.task_status_id(class="selectpicker col-12") }}
                                             </div>
                                         </div>
@@ -69,7 +69,7 @@
                                         <div class="form-group iris-tkm-row">
                                             <span class="iris-tkm-ico"><i class="fa-solid fa-user"></i></span>
                                             <div class="iris-tkm-field">
-                                                <label for="task_assignees_id" class="placeholder">Assignees *</label>
+                                                <label for="task_assignees_id" class="placeholder">Assignees *</label>{{ help_tip('task.assignees') }}
                                                 {{ form.task_assignees_id(class="selectpicker col-12", data_actions_box="true", data_dropup_auto="false") }}
                                             </div>
                                         </div>
@@ -107,15 +107,17 @@
                                     </div>
                                 </div>
                                 <div class="form-group mt-3">
-                                    <label for="task_tags" class="d-flex align-items-center" style="gap: 8px; flex-wrap: wrap;">
-                                        <span>Task tags</span>
+                                    {# The (i) icon and the suggester pill sit beside the label, not
+                                       inside it: a button inside a <label> is invalid HTML. #}
+                                    <div class="d-flex align-items-center mb-2" style="gap: 8px; flex-wrap: wrap;">
+                                        <label for="task_tags" class="mb-0">Task tags</label>{{ help_tip('common.tags') }}
                                         {# iris-next: AI tag suggester pill — inline next to the Task tags label. Existing tasks only. #}
                                         {% set tagsuggest_object_type = "task" %}
                                         {% set tagsuggest_object_id = task.id %}
                                         {% set tagsuggest_target_input_id = "task_tags" %}
                                         {% set tagsuggest_pill_only = True %}
                                         {% include 'case_tag_suggester.html' %}
-                                    </label>
+                                    </div>
                                     {# The placeholder is read by amsifySuggestags off the
                                        original input, so v3's wording needs no JS change. #}
                                     <input type="text" id="task_tags" placeholder="Add tags..."
@@ -132,10 +134,12 @@
                                    is open. Four sections render the same link table from
                                    different sides. #}
                                 <div class="form-group mt-4" id="iris-task-links-wrap" data-task-id="{{ task.id }}">
-                                    <label class="d-flex align-items-center" style="gap: 8px;">
-                                        <span>Linked tasks</span>
-                                        <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">— Jira-style relationships within this case</span>
-                                    </label>
+                                    <div class="d-flex align-items-center mb-2" style="gap: 8px;">
+                                        <label class="d-flex align-items-center mb-0" style="gap: 8px;">
+                                            <span>Linked tasks</span>
+                                            <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">— Jira-style relationships within this case</span>
+                                        </label>{{ help_tip('task.links') }}
+                                    </div>
                                     <div id="iris-task-links-content" style="background: #15151a; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px;">
                                         <div id="iris-task-links-loading" style="color: #94a3b8; font-size: 12.5px; font-style: italic;">Loading links…</div>
                                         <div id="iris-task-links-sections" style="display: none;">

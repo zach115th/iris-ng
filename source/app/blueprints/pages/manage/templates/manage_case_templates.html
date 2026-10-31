@@ -98,7 +98,7 @@
     <div class="iris-co-head">
         <span class="iris-co-head-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg></span>
         <div>
-            <div class="iris-co-title">Case Templates</div>
+            <div class="iris-co-title">Case Templates {{ help_tip('tpl.case_template') }}</div>
             <div class="iris-co-sub">Reusable case skeletons &mdash; title prefix, classification, tags, tasks and notes.</div>
             {{ form.hidden_tag() }}
         </div>
@@ -174,7 +174,7 @@
                             <div class="iris-ct-hint">Appended to the case tags on apply.</div>
                         </div>
                         <div class="full">
-                            <div class="iris-ct-field-label">Classification</div>
+                            <div class="iris-ct-field-label">Classification {{ help_tip('tpl.classification') }}</div>
                             <input type="text" class="form-control form-control-sm" id="iris-ct-f-classification"
                                    list="iris-ct-classifications" placeholder="malware, phishing, ..." autocomplete="off">
                             <datalist id="iris-ct-classifications"></datalist>
@@ -184,7 +184,7 @@
 
                     <div class="iris-ct-section">
                         <div class="iris-ct-section-head">
-                            <span class="iris-co-eyebrow" style="margin-bottom: 0;">Note directories</span>
+                            <span class="iris-co-eyebrow" style="margin-bottom: 0;">Note directories {{ help_tip('tpl.note_directories') }}</span>
                             <span class="iris-ct-section-count" id="iris-ct-notedirs-count"></span>
                             <button type="button" class="btn btn-sm btn-dark ml-auto" id="iris-ct-notedir-add">+ Add</button>
                         </div>

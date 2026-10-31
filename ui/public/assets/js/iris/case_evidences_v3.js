@@ -279,9 +279,12 @@ function iris_ce_render_list() {
 
 /* ---- detail panel ---- */
 
-function iris_ce_field(lbl, val, mono) {
+/* `help` (optional): IrisHelp.icon() markup, drawn after the label ('' when
+ * the icons are off, so it is always safe to pass). */
+function iris_ce_field(lbl, val, mono, help) {
     return '<span class="iris-ce-field"><span class="lbl">' + lbl +
-        '</span>' + (mono ? '<code>' + val + '</code>' : val) + '</span>';
+        '</span>' + (help ? help + ' ' : '') +
+        (mono ? '<code>' + val + '</code>' : val) + '</span>';
 }
 
 function iris_ce_desc_html(r) {
@@ -466,15 +469,17 @@ function iris_ce_asset_card_html(assetId) {
 
 function iris_ce_assets_tab_html(r) {
     var ids = iris_ce_asset_ids(r);
+    var head = '<div class="iris-ce-eyebrow" style="margin-bottom:6px;">Linked assets ' +
+        IrisHelp.icon('evidence.asset_links') + '</div>';
     if (!ids.length) {
-        return '<div class="text-muted" style="font-size:0.8rem; padding:6px 0;">' +
+        return head + '<div class="text-muted" style="font-size:0.8rem; padding:6px 0;">' +
             'No assets linked to this evidence. Evidence is linked from ' +
             'the asset side — open an asset\'s editor on the ' +
             '<a href="/case/assets?cid=' + iris_ce_cid() +
             '" style="color:#8fa3ef;">Assets tab</a>.</div>';
     }
     iris_ce_fetch_asset_catalog();
-    return ids.map(iris_ce_asset_card_html).join('');
+    return head + ids.map(iris_ce_asset_card_html).join('');
 }
 
 /* ---- IOCs tab: evidence has NO direct IOC links — these are DERIVED
@@ -550,7 +555,7 @@ function iris_ce_iocs_tab_html(r) {
     var d = iris_ce_derived_iocs(r);
     var head = '<div class="text-muted" style="font-size:0.72rem; margin-bottom:6px;">' +
         'Derived via the linked assets — evidence carries no direct IOC ' +
-        'links.</div>';
+        'links. ' + IrisHelp.icon('evidence.asset_links') + '</div>';
     if (d.state === 'loading') {
         return head + '<div class="text-muted" style="font-size:0.8rem;">Loading the linked assets&hellip;</div>';
     }
@@ -655,7 +660,8 @@ function iris_ce_inventory_tab_html(r) {
                 ? 'Linked to drive #' + r.drive_id + ' but no bar code is ' +
                   'recorded on this item — open Edit Evidence to set one.'
                 : 'Not linked to an inventory drive. Set a bar code or ' +
-                  'pick a drive in Edit Evidence.') + '</div>';
+                  'pick a drive in Edit Evidence.') + ' ' +
+            IrisHelp.icon('evidence.drive') + '</div>';
     }
     var d = IRIS_CE.drives[r.barcode];
     if (d === undefined) {
@@ -682,7 +688,7 @@ function iris_ce_inventory_tab_html(r) {
         '<span class="iris-ce-chip" style="border-color:' + stColor +
         '55; color:' + stColor + ';">' +
         iris_ce_esc(String(d.status || 'unknown').replace('_', ' ')) +
-        '</span></div>';
+        '</span>' + IrisHelp.icon('evidence.drive') + '</div>';
     var rows = [];
     if (d.barcode) rows.push(iris_ce_field('Bar code',
         iris_ce_esc(d.barcode), true));
@@ -837,13 +843,16 @@ function iris_ce_render_detail() {
                 'autocomplete="off" data-iris-mention="case">' +
                 '<button type="button" class="btn btn-sm btn-primary" ' +
                 'onclick="iris_ce_post_comment(' + r.id +
-                ');">Comment</button></div>';
+                ');">Comment</button>' +
+                IrisHelp.icon('note.mentions', {cls: 'align-self-center'}) + '</div>';
         }
     } else {
         var size = iris_ce_bytes(r.file_size);
         var acq = iris_ce_utc_label(r.acquisition_date, true);
         body += '<div>' +
-            iris_ce_field('Type', iris_ce_esc(iris_ce_type_name(r))) +
+            iris_ce_field('Type', '<span id="iris-ce-d-type">' +
+                iris_ce_esc(iris_ce_type_name(r)) + '</span>', false,
+                IrisHelp.icon('common.evidence_type', {target: '#iris-ce-d-type'})) +
             (size ? iris_ce_field('Size',
                 '<span title="' + iris_ce_esc(r.file_size) + ' bytes">' +
                 iris_ce_esc(size) + '</span>') : '') +
@@ -852,19 +861,23 @@ function iris_ce_render_detail() {
         body += '<div style="margin-top:8px;">' +
             (r.file_hash
                 ? iris_ce_field(iris_ce_hash_kind(r.file_hash),
-                    iris_ce_esc(r.file_hash), true)
+                    iris_ce_esc(r.file_hash), true,
+                    IrisHelp.icon('evidence.hash'))
                 /* the same figure the case-summary evidence specialist
                    counts — a finding, not a blank */
-                : '<span class="iris-ce-nohash">No hash recorded</span>') +
+                : '<span class="iris-ce-nohash">No hash recorded</span> ' +
+                  IrisHelp.icon('evidence.hash')) +
             '</div>';
         var custody = [];
         if (r.created_by) {
             custody.push(iris_ce_field('Collected by',
-                iris_ce_esc(r.created_by)));
+                iris_ce_esc(r.created_by), false,
+                IrisHelp.icon('evidence.custodian')));
         }
         if (r.barcode) {
             custody.push(iris_ce_field('Bar code',
-                iris_ce_esc(r.barcode), true));
+                iris_ce_esc(r.barcode), true,
+                IrisHelp.icon('evidence.barcode')));
         }
         if (r.physical_location) {
             /* the drive's location — the route resolves it; the row's own
@@ -881,7 +894,8 @@ function iris_ce_render_detail() {
         if (cs || ce) {
             body += '<div style="margin-top:8px;">' +
                 iris_ce_field('Coverage', iris_ce_esc(
-                    (cs || '?') + ' → ' + (ce || '?'))) + '</div>';
+                    (cs || '?') + ' → ' + (ce || '?')), false,
+                    IrisHelp.icon('evidence.coverage')) + '</div>';
         }
         body += iris_ce_desc_html(r);
         body += '<div class="iris-ce-foot">' +
@@ -996,24 +1010,28 @@ function iris_ce_edit_form_html(r) {
     return '<div id="iris-ce-edit-err" style="color:#fca5a5; font-size:0.76rem; display:none;"></div>' +
         iris_ce_f_html('Name *', inp('iris-ce-f-name', r.filename)) +
         '<div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">' +
-        iris_ce_f_html('Type',
+        iris_ce_f_html('Type ' +
+            IrisHelp.icon('common.evidence_type', {target: '#iris-ce-f-type'}),
             '<select class="form-control form-control-sm" id="iris-ce-f-type">' +
             typeOpts + '</select>') +
         iris_ce_f_html('Size (bytes)', inp('iris-ce-f-size', r.file_size)) +
         '</div>' +
-        iris_ce_f_html('Hash', inp('iris-ce-f-hash', r.file_hash)) +
+        iris_ce_f_html('Hash ' + IrisHelp.icon('evidence.hash'),
+            inp('iris-ce-f-hash', r.file_hash)) +
         '<div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">' +
-        iris_ce_f_html('Collected by',
+        iris_ce_f_html('Collected by ' + IrisHelp.icon('evidence.custodian'),
             inp('iris-ce-f-collected', r.created_by)) +
-        iris_ce_f_html('Bar code', inp('iris-ce-f-barcode', r.barcode)) +
+        iris_ce_f_html('Bar code ' + IrisHelp.icon('evidence.barcode'),
+            inp('iris-ce-f-barcode', r.barcode)) +
         '</div>' +
-        iris_ce_f_html('On physical drive',
+        iris_ce_f_html('On physical drive ' + IrisHelp.icon('evidence.drive'),
             '<select class="form-control form-control-sm" id="iris-ce-f-drive">' +
             driveOpts + '</select>') +
-        iris_ce_f_html('Acquisition date',
+        iris_ce_f_html('Acquisition date ' + IrisHelp.icon('evidence.acquisition_date'),
             dt('iris-ce-f-acquired', r.acquisition_date)) +
         '<div style="display:grid; grid-template-columns:1fr 1fr; gap:0 14px;">' +
-        iris_ce_f_html('Coverage start', dt('iris-ce-f-start', r.start_date)) +
+        iris_ce_f_html('Coverage start ' + IrisHelp.icon('evidence.coverage'),
+            dt('iris-ce-f-start', r.start_date)) +
         iris_ce_f_html('Coverage end', dt('iris-ce-f-end', r.end_date)) +
         '</div>' +
         iris_ce_f_html('Description',
