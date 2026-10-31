@@ -11,6 +11,26 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.9.1] — 2026-10-30
+
+A security hardening fix for the help icons. **No schema change** — the database head stays at
+`e7a3f9c2d6b1`. Only the app image changes (one application module and one script); the nginx and
+database images, and the guest-portal tunnel agent, do not change.
+
+### Security
+- **A help tip's links are built only from the glossary itself** (code scanning alert #49, "DOM
+  text reinterpreted as HTML"). The "All terms" link in a pinned tip was assembled from the
+  icon's own page attribute. That attribute could only ever name an existing glossary term and
+  sat after the `#` of the link, so it could not change where the link went, but the link now
+  takes the term's key from the glossary data, URL-encoded, and a tip writes a link only for an
+  `http(s)` address or a path on this server — anything else, such as a `javascript:` address,
+  gives no link at all. Tips look and behave as before.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.9.1`, or the 2.9.1 images / chart 1.9.1). No
+migration runs; an install still on 2.8.x applies 2.9.0's single migration (`e7a3f9c2d6b1`) at the
+first start, so take a database dump first (`scripts/update.sh` does).
+
 ## [IRIS-NG-v2.9.0] — 2026-10-30
 
 Help icons across the interface, and four fixes. **One schema migration (`e7a3f9c2d6b1`)**, a
