@@ -1129,6 +1129,20 @@ function _csvEscape(v) {
     return (v == null ? '' : String(v)).replace(/"/g, '""');
 }
 
+/* iris-ng (2026-10-30): the date column is the time AS TYPED, next to the
+ * offset it was typed in - the pair the CSV imports read (event_date in
+ * event_tz). It used to be the stored UTC instant next to the original
+ * offset, so importing the file back moved every event entered with a
+ * non-zero offset by that offset (00:02 at -07:00 came back 7 hours late),
+ * and anyone reading the file made the same mistake. An event missing
+ * either value falls back to the UTC instant, labelled +00:00. */
+function _csvEventWhen(item) {
+    if (item.event_date_wtz && item.event_tz) {
+        return [item.event_date_wtz, item.event_tz];
+    }
+    return [item.event_date, '+00:00'];
+}
+
 function timelineToCsv(){
     csv_data = "event_date,event_tz,event_title,event_category,event_content,event_raw,event_source,event_assets,event_iocs,event_tags\n";
     for (index in current_timeline) {
@@ -1139,8 +1153,9 @@ function timelineToCsv(){
         const tags           = _csvEscape((item.event_tags || '').split(',').filter(Boolean).join('|'));
         const source         = _csvEscape(item.event_source);
         const raw            = _csvEscape(item.event_raw);
-        const date           = _csvEscape(item.event_date);
-        const tz             = _csvEscape(item.event_tz);
+        const when           = _csvEventWhen(item);
+        const date           = _csvEscape(when[0]);
+        const tz             = _csvEscape(when[1]);
         const category       = _csvEscape(item.category_name);
         const assets         = (item.assets || []).map(a => _csvEscape(a.name)).join(';');
         const iocs           = (item.iocs   || []).map(i => _csvEscape(i.name)).join('|');
@@ -1161,9 +1176,10 @@ function timelineToCsvWithUI(){
         const tags           = _csvEscape((item.event_tags || '').split(',').filter(Boolean).join('|'));
         const source         = _csvEscape(item.event_source);
         const raw            = _csvEscape(item.event_raw);
-        const date           = _csvEscape(item.event_date);
+        const when           = _csvEventWhen(item);
+        const date           = _csvEscape(when[0]);
         const date_wtz       = _csvEscape(item.event_date_wtz);
-        const tz             = _csvEscape(item.event_tz);
+        const tz             = _csvEscape(when[1]);
         const category       = _csvEscape(item.category_name);
         const assets         = (item.assets || []).map(a => _csvEscape(a.name)).join(';');
         const iocs           = (item.iocs   || []).map(i => _csvEscape(i.name)).join('|');

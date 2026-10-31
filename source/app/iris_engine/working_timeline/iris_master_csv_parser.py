@@ -9,8 +9,8 @@ Expected header (canonical round-trip format):
     event_raw,event_source,event_assets,event_iocs,event_tags
 
 Column mapping to CaseWorkingEvent:
-    event_date       → event_date  (ISO datetime, parsed to naive UTC)
-    event_tz         → stored in event_raw for reference
+    event_date       → event_date  (the time in event_tz, stored as naive UTC)
+    event_tz         → applied to event_date, and kept in event_raw for reference
     event_title      → event_title
     event_category   → stored in event_raw (no equivalent column on CWE)
     event_content    → event_description
@@ -27,7 +27,10 @@ import csv
 import io
 import json
 import uuid
+import re
 from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 
 
 REQUIRED_FIELDS = {
@@ -39,6 +42,46 @@ REQUIRED_FIELDS = {
 
 class MasterCsvParseError(Exception):
     """Raised when the CSV is unrecognized, malformed, or empty."""
+
+
+_OFFSET_RE = re.compile(r'^([+-])(\d{2}):?(\d{2})?$')
+
+
+def _parse_offset(value: str | None) -> timedelta | None:
+    """'+02:00' / '-0700' / '+05' -> timedelta; blank, Z or UTC -> zero;
+    anything else -> None (the time is then read as UTC)."""
+    value = (value or '').strip()
+    if not value or value.upper() in ('Z', 'UTC', 'GMT'):
+        return timedelta(0)
+    m = _OFFSET_RE.match(value)
+    if not m:
+        return None
+    delta = timedelta(hours=int(m.group(2)), minutes=int(m.group(3) or 0))
+    return delta if m.group(1) == '+' else -delta
+
+
+def _event_utc(value: str | None, tz: str | None) -> datetime | None:
+    """The row's instant as naive UTC (iris-ng 2026-10-30). event_date is the
+    time in event_tz - the master-timeline import reads the same file the same
+    way. This parser used to keep event_tz only as a note and take event_date
+    as UTC, so the two importers disagreed. A date that carries its own
+    offset (or Z) is converted with that offset instead."""
+    if not value:
+        return None
+    text = value.strip()
+    own = re.search(r'(Z|[+-]\d{2}:?\d{2})$', text)
+    if own and re.search(r'\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$', text):
+        try:
+            aware = datetime.fromisoformat(text.replace('Z', '+00:00'))
+            if aware.tzinfo is not None:
+                return aware.astimezone(timezone.utc).replace(tzinfo=None)
+        except ValueError:
+            pass
+    local = _parse_event_date(text)
+    if local is None:
+        return None
+    offset = _parse_offset(tz)
+    return local - offset if offset is not None else local
 
 
 def _parse_event_date(value: str | None) -> datetime | None:
@@ -98,7 +141,7 @@ def parse_master_csv(
         # Strip whitespace from all keys
         row = {k.strip().lower(): (v or '').strip() for k, v in raw_row.items() if k}
 
-        event_date = _parse_event_date(row.get('event_date'))
+        event_date = _event_utc(row.get('event_date'), row.get('event_tz'))
         if event_date is None:
             # Keep rows with unparseable timestamps — same contract as other parsers
             pass
