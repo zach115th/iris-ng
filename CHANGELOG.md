@@ -11,6 +11,65 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.9.0] — 2026-10-30
+
+Help icons across the interface, and four fixes. **One schema migration (`e7a3f9c2d6b1`)**, a
+single nullable column on `user` — take a database dump before upgrading (migrations are one-way;
+`scripts/update.sh` does the dump). Only the app image changes (application code, page templates,
+scripts and stylesheets); the nginx and database images, and the guest-portal tunnel agent, do not.
+
+### Added
+- **(i) help icons.** Every page with a navigation bar, Manage included, carries an (i) beside the
+  fields, columns, settings and sections that need explaining — about 420 definitions. Hover to
+  read one; click it (or press Enter) to keep it open and use its links; Esc or a click elsewhere
+  closes it. Where a field takes its value from a list (severity, case state, classification, IOC,
+  asset and evidence type, task and alert status, resolution), the tip also shows what the chosen
+  value means on this server: the descriptions administrators edit under Manage.
+- **A Glossary page** (`/help/glossary`, in the user menu and behind "All terms" in every tip)
+  lists every definition on one searchable page, with this server's values. "Learn more" in a tip
+  opens the matching wiki section.
+- **My settings → "Show help icons"** hides the icons for you; the Glossary stays.
+- **War-room guests** see, on the guest portal, the definitions of what they can use in the room.
+
+### Fixed
+- **Selecting several alerts reassigned their owners.** Setting a status, closing with a note or
+  assigning on several alerts at once made you the owner of every alert after the first unowned
+  one — alerts someone else owned included — and "Assign to <someone>" gave the unowned alerts to
+  you instead. Owned alerts now keep their owner, unowned ones become yours only when no owner is
+  chosen, and Assign gives every selected alert to the person picked.
+- **A timeline CSV moved events entered with an offset.** "Download as CSV" wrote each event's UTC
+  time next to the offset it was typed in, and the import reads the time in that offset, so
+  importing a downloaded file (into another case, say) moved those events by their offset: an
+  event typed 00:02 at −07:00 came back at 14:02 UTC, and anyone reading the file got the wrong
+  time too. The file now holds each time as it was entered, next to its offset, and both imports
+  (master and working timeline) read it the same way. Files downloaded before this release still
+  carry the old pairing.
+- **"File is IOC" in the datastore never reached the case.** The file's SHA-256 was created as an
+  IOC that belonged to no case (and only when the hash existed nowhere on the server), so it never
+  appeared on the IOC tab. It is now added to the case's IOCs (type sha256, TLP:AMBER, tag
+  `datastore`) unless the case already holds it.
+- **Editing a seeded value's description duplicated it.** At start-up IRIS-NG re-creates missing
+  seeded lookup values, and it compared the description as well as the name, so an evidence type,
+  IOC type, case state or classification whose description an administrator had edited was added
+  a second time at the next restart. Seeded values are now matched by name. Duplicates created
+  before this release are left in place.
+- **The HTTPS proxy setting was overwritten with the HTTP proxy** each time Settings was saved: the
+  field showed the HTTP proxy's value.
+- **Interface text that contradicted the software**: the IOC CSV format hint (tags come before
+  TLP), the evidence form's note that the file never leaves the browser (the evidence-type
+  suggestion sends its first 4 KB to the AI backend), the inventory wipe and overdue notes, the
+  summary-verification note in Settings, and several war-room, mail-rule and timeline-filter
+  descriptions.
+
+### Changed
+- The seeded severity, alert-status and task-status descriptions that only repeated the value's
+  name (or were empty) now describe the value. A description an administrator has changed is kept.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.9.0`, or the 2.9.0 images / chart 1.9.0). One
+migration runs at the first start (`e7a3f9c2d6b1`, the nullable `user.has_help_tips` column); every
+existing user sees the icons until they turn them off.
+
 ## [IRIS-NG-v2.8.10] — 2026-10-30
 
 Page-load and accessibility fixes. **No schema change** — the database head stays at
