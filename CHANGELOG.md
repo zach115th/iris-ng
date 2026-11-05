@@ -11,6 +11,52 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.9.2] — 2026-11-05
+
+A dependency release. **No schema change** — the database head stays at `e7a3f9c2d6b1`. The app
+image changes in Python packages only (the application code and the browser bundle are identical
+to 2.9.1), and the guest-portal tunnel agent gets a newer cloudflared; the nginx and database
+images do not change.
+
+### Changed
+- **pypdf 6.21.2 → 6.21.4 (Dependabot #167, also part of #170)**, which fills the bundled FEMA
+  forms for the war-room ICS PDF export. Fixes seven denial-of-service advisories on crafted PDF
+  files (GHSA-42gh-23hr-vphw, GHSA-4vqv-7265-gm2w, GHSA-62m5-6wh8-28x7, GHSA-x3rh-gjgm-fmqc,
+  GHSA-5849-834g-hvw5, GHSA-cggf-277g-3q54, GHSA-mfr5-77xh-9j7h). None is reachable: IRIS-NG only
+  opens its own bundled forms, and all seven export identically on both versions.
+- **cloudflared 2026.10.4 → 2026.10.7 in the guest-portal tunnel agent (Dependabot #168).** Fixes
+  a regression in the maximum number of concurrent HTTP/2 streams in the builds made with Go 1.27
+  (a tunnel falls back to HTTP/2 where QUIC is blocked) and updates two of its own dependencies
+  (go-chi 5.5.0, go-jose 4.1.6). The agent starts, connects, serves the portal and restarts
+  cloudflared after a crash as before. It is still built with Go 1.27.3, so 2026.10.2's distrust
+  of the compromised eMudhra intermediates stays in.
+- **azure-keyvault-secrets 4.11.3 → 4.12.0, WTForms 3.3.1 → 3.3.2, Flask-SocketIO 5.7.0 → 5.7.1
+  (Dependabot #170).** Azure Key Vault, used only when `AZURE_KEY_VAULT_NAME` is set: hardened
+  handling of cached authentication challenges, a backslash in the vault URL's host is refused,
+  and the default service API version is now 2026-04-01. WTForms: a numbering fix for nested
+  `FieldList`s, which IRIS-NG's forms do not use; every form renders and validates identically.
+  Flask-SocketIO now requires python-socketio 5.18 or newer (below).
+- **Unpinned packages in the rebuilt image:** python-socketio 5.17.0 → 5.18.1, which refuses an
+  event that arrives while a Socket.IO connect handler is still running instead of dispatching it
+  (IRIS-NG has no connect handler that authenticates); kombu 5.6.2 → 5.7.0, which no longer
+  installs `tzdata` (time zones still resolve, from the image's system database); amqp 5.4.2,
+  billiard 4.3.2, Deprecated 3.0.1, pydantic 2.14.3, pydantic-core 2.50.4 and typing-inspection
+  0.4.5. Checked on the rebuilt image: every module imports, app and both workers start cleanly,
+  and GraphQL, a `.docx` report, case create and delete, the ICS PDF export and every test suite
+  give the same results as before.
+- Build-time only: eslint 10.13.0 → 10.14.0 and globals 17.13.0 → 17.14.0 (Dependabot #169); the
+  built browser bundle is byte-identical.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.9.2`, or the 2.9.2 images / chart 1.9.2). No
+migration runs; an install still on 2.8.x applies 2.9.0's single migration (`e7a3f9c2d6b1`) at the
+first start, so take a database dump first (`scripts/update.sh` does). **With the guest portal
+enabled, `scripts/update.sh` rebuilds the tunnel agent** and so picks up cloudflared 2026.10.7;
+Settings → Guest Portal shows the version it reports. To rebuild the agent alone, from the clone:
+`docker compose -f docker-compose.dev.yml -f docker-compose.portal.yml build --pull tunnel`, then
+the same with `up -d tunnel`. A quick tunnel gets a new hostname whenever it restarts; a named
+tunnel keeps its own.
+
 ## [IRIS-NG-v2.9.1] — 2026-10-30
 
 A security hardening fix for the help icons. **No schema change** — the database head stays at
