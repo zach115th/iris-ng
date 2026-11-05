@@ -11,6 +11,34 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.9.4] — 2026-11-05
+
+A maintenance release for the tools that build the browser bundle. **No schema change** — the
+database head stays at `e7a3f9c2d6b1`. The application code and the browser bundle are identical
+to 2.9.3; a fresh build of the app image resolves one newer unpinned package (below). The nginx
+and database images and the guest-portal tunnel agent do not change.
+
+### Security
+- **minimatch 10.2.6 → 11.0.4 in the build tools, pinned through `ui/package.json`'s `overrides`
+  (Dependabot alert #174).** Closes GHSA-g3hv-75wg-m249: with `optimizationLevel` 2, a crafted
+  glob pattern made minimatch generate an exponential number of pattern variants and then compare
+  every pair. minimatch is used only by the linter (eslint), which never sets that option and only
+  reads the repository's own patterns, and the image build does not run the linter; nothing of it
+  ships in an image. The fix exists only in minimatch 11, which eslint does not declare yet, hence
+  the override: eslint lints the same files with the same findings, and the browser bundle is
+  byte-identical.
+
+### Changed
+- **Unpinned package in the rebuilt image:** pycryptodomex 3.24.1 → 3.24.2, used by the OpenID
+  Connect sign-in libraries (`oic`, `pyjwkest`). A packaging release for PyPy on Windows; in this
+  image only its version string changes.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.9.4`, or the 2.9.4 images / chart 1.9.4). No
+migration runs; an install still on 2.8.x applies 2.9.0's single migration (`e7a3f9c2d6b1`) at the
+first start, so take a database dump first (`scripts/update.sh` does). An install already on 2.9.3
+gains nothing it would notice.
+
 ## [IRIS-NG-v2.9.3] — 2026-11-05
 
 A maintenance release for the end-to-end test harness. **No schema change** — the database head
