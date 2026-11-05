@@ -11,6 +11,28 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.9.3] — 2026-11-05
+
+A maintenance release for the end-to-end test harness. **No schema change** — the database head
+stays at `e7a3f9c2d6b1`. The app image is 2.9.2's apart from the version it reports: a fresh build
+resolves the same Python packages, and the application code and the browser bundle are identical.
+The nginx and database images and the guest-portal tunnel agent (cloudflared 2026.10.7) do not
+change.
+
+### Security
+- **follow-redirects 1.16.1 → 1.16.2 in the end-to-end test harness (Dependabot #172).** Closes
+  GHSA-mrwp-f3q8-3g9p: a `sensitiveHeaders` list created in another JavaScript realm (a `vm`
+  context) was discarded, so the custom credential headers it named were kept on a redirect to
+  another host. It reproduces on 1.16.1 and not on 1.16.2. The package belongs to the test
+  harness's readiness poll only, which sets no such list (and axios, which the poll goes through,
+  copies one into a new array anyway); nothing of it ships in an image.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.9.3`, or the 2.9.3 images / chart 1.9.3). No
+migration runs; an install still on 2.8.x applies 2.9.0's single migration (`e7a3f9c2d6b1`) at the
+first start, so take a database dump first (`scripts/update.sh` does). An install already on 2.9.2
+gains nothing but the new version number.
+
 ## [IRIS-NG-v2.9.2] — 2026-11-05
 
 A dependency release. **No schema change** — the database head stays at `e7a3f9c2d6b1`. The app
