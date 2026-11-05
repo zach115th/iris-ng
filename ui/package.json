@@ -45,6 +45,7 @@
     "xss": "^1.0.17"
   },
   "overrides": {
+    "minimatch": "^11.0.4",
     "postcss-selector-parser": "^7.1.6"
   }
 }
