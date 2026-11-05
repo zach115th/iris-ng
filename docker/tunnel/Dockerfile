@@ -5,7 +5,7 @@
 # Pinned, never :latest: `up --build` does not re-pull a cached :latest, so an
 # install kept the cloudflared it first built with. Dependabot tracks the tag.
 # 2026.10.2+ distrusts the compromised eMudhra intermediates (Go 1.27.3).
-FROM cloudflare/cloudflared:2026.10.4 AS cf
+FROM cloudflare/cloudflared:2026.10.7 AS cf
 
 FROM alpine:3.24
 RUN apk add --no-cache curl jq ca-certificates
