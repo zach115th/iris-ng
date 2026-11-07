@@ -102,6 +102,7 @@ def list_room_decisions(room_id):
         return _err(e)
     uid, _, guest = _ctx()
     return response_api_success({'decisions': wd.rows(decisions, uid, role, guest, _visible(room)),
+                                 'counts': wd.status_counts(room.id, request.args),
                                  'can_propose': (not guest) and role in ('responder', 'lead')
                                  and room.status != 'closed'})
 

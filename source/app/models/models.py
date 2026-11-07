@@ -2682,6 +2682,10 @@ class VulnerabilityFinding(db.Model):
     created_by_id = Column(BigInteger, ForeignKey('user.id'), nullable=True)
     updated_at = Column(DateTime, nullable=True)
     updated_by_id = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    # iris-ng 2026-11-07: the approved war-room decision a case finding cites (a risk acceptance, for
+    # example) - the same rule as an asset flag that requires a decision. SET NULL when the room goes.
+    decision_id = Column(BigInteger, ForeignKey('war_room_decision.id', ondelete='SET NULL'), nullable=True,
+                         index=True)
 
     vulnerability = relationship('Vulnerability')
     case = relationship('Cases')
@@ -2689,6 +2693,7 @@ class VulnerabilityFinding(db.Model):
     customer_asset = relationship('CustomerAsset')
     owner = relationship('User', foreign_keys=[owner_id])
     verified_by = relationship('User', foreign_keys=[verified_by_id])
+    decision = relationship('WarRoomDecision', foreign_keys=[decision_id])
 
     __table_args__ = (
         CheckConstraint(_vv.sql_in('scope', _vv.FINDING_SCOPES), name='ck_vulnerability_finding_scope_value'),

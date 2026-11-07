@@ -21,6 +21,7 @@
   /api/v2/manage/vulnerabilities/<id>/merge  DELETE    server administrators only
   /api/v2/manage/vulnerabilities/cve-lookup, /<id>/sync  cve.org (Settings -> System switch)
   /api/v2/cases/<cid>/vulnerabilities                  case findings (case read / full access)
+  /api/v2/cases/<cid>/vulnerabilities/decisions        decisions a finding on ?asset_id= may cite
   /api/v2/customer-assets/<id>/vulnerabilities         registry findings (customer access)
   /api/v2/war-rooms/<rid>/vulnerabilities              tracked entries (observer reads, responder writes)
   /api/v2/war-rooms/<rid>/scope/vulnerabilities        findings across the room's cases the viewer can open
@@ -305,13 +306,27 @@ def case_finding_pickers(cid):
     return response_api_success(fb.case_pickers(cid))
 
 
+@vulnerabilities_blueprint.route('/cases/<int:cid>/vulnerabilities/decisions', methods=['GET'])
+@ac_api_requires()
+def case_finding_decisions(cid):
+    """The approved war-room decisions a finding on `?asset_id=` may cite (the asset-flag rule)."""
+    from app.models.models import CaseAssets
+    if not _case_read(cid):
+        return ac_api_return_access_denied(caseid=cid)
+    raw = request.args.get('asset_id') or ''
+    asset = db.session.get(CaseAssets, int(raw)) if raw.isdigit() else None
+    if asset is None or asset.case_id != cid:
+        return response_api_not_found()
+    return response_api_success(fb.decision_choices(cid, asset.asset_id, current_user.id, _is_admin()))
+
+
 @vulnerabilities_blueprint.route('/cases/<int:cid>/vulnerabilities', methods=['POST'])
 @ac_api_requires()
 def create_case_finding(cid):
     if not _case_write(cid):
         return ac_api_return_access_denied(caseid=cid)
     try:
-        f = fb.create_finding('case', _json(), current_user.id, case_id=cid)
+        f = fb.create_finding('case', _json(), current_user.id, case_id=cid, is_admin=_is_admin())
         db.session.commit()
     except VulnError as e:
         db.session.rollback()
@@ -342,7 +357,7 @@ def update_case_finding(cid, fid):
     if f is None:
         return response_api_not_found()
     try:
-        fb.update_finding(f, _json(), current_user.id)
+        fb.update_finding(f, _json(), current_user.id, is_admin=_is_admin())
         db.session.commit()
     except VulnError as e:
         db.session.rollback()
@@ -414,7 +429,8 @@ def create_registry_finding(asset_id):
     if asset is None:
         return response_api_not_found()
     try:
-        f = fb.create_finding('registry', _json(), current_user.id, customer_asset_id=asset_id)
+        f = fb.create_finding('registry', _json(), current_user.id, customer_asset_id=asset_id,
+                              is_admin=_is_admin())
         db.session.commit()
     except VulnError as e:
         db.session.rollback()
@@ -434,7 +450,7 @@ def update_registry_finding(asset_id, fid):
     if f is None:
         return response_api_not_found()
     try:
-        fb.update_finding(f, _json(), current_user.id)
+        fb.update_finding(f, _json(), current_user.id, is_admin=_is_admin())
         db.session.commit()
     except VulnError as e:
         db.session.rollback()

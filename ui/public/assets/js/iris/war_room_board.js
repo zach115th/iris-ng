@@ -19,7 +19,13 @@
     var IrisHelp = window.IrisHelp || {icon: function () { return ''; }};
     var $ = window.jQuery;
     var ctx = null;
-    var STATUS = {proposed: 'Proposed', approved: 'Approved', rejected: 'Rejected', superseded: 'Superseded'};
+    var STATUS = {proposed: 'Pending', approved: 'Approved', rejected: 'Rejected', superseded: 'Superseded'};
+    /* the register's status chips: [filter value, label, key in the list reply's counts] */
+    var CHIPS = [['', 'All', 'all'], ['open', 'Open', 'open'], ['proposed', 'Pending', 'proposed'],
+                 ['approved', 'Approved', 'approved'], ['rejected', 'Rejected', 'rejected'],
+                 ['superseded', 'Superseded', 'superseded'], ['overdue', 'Overdue', 'overdue'],
+                 ['implemented', 'Implemented', 'implemented']];
+    var GAVEL = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 12.5-8 8a2.119 2.119 0 1 1-3-3l8-8"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>';
     var STATUS_CLS = {proposed: '#8fa3ef', approved: '#2dce89', rejected: '#ff8095', superseded: '#9a9aa5'};
     var VERDICT = {pending: 'pending', approved: 'approved', rejected: 'rejected'};
 
@@ -111,6 +117,15 @@
             '.iris-rb-cases{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;}',
             '.iris-rb-edit{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;padding:6px 8px;border:1px dashed rgba(139,92,246,.45);border-radius:6px;}',
             '.iris-rb-note{font-size:.84rem;}',
+            '.iris-rb-fchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}',
+            '.iris-rb-fchip{background:none;border:1px solid rgba(255,255,255,.14);border-radius:999px;color:#c8c8d0;font-size:.74rem;padding:1px 10px;cursor:pointer;}',
+            '.iris-rb-fchip.active{border-color:#4a8cff;background:rgba(74,140,255,.15);color:#9ec2ff;}',
+            '.iris-rb-fchip b{font-weight:600;margin-left:3px;}',
+            '.iris-rb-pick{background:none;border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#c8c8d0;font-size:.76rem;padding:1px 8px;margin:0 4px 4px 0;cursor:pointer;}',
+            '.iris-rb-pick.on{border-color:#4a8cff;background:rgba(74,140,255,.15);color:#e8e8ee;}',
+            '.iris-rb-empty{text-align:center;padding:48px 16px;}',
+            '.iris-rb-empty-ic{display:inline-flex;width:40px;height:40px;border-radius:50%;align-items:center;justify-content:center;background:rgba(139,92,246,.15);color:#a78bfa;margin-bottom:10px;}',
+            '.iris-rb-empty-ic svg{width:20px;height:20px;}',
             '@media (max-width: 991px){.iris-rb-split{display:block;}.iris-rb-left{margin-bottom:12px;}.iris-rb-cols{grid-template-columns:minmax(0,1fr);}}'
         ].join('\n');
         document.head.appendChild(st);
@@ -138,19 +153,25 @@
         el.innerHTML =
             '<div class="d-flex flex-wrap align-items-center mb-2" style="gap:6px;">' +
             '<h2 class="h6 mb-0 mr-1">Decisions</h2>' + IrisHelp.icon('room.decisions') +
-            '<label class="sr-only" for="iris-rb-dstatus">Status</label><select id="iris-rb-dstatus" class="form-control form-control-sm" style="max-width:150px;">' +
-            '<option value="">All</option><option value="open">Open</option><option value="overdue">Overdue</option><option value="proposed">Proposed</option>' +
-            '<option value="approved">Approved</option><option value="rejected">Rejected</option><option value="superseded">Superseded</option>' +
-            '<option value="implemented">Implemented</option></select>' +
-            '<label class="sr-only" for="iris-rb-dcase">Case</label><select id="iris-rb-dcase" class="form-control form-control-sm" style="max-width:190px;"><option value="">All cases</option></select>' +
-            '<label class="sr-only" for="iris-rb-dq">Search decisions</label><input type="text" id="iris-rb-dq" class="form-control form-control-sm" style="max-width:220px;" placeholder="Search D-n, title, owner…">' +
+            '<span class="iris-rb-muted" data-rb="total"></span>' +
             '<span class="ml-auto"></span>' +
             '<button type="button" class="btn btn-sm btn-outline-secondary" data-rb="fromchat" style="display:none;">From chat</button>' +
-            '<button type="button" class="btn btn-sm btn-primary" data-rb="propose" style="display:none;">+ Propose a decision</button></div>' +
+            '<button type="button" class="btn btn-sm btn-primary" data-rb="propose" style="display:none;">+ Propose</button></div>' +
+            '<div class="iris-rb-fchips" role="group" aria-label="Filter by status">' + CHIPS.map(function (c) {
+                return '<button type="button" class="iris-rb-fchip' + (c[0] ? '' : ' active') + '" data-rb="chip" data-v="' + c[0] +
+                    '" aria-pressed="' + (c[0] ? 'false' : 'true') + '">' + c[1] + ' <b data-rb-count="' + c[2] + '">&ndash;</b></button>';
+            }).join('') + '</div>' +
+            '<div class="d-flex flex-wrap align-items-center mb-2" style="gap:6px;">' +
+            '<label class="sr-only" for="iris-rb-dcase">Case</label><select id="iris-rb-dcase" class="form-control form-control-sm" style="max-width:190px;"><option value="">All cases</option></select>' +
+            '<label class="sr-only" for="iris-rb-dq">Search decisions</label><input type="text" id="iris-rb-dq" class="form-control form-control-sm" style="max-width:220px;" placeholder="Search D-n, title, owner…"></div>' +
             '<div class="iris-rb-split"><div class="iris-rb-left"><ul class="iris-rb-list" data-rb="list" aria-label="Decision register"><li class="p-3 iris-rb-muted">Loading…</li></ul></div>' +
             '<div class="iris-rb-right" data-rb="detail"></div></div>';
         var $el = $(el);
-        $el.on('change', '#iris-rb-dstatus', function () { D.filter.status = $(this).val(); loadList(); });
+        $el.on('click', '[data-rb="chip"]', function () {
+            D.filter.status = $(this).attr('data-v') || '';
+            setChips();
+            loadList();
+        });
         $el.on('change', '#iris-rb-dcase', function () { D.filter.case_id = id($(this).val()) || ''; loadList(); });
         var t = null;
         $el.on('input', '#iris-rb-dq', function () {
@@ -178,6 +199,20 @@
             return D.cases;
         });
     }
+    function setChips() {
+        $(D.el).find('[data-rb="chip"]').each(function () {
+            var on = ($(this).attr('data-v') || '') === (D.filter.status || '');
+            $(this).toggleClass('active', on).attr('aria-pressed', on ? 'true' : 'false');
+        });
+    }
+    function emptyHtml() {
+        return '<div class="iris-rb-empty" data-rb="empty"><div class="iris-rb-empty-ic">' + GAVEL + '</div>' +
+            '<div class="h6 mb-1">No decisions yet</div>' +
+            '<div class="iris-rb-muted mb-3">Record the calls the room makes: isolate a site, reset credentials, accept a risk. ' +
+            'Each one gets a D-number, an owner, a target date and time, and optional approvers who vote on it.</div>' +
+            (D.canPropose ? '<button type="button" class="btn btn-sm btn-primary mr-1" data-rb="propose">+ Propose a decision</button>' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary" data-rb="fromchat">Promote from chat</button>' : '') + '</div>';
+    }
     function loadMembers() {
         if (D.members !== null) { return Promise.resolve(D.members); }
         return api('/members').then(function (res) {
@@ -195,9 +230,15 @@
             D.list = res.j.decisions;
             D.canPropose = !!res.j.can_propose && !ctx.guest;
             $(D.el).find('[data-rb="propose"],[data-rb="fromchat"]').toggle(D.canPropose);
+            var counts = res.j.counts || {};
+            $(D.el).find('[data-rb-count]').each(function () {
+                var k = $(this).attr('data-rb-count');
+                $(this).text(counts[k] == null ? '\u2013' : String(Number(counts[k]) || 0));
+            });
+            $(D.el).find('[data-rb="total"]').text(counts.all == null ? '' : Number(counts.all) + ' decision' + (Number(counts.all) === 1 ? '' : 's'));
+            var filtered = !!(D.filter.status || D.filter.q || D.filter.case_id);
             if (!D.list.length) {
-                $l.html('<li class="p-3 iris-rb-muted">' + (D.filter.status || D.filter.q || D.filter.case_id ? 'No decisions match the current filters.'
-                    : 'No decisions yet.' + (D.canPropose ? ' Propose one, or promote a /decision chat message.' : '')) + '</li>');
+                $l.html('<li class="p-3 iris-rb-muted">' + (filtered ? 'No decisions match the current filters.' : 'No decisions yet.') + '</li>');
             } else {
                 $l.html(D.list.map(function (d) {
                     var votes = d.approvers.length ? ' &middot; ' + d.approvers.filter(function (a) { return a.verdict === 'approved'; }).length + '/' + d.approvers.length + ' approved' : '';
@@ -209,13 +250,15 @@
                 }).join(''));
             }
             var want = selectId || D.sel || (D.list[0] && D.list[0].decision_id);
-            if (want) { selectDecision(want); } else { $(D.el).find('[data-rb="detail"]').html('<div class="iris-rb-muted p-3">Select a decision in the register.</div>'); }
+            if (want) { selectDecision(want); }
+            else { $(D.el).find('[data-rb="detail"]').html(filtered ? '<div class="iris-rb-muted p-3">No decision matches the current filters.</div>' : emptyHtml()); }
         });
     }
     B.openDecision = function (did) {
         if (!D.el) { return; }   /* war_room.js mounts the pane before it opens a decision */
         D.filter = {status: '', q: '', case_id: ''};
-        $(D.el).find('#iris-rb-dstatus,#iris-rb-dcase').val('');
+        $(D.el).find('#iris-rb-dcase').val('');
+        setChips();
         $(D.el).find('#iris-rb-dq').val('');
         loadList(Number(did));
     };
@@ -266,7 +309,10 @@
             (d.superseded_by && d.superseded_by.length ? '<div class="iris-rb-sec">Superseded by</div><div>' + d.superseded_by.map(function (x) {
                 return '<button type="button" class="iris-rb-linkbtn mr-2" data-rb="goto" data-id="' + id(x.decision_id) + '">' + esc(x.ref) + '</button>' + statusBadge(x.status);
             }).join(' ') + '</div>' : '') +
-            (d.cited_by_flags ? '<div class="iris-rb-sec">Cited by</div><div>' + Number(d.cited_by_flags) + ' asset flag' + (d.cited_by_flags === 1 ? '' : 's') + '</div>' : '') +
+            (d.cited_by_flags || d.cited_by_findings ? '<div class="iris-rb-sec">Cited by</div><div>' + [
+                d.cited_by_flags ? Number(d.cited_by_flags) + ' asset flag' + (Number(d.cited_by_flags) === 1 ? '' : 's') : '',
+                d.cited_by_findings ? Number(d.cited_by_findings) + ' vulnerability finding' + (Number(d.cited_by_findings) === 1 ? '' : 's') : ''
+            ].filter(Boolean).join(' &middot; ') + '</div>' : '') +
             '<div class="iris-rb-sec">Rationale</div><div class="iris-rb-note">' + (d.rationale_html || '<span class="iris-rb-muted">No rationale.</span>') + '</div>' +
             '<div class="iris-rb-sec">Trail</div><ul class="iris-rb-trail">' + (d.trail || []).map(function (t) {
                 return '<li><span class="iris-rb-muted">' + esc(utc(t.at)) + '</span> &middot; ' + esc(t.action.replace(/_/g, ' ')) +
@@ -298,11 +344,11 @@
     function fromChat() {
         api('/decisions/chat-candidates').then(function (res) {
             var rows = res.ok && Array.isArray(res.j) ? res.j : [];
-            var $m = modal({title: 'Promote from chat', subtitle: 'Decisions posted in the stream with /decision that are not in the register yet.',
+            var $m = modal({title: 'Promote a chat decision', subtitle: 'Decisions posted in the stream with /decision that are not in the register yet.',
                 body: rows.length ? '<ul class="iris-rb-trail">' + rows.map(function (m, i) {
                     return '<li class="d-flex align-items-start" style="gap:8px;"><div style="flex:1 1 auto;">' + esc(m.content) +
                         '<div class="iris-rb-muted">' + esc(m.author) + ' &middot; ' + esc(utc(m.created_at)) + '</div></div>' +
-                        '<button type="button" class="btn btn-sm btn-outline-primary" data-i="' + i + '">Register…</button></li>';
+                        '<button type="button" class="btn btn-sm btn-outline-primary" data-i="' + i + '">Register</button></li>';
                 }).join('') + '</ul>' : '<div class="iris-rb-muted">' + (res.ok ? 'No unregistered decision in the stream.' : esc(errText(res))) + '</div>',
                 footer: '<button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>', size: ''});
             $m.on('click', '[data-i]', function () {
@@ -319,23 +365,29 @@
             var target = d && d.target_at ? String(d.target_at).replace(/Z$/, '').slice(0, 16) : '';
             var approverIds = d ? d.approvers.map(function (a) { return a.user_id; }) : [];
             var caseIds = d ? d.case_ids : [];
-            var scoped = d ? !d.whole_room : false;
+            /* the cases it applies to that this viewer can read (a restricted one cannot be chosen again) */
+            cur.cases = caseIds.filter(function (x) {
+                return D.cases.some(function (c2) { return c2.case_id === x && c2.accessible !== false; });
+            });
             var title = o.chat ? o.chat.content.split('\n')[0].slice(0, 256) : (o.supersedes ? '' : (d ? d.title : ''));
             var body =
                 (o.supersedes ? '<div class="iris-rb-muted mb-2">Supersedes <b>' + esc(o.supersedes.ref) + '</b> ' + esc(o.supersedes.title) +
                     ' once this one is approved.</div>' : '') +
                 (o.chat ? '<div class="iris-rb-muted mb-2">From the /decision message of ' + esc(o.chat.author) + '.</div>' : '') +
-                '<div class="form-group"><label for="rb-title">Title <span class="text-danger">*</span></label>' +
+                '<div class="form-group"><label for="rb-title">Decision <span class="text-danger">*</span></label>' +
                 '<input type="text" class="form-control" id="rb-title" maxlength="256" value="' + esc(title) + '" placeholder="e.g. Keep the Lyon site offline overnight"></div>' +
                 '<div class="form-group"><label for="rb-rationale">Rationale <span class="iris-rb-muted">(Markdown)</span></label>' +
                 '<textarea class="form-control" id="rb-rationale" rows="4">' + esc(d ? (d.rationale || '') : (o.chat ? o.chat.content : '')) + '</textarea></div>' +
-                '<div class="form-row"><div class="form-group col-md-6"><label for="rb-owner">Owner</label><select class="form-control" id="rb-owner">' +
+                '<div class="form-row"><div class="form-group col-md-6"><label for="rb-target">Target date &amp; time (UTC)</label>' + IrisHelp.icon('decision.target') +
+                '<input type="datetime-local" class="form-control" id="rb-target" value="' + esc(target) + '"></div>' +
+                (edit ? '' : '<div class="form-group col-md-6"><label for="rb-status">Status</label>' + IrisHelp.icon('decision.status') +
+                    '<select class="form-control" id="rb-status"><option value="proposed" selected>Pending</option><option value="approved">Approved</option></select>' +
+                    '<div class="iris-rb-muted mt-1" data-rb="status-hint"></div></div>') + '</div>' +
+                '<div class="form-group"><label for="rb-owner">Owner</label><select class="form-control" id="rb-owner">' +
                 D.members.map(function (m) {
                     var sel = d ? m.user_id === d.owner_id : false;
                     return '<option value="' + id(m.user_id) + '"' + (sel ? ' selected' : '') + '>' + esc(m.user_name || m.name || ('#' + m.user_id)) + '</option>';
                 }).join('') + '</select></div>' +
-                '<div class="form-group col-md-6"><label for="rb-target">Target date &amp; time (UTC)</label>' + IrisHelp.icon('decision.target') +
-                '<input type="datetime-local" class="form-control" id="rb-target" value="' + esc(target) + '"></div></div>' +
                 '<fieldset class="form-group"' + (proposed ? '' : ' disabled') + '><legend class="col-form-label pt-0" style="font-size:.88rem;">Approvers ' + IrisHelp.icon('decision.approvers') +
                 (proposed ? '' : ' <span class="iris-rb-muted">(fixed once decided)</span>') + '</legend>' +
                 (D.members.map(function (m) {
@@ -343,28 +395,44 @@
                         (approverIds.indexOf(m.user_id) >= 0 ? ' checked' : '') + ' data-rb="approver"><label class="custom-control-label" for="rb-ap-' + id(m.user_id) + '">' +
                         esc(m.user_name || m.name || ('#' + m.user_id)) + '</label></div>';
                 }).join('') || '<div class="iris-rb-muted">No war-room members.</div>') + '</fieldset>' +
-                '<fieldset class="form-group"' + (proposed ? '' : ' disabled') + '><legend class="col-form-label pt-0" style="font-size:.88rem;">Applies to ' + IrisHelp.icon('decision.applies_to') + '</legend>' +
-                '<div class="custom-control custom-radio custom-control-inline"><input type="radio" class="custom-control-input" name="rb-scope" id="rb-scope-room" value="room"' + (scoped ? '' : ' checked') + '><label class="custom-control-label" for="rb-scope-room">Whole war room</label></div>' +
-                '<div class="custom-control custom-radio custom-control-inline"><input type="radio" class="custom-control-input" name="rb-scope" id="rb-scope-some" value="some"' + (scoped ? ' checked' : '') + '><label class="custom-control-label" for="rb-scope-some">Chosen cases or assets</label></div>' +
-                '<div data-rb="scope" class="mt-2"' + (scoped ? '' : ' style="display:none;"') + '><div class="iris-rb-muted mb-1">Cases</div>' +
+                '<fieldset class="form-group"' + (proposed ? '' : ' disabled') + '><legend class="col-form-label pt-0" style="font-size:.88rem;">Applies to ' + IrisHelp.icon('decision.applies_to') +
+                ' <span class="iris-rb-muted">(nothing chosen: the whole war room)</span></legend>' +
+                '<div class="iris-rb-muted mb-1">Cases</div><div data-rb="cases">' +
                 (D.cases.filter(function (c2) { return c2.accessible !== false; }).map(function (c2) {
-                    return '<div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input" id="rb-case-' + id(c2.case_id) + '" value="' + id(c2.case_id) + '" data-rb="case"' +
-                        (caseIds.indexOf(c2.case_id) >= 0 ? ' checked' : '') + '><label class="custom-control-label" for="rb-case-' + id(c2.case_id) + '">' + esc(c2.case_name || c2.name || ('Case #' + c2.case_id)) + '</label></div>';
-                }).join('') || '<div class="iris-rb-muted">No case attached to this war room.</div>') +
-                '<div class="iris-rb-muted mt-2 mb-1">Assets</div><div data-rb="assets"></div>' +
-                '<label class="sr-only" for="rb-asset-q">Search assets</label><input type="text" class="form-control form-control-sm mt-1" id="rb-asset-q" placeholder="Search assets of attached cases…">' +
-                '<div data-rb="asset-results" class="mt-1"></div></div></fieldset>';
+                    var on = cur.cases.indexOf(c2.case_id) >= 0;
+                    return '<button type="button" class="iris-rb-pick' + (on ? ' on' : '') + '" data-rb="case" data-id="' + id(c2.case_id) + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+                        esc(c2.case_name || c2.name || ('Case #' + c2.case_id)) + '</button>';
+                }).join('') || '<span class="iris-rb-muted">No case attached to this war room.</span>') + '</div>' +
+                '<div class="iris-rb-muted mt-2 mb-1">Assets</div>' +
+                '<label class="sr-only" for="rb-asset-q">Search assets</label><input type="text" class="form-control form-control-sm" id="rb-asset-q" placeholder="Search assets of attached cases…">' +
+                '<div data-rb="asset-results" class="mt-1"></div><div data-rb="assets" class="mt-1"></div></fieldset>';
             var $m = modal({title: edit ? 'Edit ' + esc(d.ref) : (o.supersedes ? 'Supersede ' + esc(o.supersedes.ref) : o.chat ? 'Register a /decision message' : 'Propose a decision'),
-                subtitle: edit ? '' : 'Each decision gets a D-number, an owner, a target date and time, and optional approvers who vote on it.',
+                subtitle: edit ? 'Changes are recorded on the decision and visible to the whole war room.'
+                    : 'Gets the next D-number and appears on the Board until it is decided and implemented.',
                 body: body, footer: '<button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>' +
                     '<button type="button" class="btn btn-primary" data-rb="save">' + (edit ? 'Save' : 'Propose') + '</button>'});
             function drawAssets() {
                 $m.find('[data-rb="assets"]').html(cur.assets.length ? cur.assets.map(function (a, i) {
                     return '<span class="iris-rb-chip">' + esc(a.asset_name) + ' <button type="button" class="iris-rb-linkbtn" data-rb="unasset" data-i="' + i + '" aria-label="Remove ' + esc(a.asset_name) + '">&times;</button></span>';
-                }).join('') : '<span class="iris-rb-muted">None</span>');
+                }).join('') : '');
             }
             drawAssets();
-            $m.on('change', 'input[name="rb-scope"]', function () { $m.find('[data-rb="scope"]').toggle($(this).val() === 'some'); });
+            $m.on('click', '[data-rb="case"]', function () {
+                var cid = Number($(this).attr('data-id')), i = cur.cases.indexOf(cid);
+                if (i >= 0) { cur.cases.splice(i, 1); } else { cur.cases.push(cid); }
+                $(this).toggleClass('on', i < 0).attr('aria-pressed', i < 0 ? 'true' : 'false');
+            });
+            /* with approvers their votes decide: Approved is offered only without one */
+            function syncStatus() {
+                var $s = $m.find('#rb-status');
+                if (!$s.length) { return; }
+                var voters = $m.find('[data-rb="approver"]:checked').length > 0;
+                if (voters) { $s.val('proposed'); }
+                $s.prop('disabled', voters);
+                $m.find('[data-rb="status-hint"]').text(voters ? 'With approvers, their votes decide.' : '');
+            }
+            $m.on('change', '[data-rb="approver"]', syncStatus);
+            syncStatus();
             var st = null;
             $m.on('input', '#rb-asset-q', function () {
                 var v = $(this).val();
@@ -392,10 +460,10 @@
                 if (!p.title) { $m.find('[data-rb="err"]').text('A title is required'); return; }
                 if (proposed) {
                     p.approver_ids = $m.find('[data-rb="approver"]:checked').map(function () { return Number(this.value); }).get();
-                    var some = $m.find('input[name="rb-scope"]:checked').val() === 'some';
-                    p.case_ids = some ? $m.find('[data-rb="case"]:checked').map(function () { return Number(this.value); }).get() : [];
-                    p.asset_ids = some ? cur.assets.map(function (a) { return a.asset_id; }) : [];
+                    p.case_ids = cur.cases.slice();
+                    p.asset_ids = cur.assets.map(function (a) { return a.asset_id; });
                 }
+                if (!edit) { p.status = $m.find('#rb-status').val() === 'approved' && !p.approver_ids.length ? 'approved' : 'proposed'; }
                 if (o.supersedes) { p.supersedes_id = o.supersedes.decision_id; }
                 if (o.chat) { p.chat_message_id = o.chat.message_id; }
                 var $b = $(this).prop('disabled', true);

@@ -4,15 +4,15 @@
   "terms": {
     "room.decisions": {
       "title": "Decision register",
-      "text": "What the war room decided, each with a D-number, an owner, a target date and time, optional approvers and what it applies to. Responders and leads propose decisions (or register a /decision chat message); the outcome and the implementation show in the stream. Guests read the register.",
+      "text": "What the war room decided, each with a D-number, an owner, a target date and time, optional approvers and what it applies to. Responders and leads propose decisions, record a call already made as approved, or register a /decision chat message; the outcome and the implementation show in the stream. Guests read the register.",
       "items": [
-        {"name": "Proposed", "text": "Waiting for its approvers, or for a lead or the owner when it has none."},
-        {"name": "Approved", "text": "Every approver approved. Can be marked implemented, superseded, or cited by an asset flag."},
+        {"name": "Pending", "text": "Proposed and waiting for its approvers, or for a lead or the owner when it has none."},
+        {"name": "Approved", "text": "Every approver approved (without approvers, a lead or the owner did). Can be marked implemented, superseded, or cited by an asset flag or a vulnerability finding."},
         {"name": "Rejected", "text": "One approver rejected it."},
         {"name": "Superseded", "text": "A later decision that replaces it was approved."}
       ],
       "guest": true,
-      "aka": ["decisions", "D-1", "approval", "/decision"]
+      "aka": ["decisions", "D-1", "approval", "/decision", "pending"]
     },
     "decision.approvers": {
       "title": "Approvers",
@@ -20,9 +20,14 @@
       "guest": true,
       "aka": ["vote", "approve", "reject"]
     },
+    "decision.status": {
+      "title": "Status when proposing",
+      "text": "Pending puts the decision to its approvers - or, when it has none, to a lead or its owner. Approved records a call already made: it is offered only without approvers, and only a lead or the decision's owner can record it.",
+      "aka": ["pending", "record as approved"]
+    },
     "decision.applies_to": {
       "title": "Applies to",
-      "text": "The whole war room, or chosen cases and assets of the attached cases. An asset flag that requires a decision can cite an approved decision that applies to the room, to the asset's case or to the asset. A case you cannot open shows as restricted.",
+      "text": "The whole war room, or chosen cases and assets of the attached cases. An asset flag that requires a decision, or a vulnerability finding, can cite an approved decision that applies to the room, to the asset's case or to the asset. A case you cannot open shows as restricted.",
       "guest": true,
       "aka": ["scope", "cases", "assets"]
     },

@@ -701,7 +701,7 @@ def _notify_team_mentions(room, content, title, body, actor_id):
         if recipients:
             notify('mention', list(recipients), title, body=body,
                    object_type='war_room', object_id=room.id,
-                   url=f'/war-rooms/{room.id}', actor_id=actor_id,
+                   url=f'/war-rooms/{room.id}?pane=stream', actor_id=actor_id,
                    keep_actor=True)
         if guests:
             from app.business import war_room_guests as _wg
@@ -756,11 +756,11 @@ def add_message(room, user_id, content, topic='main', kind='message',
     notify('war_room_message', members,
            f'{author_name} in war room "{room.name}"',
            body=content[:280], object_type='war_room', object_id=room.id,
-           url=f'/war-rooms/{room.id}', actor_id=user_id)
+           url=f'/war-rooms/{room.id}?pane=stream', actor_id=user_id)
     notify_mentions(content,
                     f'{author_name} mentioned you in war room "{room.name}"',
                     body=content[:280], object_type='war_room',
-                    object_id=room.id, url=f'/war-rooms/{room.id}',
+                    object_id=room.id, url=f'/war-rooms/{room.id}?pane=stream',
                     actor_id=user_id, allowed_user_ids=members)
     _notify_team_mentions(
         room, content,
@@ -870,7 +870,7 @@ def add_room_task(room, title, actor_id, assignee_id=None, description=None,
         notify('task_assigned', [assignee_id],
                f'Task "{title}" assigned to you in war room "{room.name}"',
                object_type='war_room', object_id=room.id,
-               url=f'/war-rooms/{room.id}', actor_id=actor_id)
+               url=f'/war-rooms/{room.id}?pane=tasks', actor_id=actor_id)
     if assignee_guest_id:
         _email_task_to_guest(room, task, assignee_guest_id)
     return task
@@ -928,7 +928,7 @@ def set_room_task(room, task_id, actor_id, status=None, assignee_id=None,
                    f'Task "{task.title}" assigned to you in war room '
                    f'"{room.name}"',
                    object_type='war_room', object_id=room.id,
-                   url=f'/war-rooms/{room.id}', actor_id=actor_id)
+                   url=f'/war-rooms/{room.id}?pane=tasks', actor_id=actor_id)
     if due_date is not None:
         task.due_date = due_date
     elif clear_due:
@@ -1230,11 +1230,11 @@ def publish_sitrep(room, sitrep, user_id):
     notify('sitrep_published_leadership', list(leadership), title,
            body=(sitrep.content or ''),
            object_type='war_room', object_id=room.id,
-           url=f'/war-rooms/{room.id}', actor_id=user_id)
+           url=f'/war-rooms/{room.id}?pane=sitreps', actor_id=user_id)
     notify('sitrep_published', list(members), title,
            body=(sitrep.content or '')[:280],
            object_type='war_room', object_id=room.id,
-           url=f'/war-rooms/{room.id}', actor_id=user_id)
+           url=f'/war-rooms/{room.id}?pane=sitreps', actor_id=user_id)
     # Leadership GUESTS get the full report by email (they have no in-app
     # notifications). Fail-soft by the email helper's contract.
     from app.business import war_room_guests as _wg

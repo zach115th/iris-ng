@@ -24,13 +24,16 @@ and the decision it supersedes. Rules:
 
   * status: proposed -> approved once EVERY named approver approves, rejected as
     soon as one rejects (votes are taken while proposed only); with no approver
-    a lead or the owner sets approved / rejected by hand, from proposed only.
+    a lead or the owner sets approved / rejected by hand, from proposed only - or
+    records it as approved when proposing it (no approver; the proposer is the
+    owner unless another member is named).
     Approved and rejected are final; an approved decision becomes superseded
     when a decision superseding it is approved. Only approved decisions can be
     marked implemented (and reopened), superseded, or cited by an asset flag;
   * proposing needs the responder role; editing is for leads, the owner and the
     proposer; approvers and what it applies to change while proposed only;
-    deleting is for leads, and refused while an asset flag cites the decision;
+    deleting is for leads, and refused while an asset flag or a vulnerability
+    finding cites the decision;
   * approvers and the owner are room members (users); the cases and assets it
     applies to must be attached to the room and readable by whoever chooses them;
     a viewer who cannot read a case sees it as restricted;
@@ -272,6 +275,14 @@ def create_decision(room, payload, user_id, role):
             raise DecisionError('Only a /decision message of this room can be promoted.')
         if WarRoomDecision.query.filter_by(chat_message_id=msg.id).first() is not None:
             raise DecisionError('This /decision message is already in the register.', status=409)
+    status = p.get('status') or 'proposed'
+    if status not in ('proposed', 'approved'):
+        raise DecisionError('A new decision is proposed, or recorded as approved.')
+    if status == 'approved':
+        if approver_ids:
+            raise DecisionError('A decision with approvers is decided by their votes: propose it.')
+        if not (role == 'lead' or owner == user_id):
+            raise DecisionError('Only a lead or the owner can record a decision as approved.', status=403)
     d = WarRoomDecision(room_id=room.id, number=_next_number(room.id), title=title, rationale=rationale,
                         status='proposed', owner_id=owner, target_at=target,
                         supersedes_id=supersedes.id if supersedes else None,
@@ -282,6 +293,9 @@ def create_decision(room, payload, user_id, role):
     _set_scope(d, case_ids, asset_ids)
     _event(d, 'promoted' if msg else 'proposed', user_id,
            ('supersedes %s' % ref(supersedes)) if supersedes else None)
+    if status == 'approved':
+        _event(d, 'status_set', user_id, 'approved')
+        _approve(d, user_id)
     db.session.flush()
     return d, added
 
@@ -393,17 +407,27 @@ def set_implemented(room, d, user_id, role, done=True):
     db.session.flush()
 
 
-def cited_by(d):
+def citations(d):
+    """(asset flags, vulnerability findings) citing the decision."""
     from app.models.models import CaseAssetFlag
-    return CaseAssetFlag.query.filter_by(decision_id=d.id).count()
+    from app.models.models import VulnerabilityFinding
+    return (CaseAssetFlag.query.filter_by(decision_id=d.id).count(),
+            VulnerabilityFinding.query.filter_by(decision_id=d.id).count())
+
+
+def cited_by(d):
+    return sum(citations(d))
 
 
 def delete_decision(room, d):
     _writable(room)
-    n = cited_by(d)
-    if n:
-        raise DecisionError('%s is cited by %d asset flag(s): clear those flags, or supersede the decision.'
-                            % (ref(d), n), status=409, data={'cited_by': n})
+    flags, findings = citations(d)
+    if flags or findings:
+        what = ' and '.join(x for x in ('%d asset flag(s)' % flags if flags else '',
+                                        '%d vulnerability finding(s)' % findings if findings else '') if x)
+        raise DecisionError('%s is cited by %s: clear those, or supersede the decision.' % (ref(d), what),
+                            status=409, data={'cited_by': flags + findings, 'cited_by_flags': flags,
+                                              'cited_by_findings': findings})
     db.session.delete(d)
     db.session.flush()
 
@@ -423,6 +447,7 @@ def rows(decisions, viewer_id, role, is_guest, visible_case_ids, detail=False):
     from app.models.cases import Cases
     from app.models.models import CaseAssets
     from app.models.models import CaseAssetFlag
+    from app.models.models import VulnerabilityFinding
     if not decisions:
         return []
     ids = [d.id for d in decisions]
@@ -446,6 +471,8 @@ def rows(decisions, viewer_id, role, is_guest, visible_case_ids, detail=False):
             superseded_by.setdefault(x.supersedes_id, []).append(x)
     cites = dict(db.session.query(CaseAssetFlag.decision_id, func.count()).filter(
         CaseAssetFlag.decision_id.in_(ids)).group_by(CaseAssetFlag.decision_id).all())
+    fcites = dict(db.session.query(VulnerabilityFinding.decision_id, func.count()).filter(
+        VulnerabilityFinding.decision_id.in_(ids)).group_by(VulnerabilityFinding.decision_id).all())
     people = _names([d.owner_id for d in decisions] + [d.created_by_id for d in decisions]
                     + [d.implemented_by_id for d in decisions]
                     + [a.user_id for v in approvers.values() for a in v])
@@ -481,6 +508,7 @@ def rows(decisions, viewer_id, role, is_guest, visible_case_ids, detail=False):
                               for x in sorted(superseded_by.get(d.id, []), key=lambda x: x.number)],
             'chat_message_id': d.chat_message_id, 'created_at': _iso(d.created_at),
             'created_by_name': people.get(d.created_by_id), 'cited_by_flags': cites.get(d.id, 0),
+            'cited_by_findings': fcites.get(d.id, 0),
             'my_verdict': mine.verdict if mine else None,
             'can': {
                 'edit': editable,
@@ -507,21 +535,9 @@ def trail(d):
             for e in evs]
 
 
-def list_decisions(room_id, args):
+def _register_query(room_id, args):
+    """The room's decisions under the register's case and search filters (the status filter aside)."""
     q = WarRoomDecision.query.filter(WarRoomDecision.room_id == room_id)
-    st = (args.get('status') or '').strip().lower()
-    now = _now()
-    if st in af.DECISION_STATUSES:
-        q = q.filter(WarRoomDecision.status == st)
-    elif st == 'open':
-        q = q.filter(WarRoomDecision.status.in_(('proposed', 'approved')), WarRoomDecision.implemented_at.is_(None))
-    elif st == 'overdue':
-        q = q.filter(WarRoomDecision.status.in_(('proposed', 'approved')), WarRoomDecision.implemented_at.is_(None),
-                     WarRoomDecision.target_at < now)
-    elif st == 'implemented':
-        q = q.filter(WarRoomDecision.implemented_at.isnot(None))
-    elif st:
-        raise DecisionError('Unknown status filter %r.' % st)
     if args.get('case_id'):
         try:
             cid = int(args['case_id'])
@@ -539,6 +555,43 @@ def list_decisions(room_id, args):
         if m:
             conds.append(WarRoomDecision.number == int(m.group(1)))
         q = q.filter(or_(*conds))
+    return q
+
+
+def status_counts(room_id, args):
+    """The register's chips: how many decisions per status, and open / overdue / implemented, under the
+    case and search filters - the same definitions as the status filter of list_decisions."""
+    now = _now()
+    out = {'all': 0, 'open': 0, 'overdue': 0, 'implemented': 0}
+    out.update({s: 0 for s in af.DECISION_STATUSES})
+    for status, implemented_at, target_at in _register_query(room_id, args).with_entities(
+            WarRoomDecision.status, WarRoomDecision.implemented_at, WarRoomDecision.target_at):
+        out['all'] += 1
+        out[status] = out.get(status, 0) + 1
+        if implemented_at is not None:
+            out['implemented'] += 1
+        elif status in ('proposed', 'approved'):
+            out['open'] += 1
+            if target_at is not None and target_at < now:
+                out['overdue'] += 1
+    return out
+
+
+def list_decisions(room_id, args):
+    q = _register_query(room_id, args)
+    st = (args.get('status') or '').strip().lower()
+    now = _now()
+    if st in af.DECISION_STATUSES:
+        q = q.filter(WarRoomDecision.status == st)
+    elif st == 'open':
+        q = q.filter(WarRoomDecision.status.in_(('proposed', 'approved')), WarRoomDecision.implemented_at.is_(None))
+    elif st == 'overdue':
+        q = q.filter(WarRoomDecision.status.in_(('proposed', 'approved')), WarRoomDecision.implemented_at.is_(None),
+                     WarRoomDecision.target_at < now)
+    elif st == 'implemented':
+        q = q.filter(WarRoomDecision.implemented_at.isnot(None))
+    elif st:
+        raise DecisionError('Unknown status filter %r.' % st)
     return q.order_by(WarRoomDecision.number.desc()).all()
 
 

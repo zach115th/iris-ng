@@ -175,6 +175,11 @@
         var s = L.exploitation[status] ? status : 'unknown';
         return '<span class="iris-vu-pill iris-vu-ex-' + s + '">' + V.esc(L.exploitation[s]) + '</span>';
     };
+    /* the war-room decision a finding cites: its D-number, the title on hover */
+    V.decisionChip = function (d) {
+        if (!d || !d.ref) { return ''; }
+        return ' <span class="iris-vu-pill" data-vu="decision" title="' + V.esc('Decision ' + d.ref + ': ' + (d.title || '')) + '">' + V.esc(d.ref) + '</span>';
+    };
     V.vulnLink = function (v) {
         var id = V.id(v && v.vulnerability_id);
         var ident = '<span class="iris-vu-mono">' + V.esc(v && v.identifier) + '</span>';
@@ -591,7 +596,10 @@
                     ? '<div class="form-row"><div class="form-group col-md-6 mb-2"><label for="vf-events">Linked timeline events</label>' + IrisHelp.icon('vuln.links') +
                       '<select class="form-control" id="vf-events" multiple size="5"></select></div>' +
                       '<div class="form-group col-md-6 mb-2"><label for="vf-iocs">Linked IOCs</label>' +
-                      '<select class="form-control" id="vf-iocs" multiple size="5"></select></div></div>' : '') +
+                      '<select class="form-control" id="vf-iocs" multiple size="5"></select></div></div>' +
+                      '<div class="form-group mb-2"><label for="vf-decision">War-room decision</label>' + IrisHelp.icon('vuln.decision') +
+                      '<select class="form-control" id="vf-decision"><option value="">No decision</option></select>' +
+                      '<div class="iris-vu-small iris-vu-muted mt-1" data-vu="dechint"></div></div>' : '') +
                 '<div class="form-group mb-1"><label for="vf-notes">Notes</label><textarea class="form-control" id="vf-notes" rows="3">' +
                 V.esc(f ? f.notes : '') + '</textarea></div>';
             var $m = V.modal({
@@ -614,6 +622,31 @@
             }
             $m.on('change', '#vf-rem,#vf-exp', sync);
             sync();
+            /* the approved decisions a finding on the chosen asset may cite (the asset-flag rule); the one
+               already cited stays offered. Until the list has loaded, a save leaves the decision as it is. */
+            function loadDecisions() {
+                var $d = $m.find('#vf-decision');
+                if (!$d.length) { return; }
+                var aid = (f && f.asset_id) || o.assetId || $m.find('#vf-asset').val();
+                var keep = f && f.decision_id ? String(f.decision_id) : '';
+                $d.data('loaded', false).find('option[value!=""]').remove();
+                if (!aid) { $m.find('[data-vu="dechint"]').text('Choose the asset first.'); return; }
+                V.fetch(findingBase(o) + '/decisions?asset_id=' + V.id(aid)).then(function (j) {
+                    var rows = Array.isArray(j.value) ? j.value : null;
+                    if (!V.ok(j) || !rows) { $m.find('[data-vu="dechint"]').text(V.errText(j)); return; }
+                    rows.forEach(function (c) {
+                        $d.append($('<option>').val(String(c.decision_id)).text(c.ref + ' ' + c.title + (c.room_name ? ' (' + c.room_name + ')' : '')));
+                    });
+                    if (keep && !$d.find('option[value="' + V.id(keep) + '"]').length) {
+                        $d.append($('<option>').val(keep).text(f.decision ? f.decision.ref + ' ' + f.decision.title + ' (cited)' : '#' + keep));
+                    }
+                    $d.val(keep).data('loaded', true);
+                    $m.find('[data-vu="dechint"]').text($d.find('option').length > 1 ? ''
+                        : 'No approved decision of a war room this case is attached to (and you belong to) applies to this asset.');
+                });
+            }
+            $m.on('change', '#vf-asset', loadDecisions);
+            loadDecisions();
             V.fetch(usersUrl).then(function (j) {
                 var users = (j && j.data) || [];
                 var $s = $m.find('#vf-owner');
@@ -672,6 +705,8 @@
                 if (o.scope === 'case') {
                     p.event_ids = ($m.find('#vf-events').val() || []).map(Number);
                     p.ioc_ids = ($m.find('#vf-iocs').val() || []).map(Number);
+                    var $dec = $m.find('#vf-decision');
+                    if ($dec.data('loaded')) { p.decision_id = $dec.val() ? Number($dec.val()) : null; }
                 }
                 var url = findingBase(o), method = 'POST';
                 if (edit) { url += '/' + V.id(f.finding_id); method = 'PUT'; }
@@ -782,7 +817,7 @@
                             '<div class="iris-vu-small iris-vu-muted text-truncate" style="max-width:340px;">' + V.esc(f.vulnerability.title) + '</div></td>' +
                             '<td>' + V.sevBadge(f.vulnerability.severity, f.vulnerability.cvss_score) + '</td>' +
                             (showAsset ? '<td>' + (f.asset_name ? V.esc(f.asset_name) : '<span class="iris-vu-muted">—</span>') + '</td>' : '') +
-                            '<td>' + V.statusBadge(voc.L, f.remediation_status) + '</td><td>' + V.exploitBadge(voc.L, f.exploitation_status) + '</td>' +
+                            '<td>' + V.statusBadge(voc.L, f.remediation_status) + V.decisionChip(f.decision) + '</td><td>' + V.exploitBadge(voc.L, f.exploitation_status) + '</td>' +
                             '<td class="text-nowrap' + (f.overdue ? ' iris-vu-overdue' : '') + '">' + (f.due_date ? V.esc(f.due_date) + (f.overdue ? ' · overdue' : '') : '<span class="iris-vu-muted">—</span>') + '</td>' +
                             '<td>' + (f.owner_name ? V.esc(f.owner_name) : '<span class="iris-vu-muted">—</span>') + '</td>' +
                             '<td class="text-right text-nowrap"><button type="button" class="btn btn-sm btn-link p-0 mr-2" data-vu="hist" data-i="' + i + '">History</button>' +

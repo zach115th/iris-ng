@@ -147,6 +147,11 @@
       "text": "The case's timeline events and IOCs that relate to this finding, for example the event where exploitation was seen. Only items of the same case can be linked.",
       "aka": ["timeline", "evidence"]
     },
+    "vuln.decision": {
+      "title": "War-room decision",
+      "text": "The approved decision of a war room this case is attached to that backs this finding - a risk acceptance, for example. You choose among the decisions of rooms you belong to that decide for the whole room, for this case or for this asset. A decision a finding cites cannot be deleted.",
+      "aka": ["risk acceptance", "D-1", "approval"]
+    },
     "vuln.history": {
       "title": "Finding history",
       "text": "Every change to a finding: the field, the old and new value, who changed it and when (UTC). It is kept until the finding is deleted.",

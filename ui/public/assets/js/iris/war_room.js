@@ -3021,6 +3021,12 @@ function iris_wroom_show_pane(name) {
     if (pane) pane.classList.add('active');
     /* The pane just became visible — its document body measures now. */
     iris_wroom_fit_doc();
+    /* The stream renders while hidden (the 5 s poll) and a hidden box cannot
+       scroll: showing it lands on the newest message (a room opens on its Board). */
+    if (name === 'stream') {
+        var chat = document.getElementById('iris-wr-chat');
+        if (chat) chat.scrollTop = chat.scrollHeight;
+    }
     /* Lazy-load the read-only aggregation tabs on first open. */
     if (!IRIS_WROOM._loadedTabs[name]) {
         IRIS_WROOM._loadedTabs[name] = true;
@@ -3052,17 +3058,19 @@ function iris_wroom_mount_decisions() {
 /* Open a pane (and a decision) - the Board's links, the stream's decision lines,
    ?pane=<name>&d=<decision id> (a decision notification links there). */
 function iris_wroom_open_pane(name, opts) {
-    if (!document.getElementById('iris-wr-pane-' + name)) return;
+    if (!document.getElementById('iris-wr-pane-' + name)) return false;
     iris_wroom_show_pane(name);
     if (name === 'decisions' && opts && opts.decisionId && window.IrisRoomBoard) {
         window.IrisRoomBoard.openDecision(opts.decisionId);
     }
+    return true;
 }
+/* true when the address named a tab this page has (and it was opened) */
 function iris_wroom_pane_from_url() {
     var q = new URLSearchParams(window.location.search);
     var pane = q.get('pane'), d = q.get('d');
-    if (!pane || !/^[a-z]+$/.test(pane)) return;
-    iris_wroom_open_pane(pane, {decisionId: /^\d+$/.test(d || '') ? parseInt(d, 10) : null});
+    if (!pane || !/^[a-z]+$/.test(pane)) return false;
+    return iris_wroom_open_pane(pane, {decisionId: /^\d+$/.test(d || '') ? parseInt(d, 10) : null});
 }
 
 /* Vulnerabilities tab (iris-ng 2026-11-07): the entries the room tracks and the
@@ -3105,10 +3113,11 @@ document.addEventListener('DOMContentLoaded', function () {
          * needs the slugs at composer time, so load them at boot too. */
         iris_wroom_load_teams();
         IRIS_WROOM._pollTimer = setInterval(iris_wroom_load_stream, 5000);
-        /* ?note=<id> (Copy link on the Notes rail) opens that note. */
-        iris_wroom_nt_land_from_url();
-        /* ?pane=<name>[&d=<decision id>] opens a tab (decision notifications). */
-        iris_wroom_pane_from_url();
+        /* ?note=<id> (Copy link on the Notes rail) opens that note;
+           ?pane=<name>[&d=<decision id>] opens a tab (notifications link there);
+           otherwise the room opens on its Board (2026-11-07). */
+        var landed = iris_wroom_nt_land_from_url();
+        if (!iris_wroom_pane_from_url() && !landed) iris_wroom_show_pane('board');
     });
 
     document.getElementById('iris-wr-tabbar')

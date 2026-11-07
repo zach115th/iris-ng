@@ -577,6 +577,9 @@ def merge_vulnerabilities(source, target, user_id):
         line = 'Merged from %s: %s%s' % (source.identifier, vv.REMEDIATION_LABELS.get(f.remediation_status),
                                          (' - ' + f.notes) if f.notes else '')
         twin.notes = (twin.notes + '\n' + line) if twin.notes else line
+        if twin.decision_id is None and f.decision_id is not None:
+            # the folded finding's cited decision is kept when the target cites none
+            twin.decision_id = f.decision_id
         twin.updated_at, twin.updated_by_id = now, user_id
         for model, col in ((VulnerabilityFindingEvent, 'event_id'), (VulnerabilityFindingIoc, 'ioc_id')):
             have = {getattr(r, col) for r in model.query.filter_by(finding_id=twin.finding_id).all()}
