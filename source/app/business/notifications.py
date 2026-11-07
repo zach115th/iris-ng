@@ -73,6 +73,8 @@ EVENT_CATALOG = {
     # the room keeps the teaser above. Falls back to the room leads when the
     # room has no (or an empty) leadership team.
     'sitrep_published_leadership': 'SitRep published (leadership team / room lead)',
+    # iris-ng 2026-11-07: a war-room decision names you as an approver (Decisions tab).
+    'decision_approval_requested': 'A war-room decision awaits your approval',
     'custom_module_notification': 'Custom module notification',
 }
 

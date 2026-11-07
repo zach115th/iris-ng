@@ -96,9 +96,17 @@ def case_filter_assets(caseid):
 
     cases_access = get_user_cases_fast(current_user.id)
 
+    # iris-ng 2026-11-07: asset flags (additive payload fields) - the flags set on each asset, in the
+    # catalogue's order, and how many flag changes its history holds (the Assets page's "N changes").
+    from app.business.asset_flags import flags_for_case, history_counts
+    flags_by_asset = flags_for_case(caseid)
+    flag_changes = history_counts(caseid)
+
     for a in assets:
         a['ioc_links'] = cache_ioc_link.get(a['asset_id'])
         a['evidence_links'] = cache_evidence_link.get(a['asset_id'])
+        a['flags'] = flags_by_asset.get(a['asset_id'], [])
+        a['flag_changes'] = flag_changes.get(a['asset_id'], 0)
 
         if len(assets) < 300:
             # Find similar assets from other cases with the same customer

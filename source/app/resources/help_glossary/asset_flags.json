@@ -1,0 +1,52 @@
+{
+  "group": "Asset flags",
+  "order": 92,
+  "terms": {
+    "flags.catalogue": {
+      "title": "Asset flags",
+      "text": "Status facts analysts set on case assets: isolated, credentials reset, restored... Unlike tags they are a managed list - an administrator defines each flag here (name, colour, icon, kind) - and every change is recorded in the asset's history and the case log. The order here is the order everywhere.",
+      "aka": ["flags", "asset status", "status flags"]
+    },
+    "flags.kind": {
+      "title": "Flag kind",
+      "text": "What a flag means for the war-room Board.",
+      "items": [
+        {"name": "Status", "text": "A fact about the asset (isolated, credentials reset...)."},
+        {"name": "Done", "text": "Nothing left to do on the asset. The Board counts it as done."},
+        {"name": "Exception", "text": "An accepted gap. The Board lists it under Needs attention."}
+      ],
+      "guest": true,
+      "aka": ["done", "exception", "status"]
+    },
+    "flags.requires_reason": {
+      "title": "Requires a reason",
+      "text": "Setting this flag on an asset, or removing it, asks for a written reason, kept in the asset's flag history.",
+      "aka": ["justification", "why"]
+    },
+    "flags.requires_decision": {
+      "title": "Requires a decision",
+      "text": "Setting this flag must cite an approved decision of a war room the case is attached to - one deciding for the whole room, for that case or for that asset (risk acceptance, for example). You choose among the decisions of rooms you belong to; a decision a flag cites cannot be deleted.",
+      "aka": ["risk acceptance", "approval", "decision"]
+    },
+    "flags.preset": {
+      "title": "Load preset",
+      "text": "Adds a ready-made set of flags - Incident response or Vulnerability. Only the flags whose name is not taken yet are added; nothing existing is changed or removed.",
+      "aka": ["defaults", "starter flags"]
+    },
+    "flags.asset": {
+      "title": "Flags of this asset",
+      "text": "The status flags set on this asset. + Flag sets one, the cross removes it (a flag that requires a reason asks for one). The change count opens the asset's flag history. Changing flags needs full access to the case; the list of flags is managed in Settings > Asset flags.",
+      "aka": ["asset status", "isolated", "restored"]
+    },
+    "flags.history": {
+      "title": "Flag history",
+      "text": "Every flag set, updated (new reason or decision) or removed on this asset: when (UTC), by whom, the reason and the decision cited. It keeps a flag's name even after the flag is deleted.",
+      "aka": ["audit", "changes"]
+    },
+    "flags.filter": {
+      "title": "Flag filter",
+      "text": "Shows only the assets carrying the chosen flag, or the ones carrying no flag at all.",
+      "aka": ["filter assets", "no flag"]
+    }
+  }
+}

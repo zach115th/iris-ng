@@ -25,7 +25,8 @@ var IRIS_WROOM = {
      * sitrep / notes_pins / system / case_link. Case activity is filtered
      * via the per-case sub-lanes instead of a top lane. */
     _lanes: {message: true, task_event: true, sitrep: true,
-             notes_pins: true, system: true, case_link: true},
+             notes_pins: true, system: true, case_link: true,
+             decision: true},
     _topicSel: null,       /* null = all topics; otherwise a Set of names */
     _threadSel: null,      /* null = all threads; otherwise a Set of root ids */
     _caseLanes: {},        /* case_id -> {sublane: bool}; absent = all on */
@@ -42,7 +43,9 @@ var IRIS_WROOM_LANES = [
     ['sitrep', 'SitReps'],
     ['notes_pins', 'Notes / Pins'],
     ['system', 'System'],
-    ['case_link', 'Case attached / detached']
+    ['case_link', 'Case attached / detached'],
+    /* iris-ng 2026-11-07: the decision register's outcomes (derived from its trail) */
+    ['decision', 'Decisions']
 ];
 
 var IRIS_WROOM_SUBLANES = [
@@ -765,8 +768,11 @@ function iris_wroom_render_chat() {
             div.className = 'iris-wr-sysrow';
             var icon = {system: '&#9881;', sitrep: '&#128196;',
                         task_event: '&#9989;', case_link: '&#128279;',
-                        case_activity: '&#9679;'}[i.kind] || '&#9881;';
+                        case_activity: '&#9679;', decision: '&#9878;'}[i.kind] || '&#9881;';
             div.innerHTML = icon + ' ' + iris_wroom_esc(i.content) +
+                (i.kind === 'decision' && /^\d+$/.test(String(i.decision_id))
+                    ? ' <a href="#" class="iris-wr-open-decision" data-decision-id="' +
+                      String(parseInt(i.decision_id, 10)) + '">Open</a>' : '') +
                 (i.case_id ? '<span class="iris-wr-case-chip">' +
                     '<a href="/case?cid=' + i.case_id + '">Case #' +
                     i.case_id + '</a></span>' : '') +
@@ -3024,7 +3030,39 @@ function iris_wroom_show_pane(name) {
         if (name === 'teams') iris_wroom_load_teams();
         if (name === 'summary') iris_wroom_os_load();
         if (name === 'vulnerabilities') iris_wroom_load_vulns();
+        if (name === 'board') iris_wroom_mount_board();
+        if (name === 'decisions') iris_wroom_mount_decisions();
     }
+}
+
+/* Board + Decisions tabs (iris-ng 2026-11-07), drawn by war_room_board.js. Guests
+   read both; the server refuses them every change. */
+function iris_wroom_board_ctx() {
+    return {roomId: IRIS_WROOM._rid, guest: IRIS_WROOM._guest,
+            active: iris_wroom_active(), openPane: iris_wroom_open_pane};
+}
+function iris_wroom_mount_board() {
+    var host = document.getElementById('iris-wr-board');
+    if (host && window.IrisRoomBoard) window.IrisRoomBoard.mountBoard(host, iris_wroom_board_ctx());
+}
+function iris_wroom_mount_decisions() {
+    var host = document.getElementById('iris-wr-decisions');
+    if (host && window.IrisRoomBoard) window.IrisRoomBoard.mountDecisions(host, iris_wroom_board_ctx());
+}
+/* Open a pane (and a decision) - the Board's links, the stream's decision lines,
+   ?pane=<name>&d=<decision id> (a decision notification links there). */
+function iris_wroom_open_pane(name, opts) {
+    if (!document.getElementById('iris-wr-pane-' + name)) return;
+    iris_wroom_show_pane(name);
+    if (name === 'decisions' && opts && opts.decisionId && window.IrisRoomBoard) {
+        window.IrisRoomBoard.openDecision(opts.decisionId);
+    }
+}
+function iris_wroom_pane_from_url() {
+    var q = new URLSearchParams(window.location.search);
+    var pane = q.get('pane'), d = q.get('d');
+    if (!pane || !/^[a-z]+$/.test(pane)) return;
+    iris_wroom_open_pane(pane, {decisionId: /^\d+$/.test(d || '') ? parseInt(d, 10) : null});
 }
 
 /* Vulnerabilities tab (iris-ng 2026-11-07): the entries the room tracks and the
@@ -3069,6 +3107,8 @@ document.addEventListener('DOMContentLoaded', function () {
         IRIS_WROOM._pollTimer = setInterval(iris_wroom_load_stream, 5000);
         /* ?note=<id> (Copy link on the Notes rail) opens that note. */
         iris_wroom_nt_land_from_url();
+        /* ?pane=<name>[&d=<decision id>] opens a tab (decision notifications). */
+        iris_wroom_pane_from_url();
     });
 
     document.getElementById('iris-wr-tabbar')
@@ -3076,6 +3116,14 @@ document.addEventListener('DOMContentLoaded', function () {
             var tab = e.target.closest('.iris-wr-tab');
             if (tab) iris_wroom_show_pane(tab.getAttribute('data-pane'));
         });
+    /* a decision line in the stream opens it in the register */
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('.iris-wr-open-decision');
+        if (!a) return;
+        e.preventDefault();
+        iris_wroom_open_pane('decisions',
+            {decisionId: parseInt(a.getAttribute('data-decision-id'), 10)});
+    });
 
     /* Document-body fit: the window is the floor (resize), and the card is
        what moves the body's top (a wrapping header row, a status line). The

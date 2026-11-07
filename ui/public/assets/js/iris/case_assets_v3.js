@@ -16,7 +16,9 @@ var IRIS_CA = {rows: [], sel: null, q: '', tab: 'details',
                /* vulnerabilities: per-asset counts (null = not looked yet /
                   the read failed: no count, no shield), the findings widget
                   of the selected asset, and the one-time ?asset= landing */
-               vulns: null, vulnEl: null, vulnFor: null, landed: false};
+               vulns: null, vulnEl: null, vulnFor: null, landed: false,
+               /* asset flags: the list's Flag filter ('' any, 'none', or a flag id) */
+               flagFilter: ''};
 
 var IRIS_CA_TABS = ['details', 'iocs', 'timeline', 'history', 'comments',
                     'evidence', 'vulns'];
@@ -103,6 +105,7 @@ function iris_ca_load() {
             var data = (resp && resp.data) || {};
             IRIS_CA.rows = data.assets || [];
             document.getElementById('iris-ca-loading').style.display = 'none';
+            iris_ca_fill_flag_filter();
             iris_ca_land_once();
             iris_ca_render_list();
             /* Keep the selected asset fresh after an edit-modal save. */
@@ -179,6 +182,37 @@ function iris_ca_dtab_label(label, count) {
 function iris_ca_vuln_write() {
     var box = document.getElementById('iris-ca-detail');
     return !!box && box.getAttribute('data-vuln-write') === 'true';
+}
+
+/* Asset flags: the Flags row of the selected asset (Details tab). A change
+ * returns the asset's flags; the row's chips, the Flag filter and the
+ * "N changes" count follow without reloading the list. */
+function iris_ca_render_flags(r) {
+    var host = document.getElementById('iris-ca-flags-host');
+    if (!host || !window.IrisFlags) return;
+    window.IrisFlags.renderAssetFlags(host, {
+        caseId: iris_ca_cid(), asset: r, canWrite: iris_ca_vuln_write(),
+        onChange: function (flags, changed) {
+            r.flags = flags;
+            r.flag_changes = (Number(r.flag_changes) || 0) + (changed || 0);
+            iris_ca_render_list();
+            iris_ca_render_detail();
+        }});
+}
+
+/* The Flag filter lists the catalogue (read once). */
+function iris_ca_fill_flag_filter() {
+    var sel = document.getElementById('iris-ca-flagfilter');
+    if (!sel || !window.IrisFlags || sel.getAttribute('data-filled')) return;
+    sel.setAttribute('data-filled', '1');
+    window.IrisFlags.catalogue().then(function (flags) {
+        flags.forEach(function (f) {
+            var o = document.createElement('option');
+            o.value = String(f.id);
+            o.textContent = 'Flag: ' + f.name;
+            sel.appendChild(o);
+        });
+    }).catch(function () { sel.removeAttribute('data-filled'); });
 }
 
 /* The findings widget lives in one element per selected asset, kept across
@@ -1299,8 +1333,13 @@ function iris_ca_post_comment(assetId) {
 }
 
 function iris_ca_visible() {
-    var q = IRIS_CA.q;
+    var q = IRIS_CA.q, ff = IRIS_CA.flagFilter;
     return IRIS_CA.rows.filter(function (r) {
+        if (ff) {
+            var fl = Array.isArray(r.flags) ? r.flags : [];
+            if (ff === 'none' ? fl.length : !fl.some(function (f) {
+                    return String(f.flag_id) === ff; })) return false;
+        }
         if (!q) return true;
         var hay = ((r.asset_name || '') + ' ' + iris_ca_type_name(r) + ' ' +
             (r.asset_ip || '') + ' ' + (r.asset_domain || '') + ' ' +
@@ -1451,7 +1490,17 @@ function iris_ca_row_icons_html(r) {
             '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg><b>' +
             nOpen + '</b></span>';
     }
-    return '<span style="display:inline-flex; align-items:center; gap:7px; flex-shrink:0; margin-left:8px;">' +
+    /* asset flags: up to three chips, then +N (the catalogue's order) */
+    var fl = Array.isArray(r.flags) ? r.flags : [];
+    if (fl.length && window.IrisFlags) {
+        out += fl.slice(0, 3).map(function (f) {
+            return window.IrisFlags.chip(f);
+        }).join('') + (fl.length > 3
+            ? '<span class="text-muted" style="font-size:0.7rem;" title="' +
+              iris_ca_esc(fl.slice(3).map(function (f) { return f.name; }).join(', ')) +
+              '">+' + (fl.length - 3) + '</span>' : '');
+    }
+    return '<span style="display:inline-flex; align-items:center; gap:7px; flex-shrink:0; margin-left:8px; flex-wrap:wrap; justify-content:flex-end;">' +
         out + '</span>';
 }
 
@@ -1663,6 +1712,8 @@ function iris_ca_render_detail() {
                 ? '<div style="margin-top:6px;"><span class="iris-ca-field"><span class="lbl">Domain</span>' +
                   (r.asset_ip ? '' : netTip) + '<code>' +
                   iris_ca_esc(r.asset_domain) + '</code></span></div>' : '') +
+            /* asset flags: drawn by asset_flags.js once the pane is written */
+            '<div id="iris-ca-flags-host"></div>' +
             (iris_ca_tags(r).length
                 ? '<div style="margin-top:6px;"><span class="lbl" style="color:#7a7a85; font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase; margin-right:5px;">Tags</span>' +
                   IrisHelp.icon('common.tags', {cls: 'ml-0 mr-1'}) +
@@ -1690,6 +1741,7 @@ function iris_ca_render_detail() {
         (IRIS_CA.tab === 'comments' ? ' iris-ca-dbody-split' : '');
     box.innerHTML = html + '<div class="' + bodyCls + '">' + body + '</div>';
     if (IRIS_CA.tab === 'vulns') iris_ca_attach_vulns(r);
+    iris_ca_render_flags(r);
     iris_ca_fit_soon();
     if (IRIS_CA.tab === 'comments') {
         /* newest comment sits next to the composer, chat-style */
@@ -1734,6 +1786,13 @@ document.addEventListener('DOMContentLoaded', function () {
             IRIS_CA.q = this.value.trim().toLowerCase();
             iris_ca_render_list();
         });
+    var flagFilter = document.getElementById('iris-ca-flagfilter');
+    if (flagFilter) {
+        flagFilter.addEventListener('change', function () {
+            IRIS_CA.flagFilter = /^(none|\d+)$/.test(this.value) ? this.value : '';
+            iris_ca_render_list();
+        });
+    }
     document.getElementById('iris-ca-list')
         .addEventListener('click', function (e) {
             var row = e.target.closest('.iris-ca-row');

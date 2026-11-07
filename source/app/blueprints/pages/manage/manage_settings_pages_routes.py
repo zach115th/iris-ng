@@ -114,6 +114,17 @@ def manage_guest_portal_view_route(caseid, url_redir) -> Union[str, Response]:
     return render_template('manage_guest_portal.html', form=FlaskForm())
 
 
+@manage_settings_pages_blueprint.route('/manage/asset-flags', methods=['GET'])
+@ac_requires(Permissions.server_administrator, no_cid_required=True)
+def manage_asset_flags_view_route(caseid, url_redir) -> Union[str, Response]:
+    """iris-ng 2026-11-07: the asset flags analysts set on case assets (name, colour, icon, kind,
+    reason / decision requirements, order, presets)."""
+    if url_redir:
+        return redirect(url_for('manage_settings_pages.manage_asset_flags_view_route', cid=caseid))
+
+    return render_template('manage_asset_flags.html', form=FlaskForm())
+
+
 @manage_settings_pages_blueprint.route('/manage/war-room-teams', methods=['GET'])
 @ac_requires(Permissions.server_administrator, no_cid_required=True)
 def manage_war_room_teams_view_route(caseid, url_redir) -> Union[str, Response]:

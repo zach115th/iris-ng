@@ -1,0 +1,48 @@
+{
+  "group": "War-room decisions and Board",
+  "order": 81,
+  "terms": {
+    "room.decisions": {
+      "title": "Decision register",
+      "text": "What the war room decided, each with a D-number, an owner, a target date and time, optional approvers and what it applies to. Responders and leads propose decisions (or register a /decision chat message); the outcome and the implementation show in the stream. Guests read the register.",
+      "items": [
+        {"name": "Proposed", "text": "Waiting for its approvers, or for a lead or the owner when it has none."},
+        {"name": "Approved", "text": "Every approver approved. Can be marked implemented, superseded, or cited by an asset flag."},
+        {"name": "Rejected", "text": "One approver rejected it."},
+        {"name": "Superseded", "text": "A later decision that replaces it was approved."}
+      ],
+      "guest": true,
+      "aka": ["decisions", "D-1", "approval", "/decision"]
+    },
+    "decision.approvers": {
+      "title": "Approvers",
+      "text": "Room members who must approve the decision: it is approved once every one of them approves, and rejected as soon as one rejects. With no approver, a lead or the owner approves or rejects it. Approvers are fixed once the decision is decided.",
+      "guest": true,
+      "aka": ["vote", "approve", "reject"]
+    },
+    "decision.applies_to": {
+      "title": "Applies to",
+      "text": "The whole war room, or chosen cases and assets of the attached cases. An asset flag that requires a decision can cite an approved decision that applies to the room, to the asset's case or to the asset. A case you cannot open shows as restricted.",
+      "guest": true,
+      "aka": ["scope", "cases", "assets"]
+    },
+    "decision.target": {
+      "title": "Target",
+      "text": "When the decision should be carried out (UTC). An open decision - proposed, or approved and not implemented - past its target shows as overdue and on the Board.",
+      "guest": true,
+      "aka": ["deadline", "overdue", "due"]
+    },
+    "decision.implementation": {
+      "title": "Implementation",
+      "text": "A lead or the owner marks an approved decision implemented (and can reopen it). An implemented decision is no longer open.",
+      "guest": true,
+      "aka": ["implemented", "done"]
+    },
+    "room.board": {
+      "title": "Board",
+      "text": "The war room at a glance: indicators, what needs attention, assets by flag (done / exceptions), one card per attached case, open decisions, open tasks, vulnerabilities and notes. Figures cover the attached cases you can open. A lead sets the widgets for everyone (Edit board); anyone can hide or reorder them just for themselves (Customize, kept in this browser).",
+      "guest": true,
+      "aka": ["dashboard", "widgets", "overview"]
+    }
+  }
+}

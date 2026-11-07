@@ -1276,6 +1276,8 @@ def room_stream(room, viewer_id, limit=50, viewer_guest_id=None):
                     v3's "Case attached / detached" lane)
       case_activity activity on linked cases, FILTERED to cases the VIEWER
                     can access (membership does not grant case access)
+      decision      decision proposed / approved / rejected / superseded /
+                    implemented (derived from war_room_decision_event rows)
 
     Everything except messages and case activity is DERIVED from stored
     rows — no event log table. Newest-first."""
@@ -1381,6 +1383,9 @@ def room_stream(room, viewer_id, limit=50, viewer_guest_id=None):
                             f'completed task "{t.title}"'),
                 'created_at': t.done_at,
             })
+    # iris-ng 2026-11-07: decisions proposed / decided / implemented, derived from their trail rows.
+    from app.business.war_room_decisions import stream_items as _decision_stream_items
+    items.extend(_decision_stream_items(room.id))
     items.sort(key=lambda i: (i['created_at'] or datetime.min), reverse=True)
     return items[:limit]
 

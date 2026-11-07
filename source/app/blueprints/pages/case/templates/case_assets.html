@@ -84,7 +84,15 @@
             </div>
             <div class="iris-ca-wrap">
                 <div class="iris-ca-left">
-                    <input type="text" class="form-control form-control-sm mb-2" id="iris-ca-search" placeholder="Search assets..." autocomplete="off">
+                    <div class="d-flex align-items-center mb-2" style="gap:6px;">
+                        <input type="text" class="form-control form-control-sm" id="iris-ca-search" placeholder="Search assets..." autocomplete="off" aria-label="Search assets">
+                        {# iris-ng 2026-11-07: asset flags - filled from the flag catalogue by case_assets_v3.js #}
+                        <label class="sr-only" for="iris-ca-flagfilter">Flag</label>
+                        <select class="form-control form-control-sm" id="iris-ca-flagfilter" style="max-width:190px;">
+                            <option value="">Flag: Any</option>
+                            <option value="none">Flag: none set</option>
+                        </select>{{ help_tip('flags.filter', target='#iris-ca-flagfilter') }}
+                    </div>
                     <div id="iris-ca-list"></div>
                     <div class="text-muted" id="iris-ca-loading">Loading&hellip;</div>
                     <div class="text-muted" id="iris-ca-none" style="display:none;">No assets yet — Add Asset to create the first one.</div>
@@ -372,6 +380,8 @@
 {# iris-ng 2026-11-07: the selected asset's Vulnerabilities tab (case_assets_v3.js mounts
    IrisVuln.mountFindings in it on first open); loaded here, after jQuery, which it needs. #}
 <script src="/static/assets/js/iris/vuln_common.js"></script>
+{# iris-ng 2026-11-07: asset flags (row chips, the Flag filter, the Flags row of the selected asset) #}
+<script src="/static/assets/js/iris/asset_flags.js"></script>
 {# shared add-event modal loader — the Timeline tab's + Add event opens
    the timeline page's real modal IN PLACE (container below) #}
 <script src="/static/assets/js/iris/event_modal.js"></script>

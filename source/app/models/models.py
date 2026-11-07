@@ -2765,3 +2765,180 @@ class WarRoomVulnerability(db.Model):
     __table_args__ = (
         UniqueConstraint('room_id', 'vulnerability_id', name='uq_war_room_vulnerability'),
     )
+
+
+# ------------------------------------------------------------------------------------------------------------------
+# iris-ng 2026-11-07: asset flags (Settings -> Asset flags; set on case assets), war-room decisions (the register a
+# flag that "requires a decision" cites) and the war-room Board's layout. One vocabulary: app/models/asset_flag_vocab.py.
+from app.models import asset_flag_vocab as _af  # noqa: E402
+
+
+class AssetFlag(db.Model):
+    """A status flag an administrator defines (name, colour, icon, kind) and analysts set on case assets.
+    Different from tags: a managed list, with a kind (status / done / exception) the war-room Board counts,
+    optional reason / decision requirements, and a change history per asset."""
+    __tablename__ = 'asset_flag'
+
+    id = Column(BigInteger, primary_key=True)
+    name = Column(String(64), nullable=False)
+    description = Column(Text, nullable=True)
+    color = Column(String(16), nullable=False, default='slate', server_default=text("'slate'"))
+    icon = Column(String(32), nullable=False, default='flag', server_default=text("'flag'"))
+    kind = Column(String(16), nullable=False, default='status', server_default=text("'status'"))
+    requires_reason = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    requires_decision = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    sort_order = Column(Integer, nullable=False, default=0, server_default=text('0'))
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    created_by_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    updated_at = Column(DateTime, nullable=True)
+    updated_by_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+
+    __table_args__ = (
+        Index('uq_asset_flag_name', func.lower(name), unique=True),
+        CheckConstraint(_af.sql_in('color', _af.COLORS), name='ck_asset_flag_color'),
+        CheckConstraint(_af.sql_in('icon', _af.ICONS), name='ck_asset_flag_icon'),
+        CheckConstraint(_af.sql_in('kind', _af.KINDS), name='ck_asset_flag_kind'),
+    )
+
+
+class CaseAssetFlag(db.Model):
+    """A flag set on one case asset (at most once). `decision_id` is the approved war-room decision a flag
+    that requires one cites; a deleted decision cannot be cited any more (the business layer refuses to
+    delete a decision a flag cites), the SET NULL only guards the database."""
+    __tablename__ = 'case_asset_flag'
+
+    id = Column(BigInteger, primary_key=True)
+    case_id = Column(BigInteger, ForeignKey('cases.case_id', ondelete='CASCADE'), nullable=False, index=True)
+    asset_id = Column(BigInteger, ForeignKey('case_assets.asset_id', ondelete='CASCADE'), nullable=False,
+                      index=True)
+    flag_id = Column(BigInteger, ForeignKey('asset_flag.id', ondelete='CASCADE'), nullable=False, index=True)
+    reason = Column(Text, nullable=True)
+    decision_id = Column(BigInteger, ForeignKey('war_room_decision.id', ondelete='SET NULL'), nullable=True,
+                         index=True)
+    set_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    set_by_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+
+    flag = relationship('AssetFlag')
+
+    __table_args__ = (
+        UniqueConstraint('asset_id', 'flag_id', name='uq_case_asset_flag'),
+    )
+
+
+class CaseAssetFlagChange(db.Model):
+    """History of an asset's flags: set / updated (reason or decision changed) / cleared, by whom, when, why.
+    The flag's name is kept, so the history reads the same after the flag is renamed or deleted."""
+    __tablename__ = 'case_asset_flag_change'
+
+    id = Column(BigInteger, primary_key=True)
+    case_id = Column(BigInteger, ForeignKey('cases.case_id', ondelete='CASCADE'), nullable=False, index=True)
+    asset_id = Column(BigInteger, ForeignKey('case_assets.asset_id', ondelete='CASCADE'), nullable=False,
+                      index=True)
+    flag_id = Column(BigInteger, ForeignKey('asset_flag.id', ondelete='SET NULL'), nullable=True)
+    flag_name = Column(String(64), nullable=False)
+    action = Column(String(16), nullable=False)
+    reason = Column(Text, nullable=True)
+    decision_id = Column(BigInteger, nullable=True)
+    decision_ref = Column(String(32), nullable=True)
+    changed_by = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    changed_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    __table_args__ = (
+        CheckConstraint(_af.sql_in('action', _af.FLAG_ACTIONS), name='ck_case_asset_flag_change_action'),
+    )
+
+
+class WarRoomDecision(db.Model):
+    """A war-room decision (the register on the room's Decisions tab): D-<number> per room, title, rationale,
+    owner, target date, optional approvers who vote, what it applies to (the whole room, or chosen cases /
+    assets of the attached cases), implementation, and the decision it supersedes. Status: proposed ->
+    approved / rejected (every approver approves / one rejects; with no approver a lead or the owner sets it),
+    approved -> superseded when a decision superseding it is approved."""
+    __tablename__ = 'war_room_decision'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(BigInteger, ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False, index=True)
+    number = Column(Integer, nullable=False)
+    title = Column(String(256), nullable=False)
+    rationale = Column(Text, nullable=True)
+    status = Column(String(16), nullable=False, default='proposed', server_default=text("'proposed'"))
+    owner_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    target_at = Column(DateTime, nullable=True)
+    decided_at = Column(DateTime, nullable=True)
+    implemented_at = Column(DateTime, nullable=True)
+    implemented_by_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    supersedes_id = Column(BigInteger, ForeignKey('war_room_decision.id', ondelete='SET NULL'), nullable=True)
+    chat_message_id = Column(BigInteger, ForeignKey('war_room_message.id', ondelete='SET NULL'), nullable=True,
+                             index=True)
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    created_by_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    updated_at = Column(DateTime, nullable=True)
+    updated_by_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+
+    owner = relationship('User', foreign_keys=[owner_id])
+
+    __table_args__ = (
+        UniqueConstraint('room_id', 'number', name='uq_war_room_decision_number'),
+        CheckConstraint(_af.sql_in('status', _af.DECISION_STATUSES), name='ck_war_room_decision_status'),
+    )
+
+
+class WarRoomDecisionApprover(db.Model):
+    """A room member who must approve a decision, and their verdict."""
+    __tablename__ = 'war_room_decision_approver'
+
+    decision_id = Column(BigInteger, ForeignKey('war_room_decision.id', ondelete='CASCADE'), primary_key=True)
+    user_id = Column(BigInteger, ForeignKey('user.id', ondelete='CASCADE'), primary_key=True)
+    verdict = Column(String(16), nullable=False, default='pending', server_default=text("'pending'"))
+    voted_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(_af.sql_in('verdict', _af.VERDICTS), name='ck_war_room_decision_approver_verdict'),
+    )
+
+
+class WarRoomDecisionCase(db.Model):
+    """A case a decision applies to (no case and no asset = the whole war room)."""
+    __tablename__ = 'war_room_decision_case'
+
+    decision_id = Column(BigInteger, ForeignKey('war_room_decision.id', ondelete='CASCADE'), primary_key=True)
+    case_id = Column(BigInteger, ForeignKey('cases.case_id', ondelete='CASCADE'), primary_key=True, index=True)
+
+
+class WarRoomDecisionAsset(db.Model):
+    """A case asset a decision applies to."""
+    __tablename__ = 'war_room_decision_asset'
+
+    decision_id = Column(BigInteger, ForeignKey('war_room_decision.id', ondelete='CASCADE'), primary_key=True)
+    asset_id = Column(BigInteger, ForeignKey('case_assets.asset_id', ondelete='CASCADE'), primary_key=True,
+                      index=True)
+
+
+class WarRoomDecisionEvent(db.Model):
+    """A decision's trail (proposed, votes, outcome, implementation...). The room stream derives its decision
+    lines from these rows, like every other system line."""
+    __tablename__ = 'war_room_decision_event'
+
+    id = Column(BigInteger, primary_key=True)
+    decision_id = Column(BigInteger, ForeignKey('war_room_decision.id', ondelete='CASCADE'), nullable=False,
+                         index=True)
+    room_id = Column(BigInteger, ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False, index=True)
+    action = Column(String(24), nullable=False)
+    detail = Column(Text, nullable=True)
+    user_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    __table_args__ = (
+        CheckConstraint(_af.sql_in('action', _af.DECISION_EVENTS), name='ck_war_room_decision_event_action'),
+    )
+
+
+class WarRoomBoard(db.Model):
+    """The room's Board layout, set by a lead for everyone (no row = the default board). `widgets` is the
+    validated list [{id, type, column, title, options}]; personal hide / reorder stays in each browser."""
+    __tablename__ = 'war_room_board'
+
+    room_id = Column(BigInteger, ForeignKey('war_room.id', ondelete='CASCADE'), primary_key=True)
+    widgets = Column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    updated_at = Column(DateTime, nullable=True)
+    updated_by_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)

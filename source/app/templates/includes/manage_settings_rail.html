@@ -80,6 +80,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
         <span>Custom Attributes</span>
     </a>
+    {# iris-ng 2026-11-07: the flags analysts set on case assets #}
+    <a class="iris-msr-item {{ 'active' if settings_active == 'asset_flags' }}" href="/manage/asset-flags?cid={{ _cid }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
+        <span>Asset Flags</span>
+    </a>
     {% endif %}
     {% if user_has_perm(std_permissions.case_templates_read) %}
     <a class="iris-msr-item {{ 'active' if settings_active == 'case_templates' }}" href="/manage/case-templates?cid={{ _cid }}">

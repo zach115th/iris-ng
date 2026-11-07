@@ -1,0 +1,31 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Asset flags {% endblock title %}
+
+{% block stylesheets %}
+{% endblock stylesheets %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'asset_flags' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content" role="region" aria-label="Asset flags">
+<form style="display:none;">{{ form.hidden_tag() }}</form>
+{# iris-ng 2026-11-07: drawn by asset_flags.js (IrisFlags.mountSettings) #}
+<div id="iris-fl-settings"><div class="text-muted p-3">Loading&hellip;</div></div>
+</div>
+</div>
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/js/iris/asset_flags.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.IrisFlags) { window.IrisFlags.mountSettings(document.getElementById('iris-fl-settings')); }
+});
+</script>
+{% endblock javascripts %}
