@@ -1,0 +1,186 @@
+{
+  "group": "Vulnerabilities",
+  "order": 91,
+  "terms": {
+    "vuln.catalogue": {
+      "title": "Vulnerability catalogue",
+      "text": "One entry per vulnerability, shared by every case, registry entry and war room: public CVE, GitHub (GHSA) or vendor advisories, and private entries for issues found in your own investigations.\n\nEvery signed-in user can read, add and edit entries. Merging and deleting entries is for server administrators. The counts show only the cases you can open and the registry entries of customers you are associated with.",
+      "aka": ["vulnerabilities", "cve", "catalog", "vulnerability list"]
+    },
+    "vuln.identifier": {
+      "title": "Identifier",
+      "text": "A public entry is named by its CVE, GHSA or advisory identifier (CVE ids are stored in upper case). An identifier is unique ignoring letter case, and it cannot also be another entry's identifier or alias.\n\nA private entry gets IRIS-VULN-<year>-<number> when it is saved; that identifier never changes and the number is never reused.",
+      "aka": ["cve id", "ghsa", "advisory id", "iris-vuln"]
+    },
+    "vuln.private": {
+      "title": "Private entry",
+      "text": "For an issue that has no public identifier, such as a misconfiguration or a weakness found during an investigation. It is numbered IRIS-VULN-<year>-<number> and never leaves this instance. Whether an entry is private is chosen when it is created.",
+      "aka": ["internal", "iris-vuln"]
+    },
+    "vuln.kind": {
+      "title": "Kind",
+      "text": "What sort of issue this is. Automatic picks CVE for a CVE id, Advisory for any other public identifier and Other for a private entry.",
+      "items": [
+        {"name": "CVE", "text": "A vulnerability published with a CVE id."},
+        {"name": "Advisory", "text": "A vendor or GitHub (GHSA) advisory without a CVE."},
+        {"name": "Misconfiguration", "text": "A setting that exposes a system, not a software flaw."},
+        {"name": "Weak credentials", "text": "Default, shared or guessable credentials."},
+        {"name": "Exposed service", "text": "A service reachable where it should not be."},
+        {"name": "Design flaw", "text": "A weakness in how a system or process is built."},
+        {"name": "Zero-day", "text": "Exploited before a fix or advisory exists."},
+        {"name": "Other", "text": "Anything else."}
+      ]
+    },
+    "vuln.cvss": {
+      "title": "CVSS",
+      "text": "A CVSS vector (2.0, 3.0, 3.1 or 4.0) sets the version and the base score. A score typed next to a vector wins, for an environmental or temporal score.\n\nThe severity follows the score (0 none, under 4 low, under 7 medium, under 9 high, then critical) unless you choose one by hand; choose Automatic to make it follow the score again.",
+      "aka": ["score", "vector", "base score", "severity"]
+    },
+    "vuln.epss": {
+      "title": "EPSS",
+      "text": "FIRST's Exploit Prediction Scoring System: the probability that the vulnerability is exploited in the next 30 days, and how that ranks against all scored CVEs (the percentile). Enter both as percentages, with the date they were taken; they are not fetched automatically.",
+      "aka": ["exploit prediction", "first"]
+    },
+    "vuln.kev": {
+      "title": "CISA KEV",
+      "text": "Listed in CISA's Known Exploited Vulnerabilities catalogue: exploitation in the wild is confirmed. Record the date it was added, the remediation due date CISA set for US federal agencies, and whether it is known to be used in ransomware campaigns.",
+      "aka": ["known exploited", "cisa", "ransomware"]
+    },
+    "vuln.exploit_maturity": {
+      "title": "Exploit maturity",
+      "text": "How far exploitation of this vulnerability has gone, anywhere - not in your environment (that is a finding's exploitation status).",
+      "items": [
+        {"name": "Unknown", "text": "Not assessed."},
+        {"name": "None known", "text": "No public exploit is known."},
+        {"name": "Proof of concept", "text": "A demonstration exploit exists."},
+        {"name": "Weaponized", "text": "A working exploit is available, for example in a framework."},
+        {"name": "In the wild", "text": "Attackers are exploiting it (a KEV listing implies this)."}
+      ]
+    },
+    "vuln.patch": {
+      "title": "Patch availability",
+      "text": "Whether the vendor offers a fix.",
+      "items": [
+        {"name": "Unknown", "text": "Not assessed."},
+        {"name": "Patch available", "text": "A fixed version or patch exists."},
+        {"name": "Workaround only", "text": "Only a configuration change or mitigation is offered."},
+        {"name": "No fix", "text": "The vendor offers nothing yet."}
+      ]
+    },
+    "vuln.products": {
+      "title": "Affected products",
+      "text": "One product per line: vendor | product | versions, for example Apache | httpd | 2.4.49 - 2.4.50. The vendor and the versions may be left out. The catalogue's Vendor and Product filters read these lines.",
+      "aka": ["technology", "vendor", "versions", "cpe"]
+    },
+    "vuln.aliases": {
+      "title": "Aliases",
+      "text": "Other identifiers of the same issue, for example the GHSA id of a CVE. Searching or quick-adding by an alias finds this entry, and a CVE IOC whose value is an alias links to it. A merge adds the merged entry's identifier and aliases here.",
+      "aka": ["other ids", "ghsa"]
+    },
+    "vuln.cve_org": {
+      "title": "cve.org",
+      "text": "For a CVE, Fill from cve.org reads the public CVE record and fills the form: title, description, CVSS, CWEs, affected products, references, dates, and from CISA's data the KEV listing and the exploitation status. Only the CVE id is sent.\n\nSync refreshes an entry. A value you changed since the last sync is kept unless you choose to overwrite it. Settings -> System turns lookups off.",
+      "aka": ["sync", "lookup", "mitre", "cve record"]
+    },
+    "vuln.merge": {
+      "title": "Merge",
+      "text": "For two entries that describe the same issue. The findings and war-room tracking of the entry you merge move to the target; where the target already has a finding on the same asset, the two are folded into the target's (status and notes appended to its notes). The merged entry's identifier and aliases become aliases of the target, and it is deleted. Server administrators only; it cannot be undone.",
+      "aka": ["duplicate", "combine"]
+    },
+    "vuln.exposure": {
+      "title": "Exposure",
+      "text": "Where this vulnerability is recorded: case findings, registry entries, and cases that hold its identifier or an alias as a vulnerability IOC. Only the cases you can open and the registry entries of customers you are associated with are counted and listed.",
+      "aka": ["affected", "where", "impact"]
+    },
+    "vuln.finding": {
+      "title": "Finding",
+      "text": "A vulnerability recorded where it matters to you: on one of a case's assets or on a customer's registry entry. One finding per vulnerability and asset. A finding has its own remediation and exploitation status, owner, due date and history; the catalogue entry holds what is true everywhere.",
+      "aka": ["vulnerable asset", "case vulnerability"]
+    },
+    "vuln.remediation": {
+      "title": "Remediation status",
+      "text": "Where fixing it stands (CISA VEX). The statuses fall in three groups: open, fixed and dismissed. Risk accepted and False positive need a reason.",
+      "items": [
+        {"name": "Under analysis", "text": "Open: not yet known whether the asset is affected."},
+        {"name": "Affected", "text": "Open: the asset is vulnerable."},
+        {"name": "Mitigated", "text": "Open: a workaround reduces the risk; the fix is still due."},
+        {"name": "Patched", "text": "Fixed: the fix is applied."},
+        {"name": "Verified", "text": "Fixed: the fix is confirmed (rescan, manual check); records who verified it and when."},
+        {"name": "Not affected", "text": "Dismissed: the asset is not vulnerable; give the VEX justification or a reason."},
+        {"name": "Risk accepted", "text": "Dismissed: knowingly left as it is; needs a reason."},
+        {"name": "False positive", "text": "Dismissed: the detection was wrong; needs a reason."}
+      ],
+      "aka": ["vex", "status", "fixed", "open"]
+    },
+    "vuln.exploitation": {
+      "title": "Exploitation status",
+      "text": "Whether this vulnerability was exploited on this asset. Exploited at (UTC) is kept only while the status is Exploited.",
+      "items": [
+        {"name": "Unknown", "text": "Not assessed."},
+        {"name": "Not exploited", "text": "Checked, and no sign of exploitation."},
+        {"name": "Attempted", "text": "Exploitation was tried and failed."},
+        {"name": "Suspected", "text": "There are signs, not proof."},
+        {"name": "Exploited", "text": "Confirmed; record when."}
+      ]
+    },
+    "vuln.vex": {
+      "title": "VEX justification",
+      "text": "Why the asset is not affected, in CISA VEX terms. Used with Not affected only.",
+      "items": [
+        {"name": "Component not present", "text": "The vulnerable component is not installed."},
+        {"name": "Vulnerable code not present", "text": "The component is there but without the vulnerable code."},
+        {"name": "Vulnerable code not in execute path", "text": "The code is present but never runs."},
+        {"name": "Vulnerable code cannot be controlled by adversary", "text": "An attacker cannot reach or influence it."},
+        {"name": "Inline mitigations already exist", "text": "Existing protections stop exploitation."},
+        {"name": "Version not affected", "text": "The installed version is outside the affected range."},
+        {"name": "SaaS deployment", "text": "Fixed by the provider of a hosted service."},
+        {"name": "On-Prem deployment", "text": "The on-premises deployment is not exposed as described."}
+      ]
+    },
+    "vuln.due": {
+      "title": "Due date",
+      "text": "When the fix should be in place. An open finding past its due date shows as overdue.",
+      "aka": ["deadline", "sla", "overdue"]
+    },
+    "vuln.links": {
+      "title": "Linked events and IOCs",
+      "text": "The case's timeline events and IOCs that relate to this finding, for example the event where exploitation was seen. Only items of the same case can be linked.",
+      "aka": ["timeline", "evidence"]
+    },
+    "vuln.history": {
+      "title": "Finding history",
+      "text": "Every change to a finding: the field, the old and new value, who changed it and when (UTC). It is kept until the finding is deleted.",
+      "aka": ["audit", "changes"]
+    },
+    "vuln.asset_tab": {
+      "title": "Asset vulnerabilities",
+      "text": "The vulnerabilities recorded on this asset, with their status. The tab counts the open ones; in the asset list a shield shows the same count, coloured by the most severe open vulnerability. Recording or changing a finding needs full access to the case. Every vulnerability of the case, across its assets: Intel > Vulnerabilities with the Case filter.",
+      "aka": ["case findings", "asset findings", "shield"]
+    },
+    "vuln.case_filter": {
+      "title": "Case filter",
+      "text": "Shows only the entries recorded on an asset of the chosen case; the Exposure column then counts that case's findings. The list offers the cases you can open that hold findings. With Affected, only entries still open in that case.",
+      "aka": ["case vulnerabilities", "whole case"]
+    },
+    "vuln.registry": {
+      "title": "Registry vulnerabilities",
+      "text": "Vulnerabilities recorded on this registry entry, independent of any case - for example the results of a scan of the customer's estate.",
+      "aka": ["customer assets", "scan results"]
+    },
+    "vuln.war_room": {
+      "title": "Vulnerabilities in a war room",
+      "text": "Tracked: the entries the room is following, with the room's note on each (responders and leads change them). Across the room's cases: every vulnerability recorded in the cases attached to the room that you can open, with open / recorded counts per case.",
+      "aka": ["tracked", "matrix"]
+    },
+    "vuln.ioc_link": {
+      "title": "CVE IOCs",
+      "text": "An IOC of type vulnerability whose value is a catalogue entry's identifier or alias links to that entry, and the entry's exposure lists the case. Nothing is created automatically: to track the vulnerability in the case, record a finding.",
+      "aka": ["vulnerability ioc", "cve indicator"]
+    },
+    "vuln.lookup_setting": {
+      "title": "Look up CVEs on cve.org",
+      "text": "When on, the vulnerability catalogue can fill and refresh CVE entries from cve.org (the CVE Services record), through the proxy configured on the General tab. Only the CVE id is sent, and only when someone asks. Turn it off for air-gapped deployments.",
+      "aka": ["cve.org", "outbound", "air-gapped"]
+    }
+  }
+}

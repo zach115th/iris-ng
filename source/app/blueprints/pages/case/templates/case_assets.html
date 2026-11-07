@@ -91,7 +91,7 @@
                 </div>
                 <div class="iris-ca-right">
                     <div class="text-muted" id="iris-ca-placeholder" style="text-align:center; padding-top:60px;">Select an asset to see its details.</div>
-                    <div id="iris-ca-detail" style="display:none;"></div>
+                    <div id="iris-ca-detail" style="display:none;" data-vuln-write="{{ 'true' if vuln_can_write else 'false' }}"></div>
                 </div>
             </div>
         </div>
@@ -214,6 +214,20 @@
                 border-bottom: 2px solid transparent;
             }
             .iris-ca-dtab.active { color: #e8e8ee; border-bottom-color: #8B5CF6; }
+            /* open-vulnerability shield on an asset row; colour = most severe open entry */
+            .iris-ca-vbadge {
+                display: inline-flex; align-items: center; gap: 3px; font-size: 0.72rem;
+            }
+            /* the same text colours as the severity badges (vuln_common.js) */
+            .iris-ca-vbadge-critical { color: #ff8095; }
+            .iris-ca-vbadge-high { color: #ffa07f; }
+            .iris-ca-vbadge-medium { color: #f4c430; }
+            .iris-ca-vbadge-low { color: #7cc0f5; }
+            .iris-ca-vbadge-none, .iris-ca-vbadge-unknown { color: #9a9aa5; }
+            .iris-ca-vhead {
+                display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+                font-size: 0.78rem; color: #9a9aa5;
+            }
             /* v3 hover actions on timeline cards — hidden until hover */
             .iris-ca-tlcard .iris-ca-tlacts { opacity: 0; transition: opacity 0.12s; }
             .iris-ca-tlcard:hover .iris-ca-tlacts,
@@ -355,6 +369,9 @@
 {% include 'includes/footer_case.html' %}
 <script src="/static/assets/js/plugin/sortable/sortable.js "></script>
 <script src="/static/assets/js/iris/case.asset.js"></script>
+{# iris-ng 2026-11-07: the selected asset's Vulnerabilities tab (case_assets_v3.js mounts
+   IrisVuln.mountFindings in it on first open); loaded here, after jQuery, which it needs. #}
+<script src="/static/assets/js/iris/vuln_common.js"></script>
 {# shared add-event modal loader — the Timeline tab's + Add event opens
    the timeline page's real modal IN PLACE (container below) #}
 <script src="/static/assets/js/iris/event_modal.js"></script>

@@ -703,6 +703,12 @@
         <button class="iris-wr-tab" data-pane="correlation">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="3"/><path d="M12 6h5a2 2 0 0 1 2 2v7"/><circle cx="19" cy="18" r="3"/><path d="M12 18H7a2 2 0 0 1-2-2V9"/></svg>
             Correlation</button>
+        {# iris-ng 2026-11-07: vulnerabilities - refused to guests by the API, so not offered #}
+        {% if not guest_mode %}
+        <button class="iris-wr-tab" data-pane="vulnerabilities">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            Vulnerabilities</button>
+        {% endif %}
     </div>
 
     {# ================= Stream pane ================= #}
@@ -1125,6 +1131,18 @@
             <div id="iris-wr-corr-empty" class="text-muted" style="display:none;"></div>
         </div></div>
     </div>
+
+    {% if not guest_mode %}
+    {# ================= Vulnerabilities pane (iris-ng 2026-11-07) =================
+       Rendered by vuln_common.js (IrisVuln.mountWarRoom) on first open. #}
+    <div class="iris-wr-pane" id="iris-wr-pane-vulnerabilities">
+        <div class="card"><div class="card-body">
+            <div class="mb-2" style="font-size:0.78rem;color:#9a9aa5;">Vulnerabilities this room follows, and those
+                recorded in its cases. {{ help_tip('vuln.war_room') }}</div>
+            <div id="iris-wr-vulns"></div>
+        </div></div>
+    </div>
+    {% endif %}
 </div>
 
 <div class="modal fade" id="iris-wr-edit-modal" tabindex="-1" role="dialog">
@@ -1509,5 +1527,6 @@
 
 {% block javascripts %}
     <script src="/static/assets/js/iris/mention_palette.js"></script>
+    {% if not guest_mode %}<script src="/static/assets/js/iris/vuln_common.js"></script>{% endif %}
     <script src="/static/assets/js/iris/war_room.js"></script>
 {% endblock javascripts %}

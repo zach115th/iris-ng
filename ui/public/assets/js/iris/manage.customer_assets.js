@@ -205,8 +205,9 @@ function iris_ca_open(assetId) {
                 + (iris_ca_id(a.id) || '') + '</span>'));
         $('#iris-ca-sight-count').text('(' + (s.cases + s.alerts) + ')');
         $('#iris-ca-tl-count').text('(' + (a.timeline_events || 0) + ')');
-        // Fresh asset: back to Overview, invalidate the lazy Timeline tab.
+        // Fresh asset: back to Overview, invalidate the lazy Timeline and Vulnerabilities tabs.
         IRIS_CA._tlLoadedFor = null;
+        IRIS_CA._vulnLoadedFor = null;
         $('#iris-ca-dtabs a[href="#iris-ca-tab-overview"]').tab('show');
 
         var det = a.sighting_details || { cases: [], alerts: [], cases_hidden_by_acl: 0 };
@@ -263,6 +264,21 @@ function iris_ca_open(assetId) {
 
 $(function () {
     iris_ca_load();
+    /* ?asset=<id> opens that entry (links from a vulnerability's exposure). */
+    var deep = iris_ca_id((window.location.search.match(/[?&]asset=(\d+)/) || [])[1]);
+    if (deep) { iris_ca_open(deep); }
+    /* Vulnerabilities tab (iris-ng 2026-11-07): the findings recorded on this
+       registry entry, mounted on first open per asset (vuln_common.js). */
+    $('#iris-ca-dtabs a[href="#iris-ca-tab-vulns"]').on('shown.bs.tab', function () {
+        if (!IRIS_CA._current || !window.IrisVuln) { return; }
+        var cur = IRIS_CA._current;
+        if (IRIS_CA._vulnLoadedFor === cur.id) { return; }
+        IRIS_CA._vulnLoadedFor = cur.id;
+        var host = document.getElementById('iris-ca-vulns');
+        $(host).off().empty();
+        window.IrisVuln.mountFindings(host, {scope: 'registry', registryAssetId: cur.id,
+                                             registryAssetName: cur.asset_name, canWrite: true});
+    });
 
     $('#iris-ca-refresh').on('click', iris_ca_load);
     $('#iris-ca-f-q, #iris-ca-f-env, #iris-ca-f-owner').on('keydown', function (e) {

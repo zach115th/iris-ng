@@ -12,7 +12,14 @@ var IRIS_CA = {rows: [], sel: null, q: '', tab: 'details',
                caseEvidence: null,
                evMenu: false, evq: '', evMenuQ: '',
                editing: false, assetTypes: null, analysisStatuses: null,
-               tagSugg: null, profiles: {}};
+               tagSugg: null, profiles: {},
+               /* vulnerabilities: per-asset counts (null = not looked yet /
+                  the read failed: no count, no shield), the findings widget
+                  of the selected asset, and the one-time ?asset= landing */
+               vulns: null, vulnEl: null, vulnFor: null, landed: false};
+
+var IRIS_CA_TABS = ['details', 'iocs', 'timeline', 'history', 'comments',
+                    'evidence', 'vulns'];
 
 var IRIS_CA_COMP = {
     0: {label: 'To be determined', cls: 'iris-ca-comp-0', color: '#9a9aa5'},
@@ -96,6 +103,7 @@ function iris_ca_load() {
             var data = (resp && resp.data) || {};
             IRIS_CA.rows = data.assets || [];
             document.getElementById('iris-ca-loading').style.display = 'none';
+            iris_ca_land_once();
             iris_ca_render_list();
             /* Keep the selected asset fresh after an edit-modal save. */
             if (IRIS_CA.sel !== null) {
@@ -110,6 +118,93 @@ function iris_ca_load() {
                 'Failed to load assets.';
         });
     iris_ca_load_timeline();
+    /* a page refresh re-mounts the findings widget on its next show */
+    IRIS_CA.vulnFor = null;
+    iris_ca_load_vulns();
+}
+
+/* ?asset=<id>&tab=<key> (the vulnerability catalogue links here) selects
+ * that asset and opens the tab, once, on the first load that lists it. The
+ * legacy ?shared=<id> is left to case.asset.js (it opens the asset editor). */
+function iris_ca_land_once() {
+    if (IRIS_CA.landed) return;
+    IRIS_CA.landed = true;
+    var m = window.location.search.match(/[?&]asset=(\d+)/);
+    if (!m) return;
+    var id = parseInt(m[1], 10);
+    if (!IRIS_CA.rows.some(function (x) { return x.asset_id === id; })) return;
+    var t = window.location.search.match(/[?&]tab=([a-z]+)/);
+    IRIS_CA.sel = id;
+    IRIS_CA.tab = (t && IRIS_CA_TABS.indexOf(t[1]) !== -1) ? t[1] : 'details';
+}
+
+/* Per-asset vulnerability counts: GET /api/v2/cases/<cid>/vulnerabilities/
+ * assets -> {assets: {"<asset_id>": {findings, open, top_severity}}}; an
+ * asset absent from the map has no finding. Until an answer arrives (or when
+ * the read fails) IRIS_CA.vulns stays null and nothing claims a count. */
+function iris_ca_load_vulns() {
+    fetch('/api/v2/cases/' + iris_ca_cid() + '/vulnerabilities/assets',
+          {headers: {'Accept': 'application/json'},
+           credentials: 'same-origin'})
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+            if (!j || !j.assets || typeof j.assets !== 'object') return;
+            IRIS_CA.vulns = j.assets;
+            iris_ca_render_list();
+            /* only the tab's label: a full re-render would rebuild an
+               open edit form from the stored row */
+            var sel = IRIS_CA.rows.find(function (x) {
+                return x.asset_id === IRIS_CA.sel; });
+            var btn = document.querySelector(
+                '#iris-ca-detail .iris-ca-dtab[data-tab="vulns"]');
+            if (sel && btn) btn.innerHTML = iris_ca_dtab_label(
+                'Vulnerabilities', iris_ca_vuln_open(sel));
+        })
+        .catch(function () { /* stays null: no count is shown */ });
+}
+window.iris_ca_refresh_vulns = iris_ca_load_vulns;
+
+/* open findings of an asset; null while the counts are unknown */
+function iris_ca_vuln_open(r) {
+    if (!IRIS_CA.vulns) return null;
+    var v = IRIS_CA.vulns[String(r.asset_id)];
+    return v ? (Number(v.open) || 0) : 0;
+}
+
+function iris_ca_dtab_label(label, count) {
+    return label + (count === null || count === undefined ? ''
+        : ' <span class="text-muted">' + count + '</span>');
+}
+
+function iris_ca_vuln_write() {
+    var box = document.getElementById('iris-ca-detail');
+    return !!box && box.getAttribute('data-vuln-write') === 'true';
+}
+
+/* The findings widget lives in one element per selected asset, kept across
+ * renders: the pane is rebuilt with innerHTML on every render (comments,
+ * timeline and profile answers arriving), and mounting again each time would
+ * refetch the findings and drop the widget's filter. Created and mounted the
+ * first time the tab shows an asset, then moved back into the new host. */
+function iris_ca_attach_vulns(r) {
+    var host = document.getElementById('iris-ca-vulns-host');
+    if (!host) return;
+    if (!window.IrisVuln || !window.jQuery) {
+        host.innerHTML = '<div class="text-muted" style="font-size:0.8rem;">' +
+            'The vulnerability widgets did not load - reload the page.</div>';
+        return;
+    }
+    if (IRIS_CA.vulnFor !== r.asset_id || !IRIS_CA.vulnEl) {
+        IRIS_CA.vulnEl = document.createElement('div');
+        IRIS_CA.vulnFor = r.asset_id;
+        host.appendChild(IRIS_CA.vulnEl);
+        window.IrisVuln.mountFindings(IRIS_CA.vulnEl, {
+            scope: 'case', caseId: iris_ca_cid(), assetId: r.asset_id,
+            assetName: r.asset_name, canWrite: iris_ca_vuln_write(),
+            onChange: iris_ca_load_vulns});
+        return;
+    }
+    host.appendChild(IRIS_CA.vulnEl);
 }
 
 /* Timeline events for the detail Timeline tab — one fetch per page load
@@ -1342,6 +1437,20 @@ function iris_ca_row_icons_html(r) {
             '<path d="m2 2 20 20"/><path d="M5 5a1 1 0 0 0-1 1v7c0 5 3.5 7.5 7.66 8.95a1 1 0 0 0 .67.01c2.35-.82 4.48-1.97 5.9-3.71"/><path d="M9.309 3.652A12.252 12.252 0 0 0 11.24 2.28a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7a9.784 9.784 0 0 1-.08 1.264"/>',
             '#55555e', 'No IOCs linked');
     }
+    /* open vulnerabilities: a shield with the count, coloured by the most
+       severe open entry; nothing when none is open or counts are unknown */
+    var vs = IRIS_CA.vulns ? IRIS_CA.vulns[String(r.asset_id)] : null;
+    var nOpen = vs ? (Number(vs.open) || 0) : 0;
+    if (nOpen > 0) {
+        var sev = /^(critical|high|medium|low|none|unknown)$/
+            .test(String(vs.top_severity)) ? vs.top_severity : 'unknown';
+        out += '<span class="iris-ca-vbadge iris-ca-vbadge-' + sev +
+            '" title="' + iris_ca_esc(nOpen + ' open vulnerabilit' +
+                (nOpen === 1 ? 'y' : 'ies') + ' - most severe: ' + sev) +
+            '">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg><b>' +
+            nOpen + '</b></span>';
+    }
     return '<span style="display:inline-flex; align-items:center; gap:7px; flex-shrink:0; margin-left:8px;">' +
         out + '</span>';
 }
@@ -1447,13 +1556,14 @@ function iris_ca_render_detail() {
          ['history', 'History', null],
          ['comments', 'Comments',
           Array.isArray(comments) ? comments.length : null],
-         ['evidence', 'Evidence', evLinks.length]]
+         ['evidence', 'Evidence', evLinks.length],
+         /* open findings only (fixed / dismissed stay listed in the tab) */
+         ['vulns', 'Vulnerabilities', iris_ca_vuln_open(r)]]
             .map(function (t) {
                 return '<button type="button" class="iris-ca-dtab' +
                     (IRIS_CA.tab === t[0] ? ' active' : '') +
-                    '" data-tab="' + t[0] + '">' + t[1] +
-                    (t[2] === null ? ''
-                        : ' <span class="text-muted">' + t[2] + '</span>') +
+                    '" data-tab="' + t[0] + '">' +
+                    iris_ca_dtab_label(t[1], t[2]) +
                     '</button>';
             }).join('') +
         '</div>';
@@ -1468,6 +1578,14 @@ function iris_ca_render_detail() {
         body += iris_ca_ev_tab_html(r);
     } else if (IRIS_CA.tab === 'timeline') {
         body += iris_ca_tl_tab_html(tlRows);
+    } else if (IRIS_CA.tab === 'vulns') {
+        /* the widget itself is attached after the pane is written */
+        body += '<div class="iris-ca-vhead">' +
+            '<span>Vulnerabilities recorded on this asset</span>' +
+            IrisHelp.icon('vuln.asset_tab') +
+            '<a style="margin-left:auto;" href="/vulnerabilities?case=' +
+            iris_ca_cid() + '">Every vulnerability in this case &rarr;</a>' +
+            '</div><div id="iris-ca-vulns-host"></div>';
     } else if (IRIS_CA.tab === 'history') {
         var mh = r.modification_history || {};
         var entries = Object.keys(mh).map(function (k) {
@@ -1571,6 +1689,7 @@ function iris_ca_render_detail() {
     var bodyCls = 'iris-ca-dbody' +
         (IRIS_CA.tab === 'comments' ? ' iris-ca-dbody-split' : '');
     box.innerHTML = html + '<div class="' + bodyCls + '">' + body + '</div>';
+    if (IRIS_CA.tab === 'vulns') iris_ca_attach_vulns(r);
     iris_ca_fit_soon();
     if (IRIS_CA.tab === 'comments') {
         /* newest comment sits next to the composer, chat-style */

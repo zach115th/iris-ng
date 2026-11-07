@@ -43,6 +43,13 @@ case_assets_blueprint = Blueprint('case_assets',
                                   template_folder='templates')
 
 
+def _vuln_can_write(caseid):
+    """iris-ng: an asset's Vulnerabilities tab (Assets page and asset editor)
+    offers recording / editing findings only with full access to the case."""
+    from app.iris_engine.access_control.utils import ac_fast_check_current_user_has_case_access
+    return bool(ac_fast_check_current_user_has_case_access(caseid, [CaseAccessLevel.full_access]))
+
+
 @case_assets_blueprint.route('/case/assets', methods=['GET'])
 @ac_case_requires(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 def case_assets(caseid, url_redir):
@@ -60,7 +67,7 @@ def case_assets(caseid, url_redir):
     # Retrieve the assets linked to the investigation
     case = get_case(caseid)
 
-    return render_template("case_assets.html", case=case, form=form)
+    return render_template("case_assets.html", case=case, form=form, vuln_can_write=_vuln_can_write(caseid))
 
 
 @case_assets_blueprint.route('/case/assets/add/modal', methods=['GET'])
@@ -121,7 +128,8 @@ def asset_view_modal(cur_id, caseid, url_redir):
 
     return render_template("modal_add_case_asset.html", form=form, asset=asset, map={}, ioc=case_iocs,
                            ioc_prefill=ioc_prefill, evidence=case_evidence, evidence_prefill=evidence_prefill,
-                           attributes=asset.custom_attributes, comments_map=comments_map)
+                           attributes=asset.custom_attributes, comments_map=comments_map,
+                           vuln_can_write=_vuln_can_write(caseid))
 
 
 @case_assets_blueprint.route('/case/assets/<int:cur_id>/comments/modal', methods=['GET'])

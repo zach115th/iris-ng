@@ -193,6 +193,9 @@
                                 <a class="nav-link" data-toggle="tab" href="#iris-ca-tab-timeline" role="tab">Timeline <span id="iris-ca-tl-count"></span></a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#iris-ca-tab-vulns" role="tab">Vulnerabilities</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#iris-ca-tab-changes" role="tab">Changes</a>
                             </li>
                         </ul>
@@ -211,6 +214,10 @@
                                 <h6 class="iris-ca-sec">Linked timeline events {{ help_tip('registry.timeline') }}</h6>
                                 <div id="iris-ca-timeline" class="text-muted" style="font-size: 0.82rem;">Loading…</div>
                             </div>
+                            <div class="tab-pane fade" id="iris-ca-tab-vulns" role="tabpanel">
+                                <h6 class="iris-ca-sec">Vulnerabilities on this entry {{ help_tip('vuln.registry') }}</h6>
+                                <div id="iris-ca-vulns"></div>
+                            </div>
                             <div class="tab-pane fade" id="iris-ca-tab-changes" role="tabpanel">
                                 <h6 class="iris-ca-sec">Change log {{ help_tip('registry.changes') }}</h6>
                                 <div id="iris-ca-changes" class="text-muted"
@@ -226,5 +233,6 @@
 {% endblock content %}
 
 {% block javascripts %}
+    <script src="/static/assets/js/iris/vuln_common.js"></script>
     <script src="/static/assets/js/iris/manage.customer_assets.js"></script>
 {% endblock javascripts %}

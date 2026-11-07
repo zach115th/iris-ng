@@ -2101,6 +2101,9 @@ class ServerSettings(db.Model):
     prevent_post_objects_repush = Column(Boolean, default=False)
     has_updates_available = Column(Boolean)
     enable_updates_check = Column(Boolean)
+    # iris-ng 2026-11-07: the vulnerability catalogue may fill an entry from cve.org
+    # (only the CVE id is sent). NULL = on, like enable_updates_check.
+    enable_cve_lookup = Column(Boolean, nullable=True)
     password_policy_min_length = Column(Integer)
     password_policy_upper_case = Column(Boolean)
     password_policy_lower_case = Column(Boolean)
@@ -2556,3 +2559,209 @@ class AnnouncementBanner(db.Model):
     is_active = Column(Boolean, nullable=False, default=True, server_default=text('true'))
     created_at = Column(DateTime, server_default=text('now()'))
     created_by = Column(ForeignKey('user.id'), nullable=True)
+
+
+# --------------------------------------------------------------------------
+# iris-ng 2026-11-07: the vulnerability catalogue (sidebar Intel -> Vulnerabilities)
+# and its findings. Vocabularies in app.models.vulnerability_vocab - the CHECKs
+# below are built from the same tuples the API validates with. Constraints live
+# here (db.create_all() runs before alembic; the migration only covers installs
+# where that did not happen).
+# --------------------------------------------------------------------------
+from app.models import vulnerability_vocab as _vv  # noqa: E402
+
+
+class Vulnerability(db.Model):
+    """One catalogue entry: a public CVE / GHSA / advisory identifier, or a
+    private IRIS-VULN-YYYY-NNNN entry that never leaves this instance.
+    The identifier is unique ignoring case; aliases (other identifiers of the
+    same issue, and the identifiers of entries merged into this one) are kept
+    unique by the business layer. `enrichment.cve_org` holds the last values
+    synced from cve.org, so a later sync can tell a local edit from a stale value."""
+    __tablename__ = 'vulnerability'
+
+    vulnerability_id = Column(BigInteger, primary_key=True)
+    vulnerability_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, nullable=False, unique=True,
+                                server_default=text("gen_random_uuid()"))
+    identifier = Column(Text, nullable=False)
+    is_private = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    kind = Column(String(32), nullable=False, default='other', server_default='other')
+    title = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    cvss_version = Column(String(8), nullable=True)
+    cvss_vector = Column(Text, nullable=True)
+    cvss_score = Column(Float, nullable=True)
+    severity = Column(String(16), nullable=False, default='unknown', server_default='unknown')
+    # True = severity follows the CVSS score; False = set by hand.
+    severity_auto = Column(Boolean, nullable=False, default=True, server_default=text('true'))
+    epss_score = Column(Float, nullable=True)
+    epss_percentile = Column(Float, nullable=True)
+    epss_date = Column(Date, nullable=True)
+    kev = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    kev_date_added = Column(Date, nullable=True)
+    kev_due_date = Column(Date, nullable=True)
+    kev_ransomware = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    exploit_maturity = Column(String(16), nullable=False, default='unknown', server_default='unknown')
+    patch_availability = Column(String(16), nullable=False, default='unknown', server_default='unknown')
+    cwes = Column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    affected_products = Column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    reference_urls = Column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    aliases = Column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    published_at = Column(Date, nullable=True)
+    modified_at = Column(Date, nullable=True)
+    tlp_id = Column(Integer, ForeignKey('tlp.tlp_id'), nullable=True)
+    tags = Column(Text, nullable=True)
+    source = Column(String(16), nullable=False, default='manual', server_default='manual')
+    enrichment = Column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    created_by_id = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    updated_at = Column(DateTime, nullable=True)
+    updated_by_id = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+
+    tlp = relationship('Tlp')
+    created_by = relationship('User', foreign_keys=[created_by_id])
+    updated_by = relationship('User', foreign_keys=[updated_by_id])
+
+    __table_args__ = (
+        Index('uq_vulnerability_identifier', func.upper(identifier), unique=True),
+        CheckConstraint(_vv.sql_in('kind', _vv.KINDS), name='ck_vulnerability_kind'),
+        CheckConstraint(_vv.sql_in('severity', _vv.SEVERITIES), name='ck_vulnerability_severity'),
+        CheckConstraint("cvss_version IS NULL OR " + _vv.sql_in('cvss_version', _vv.CVSS_VERSIONS),
+                        name='ck_vulnerability_cvss_version'),
+        CheckConstraint("cvss_score IS NULL OR (cvss_score >= 0 AND cvss_score <= 10)",
+                        name='ck_vulnerability_cvss_score'),
+        CheckConstraint("epss_score IS NULL OR (epss_score >= 0 AND epss_score <= 1)",
+                        name='ck_vulnerability_epss_score'),
+        CheckConstraint("epss_percentile IS NULL OR (epss_percentile >= 0 AND epss_percentile <= 1)",
+                        name='ck_vulnerability_epss_percentile'),
+        CheckConstraint(_vv.sql_in('exploit_maturity', _vv.EXPLOIT_MATURITIES),
+                        name='ck_vulnerability_exploit_maturity'),
+        CheckConstraint(_vv.sql_in('patch_availability', _vv.PATCH_AVAILABILITIES),
+                        name='ck_vulnerability_patch_availability'),
+        CheckConstraint(_vv.sql_in('source', _vv.SOURCES), name='ck_vulnerability_source'),
+    )
+
+
+class VulnerabilityFinding(db.Model):
+    """A vulnerability recorded against something we look after: one of a
+    case's assets (case_id + asset_id) or a customer-asset registry entry.
+    Status vocabularies follow CISA VEX; the remediation group (open / fixed /
+    dismissed) is derived, never stored. Deleting the case, the case asset,
+    the registry entry or the catalogue entry deletes its findings."""
+    __tablename__ = 'vulnerability_finding'
+
+    finding_id = Column(BigInteger, primary_key=True)
+    finding_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, nullable=False, unique=True,
+                          server_default=text("gen_random_uuid()"))
+    vulnerability_id = Column(BigInteger, ForeignKey('vulnerability.vulnerability_id', ondelete='CASCADE'),
+                              nullable=False, index=True)
+    scope = Column(String(16), nullable=False)
+    case_id = Column(BigInteger, ForeignKey('cases.case_id', ondelete='CASCADE'), nullable=True, index=True)
+    asset_id = Column(BigInteger, ForeignKey('case_assets.asset_id', ondelete='CASCADE'), nullable=True,
+                      index=True)
+    customer_asset_id = Column(BigInteger, ForeignKey('customer_asset.id', ondelete='CASCADE'), nullable=True,
+                               index=True)
+    remediation_status = Column(String(24), nullable=False, default='under-analysis',
+                                server_default='under-analysis')
+    not_affected_justification = Column(String(64), nullable=True)
+    status_reason = Column(Text, nullable=True)
+    exploitation_status = Column(String(16), nullable=False, default='unknown', server_default='unknown')
+    exploited_at = Column(DateTime, nullable=True)
+    detection_source = Column(Text, nullable=True)
+    detected_at = Column(DateTime, nullable=True)
+    component = Column(Text, nullable=True)
+    installed_version = Column(Text, nullable=True)
+    fixed_version = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+    due_date = Column(Date, nullable=True)
+    verified_at = Column(DateTime, nullable=True)
+    verified_by_id = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    verification_method = Column(Text, nullable=True)
+    owner_id = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    created_by_id = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    updated_at = Column(DateTime, nullable=True)
+    updated_by_id = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+
+    vulnerability = relationship('Vulnerability')
+    case = relationship('Cases')
+    asset = relationship('CaseAssets')
+    customer_asset = relationship('CustomerAsset')
+    owner = relationship('User', foreign_keys=[owner_id])
+    verified_by = relationship('User', foreign_keys=[verified_by_id])
+
+    __table_args__ = (
+        CheckConstraint(_vv.sql_in('scope', _vv.FINDING_SCOPES), name='ck_vulnerability_finding_scope_value'),
+        CheckConstraint("(scope = 'case' AND case_id IS NOT NULL AND asset_id IS NOT NULL"
+                        " AND customer_asset_id IS NULL)"
+                        " OR (scope = 'registry' AND customer_asset_id IS NOT NULL AND case_id IS NULL"
+                        " AND asset_id IS NULL)", name='ck_vulnerability_finding_anchor'),
+        CheckConstraint(_vv.sql_in('remediation_status', _vv.REMEDIATION_STATUSES),
+                        name='ck_vulnerability_finding_remediation'),
+        CheckConstraint("not_affected_justification IS NULL OR "
+                        + _vv.sql_in('not_affected_justification', _vv.VEX_JUSTIFICATIONS),
+                        name='ck_vulnerability_finding_justification'),
+        CheckConstraint(_vv.sql_in('exploitation_status', _vv.EXPLOITATION_STATUSES),
+                        name='ck_vulnerability_finding_exploitation'),
+        # One finding per vulnerability and anchor (a case asset or a registry entry).
+        Index('uq_vulnerability_finding_case_asset', 'vulnerability_id', 'asset_id', unique=True,
+              postgresql_where=text('asset_id IS NOT NULL')),
+        Index('uq_vulnerability_finding_registry', 'vulnerability_id', 'customer_asset_id', unique=True,
+              postgresql_where=text('customer_asset_id IS NOT NULL')),
+    )
+
+
+class VulnerabilityFindingChange(db.Model):
+    """Audit rows for a finding (like customer_asset_change): one row per
+    changed field; field 'created' marks the creation."""
+    __tablename__ = 'vulnerability_finding_change'
+
+    id = Column(BigInteger, primary_key=True)
+    finding_id = Column(BigInteger, ForeignKey('vulnerability_finding.finding_id', ondelete='CASCADE'),
+                        nullable=False, index=True)
+    field = Column(String(64), nullable=False)
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
+    changed_by = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    changed_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    changed_by_user = relationship('User')
+
+
+class VulnerabilityFindingEvent(db.Model):
+    """A case finding's link to a timeline event of the same case."""
+    __tablename__ = 'vulnerability_finding_event'
+
+    finding_id = Column(BigInteger, ForeignKey('vulnerability_finding.finding_id', ondelete='CASCADE'),
+                        primary_key=True)
+    event_id = Column(BigInteger, ForeignKey('cases_events.event_id', ondelete='CASCADE'), primary_key=True,
+                      index=True)
+
+
+class VulnerabilityFindingIoc(db.Model):
+    """A case finding's link to an IOC of the same case."""
+    __tablename__ = 'vulnerability_finding_ioc'
+
+    finding_id = Column(BigInteger, ForeignKey('vulnerability_finding.finding_id', ondelete='CASCADE'),
+                        primary_key=True)
+    ioc_id = Column(BigInteger, ForeignKey('ioc.ioc_id', ondelete='CASCADE'), primary_key=True, index=True)
+
+
+class WarRoomVulnerability(db.Model):
+    """A catalogue entry a war room tracks, with the room's note on it."""
+    __tablename__ = 'war_room_vulnerability'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(BigInteger, ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False, index=True)
+    vulnerability_id = Column(BigInteger, ForeignKey('vulnerability.vulnerability_id', ondelete='CASCADE'),
+                              nullable=False, index=True)
+    note = Column(Text, nullable=True)
+    added_by = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    added_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    vulnerability = relationship('Vulnerability')
+    added_by_user = relationship('User')
+
+    __table_args__ = (
+        UniqueConstraint('room_id', 'vulnerability_id', name='uq_war_room_vulnerability'),
+    )

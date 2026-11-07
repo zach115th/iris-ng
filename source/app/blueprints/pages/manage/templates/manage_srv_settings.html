@@ -691,6 +691,22 @@
                                     <span id="iris-upd-check-result" class="ml-2" style="font-size:13px;"></span>
                                 </div>
 
+                                {# iris-ng 2026-11-07: the vulnerability catalogue's cve.org lookups
+                                   (server_settings.enable_cve_lookup, NULL = on, hence "is sameas false"). #}
+                                <h2 class="mt-4">Vulnerability catalogue</h2>
+                                <p>When enabled, the vulnerability catalogue (Intel -> Vulnerabilities) can fill and refresh CVE entries from cve.org, through the proxy configured on the General tab. Only the CVE id is sent, and only when someone asks for it. Turn it off for air-gapped deployments.{{ help_tip('vuln.lookup_setting') }}</p>
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <label class="form-check-label">
+                                                <input class="form-check-input" type="checkbox" id="enable_cve_lookup" {% if settings.enable_cve_lookup is not sameas false %}checked{% endif %}>
+                                                <span class="form-check-sign">Look up CVEs on cve.org</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="enable_cve_lookup_hidden" name="enable_cve_lookup" value="{% if settings.enable_cve_lookup is sameas false %}false{% else %}true{% endif %}">
+
                                 <h2 class="mt-4">Database {{ help_tip('settings.db_backup') }}</h2>
                                 <p>Initiate a database backup. The backup file is stored on the configured path <code>BACKUP_PATH</code>.</p>
                                 <div class="mt-3 mb-4">
@@ -799,6 +815,7 @@
         ['pinecone_enabled',            'pinecone_enabled_hidden'],
         ['time_tracking_nudge_enabled', 'time_tracking_nudge_enabled_hidden'],
         ['enable_updates_check',        'enable_updates_check_hidden'],
+        ['enable_cve_lookup',           'enable_cve_lookup_hidden'],
     ];
     var saveBtn = document.getElementById('save_srv_settings');
     pairs.forEach(function (pair) {

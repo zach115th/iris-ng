@@ -15,6 +15,7 @@ from app.blueprints.rest.v2.mail import mail_blueprint
 from app.blueprints.rest.v2.alert_clusters import alert_clusters_blueprint
 from app.blueprints.rest.v2.flows import flows_blueprint
 from app.blueprints.rest.v2.customer_assets import customer_assets_blueprint
+from app.blueprints.rest.v2.vulnerabilities import vulnerabilities_blueprint
 from app.blueprints.rest.v2.notifications import notifications_blueprint
 from app.blueprints.rest.v2.war_rooms import war_rooms_blueprint
 from app.blueprints.rest.v2.sponsor import sponsor_blueprint
@@ -44,6 +45,7 @@ rest_v2_blueprint.register_blueprint(mail_blueprint)
 rest_v2_blueprint.register_blueprint(alert_clusters_blueprint)
 rest_v2_blueprint.register_blueprint(flows_blueprint)
 rest_v2_blueprint.register_blueprint(customer_assets_blueprint)
+rest_v2_blueprint.register_blueprint(vulnerabilities_blueprint)
 rest_v2_blueprint.register_blueprint(notifications_blueprint)
 rest_v2_blueprint.register_blueprint(war_rooms_blueprint)
 rest_v2_blueprint.register_blueprint(help_rest_blueprint)

@@ -316,3 +316,45 @@ function iris_toggle_asset_history() {
         $('#evidence_links').trigger('change');
     </script>
 {% endif %}
+
+{% if asset.asset_id %}
+{# iris-ng 2026-11-07: the asset's Vulnerabilities tab - the findings recorded on this case
+   asset (the same widget as the Assets page's Vulnerabilities tab). Added by script so the shared custom-attribute pill nav (modal_attributes_nav.html,
+   used by every modal) stays untouched: the pill joins that nav when the asset has custom
+   attributes, otherwise a small nav of its own goes above the panes. The handler binds to the
+   pill this load created (a document-level handler would outlive the modal and mount an older
+   asset's findings), and the widget mounts the first time the tab opens. The asset form's
+   Update / Delete buttons hide while the tab is shown. #}
+<script src="/static/assets/js/iris/vuln_common.js"></script>
+<script>
+(function () {
+    var assetId = {{ asset.asset_id|tojson }}, caseId = {{ asset.case_id|tojson }};
+    var assetName = {{ (asset.asset_name or '')|tojson }};
+    var canWrite = {{ 'true' if vuln_can_write else 'false' }};
+    var $content = $('#details').closest('.tab-content');
+    if (!$content.length || !window.IrisVuln || document.getElementById('iris-asset-vulns')) { return; }
+    $content.append('<div class="tab-pane" id="iris-asset-vulns" role="tabpanel" aria-labelledby="iris-asset-vulns-tab"></div>');
+    var pill = '<li class="nav-item"><a class="nav-link" id="iris-asset-vulns-tab" data-toggle="pill" href="#iris-asset-vulns"' +
+        ' role="tab" aria-controls="iris-asset-vulns" aria-selected="false">Vulnerabilities</a></li>';
+    var $nav = $('#pills-tab-custom-attr');
+    if ($nav.length) {
+        $nav.append(pill);
+    } else {
+        $content.closest('[role="tabpanel"]').before('<ul class="nav nav-pills nav-default ml-3 mb-2" role="tablist">' +
+            '<li class="nav-item"><a class="nav-link active show" data-toggle="pill" href="#details" role="tab"' +
+            ' aria-controls="details" aria-selected="true">Info</a></li>' + pill + '</ul>');
+    }
+    var $buttons = $('#submit_new_asset').add($('#submit_new_asset').siblings('.btn-outline-danger'));
+    var mounted = false;
+    $('#iris-asset-vulns-tab').on('shown.bs.tab', function () {
+        $buttons.hide();
+        if (mounted) { return; }
+        mounted = true;
+        window.IrisVuln.mountFindings(document.getElementById('iris-asset-vulns'), {
+            scope: 'case', caseId: caseId, assetId: assetId, assetName: assetName, canWrite: canWrite,
+            /* the Assets page's counts (tab + list shield) follow a change made here */
+            onChange: function () { if (window.iris_ca_refresh_vulns) { window.iris_ca_refresh_vulns(); } }});
+    }).on('hidden.bs.tab', function () { $buttons.show(); });
+})();
+</script>
+{% endif %}

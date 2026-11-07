@@ -97,6 +97,7 @@ function iris_ci_load() {
         .then(function (r) { return r.json(); })
         .then(function (d) {
             IRIS_CI.rows = (d && d.data) || [];
+            iris_ci_resolve_vulns();
             iris_ci_apply_shared_once();
             iris_ci_render_list();
             iris_ci_render_detail();
@@ -113,6 +114,49 @@ function iris_ci_load() {
             iris_ci_render_detail();
         })
         .catch(function () { IRIS_CI.links = {}; });
+}
+
+/* iris-ng 2026-11-07: a CVE IOC (type "vulnerability") whose value is a catalogue
+ * entry's identifier or alias links to that entry. One resolve call per load;
+ * IRIS_CI.vulnLinks = null means "not resolved" (shows nothing - a failed lookup
+ * is not "not in the catalogue"), {} means looked and found none. */
+function iris_ci_is_vuln(r) {
+    return String(iris_ci_type(r)).toLowerCase() === 'vulnerability';
+}
+
+function iris_ci_resolve_vulns() {
+    var vals = (IRIS_CI.rows || []).filter(iris_ci_is_vuln)
+        .map(function (r) { return String(r.ioc_value || '').trim(); })
+        .filter(function (v) { return v && v.indexOf(',') < 0; });
+    if (!vals.length) { IRIS_CI.vulnLinks = {}; return; }
+    IRIS_CI.vulnLinks = null;
+    fetch('/api/v2/manage/vulnerabilities/resolve?values=' + encodeURIComponent(vals.slice(0, 300).join(',')),
+          {credentials: 'same-origin', headers: {'Accept': 'application/json'}})
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+            IRIS_CI.vulnLinks = (d && typeof d === 'object' && !Array.isArray(d)) ? d : null;
+            iris_ci_render_detail();
+        })
+        .catch(function () { IRIS_CI.vulnLinks = null; });
+}
+
+function iris_ci_vuln_html(r) {
+    if (!iris_ci_is_vuln(r) || !IRIS_CI.vulnLinks) { return ''; }
+    var v = IRIS_CI.vulnLinks[String(r.ioc_value || '').trim().toUpperCase()];
+    var inner;
+    if (v) {
+        var id = /^\d+$/.test(String(v.vulnerability_id)) ? String(parseInt(v.vulnerability_id, 10)) : null;
+        var sev = {critical: '#ff8095', high: '#ffa07f', medium: '#f4c430', low: '#7cc0f5'}[v.severity] || '#9a9aa5';
+        inner = (id ? '<a href="/vulnerabilities/' + id + '">' + iris_ci_esc(v.identifier) + '</a>'
+                    : iris_ci_esc(v.identifier)) +
+            ' <span style="color:' + sev + '; font-size:0.72rem;">' + iris_ci_esc(v.severity) +
+            (v.cvss_score != null ? ' ' + iris_ci_esc(Number(v.cvss_score).toFixed(1)) : '') + '</span>' +
+            (v.kev ? ' <span style="background:#b91c1c; color:#fee2e2; border-radius:8px; padding:0 6px; font-size:0.68rem;">KEV</span>' : '');
+    } else {
+        inner = '<span class="text-muted">not in the catalogue</span> · <a href="/vulnerabilities">open the catalogue</a>';
+    }
+    return '<span class="iris-ci-field"><span class="lbl">Catalogue</span>' +
+        IrisHelp.icon('vuln.ioc_link', {cls: 'mr-1'}) + inner + '</span>';
 }
 
 /* iris-ng #130: a `?shared=<ioc_id>` link (the MD links notes carry, the
@@ -1726,6 +1770,7 @@ function iris_ci_render_detail() {
                           {target: '#iris-ci-d-type', cls: 'mr-1'}) +
             '<span id="iris-ci-d-type">' +
             iris_ci_esc(iris_ci_type(r)) + '</span></span>' +
+            iris_ci_vuln_html(r) +
             '</div>' +
             (tags.length
                 ? '<div style="margin-top:8px; display:flex; gap:4px; flex-wrap:wrap; align-items:center;">' +

@@ -21,6 +21,7 @@ from app.blueprints.pages.activities.activities_routes import activities_bluepri
 from app.blueprints.pages.alerts.alerts_routes import alerts_blueprint
 from app.blueprints.pages.alert_clusters.alert_clusters_routes import alert_clusters_page_blueprint
 from app.blueprints.pages.correlation.correlation_routes import correlation_page_blueprint
+from app.blueprints.pages.vulnerabilities.vulnerabilities_routes import vulnerabilities_page_blueprint
 from app.blueprints.pages.help.help_routes import help_blueprint
 from app.blueprints.pages.customer_assets.customer_assets_routes import customer_assets_page_blueprint
 from app.blueprints.pages.home.home_routes import home_blueprint
@@ -200,6 +201,7 @@ def register_blusprints(app):
     app.register_blueprint(alerts_blueprint)
     app.register_blueprint(alert_clusters_page_blueprint)
     app.register_blueprint(correlation_page_blueprint)
+    app.register_blueprint(vulnerabilities_page_blueprint)
     app.register_blueprint(help_blueprint)
     app.register_blueprint(customer_assets_page_blueprint)
     app.register_blueprint(home_blueprint)

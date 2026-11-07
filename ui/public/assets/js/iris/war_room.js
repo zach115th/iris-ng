@@ -3023,7 +3023,20 @@ function iris_wroom_show_pane(name) {
         if (name === 'notes') iris_wroom_load_notes();
         if (name === 'teams') iris_wroom_load_teams();
         if (name === 'summary') iris_wroom_os_load();
+        if (name === 'vulnerabilities') iris_wroom_load_vulns();
     }
+}
+
+/* Vulnerabilities tab (iris-ng 2026-11-07): the entries the room tracks and the
+   findings across its cases, drawn by vuln_common.js. Responders and leads of an
+   open room may track / untrack and edit notes; guests never get the tab. */
+function iris_wroom_load_vulns() {
+    var host = document.getElementById('iris-wr-vulns');
+    if (!host || !window.IrisVuln || IRIS_WROOM._guest) return;
+    window.IrisVuln.mountWarRoom(host, {
+        roomId: IRIS_WROOM._rid,
+        canWrite: iris_wroom_can('responder') && iris_wroom_active()
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function () {

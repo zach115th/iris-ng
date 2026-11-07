@@ -1,0 +1,97 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Vulnerabilities {% endblock title %}
+
+{% block stylesheets %}
+<style>
+    .iris-vu-head-icon { color: #f5365c; margin-right: 12px; }
+    .iris-vu-subtitle { font-size: 0.78rem; color: #9a9aa5; margin: 0; }
+    .iris-vu-flabel { font-size: 0.78rem; color: #9a9aa5; margin: 0 6px 0 12px; }
+    .iris-vu-fchips .btn { font-size: 0.72rem; padding: 1px 10px; }
+    .iris-vu-fchips .btn.active, #iris-vu-f-affected.active { background: rgba(139,92,246,0.25); color: #d4c4ff;
+                                                                border-color: rgba(139,92,246,0.5); }
+    .iris-vu-cat-title { font-size: 1.05rem; font-weight: 600; }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="page-inner" id="iris-vu-page" data-view="list">
+    {{ form.csrf_token }}
+    <div class="container-fluid">
+        <div class="row justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="iris-vu-head-icon" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                <div>
+                    <h1 class="card-title mb-0" style="font-size:1.25rem;">Vulnerabilities {{ help_tip('vuln.catalogue') }}</h1>
+                    <p class="iris-vu-subtitle">CVEs, advisories and private findings tracked across your cases and assets.</p>
+                </div>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="iris-vu-refresh">Refresh</button>
+                <button type="button" class="btn btn-sm btn-primary ml-1" id="iris-vu-new">+ New vulnerability</button>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center mb-2">
+                    <input type="text" id="iris-vu-search" class="form-control form-control-sm mr-2" style="flex: 1 1 auto;"
+                           aria-label="Search the catalogue"
+                           placeholder="Search by identifier, alias, title, tag, vendor or product…">
+                    <button type="button" class="btn btn-sm btn-primary" id="iris-vu-search-btn" style="flex-shrink: 0;">Search</button>
+                </div>
+                <div class="d-flex align-items-center flex-wrap">
+                    <label class="iris-vu-flabel ml-0" for="iris-vu-f-severity">Severity</label>
+                    <select id="iris-vu-f-severity" class="form-control form-control-sm mt-1" style="width: 130px;"><option value="">Any</option></select>
+                    <label class="iris-vu-flabel" for="iris-vu-f-kind">Kind</label>
+                    <select id="iris-vu-f-kind" class="form-control form-control-sm mt-1" style="width: 160px;"><option value="">Any</option></select>
+                    <label class="iris-vu-flabel" for="iris-vu-f-vendor">Vendor</label>
+                    <select id="iris-vu-f-vendor" class="form-control form-control-sm mt-1" style="width: 160px;"><option value="">Any</option></select>
+                    <label class="iris-vu-flabel" for="iris-vu-f-product">Product</label>
+                    <select id="iris-vu-f-product" class="form-control form-control-sm mt-1" style="width: 160px;"><option value="">Any</option></select>
+                    <label class="iris-vu-flabel" for="iris-vu-f-case">Case</label>{{ help_tip('vuln.case_filter', target='#iris-vu-f-case') }}
+                    <select id="iris-vu-f-case" class="form-control form-control-sm mt-1" style="width: 220px;"><option value="">Any</option></select>
+                    <span class="iris-vu-flabel" id="iris-vu-l-kev">KEV {{ help_tip('vuln.kev') }}</span>
+                    <div class="btn-group btn-group-sm iris-vu-fchips mt-1" role="group" aria-labelledby="iris-vu-l-kev" id="iris-vu-f-kev">
+                        <button type="button" class="btn btn-outline-secondary active" data-v="">Any</button>
+                        <button type="button" class="btn btn-outline-secondary" data-v="true">Yes</button>
+                        <button type="button" class="btn btn-outline-secondary" data-v="false">No</button>
+                    </div>
+                    <span class="iris-vu-flabel" id="iris-vu-l-private">Private {{ help_tip('vuln.private') }}</span>
+                    <div class="btn-group btn-group-sm iris-vu-fchips mt-1" role="group" aria-labelledby="iris-vu-l-private" id="iris-vu-f-private">
+                        <button type="button" class="btn btn-outline-secondary active" data-v="">Any</button>
+                        <button type="button" class="btn btn-outline-secondary" data-v="true">Yes</button>
+                        <button type="button" class="btn btn-outline-secondary" data-v="false">No</button>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ml-3 mt-1" id="iris-vu-f-affected"
+                            title="Only entries with an open finding you can see">Affected only</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-baseline mb-2">
+            <h2 class="iris-vu-cat-title mb-0 mr-2">Catalogue</h2>
+            <span class="iris-vu-subtitle" id="iris-vu-count"></span>
+            <span class="ml-2">{{ help_tip('vuln.exposure') }}</span>
+        </div>
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table iris-vu-table mb-0" id="iris-vu-table">
+                        <thead></thead>
+                        <tbody><tr><td class="iris-vu-muted">Loading…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <nav aria-label="Catalogue pages" class="mt-2"><ul class="pagination pagination-sm" id="iris-vu-pager"></ul></nav>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+    <script src="/static/assets/js/iris/vuln_common.js"></script>
+    <script src="/static/assets/js/iris/vulnerabilities.js"></script>
+{% endblock javascripts %}
