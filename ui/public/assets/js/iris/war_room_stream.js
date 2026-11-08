@@ -63,7 +63,8 @@
         plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
         search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
         hash: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
-        conv: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>'
+        conv: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>'
     };
     function ic(name, cls) {
         return '<svg class="iris-st-ic' + (cls ? ' ' + cls : '') + '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || P.info) + '</svg>';
@@ -114,25 +115,29 @@
         var st = document.createElement('style');
         st.id = 'iris-st-css';
         st.textContent = [
-            '#iris-st{display:grid;grid-template-columns:250px minmax(0,1fr) var(--iris-st-rail,340px);gap:12px;height:var(--iris-st-h,620px);min-height:480px;}',
-            '#iris-st.iris-st-norail{grid-template-columns:250px minmax(0,1fr);}',
+            '#iris-st{display:grid;grid-template-columns:300px minmax(0,1fr) var(--iris-st-rail,340px);gap:12px;height:var(--iris-st-h,620px);min-height:480px;}',
+            '#iris-st.iris-st-norail{grid-template-columns:300px minmax(0,1fr);}',
+            '#iris-st,#iris-st *,.iris-st-emoji *,#iris-st-settings-body{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent;}',
+            '#iris-st *:hover{scrollbar-color:rgba(255,255,255,.28) transparent;}',
             '.iris-st-col{border:1px solid rgba(255,255,255,.07);border-radius:10px;background:rgba(255,255,255,.015);display:flex;flex-direction:column;min-height:0;min-width:0;position:relative;}',
             '.iris-st-ic{width:14px;height:14px;flex-shrink:0;vertical-align:-2px;}',
             '.iris-st-h{color:#7a7a85;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;margin:12px 0 6px;}',
-            '.iris-st-h .iris-st-ic{width:11px;height:11px;}',
-            '.iris-st-h a,.iris-st-h button{margin-left:auto;}',
+            '.iris-st-h svg,.iris-st-convhead svg{width:12px;height:12px;flex-shrink:0;}',
+            '.iris-st-conv .iris-st-h{border-top:1px solid rgba(255,255,255,.06);margin:12px -12px 6px;padding:12px 12px 0;}',
+            '.iris-st-h > a{margin-left:auto;}',
             '.iris-st-conv{padding:10px 12px;overflow-y:auto;font-size:.8rem;}',
             '.iris-st-convhead{display:flex;align-items:center;gap:6px;color:#7a7a85;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06);}',
-            '.iris-st-convhead a{margin-left:auto;text-transform:none;letter-spacing:0;font-size:.72rem;color:#9a9aa5;}',
+            '.iris-st-convhead a{margin-left:auto;text-transform:none;letter-spacing:0;font-size:.72rem;color:#9a9aa5;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}',
+            '.iris-st-convhead a:hover{color:#e8e8ee;text-decoration:none;}',
             '.iris-st-row{display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:6px;color:#c8c8d0;cursor:pointer;min-width:0;}',
             '.iris-st-row:hover{background:rgba(255,255,255,.04);}',
             '.iris-st-row .iris-st-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 auto;}',
             '.iris-st-row .iris-st-sub{color:#7a7a85;font-size:.7rem;}',
             '.iris-st-row.iris-st-dim .iris-st-txt{color:#6a6a75;}',
             '.iris-st-row.iris-st-on{background:rgba(139,92,246,.12);}',
-            '.iris-st-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid #6a6a75;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}',
+            '.iris-st-dot{width:16px;height:16px;border-radius:50%;border:1.5px solid #5a5a66;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}',
             '.iris-st-dot.iris-st-on{background:#5e72e4;border-color:#5e72e4;}',
-            '.iris-st-dot.iris-st-on:after{content:"";width:6px;height:6px;border-radius:50%;background:#fff;}',
+            '.iris-st-dot .iris-st-ic{width:11px;height:11px;color:#fff;stroke-width:3;}',
             '.iris-st-badge{font-size:.62rem;padding:0 6px;border-radius:8px;background:rgba(94,114,228,.18);color:#a9b6f5;white-space:nowrap;}',
             '.iris-st-rowact{visibility:hidden;color:#7a7a85;background:none;border:0;padding:0 2px;cursor:pointer;}',
             '.iris-st-row:hover .iris-st-rowact{visibility:visible;}',
@@ -140,10 +145,15 @@
             '.iris-st-idx{padding:4px;border-radius:6px;cursor:pointer;}',
             '.iris-st-idx:hover{background:rgba(255,255,255,.04);}',
             '.iris-st-idx .iris-st-idxt{color:#c8c8d0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-            '.iris-st-idx .iris-st-idxm{color:#7a7a85;font-size:.66rem;text-transform:uppercase;letter-spacing:.04em;}',
+            '.iris-st-idx .iris-st-idxt{display:flex;align-items:center;gap:6px;}',
+            '.iris-st-idx .iris-st-idxt .iris-st-ic{color:#f3d77e;}',
+            '.iris-st-idx .iris-st-idxm{color:#7a7a85;font-size:.68rem;margin-left:20px;}',
+            '.iris-st-idx .iris-st-idxm b{font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:.62rem;}',
             '.iris-st-search{position:relative;margin:6px 0;}',
-            '.iris-st-search input{padding-left:26px;font-size:.78rem;height:30px;}',
-            '.iris-st-search .iris-st-ic{position:absolute;left:8px;top:8px;color:#7a7a85;}',
+            '#iris-st .iris-st-search input.form-control{padding:0 10px 0 30px!important;font-size:.78rem;height:32px!important;background:rgba(255,255,255,.02)!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:8px!important;color:#d8d8e0!important;box-shadow:none!important;}',
+            '#iris-st .iris-st-search input.form-control:focus{border-color:rgba(94,114,228,.6)!important;}',
+            '#iris-st .iris-st-search input.form-control::placeholder{color:#6a6a75;}',
+            '.iris-st-search .iris-st-ic{position:absolute;left:10px;top:9px;color:#7a7a85;z-index:3;pointer-events:none;}',
             '.iris-st-main{padding:10px 12px 8px;}',
             '.iris-st-mainhead{display:flex;align-items:center;gap:8px;}',
             '.iris-st-mainhead .iris-st-search{flex:1 1 auto;margin:0;}',
@@ -226,6 +236,13 @@
             '.iris-st-threadsep:before,.iris-st-threadsep:after{content:"";flex:1;border-top:1px solid rgba(255,255,255,.08);}',
             '.iris-st-compose{border-top:1px solid rgba(255,255,255,.06);padding:8px 10px;position:relative;}',
             '.iris-st-compose textarea{resize:none;overflow-y:auto;max-height:140px;font-size:.85rem;}',
+            '#iris-wr-composer > .d-flex{border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.02);padding:6px 6px 6px 10px;align-items:center!important;}',
+            '#iris-wr-composer > .d-flex:focus-within{border-color:rgba(94,114,228,.55);}',
+            '#iris-wr-composer #iris-wr-msg-input{background:transparent!important;border:0!important;box-shadow:none!important;padding:6px 4px!important;color:#e8e8ee!important;}',
+            '#iris-wr-composer #iris-wr-msg-input::placeholder{color:#6a6a75;}',
+            '#iris-wr-composer #iris-wr-msg-send{border-radius:8px;}',
+            '#iris-wr-composer .iris-st-ctools{gap:10px;}',
+            '#iris-st-thread-input{background:rgba(255,255,255,.02)!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:8px!important;color:#e8e8ee!important;}',
             '.iris-st-ctools{display:flex;align-items:center;gap:8px;color:#9a9aa5;}',
             '.iris-st-ctools a,.iris-st-ctools button{color:inherit;background:none;border:0;padding:2px;cursor:pointer;}',
             '.iris-st-ctools a:hover,.iris-st-ctools button:hover{color:#e8e8ee;}',
@@ -847,7 +864,8 @@
             var own = t.created_by && t.created_by === myUserId() || (S.guest && t.created_by_guest_id && t.created_by_guest_id === myGuestId());
             return '<div class="iris-st-row' + (S.only === t.name ? ' iris-st-on' : '') + (shown ? '' : ' iris-st-dim') + '" data-topic="' + esc(t.name) + '">' +
                 '<span class="iris-st-dot' + (shown ? ' iris-st-on' : '') + '" role="checkbox" aria-checked="' + (shown ? 'true' : 'false') +
-                '" tabindex="0" data-act="toggle-topic" title="Toggle ' + esc(t.name) + '" aria-label="Toggle ' + esc(t.name) + '"></span>' +
+                '" tabindex="0" data-act="toggle-topic" title="Toggle ' + esc(t.name) + '" aria-label="Toggle ' + esc(t.name) + '">' +
+                (shown ? ic('check') : '') + '</span>' +
                 '<span class="iris-st-txt" data-act="only-topic" title="Show only this topic"># ' + esc(t.is_main ? 'Main' : t.name) + '</span>' +
                 (S.target === t.name ? '<span class="iris-st-badge" title="Composer target">post</span>' : '') +
                 (!t.is_main && canPost() && (lead || own) ? '<button type="button" class="iris-st-rowact" data-act="archive-topic" data-topic-id="' +
@@ -899,7 +917,7 @@
             return '<div class="iris-st-idx" role="button" tabindex="0" data-idx-type="' + esc(i.type) + '" data-idx-id="' + parseInt(i.id, 10) + '"' +
                 (i.parent_id ? ' data-idx-parent="' + parseInt(i.parent_id, 10) + '"' : '') + ' title="Jump to this entry">' +
                 '<div class="iris-st-idxt">' + ic(i.type === 'decision' ? 'gavel' : (i.type === 'pin' ? 'pin' : 'note')) + ' ' + esc(i.title) + '</div>' +
-                '<div class="iris-st-idxm">' + LABEL[i.type] + (i.author_name ? ' · ' + esc(i.author_name) : '') + (d ? ' · ' + esc(stamp(d)) : '') + '</div></div>';
+                '<div class="iris-st-idxm"><b>' + LABEL[i.type] + '</b>' + (i.author_name ? ' · ' + esc(i.author_name) : '') + (d ? ' · ' + esc(stamp(d)) : '') + '</div></div>';
         }).join('') : (S.indexQ ? '<div class="iris-st-hint">No matches for “' + esc(S.indexQ) + '”.</div>'
             : '<div class="iris-st-hint">Use <code>/decision</code> or <code>/pin</code> to record something the room should remember.</div>');
     }
