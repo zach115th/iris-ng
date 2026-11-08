@@ -11,6 +11,27 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.10.1] — 2026-11-08
+
+A security hardening fix for the war-room Stream. **No schema change** — the database head stays at
+`f3b8d6a1c9e4`. Only the app image changes (one browser script); the nginx and database images, and
+the guest-portal tunnel agent, do not change.
+
+### Security
+- **The Stream's attachment chips no longer reuse a value read from the page** (code scanning alert
+  #50, "DOM text reinterpreted as HTML"). When a file was attached or removed, the composer it
+  belonged to - named by the page's own `data-where` attribute - was written back into the chips'
+  markup. The page only ever writes "main" or "thread" there, and any other value stopped the code
+  before it drew anything, so nothing could be injected; the value is now re-derived, so only
+  "thread" or "main" ever reaches the markup. An unexpected value attaches to, or removes from, the
+  main composer instead of failing. Attachments look and behave as before.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.10.1`, or the 2.10.1 images / chart 1.10.1). No
+migration of its own; an install still on 2.9.x applies 2.10.0's five migrations at the first start
+(ending at `f3b8d6a1c9e4`), and one on 2.8.x 2.9.0's `e7a3f9c2d6b1` before them, so take a database
+dump first (`scripts/update.sh` does).
+
 ## [IRIS-NG-v2.10.0] — 2026-11-08
 
 Vulnerability management, asset flags and war-room decisions, and war rooms rebuilt around a Board, a
