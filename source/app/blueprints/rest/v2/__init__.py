@@ -18,6 +18,7 @@ from app.blueprints.rest.v2.customer_assets import customer_assets_blueprint
 from app.blueprints.rest.v2.vulnerabilities import vulnerabilities_blueprint
 from app.blueprints.rest.v2.asset_flags import asset_flags_blueprint
 from app.blueprints.rest.v2.war_room_board import war_room_board_blueprint
+from app.blueprints.rest.v2.war_room_scope import war_room_scope_blueprint
 from app.blueprints.rest.v2.war_room_stream import war_room_stream_blueprint
 from app.blueprints.rest.v2.notifications import notifications_blueprint
 from app.blueprints.rest.v2.war_rooms import war_rooms_blueprint
@@ -51,6 +52,7 @@ rest_v2_blueprint.register_blueprint(customer_assets_blueprint)
 rest_v2_blueprint.register_blueprint(vulnerabilities_blueprint)
 rest_v2_blueprint.register_blueprint(asset_flags_blueprint)
 rest_v2_blueprint.register_blueprint(war_room_board_blueprint)
+rest_v2_blueprint.register_blueprint(war_room_scope_blueprint)
 rest_v2_blueprint.register_blueprint(war_room_stream_blueprint)
 rest_v2_blueprint.register_blueprint(notifications_blueprint)
 rest_v2_blueprint.register_blueprint(war_rooms_blueprint)

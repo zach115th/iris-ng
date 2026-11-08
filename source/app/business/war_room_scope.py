@@ -18,7 +18,15 @@
 """The war-room Scope tab (iris-ng 2026-11-07; a workspace since 2026-11-08): every asset of the attached
 cases THE VIEWER can open, with its type, IP, customer, compromise and analysis status, flags, linked IOCs, open
 findings and last update, filtered and paged by the server; and changes made over a selection - flags set or
-removed, the compromise or analysis status set, assets pushed (copied) to other attached cases.
+removed, the compromise or analysis status set, a vulnerability recorded, assets pushed (copied) to other attached
+cases. Add asset creates one asset in several attached cases at once; the Customers sub-tab sums the scope per
+customer. The IOCs sub-tab and the export are war_room_scope_iocs.py; the staging inbox and the Assets Manager
+attachments are war_room_scope_staging.py; the shared rules for copies (payload checks, the per-case create, the
+cross-customer confirmation) live here.
+
+A copy that spans several customers (a push, an add to several cases, a staged object or a registry asset pushed
+into another customer's case) is refused with 409 / data.code = cross_customer, naming the customers, until the
+request carries confirm_cross_customer: true.
 
 Membership never grants case access: a user sees the assets of the attached cases their case ACL lets them read
 (a count of the others), and changes only the assets of cases they hold FULL access to - every other one comes
@@ -43,10 +51,11 @@ COMPROMISE_ID = {v: k for k, v in COMPROMISE.items()}
 
 
 class ScopeError(Exception):
-    def __init__(self, message, status=400):
+    def __init__(self, message, status=400, data=None):
         super().__init__(message)
         self.message = message
         self.status = status
+        self.data = data
 
 
 def _int(args, key, default=None, minimum=None, maximum=None):
@@ -183,15 +192,12 @@ def _writable(user_id, case_ids):
                                                                                    [CaseAccessLevel.full_access])}
 
 
-def scope_assets(room, viewer_id, args):
+def _build_rows(visible, viewer_id):
+    """Every asset row of the cases `visible`, with the columns the table shows; and per asset the open
+    vulnerability identifiers. Returns (rows, case meta, {case_id: (customer_id, name)}, writable case ids,
+    {asset_id: [identifiers]})."""
     from app.business import war_room_decisions as wd
-    from app.business.war_rooms import room_case_ids
-    from app.business.war_rooms import room_visible_case_ids
-    from app.models.models import AnalysisStatus
     from app.models.models import WarRoomDecision
-    f = parse_filters(args)
-    linked = room_case_ids(room.id)
-    visible = room_visible_case_ids(room.id, viewer_id)
     meta = wb._case_meta(visible)
     assets, customers, iocs = _rows_of(visible)
     writable = _writable(viewer_id, visible)
@@ -224,6 +230,17 @@ def scope_assets(room, viewer_id, args):
             'href': '/case/assets?cid=%d&asset=%d&tab=details' % (cid, aid),
             'vulns_href': '/case/assets?cid=%d&asset=%d&tab=vulns' % (cid, aid),
         })
+    return rows, meta, customers, writable, idents
+
+
+def scope_assets(room, viewer_id, args):
+    from app.business.war_rooms import room_case_ids
+    from app.business.war_rooms import room_visible_case_ids
+    from app.models.models import AnalysisStatus
+    f = parse_filters(args)
+    linked = room_case_ids(room.id)
+    visible = room_visible_case_ids(room.id, viewer_id)
+    rows, meta, customers, writable, idents = _build_rows(visible, viewer_id)
     by_flag = {}
     for r in rows:
         for x in r['flags']:
@@ -332,6 +349,169 @@ def _tally(results):
     return out
 
 
+# =========================================================================== copies across cases
+# Shared by the asset push, Add asset / Add IOC, the IOC push, the staging inbox and the Assets Manager.
+
+def _linked_targets(room, raw):
+    """The target cases a copy names: attached to the room, at most SCOPE_PUSH_CASES_MAX."""
+    from app.business.war_rooms import room_case_ids
+    linked = set(room_case_ids(room.id))
+    targets = _ids(raw, 'case', af.SCOPE_PUSH_CASES_MAX)
+    bad = [c for c in targets if c not in linked]
+    if bad:
+        raise ScopeError('Case #%d is not attached to this war room.' % bad[0])
+    return targets
+
+
+def case_customers(case_ids):
+    """{case_id: (customer_id, customer name)} of the given cases."""
+    from app.models.cases import Cases
+    from app.models.models import Client
+    ids = sorted({int(c) for c in case_ids if c is not None})
+    if not ids:
+        return {}
+    rows = (db.session.query(Cases.case_id, Cases.client_id, Client.name)
+            .outerjoin(Client, Client.client_id == Cases.client_id).filter(Cases.case_id.in_(ids)).all())
+    return {cid: (client_id, name) for cid, client_id, name in rows}
+
+
+def check_cross_customer(case_ids, body, extra=None):
+    """Refuses a copy that spans several customers - 409, data {code: cross_customer, customers: [names]} - unless
+    the request says it was confirmed (confirm_cross_customer: true). `extra` = {customer_id: name} of customers
+    that are not a case's (a registry asset's own customer)."""
+    names = {}
+    for client_id, name in case_customers(case_ids).values():
+        names[client_id] = name
+    for client_id, name in (extra or {}).items():
+        names[client_id] = name
+    if len(names) > 1 and body.get('confirm_cross_customer') is not True:
+        listed = sorted((n or 'Customer #%s' % k) for k, n in names.items())
+        raise ScopeError('This spans %d customers (%s). Make sure the data may be shared between them, then confirm.'
+                         % (len(listed), ', '.join(listed)), status=409,
+                         data={'code': 'cross_customer', 'customers': listed})
+
+
+def _text(raw, key, cap):
+    v = raw.get(key)
+    if v is None:
+        return None
+    if not isinstance(v, str):
+        raise ScopeError('%s is text.' % key)
+    v = v.strip()
+    if len(v) > cap:
+        raise ScopeError('%s is %d characters at most.' % (key, cap))
+    return v or None
+
+
+def _ref(raw, key, model, what, required=True):
+    v = raw.get(key)
+    if v in (None, ''):
+        if required:
+            raise ScopeError('Pick %s.' % what)
+        return None
+    if isinstance(v, bool) or not str(v).isdigit() or db.session.get(model, int(v)) is None:
+        raise ScopeError('Unknown %s.' % what.split(' ', 1)[-1])
+    return int(v)
+
+
+_ASSET_TEXT = (('asset_description', 20000), ('asset_ip', 255), ('asset_domain', 255), ('asset_tags', 1024))
+_IOC_TEXT = (('ioc_description', 20000), ('ioc_tags', 1024))
+
+
+def clean_asset_payload(raw):
+    """The fields a case asset is created from, checked: a name, an asset type; description, IP, domain, tags;
+    compromise status (0 to be determined by default) and analysis status (Unspecified by default)."""
+    from app.datamgmt.case.case_assets_db import get_unspecified_analysis_status_id
+    from app.models.models import AnalysisStatus
+    from app.models.models import AssetsType
+    if not isinstance(raw, dict):
+        raise ScopeError('asset is an object.')
+    name = raw.get('asset_name')
+    if not isinstance(name, str) or not name.strip():
+        raise ScopeError('Name the asset.')
+    if len(name.strip()) > 512:
+        raise ScopeError('asset_name is 512 characters at most.')
+    out = {'asset_name': name.strip(), 'asset_type_id': _ref(raw, 'asset_type_id', AssetsType, 'an asset type')}
+    for key, cap in _ASSET_TEXT:
+        out[key] = _text(raw, key, cap)
+    comp = raw.get('asset_compromise_status_id')
+    if comp in (None, ''):
+        comp = 0
+    if isinstance(comp, bool) or not str(comp).isdigit() or int(comp) not in COMPROMISE:
+        raise ScopeError('asset_compromise_status_id is one of %s.' % ', '.join(str(k) for k in sorted(COMPROMISE)))
+    out['asset_compromise_status_id'] = int(comp)
+    an = _ref(raw, 'analysis_status_id', AnalysisStatus, 'an analysis status', required=False)
+    out['analysis_status_id'] = an if an is not None else get_unspecified_analysis_status_id()
+    return out
+
+
+def clean_ioc_payload(raw):
+    """The fields a case IOC is created from, checked: a value, an IOC type, a TLP; description and tags."""
+    from app.models.models import IocType
+    from app.models.models import Tlp
+    if not isinstance(raw, dict):
+        raise ScopeError('ioc is an object.')
+    value = raw.get('ioc_value')
+    if not isinstance(value, str) or not value.strip():
+        raise ScopeError('Give the IOC value.')
+    if len(value.strip()) > 4096:
+        raise ScopeError('ioc_value is 4096 characters at most.')
+    out = {'ioc_value': value.strip(), 'ioc_type_id': _ref(raw, 'ioc_type_id', IocType, 'an IOC type'),
+           'ioc_tlp_id': _ref(raw, 'ioc_tlp_id', Tlp, 'a TLP')}
+    for key, cap in _IOC_TEXT:
+        out[key] = _text(raw, key, cap)
+    return out
+
+
+def asset_in_case(case_id, payload):
+    """The case's asset with this name (any letter case) and type - the case's own duplicate rule - or None."""
+    from app.models.models import CaseAssets
+    return (CaseAssets.query.filter(CaseAssets.case_id == case_id,
+                                    func.lower(CaseAssets.asset_name) == payload['asset_name'].lower(),
+                                    CaseAssets.asset_type_id == payload['asset_type_id'])
+            .order_by(CaseAssets.asset_id).first())
+
+
+def ioc_in_case(case_id, payload):
+    """The case's IOC that is the same indicator (type + normalised value, the dedup key) - or None."""
+    from app.datamgmt.case.case_iocs_db import find_existing_ioc
+    return find_existing_ioc(case_id, payload['ioc_type_id'], payload['ioc_value'])
+
+
+def present_in(kind, case_id, payload):
+    return (asset_in_case(case_id, payload) if kind == 'asset' else ioc_in_case(case_id, payload)) is not None
+
+
+def create_in_case(kind, case_id, payload):
+    """Creates an asset or an IOC in the case through the case's own create path (hooks, history, the case
+    activity). Returns (status, object id, error): created / exists (the case holds it already) / refused."""
+    from app.business.assets import assets_create
+    from app.business.errors import BusinessProcessingError
+    from app.business.iocs import iocs_create
+    found = asset_in_case(case_id, payload) if kind == 'asset' else ioc_in_case(case_id, payload)
+    if found is not None:
+        return 'exists', (found.asset_id if kind == 'asset' else found.ioc_id), None
+    data = {k: v for k, v in payload.items() if v is not None}
+    try:
+        if kind == 'asset':
+            _, created = assets_create(case_id, data)
+            return 'created', created.asset_id, None
+        created, _ = iocs_create(data, case_id)
+        return 'created', created.ioc_id, None
+    except BusinessProcessingError as e:
+        db.session.rollback()
+        msg = e.get_message() or 'The case refused it.'
+        if 'already exists' in msg:
+            return 'exists', None, None
+        return 'refused', None, msg
+
+
+def case_result(case_id, status, error=None, **extra):
+    r = {'case_id': case_id, 'status': status, 'error': error}
+    r.update(extra)
+    return r
+
+
 def bulk_flags(room, user, is_admin, body):
     """Set or remove flags on the selected assets: {asset_ids, flag_ids, action: set|remove, reason, decision_id}.
     One result per (asset, flag): set / updated / unchanged / cleared / not_set / refused."""
@@ -425,46 +605,218 @@ def bulk_status(room, user, body):
     return {'results': results, 'counts': _tally(results)}
 
 
+_PUSH_FIELDS = ('asset_name', 'asset_type_id', 'asset_description', 'asset_domain', 'asset_ip', 'asset_tags',
+                'asset_compromise_status_id', 'analysis_status_id')
+
+
 def bulk_push(room, user, body):
-    """Copy the selected assets into other attached cases: {asset_ids, case_ids}. Copies name, type, description,
-    IP, domain, tags, compromise and analysis status (never the flags), through the case's own create path. One
-    result per (asset, target case): created / exists / refused."""
-    from app.business.assets import assets_create
-    from app.business.errors import BusinessProcessingError
-    from app.business.war_rooms import room_case_ids
+    """Copy the selected assets into other attached cases: {asset_ids, case_ids, confirm_cross_customer}. Copies
+    name, type, description, IP, domain, tags, compromise and analysis status (never the flags), through the case's
+    own create path. One result per (asset, target case): created / exists / refused."""
     from app.business.war_rooms import room_visible_case_ids
     from app.models.models import CaseAssets
     _guard(room)
-    linked = set(room_case_ids(room.id))
-    targets = _ids(body.get('case_ids'), 'case', af.SCOPE_PUSH_CASES_MAX)
-    bad = [c for c in targets if c not in linked]
-    if bad:
-        raise ScopeError('Case #%d is not attached to this war room.' % bad[0])
+    targets = _linked_targets(room, body.get('case_ids'))
     writable = _writable(user.id, targets)
     visible = set(room_visible_case_ids(room.id, user.id))
     ids = _ids(body.get('asset_ids'), 'asset', af.SCOPE_BULK_MAX)
     sources = {a.asset_id: a for a in CaseAssets.query.filter(CaseAssets.asset_id.in_(ids)).all()}
+    usable = {aid: a for aid, a in sources.items() if a.case_id in visible}
+    check_cross_customer({a.case_id for a in usable.values()} | set(targets), body)
     results = []
     for aid in ids:
-        src = sources.get(aid)
-        if src is None or src.case_id not in visible:
+        src = usable.get(aid)
+        if src is None:
             results.append(_result(aid, None, 'refused', 'Not an asset of this war room\'s cases you can open'))
             continue
-        payload = {k: getattr(src, k) for k in ('asset_name', 'asset_type_id', 'asset_description', 'asset_domain',
-                                                  'asset_ip', 'asset_tags', 'asset_compromise_status_id',
-                                                  'analysis_status_id')}
+        payload = {k: getattr(src, k) for k in _PUSH_FIELDS}
         for cid in targets:
             if cid == src.case_id:
                 continue
             if cid not in writable:
                 results.append(_result(aid, src, 'refused', 'You cannot change case #%d' % cid, target_case_id=cid))
                 continue
-            try:
-                _, created = assets_create(cid, dict(payload))
-                results.append(_result(aid, src, 'created', target_case_id=cid, new_asset_id=created.asset_id))
-            except BusinessProcessingError as e:
-                db.session.rollback()
-                exists = 'already exists' in (e.get_message() or '')
-                results.append(_result(aid, src, 'exists' if exists else 'refused', None if exists else e.get_message(),
-                                       target_case_id=cid))
+            status, oid, err = create_in_case('asset', cid, payload)
+            extra = {'new_asset_id': oid} if status == 'created' else {}
+            results.append(_result(aid, src, status, err, target_case_id=cid, **extra))
     return {'results': results, 'counts': _tally(results), 'at': _iso(datetime.utcnow())}
+
+
+def create_assets(room, user, is_admin, body):
+    """Add asset: one asset created in several attached cases at once - {asset: {...}, case_ids, flag_ids, reason,
+    decision_id, confirm_cross_customer}. Through each case's own create path; a case that already holds it is
+    skipped (exists); the initial flags are set on every asset created (a flag refused there is reported, the asset
+    stays). One result per case: created / exists / refused."""
+    from app.business import asset_flags as fl
+    from app.business.asset_flags import FlagError
+    from app.iris_engine.utils.tracker import track_activity
+    from app.models.models import CaseAssets
+    _guard(room)
+    payload = clean_asset_payload(body.get('asset'))
+    targets = _linked_targets(room, body.get('case_ids'))
+    flag_ids = _ids(body.get('flag_ids'), 'flag', 50) if body.get('flag_ids') else []
+    flags = {f.id: f for f in AssetFlag.query.filter(AssetFlag.id.in_(flag_ids)).all()} if flag_ids else {}
+    if len(flags) != len(flag_ids):
+        raise ScopeError('A picked flag does not exist.', status=404)
+    if any(f.requires_reason for f in flags.values()) and not (body.get('reason') or '').strip():
+        raise ScopeError('A picked flag requires a reason.')
+    check_cross_customer(targets, body)
+    writable = _writable(user.id, targets)
+    results, changes = [], []
+    for cid in targets:
+        if cid not in writable:
+            results.append(case_result(cid, 'refused', 'You cannot change case #%d' % cid))
+            continue
+        status, oid, err = create_in_case('asset', cid, payload)
+        r = case_result(cid, status, err, asset_id=oid)
+        if status == 'created' and flag_ids:
+            asset = db.session.get(CaseAssets, oid)
+            r['flags'] = []
+            for fid in flag_ids:
+                sp = db.session.begin_nested()
+                try:
+                    row, act = fl.set_flag(cid, asset, flags[fid], body, user, is_admin)
+                    sp.commit()
+                except FlagError as e:
+                    sp.rollback()
+                    r['flags'].append({'flag_id': fid, 'status': 'refused', 'error': e.message})
+                    continue
+                r['flags'].append({'flag_id': fid, 'status': act or 'unchanged'})
+                changes.append((cid, fl.activity_text(flags[fid], asset.asset_name, act, row.get('reason'))))
+            db.session.commit()
+        results.append(r)
+    for cid, text in changes:
+        track_activity(text, caseid=cid)
+    return {'results': results, 'counts': _tally(results)}
+
+
+def record_vulnerability(room, user, is_admin, body):
+    """Record one vulnerability on the selected assets: {asset_ids, vulnerability_id | quick: {identifier, title},
+    remediation_status, ...the finding's fields}. A case finding per asset through the finding rules (an asset in a
+    case the user cannot change is refused; one already carrying it is 'exists'). Nothing is resolved - and no
+    quick-add entry is created - when every asset is refused."""
+    from app.business import vulnerability_findings as fb
+    from app.business.vulnerabilities import VulnError
+    from app.iris_engine.utils.tracker import track_activity
+    _guard(room)
+    targets = _targets(room, user.id, body.get('asset_ids'))
+    results = [_result(aid, None, 'refused', refused) for aid, asset, refused in targets if refused]
+    accepted = [(aid, asset) for aid, asset, refused in targets if not refused]
+    if not accepted:
+        return {'results': results, 'counts': _tally(results), 'vulnerability': None}
+    fields = {k: v for k, v in body.items() if k not in ('asset_ids', 'asset_id', 'csrf_token')}
+    try:
+        v = fb.resolve_vulnerability(fields, user.id)
+    except VulnError as e:
+        db.session.rollback()
+        raise ScopeError(e.message, status=e.status)
+    fields['vulnerability_id'] = v.vulnerability_id
+    fields.pop('quick', None)
+    done = []
+    for aid, asset in accepted:
+        sp = db.session.begin_nested()
+        try:
+            f = fb.create_finding('case', dict(fields, asset_id=aid), user.id, case_id=asset.case_id,
+                                  is_admin=is_admin)
+            sp.commit()
+        except VulnError as e:
+            sp.rollback()
+            extra = {'finding_id': (e.data or {}).get('existing_finding_id')} if e.status == 409 else {}
+            results.append(_result(aid, asset, 'exists' if e.status == 409 else 'refused', e.message, **extra))
+            continue
+        results.append(_result(aid, asset, 'created', finding_id=f.finding_id))
+        done.append((asset.case_id, asset.asset_name))
+    db.session.commit()
+    for cid, name in done:
+        track_activity("recorded vulnerability %s on asset '%s'" % (v.identifier, name), caseid=cid)
+    return {'results': results, 'counts': _tally(results),
+            'vulnerability': {'vulnerability_id': v.vulnerability_id, 'identifier': v.identifier}}
+
+
+# =========================================================================== customers, counts, vocabulary
+
+def scope_customers(room, viewer_id):
+    """The Customers sub-tab: per customer of the attached cases the viewer can open - its cases, assets,
+    compromised assets, assets with a done flag, IOCs (distinct per case, summed) and open findings."""
+    from app.business.war_room_scope_iocs import iocs_per_case
+    from app.business.war_rooms import room_case_ids
+    from app.business.war_rooms import room_visible_case_ids
+    linked = room_case_ids(room.id)
+    visible = room_visible_case_ids(room.id, viewer_id)
+    rows, meta, customers, _, _ = _build_rows(visible, viewer_id)
+    per_case = iocs_per_case(visible)
+    out = {}
+    for cid in sorted(visible):
+        client_id, name = customers.get(cid, (None, None))
+        c = out.setdefault(client_id, {'customer_id': client_id, 'name': name, 'cases': [], 'assets': 0,
+                                       'compromised': 0, 'done': 0, 'iocs': 0, 'vuln_open': 0,
+                                       'vuln_exploited_open': 0})
+        c['cases'].append({'case_id': cid, 'case_name': (meta.get(cid) or (None,))[0]})
+        c['iocs'] += per_case.get(cid, 0)
+    for r in rows:
+        c = out.get(r['customer_id'])
+        if c is None:
+            continue
+        c['assets'] += 1
+        c['compromised'] += r['compromise'] == 'compromised'
+        c['done'] += any(x['kind'] == 'done' for x in r['flags'])
+        c['vuln_open'] += r['findings']['open']
+        c['vuln_exploited_open'] += r['findings']['exploited_open']
+    return {'customers': sorted(out.values(), key=lambda c: (c['name'] or '').lower()),
+            'case_count': len(visible), 'cases_restricted': len([c for c in linked if c not in set(visible)])}
+
+
+def scope_counts(room, viewer_id, is_admin):
+    """The figures on the Scope's sub-tabs: assets (case assets + the Assets Manager attachments the viewer may
+    see), distinct IOCs, customers, vulnerability entries (tracked by the room or found open in its cases) and
+    staged objects."""
+    from app.business.war_room_scope_iocs import ioc_groups
+    from app.business.war_room_scope_staging import registry_rows
+    from app.business.war_rooms import room_visible_case_ids
+    from app.models.models import CaseAssets
+    from app.models.models import Vulnerability
+    from app.models.models import WarRoomStagedObject
+    from app.models.models import WarRoomVulnerability
+    visible = room_visible_case_ids(room.id, viewer_id)
+    n_assets = CaseAssets.query.filter(CaseAssets.case_id.in_(visible)).count() if visible else 0
+    reg, _ = registry_rows(room, viewer_id, is_admin)
+    tracked = {v for (v,) in db.session.query(WarRoomVulnerability.vulnerability_id)
+               .filter(WarRoomVulnerability.room_id == room.id)}
+    found = {ident for _, _, _, ident, _, _, _ in wb.open_findings(visible)} if visible else set()
+    found_ids = {v for (v,) in db.session.query(Vulnerability.vulnerability_id)
+                 .filter(Vulnerability.identifier.in_(found))} if found else set()
+    return {'assets': n_assets + len(reg), 'iocs': len(ioc_groups(visible)),
+            'customers': len({c for c, _ in case_customers(visible).values()}),
+            'vulnerabilities': len(tracked | found_ids),
+            'staging': WarRoomStagedObject.query.filter(WarRoomStagedObject.room_id == room.id).count()}
+
+
+def scope_vocab(room, viewer_id):
+    """What the Add asset / Add IOC / staging dialogs offer: asset and IOC types, TLPs, analysis and compromise
+    statuses, the attached cases the viewer can open (and may change), the flag catalogue and the limits."""
+    from app.business.war_rooms import room_visible_case_ids
+    from app.models.models import AnalysisStatus
+    from app.models.models import AssetsType
+    from app.models.models import IocType
+    from app.models.models import Tlp
+    visible = room_visible_case_ids(room.id, viewer_id)
+    meta = wb._case_meta(visible)
+    customers = case_customers(visible)
+    writable = _writable(viewer_id, visible)
+    return {
+        'asset_types': [{'id': t.asset_id, 'name': t.asset_name}
+                        for t in AssetsType.query.order_by(func.lower(AssetsType.asset_name))],
+        'ioc_types': [{'id': t.type_id, 'name': t.type_name} for t in IocType.query.order_by(func.lower(IocType.type_name))],
+        'tlps': [{'id': t.tlp_id, 'name': t.tlp_name} for t in Tlp.query.order_by(Tlp.tlp_id)],
+        'analysis_statuses': [{'id': a.id, 'name': a.name} for a in AnalysisStatus.query.order_by(AnalysisStatus.id)],
+        'compromise_statuses': [{'id': COMPROMISE_ID[k], 'key': k, 'label': lbl} for k, lbl in af.SCOPE_COMPROMISE],
+        'cases': [{'case_id': c, 'case_name': (meta.get(c) or (None,))[0],
+                   'customer_id': customers.get(c, (None, None))[0], 'customer_name': customers.get(c, (None, None))[1],
+                   'can_write': c in writable} for c in sorted(visible)],
+        'flags': [{'flag_id': x.id, 'name': x.name, 'color': x.color, 'icon': x.icon, 'kind': x.kind,
+                   'description': x.description, 'requires_reason': bool(x.requires_reason),
+                   'requires_decision': bool(x.requires_decision)}
+                  for x in AssetFlag.query.order_by(AssetFlag.sort_order, AssetFlag.id)],
+        'limits': {'targets': af.SCOPE_PUSH_CASES_MAX, 'staged_targets': af.SCOPE_STAGED_TARGETS_MAX,
+                   'attach': af.SCOPE_REGISTRY_ATTACH_MAX},
+    }

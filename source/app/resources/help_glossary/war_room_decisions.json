@@ -59,6 +59,36 @@
         {"name": "Flag board", "text": "One column per flag. Drag an asset's card onto a flag to set it; a flag that needs a reason or a decision asks for it first."}
       ],
       "aka": ["assets", "room assets", "scope", "bulk", "push"]
+    },
+    "room.scope_iocs": {
+      "title": "Scope IOCs",
+      "text": "Every IOC of the attached cases you can open, deduplicated: one row per indicator (same type, same value once defanged spellings and letter case are set aside), one column per case. A tick means the case holds it; a dashed cell is a case missing it, and clicking it copies the IOC there (value, type, TLP, description and tags). A row's TLP is the most restrictive of its cases'. Select rows to push several at once.",
+      "aka": ["indicators", "push IOC", "IOC matrix"]
+    },
+    "room.scope_customers": {
+      "title": "Scope customers",
+      "text": "The scope summed per customer of the attached cases you can open: its cases, assets, compromised assets, assets with a done flag, IOCs (distinct per case, summed) and open vulnerability findings. The button shows that customer's assets.",
+      "aka": ["customers", "clients"]
+    },
+    "room.scope_staging": {
+      "title": "Staging",
+      "text": "Assets and IOCs typed into the war room before they land in a case (Add asset or Add IOC with Stage for later), kept with the cases they are meant for. Push creates one in the selected cases through each case's own path; the row goes once every target case holds it. Discard drops one that was never pushed. Responders and leads of an open room change the inbox; every member reads it.",
+      "aka": ["inbox", "stage for later", "staged"]
+    },
+    "room.scope_registry": {
+      "title": "Attached from the Assets Manager",
+      "text": "Assets of the customer registry put in this room's scope, with or without one of its cases. You see the ones of customers you have access to, and a count of the others. Push copies one into attached cases as a case asset (name, type, compromise status, and the IP, domain, tags and description of its latest sighting), where flags and statuses apply. Detach removes it from the room; it stays in the Assets Manager.",
+      "aka": ["registry", "assets manager", "attach", "customer assets"]
+    },
+    "room.scope_export": {
+      "title": "Export the scope's IOCs",
+      "text": "Every IOC you can see in the attached cases, deduplicated, as a file.",
+      "items": [
+        {"name": "Blocklist (.txt)", "text": "One value per line. TLP:RED IOCs are left out unless Include TLP:RED is ticked; an IOC with no TLP goes out."},
+        {"name": "CSV", "text": "Value, type, TLP, description, tags, cases and customers. TLP:RED is left out unless Include TLP:RED is ticked."},
+        {"name": "STIX 2.1", "text": "TLP:GREEN and TLP:CLEAR only, whatever is ticked: an IOC with no TLP or a stricter one is not shareable. How many were left out is shown after the download."}
+      ],
+      "aka": ["export", "blocklist", "csv", "stix", "tlp"]
     }
   }
 }

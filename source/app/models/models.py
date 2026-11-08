@@ -3058,6 +3058,58 @@ class WarRoomThreadFollow(db.Model):
     )
 
 
+class WarRoomStagedObject(db.Model):
+    """iris-ng 2026-11-08: an asset or an IOC waiting in a war room's staging inbox (the Scope's Staging tab),
+    with the attached cases it is proposed for. `payload` holds the fields a case asset / IOC is created from
+    (asset: asset_name, asset_type_id, asset_description, asset_ip, asset_domain, asset_tags,
+    asset_compromise_status_id, analysis_status_id; IOC: ioc_value, ioc_type_id, ioc_tlp_id, ioc_description,
+    ioc_tags). A push creates it in the cases through their own create paths; the row goes once every target
+    case holds it."""
+    __tablename__ = 'war_room_staged_object'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(BigInteger, ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False, index=True)
+    kind = Column(String(8), nullable=False)
+    payload = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    target_case_ids = Column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    note = Column(Text, nullable=True)
+    created_by = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    updated_by = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    updated_at = Column(DateTime, nullable=True)
+
+    creator = relationship('User', foreign_keys=[created_by])
+    editor = relationship('User', foreign_keys=[updated_by])
+
+    __table_args__ = (
+        CheckConstraint(_af.sql_in('kind', _af.SCOPE_STAGED_KINDS),
+                        name='ck_war_room_staged_object_kind'),
+    )
+
+
+class WarRoomRegistryAsset(db.Model):
+    """iris-ng 2026-11-08: a customer-registry asset (the Assets Manager) put in a war room's scope, with or
+    without one of the room's cases. Shown to users with access to its customer (counted for the others); a
+    push copies it into an attached case as a case asset. Detaching keeps it in the registry."""
+    __tablename__ = 'war_room_registry_asset'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(BigInteger, ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False, index=True)
+    customer_asset_id = Column(BigInteger, ForeignKey('customer_asset.id', ondelete='CASCADE'), nullable=False,
+                               index=True)
+    case_id = Column(BigInteger, ForeignKey('cases.case_id', ondelete='SET NULL'), nullable=True)
+    note = Column(Text, nullable=True)
+    added_by = Column(BigInteger, ForeignKey('user.id'), nullable=True)
+    added_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    customer_asset = relationship('CustomerAsset')
+    adder = relationship('User', foreign_keys=[added_by])
+
+    __table_args__ = (
+        UniqueConstraint('room_id', 'customer_asset_id', name='uq_war_room_registry_asset'),
+    )
+
+
 class WarRoomFile(db.Model):
     """A file attached to the room's chat. Stored on disk under DATASTORE_PATH/war-rooms/room-<id>/
     wrf-<uuid>; `mime_type` is an image type only when the first bytes say so (never the declared type)."""

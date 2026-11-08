@@ -2782,7 +2782,6 @@ function iris_wroom_show_pane(name) {
         if (name === 'notes') iris_wroom_load_notes();
         if (name === 'teams') iris_wroom_load_teams();
         if (name === 'summary') iris_wroom_os_load();
-        if (name === 'vulnerabilities') iris_wroom_load_vulns();
         if (name === 'board') iris_wroom_mount_board();
         if (name === 'decisions') iris_wroom_mount_decisions();
         if (name === 'scope') iris_wroom_mount_scope();
@@ -2814,8 +2813,13 @@ function iris_wroom_mount_scope() {
    the stream's decision lines, ?pane=<name>&d=<decision id> (a decision notification links
    there), ?pane=decisions&status=<chip>, ?pane=scope&compromised=1|flag=|kind=|vulnerable=|... */
 function iris_wroom_open_pane(name, opts) {
-    if (!document.getElementById('iris-wr-pane-' + name)) return false;
     opts = opts || {};
+    /* iris-ng 2026-11-08: the room's Vulnerabilities are a sub-tab of the Scope */
+    if (name === 'vulnerabilities') {
+        name = 'scope';
+        opts = Object.assign({}, opts, {scope: {tab: 'vulnerabilities'}});
+    }
+    if (!document.getElementById('iris-wr-pane-' + name)) return false;
     if (window.IrisRoomBoard) {
         /* filters first: the tab mounts with them, or reloads with them */
         if (name === 'scope' && opts.scope) window.IrisRoomBoard.setScopeFilter(opts.scope);
@@ -2827,7 +2831,7 @@ function iris_wroom_open_pane(name, opts) {
     }
     return true;
 }
-var IRIS_WROOM_SCOPE_KEYS = ['q', 'case_id', 'customer_id', 'compromised', 'flag', 'kind', 'vulnerable', 'vuln', 'sort', 'dir', 'page'];
+var IRIS_WROOM_SCOPE_KEYS = ['q', 'case_id', 'customer_id', 'compromised', 'flag', 'kind', 'vulnerable', 'vuln', 'sort', 'dir', 'page', 'tab'];
 /* true when the address named a tab this page has (and it was opened) */
 function iris_wroom_pane_from_url() {
     var q = new URLSearchParams(window.location.search);
@@ -2845,18 +2849,6 @@ function iris_wroom_pane_from_url() {
     }
     return iris_wroom_open_pane(pane, {decisionId: /^\d+$/.test(d || '') ? parseInt(d, 10) : null,
                                        status: /^[a-z]+$/.test(status || '') ? status : null, scope: scope});
-}
-
-/* Vulnerabilities tab (iris-ng 2026-11-07): the entries the room tracks and the
-   findings across its cases, drawn by vuln_common.js. Responders and leads of an
-   open room may track / untrack and edit notes; guests never get the tab. */
-function iris_wroom_load_vulns() {
-    var host = document.getElementById('iris-wr-vulns');
-    if (!host || !window.IrisVuln || IRIS_WROOM._guest) return;
-    window.IrisVuln.mountWarRoom(host, {
-        roomId: IRIS_WROOM._rid,
-        canWrite: iris_wroom_can('responder') && iris_wroom_active()
-    });
 }
 
 document.addEventListener('DOMContentLoaded', function () {

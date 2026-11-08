@@ -153,6 +153,13 @@ SCOPE_COMPROMISE = (('to_be_determined', 'To be determined'), ('compromised', 'C
                     ('not_compromised', 'Not compromised'), ('unknown', 'Unknown'))
 SCOPE_PER_PAGE = 100
 SCOPE_PER_PAGE_MAX = 500
+# iris-ng 2026-11-08: the rest of the Scope - IOCs, customers, staging, the Assets Manager, export.
+SCOPE_STAGED_KINDS = ('asset', 'ioc')     # what a war room's staging inbox holds
+SCOPE_STAGED_TARGETS_MAX = 50             # target cases a staged object proposes
+SCOPE_STAGED_MAX = 500                    # staged objects one room keeps
+SCOPE_REGISTRY_ATTACH_MAX = 100           # registry assets one attach may name
+SCOPE_EXPORT_FORMATS = ('txt', 'csv', 'stix')
+SCOPE_TLP_RED = 1                         # ioc_tlp_id of TLP:RED (txt / CSV leave it out unless asked)
 
 
 def sql_in(column, values):
