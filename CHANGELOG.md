@@ -11,6 +11,73 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.10.0] — 2026-11-08
+
+Vulnerability management, asset flags and war-room decisions, and war rooms rebuilt around a Board, a
+three-column Stream and a Scope workspace. **Five schema migrations** (`58207f87c9e2` → `b6d1e4f8a2c7` →
+`c5e9a2f7d4b8` → `e1d7b4a9c3f6` → `f3b8d6a1c9e4`), all additive: new tables, two new columns and a backfill of
+each war room's activity history — take a database dump before upgrading (migrations are one-way;
+`scripts/update.sh` does the dump). Only the app image changes (application code, page templates, scripts,
+stylesheets, and one new Python requirement, `cvss==3.6`); the nginx and database images, and the guest-portal
+tunnel agent, do not.
+
+### Added
+- **Intel → Vulnerabilities**, a vulnerability catalogue: public entries (CVE, GHSA, vendor advisories) and
+  private ones numbered `IRIS-VULN-<year>-<NNNN>`, with CVSS 2.0 / 3.x / 4.0 vectors scored automatically (the
+  severity follows the score unless set by hand), EPSS, CISA KEV, exploit maturity, patch availability, CWEs,
+  affected products, references, aliases, TLP and tags. A CVE can be filled from cve.org and synced later (only
+  the CVE id leaves the instance, through the configured proxy; Settings → System turns the lookups off).
+  Administrators merge duplicates and delete entries.
+- **Vulnerability findings** on case assets and on customer-registry assets: CISA VEX remediation status,
+  exploitation status, due date, owner, detection, versions, verification, linked events and IOCs, a change
+  history, and an optional approved war-room decision cited as the reason. On the case Assets page each asset has
+  a Vulnerabilities tab and the list a shield coloured by its most severe open finding; the catalogue's Case
+  filter lists one case's vulnerabilities across its assets. IOCs of type vulnerability link to their entry.
+- **Asset flags**: status facts on case assets (isolated, credentials reset, restored…) from a list an
+  administrator manages in Settings → Asset flags — each a status, a "done" or an exception, optionally requiring
+  a written reason or an approved war-room decision. The Assets page shows them as chips, filters on them and
+  keeps their history.
+- **War-room Decisions**: a register numbered D-1, D-2… per room, with a rationale, an owner, a target date,
+  optional approvers who vote, what it applies to (the room, cases, assets), and its trail; implemented, reopened
+  and superseded states; status chips with counts; promotion of `/decision` chat messages; a new notification
+  when a decision awaits your approval. A decision already taken can be recorded as approved.
+- **War-room Board**, the tab a room opens on: a row of indicator tiles (compromised assets, open decisions,
+  exceptions, open tasks, flags, open / exploited / overdue / KEV vulnerabilities), case cards, open decisions,
+  open tasks, notes, and Needs attention — only what nobody has acted on yet. Every tile opens the matching tab,
+  filtered. A lead lays the board out for everyone; anyone can customise their own view.
+- **War-room Stream in three columns**: Conversation (topics, threads, decisions and pins, slash commands), the
+  chat, and an Activity panel with lanes, filters, folded bursts and per-case / per-kind mutes, routed per person
+  (Activity settings, saved to the profile). Messages can be edited, deleted and reacted to; replies live in
+  threads that notify their followers (new notification event); topics can be archived; files and pictures can be
+  attached (25 MB each); an emoji picker. Every change in a room — members, guests, teams, notes, tasks,
+  timelines, SitReps, attached cases, tracked vulnerabilities — now writes an activity line with who made it, and
+  existing rooms get their history back-filled.
+- **War-room Scope**, a workspace over the attached cases you can open, in sub-tabs: **Assets** (type, IP,
+  customer, compromise and analysis status, flags, IOCs, open findings, last update; grouped by case or
+  vulnerability; a flag board where a card dropped on a flag sets it; select assets to set or remove flags, set a
+  status, record a vulnerability or push them into other cases; copy a group as a table or CSV), **IOCs** (one row
+  per indicator, one column per case, pushed into the cases missing it), **Customers** (the scope summed per
+  customer), **Vulnerabilities** (moved here from its own room tab) and **Staging** (assets and IOCs kept in the
+  room with the cases they are meant for, pushed later). **Add asset / Add IOC** create one object in several
+  cases at once (or stage it), **Export** writes the IOCs as a blocklist, CSV or STIX 2.1, and **Attach from
+  Assets Manager** puts customer-registry assets in the room's scope. A copy that would mix customers' data asks
+  for confirmation first, naming the customers.
+
+### Changed
+- War rooms open on their Board; the tabs run Board, Stream, Scope, Decisions, Summary, Timelines, Tasks, Notes,
+  SitReps, Cases, Members, Teams, Correlation. Notifications link to the tab they are about (`?pane=`); the old
+  `?pane=vulnerabilities` opens the Scope's Vulnerabilities sub-tab.
+- Every change made from a war room's Scope goes through the case's own paths (history, case activity, module
+  hooks) and needs full access to that case; observers, guests and closed rooms change nothing, and guests never
+  get the Scope or the vulnerability views.
+- About 50 new help entries (470 in all).
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.10.0`, or the 2.10.0 images / chart 1.10.0). Five
+migrations run at the first start, ending at `f3b8d6a1c9e4`; the activity back-fill reads each room's existing
+rows once. No permission bit is added: the vulnerability catalogue is open to every user (merge and delete need
+server administrator), and everything case-bound follows case access.
+
 ## [IRIS-NG-v2.9.4] — 2026-11-05
 
 A maintenance release for the tools that build the browser bundle. **No schema change** — the
