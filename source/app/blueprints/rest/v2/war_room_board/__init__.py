@@ -26,9 +26,12 @@
   /api/v2/war-rooms/<rid>/decisions/assets             GET ?q= (responder): assets for "Applies to"
   /api/v2/war-rooms/<rid>/board                        GET (members + guests)
   /api/v2/war-rooms/<rid>/board/widgets                PUT {widgets: [...] | null} (lead)
+  /api/v2/war-rooms/<rid>/scope/assets                 GET (members; never guests): the Scope tab
 
 Room access is the war rooms' own (_resolve: non-members 404). Guests read the
-register and the board and change nothing (maintainer decision 2026-11-07).
+register and the board and change nothing (maintainer decision 2026-11-07); the
+Scope tab lists every asset of the attached cases and is refused to them, like
+the room's Vulnerabilities tab.
 """
 
 from flask import Blueprint
@@ -43,8 +46,10 @@ from app.blueprints.rest.endpoints import response_api_not_found
 from app.blueprints.rest.endpoints import response_api_success
 from app.business import war_room_board as wb
 from app.business import war_room_decisions as wd
+from app.business import war_room_scope as ws
 from app.business.war_room_board import BoardError
 from app.business.war_room_decisions import DecisionError
+from app.business.war_room_scope import ScopeError
 from app.iris_engine.utils.tracker import track_activity
 from app.models.models import WarRoomDecision
 
@@ -273,3 +278,18 @@ def set_room_board(room_id):
         db.session.rollback()
         return _err(e)
     return response_api_success(wb.board(room, uid, False, role))
+
+
+# ================================================================= scope
+
+@war_room_board_blueprint.route('/war-rooms/<int:room_id>/scope/assets', methods=['GET'])
+@ac_room_api_requires()
+def get_room_scope_assets(room_id):
+    room, _, err = _resolve(room_id, 'observer')
+    if err is not None:
+        return err
+    uid, _, _ = _ctx()
+    try:
+        return response_api_success(ws.scope_assets(room, uid, request.args))
+    except ScopeError as e:
+        return _err(e)

@@ -96,23 +96,57 @@ DECISION_EVENTS = ('proposed', 'promoted', 'edited', 'vote_approved', 'vote_reje
 
 # ------------------------------------------------------------------ war-room Board
 
+# Three zones: a row of indicator TILES across the top, then two columns of PANELS
+# (main = wide, side = narrow). A tile has no column; a panel lives in one.
+BOARD_ZONES = ('tile', 'panel')
 BOARD_COLUMNS = ('main', 'side')
-# type: (label, default column, description)
+# type: (label, zone, default column of a panel - None for a tile, description)
 BOARD_WIDGETS = {
-    'indicators': ('Indicators', 'main', 'Figures in a row of tiles'),
-    'attention': ('Needs attention', 'main', 'What needs a look now'),
-    'flags': ('Assets by flag', 'main', 'Progress and assets by status flag'),
-    'cases': ('Cases', 'main', 'One card per attached case'),
-    'decisions': ('Open decisions', 'side', 'The open decisions and their targets'),
-    'tasks': ('Open tasks', 'side', 'Open war-room tasks, the ones in progress first'),
-    'vulnerabilities': ('Vulnerabilities', 'side', 'Open findings on the assets of the attached cases'),
-    'note': ('Note', 'side', 'A Markdown note for everyone in the room'),
+    'kpi_compromised': ('Compromised', 'tile', None, 'Compromised assets and the ones without a flag'),
+    'kpi_decisions': ('Open decisions', 'tile', None, 'Open, overdue and due-soon decisions'),
+    'kpi_exceptions': ('Exceptions', 'tile', None, 'Assets with an exception flag'),
+    'kpi_tasks': ('Open tasks', 'tile', None, 'Open war-room tasks'),
+    'flags': ('Flags', 'tile', None, 'Progress and assets by flag'),
+    'vuln_open': ('Open vulnerabilities', 'tile', None, 'Open findings on case assets'),
+    'vuln_exploited': ('Exploited & open', 'tile', None, 'Exploited findings not fixed yet'),
+    'vuln_overdue': ('Overdue vulnerabilities', 'tile', None, 'Open findings past their due date'),
+    'vuln_kev': ('KEV open', 'tile', None, 'Open findings listed in CISA KEV'),
+    'vuln_assets': ('Vulnerable assets', 'tile', None, 'Assets with an open finding'),
+    'cases': ('Cases', 'panel', 'main', 'One card per attached case'),
+    'decisions': ('Open decisions list', 'panel', 'side', 'The open decisions and their targets'),
+    'attention': ('Needs attention', 'panel', 'side', 'What needs a look now'),
+    'tasks': ('Tasks', 'panel', 'side', 'Open war-room tasks, the ones in progress first'),
+    'note': ('Note', 'panel', 'side', 'A Markdown note for everyone in the room'),
 }
-BOARD_DEFAULT = (('indicators', 'main'), ('attention', 'main'), ('flags', 'main'), ('cases', 'main'),
-                 ('decisions', 'side'), ('tasks', 'side'), ('vulnerabilities', 'side'))
-BOARD_MAX_WIDGETS = 24
+# a wide tile takes two tracks of the tile row
+BOARD_WIDE_TILES = ('flags',)
+BOARD_DEFAULT = ('kpi_compromised', 'kpi_decisions', 'kpi_exceptions', 'kpi_tasks', 'flags',
+                 'vuln_open', 'vuln_exploited', 'vuln_overdue', 'vuln_kev', 'vuln_assets',
+                 'cases', 'decisions', 'attention', 'tasks')
+# Widgets of the first Board (2026-11-07, never released) that a saved layout may still name:
+# each becomes the tiles that replaced it when the layout is read.
+BOARD_LEGACY = {
+    'indicators': ('kpi_compromised', 'kpi_decisions', 'kpi_exceptions', 'kpi_tasks'),
+    'vulnerabilities': ('vuln_open', 'vuln_exploited', 'vuln_overdue', 'vuln_kev', 'vuln_assets'),
+}
+BOARD_MAX_WIDGETS = 40
 BOARD_TITLE_MAX = 80
 BOARD_NOTE_MAX = 10000
+# a decision is "due soon" when its target falls within this many hours
+BOARD_DUE_SOON_HOURS = 24
+# Needs attention lists at most this many lines (the reply says how many there were)
+BOARD_ATTENTION_MAX = 50
+# attention severities, most urgent first
+BOARD_SEVERITIES = ('high', 'medium', 'low')
+
+# ------------------------------------------------------------------ war-room Scope
+
+# The Scope tab's filters (every asset of the attached cases the viewer can open).
+SCOPE_KINDS = KINDS
+SCOPE_VULNERABLE = ('open', 'exploited', 'kev', 'overdue')
+SCOPE_SORTS = ('case', 'name', 'findings', 'compromise')
+SCOPE_PER_PAGE = 100
+SCOPE_PER_PAGE_MAX = 500
 
 
 def sql_in(column, values):

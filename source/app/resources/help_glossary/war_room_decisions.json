@@ -45,9 +45,14 @@
     },
     "room.board": {
       "title": "Board",
-      "text": "The war room at a glance: indicators, what needs attention, assets by flag (done / exceptions), one card per attached case, open decisions, open tasks, vulnerabilities and notes. Figures cover the attached cases you can open. A lead sets the widgets for everyone (Edit board); anyone can hide or reorder them just for themselves (Customize, kept in this browser).",
+      "text": "The war room at a glance: a row of indicator tiles (compromised assets, open decisions, exceptions, open tasks, flags, open vulnerabilities and more), then panels: one card per attached case, open decisions, what needs attention and open tasks. Needs attention lists what nobody has triaged yet. Figures cover the attached cases you can open and refresh every minute; a tile opens the matching tab, filtered. A lead sets the widgets for everyone (Edit board); anyone can hide, reorder or move them just for themselves (Customize, kept in this browser).",
       "guest": true,
-      "aka": ["dashboard", "widgets", "overview"]
+      "aka": ["dashboard", "widgets", "overview", "tiles"]
+    },
+    "room.scope": {
+      "title": "Scope",
+      "text": "Every asset of the cases attached to this war room that you can open, with its compromise status, its flags and its open vulnerability findings. Filter by case, flag, compromise or findings, or search by name, IP, domain or type. The Board's tiles and flag legend open this tab already filtered. Cases you cannot open are only counted. Guests do not get this tab.",
+      "aka": ["assets", "room assets", "scope"]
     }
   }
 }

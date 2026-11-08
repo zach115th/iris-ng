@@ -3027,6 +3027,8 @@ function iris_wroom_show_pane(name) {
         var chat = document.getElementById('iris-wr-chat');
         if (chat) chat.scrollTop = chat.scrollHeight;
     }
+    /* The Board refreshes when shown again after a minute away. */
+    if (name === 'board' && IRIS_WROOM._loadedTabs.board && window.IrisRoomBoard) window.IrisRoomBoard.boardShown();
     /* Lazy-load the read-only aggregation tabs on first open. */
     if (!IRIS_WROOM._loadedTabs[name]) {
         IRIS_WROOM._loadedTabs[name] = true;
@@ -3038,6 +3040,7 @@ function iris_wroom_show_pane(name) {
         if (name === 'vulnerabilities') iris_wroom_load_vulns();
         if (name === 'board') iris_wroom_mount_board();
         if (name === 'decisions') iris_wroom_mount_decisions();
+        if (name === 'scope') iris_wroom_mount_scope();
     }
 }
 
@@ -3055,22 +3058,42 @@ function iris_wroom_mount_decisions() {
     var host = document.getElementById('iris-wr-decisions');
     if (host && window.IrisRoomBoard) window.IrisRoomBoard.mountDecisions(host, iris_wroom_board_ctx());
 }
-/* Open a pane (and a decision) - the Board's links, the stream's decision lines,
-   ?pane=<name>&d=<decision id> (a decision notification links there). */
+/* Scope tab (iris-ng 2026-11-07): every asset of the attached cases you can open. Members
+   only - guests never get the tab (the template leaves it out, the API refuses them). */
+function iris_wroom_mount_scope() {
+    var host = document.getElementById('iris-wr-scope');
+    if (host && window.IrisRoomBoard && !IRIS_WROOM._guest) window.IrisRoomBoard.mountScope(host, iris_wroom_board_ctx());
+}
+/* Open a pane (and a decision, a register filter or the Scope's filters) - the Board's links,
+   the stream's decision lines, ?pane=<name>&d=<decision id> (a decision notification links
+   there), ?pane=decisions&status=<chip>, ?pane=scope&compromised=1|flag=|kind=|vulnerable=|... */
 function iris_wroom_open_pane(name, opts) {
     if (!document.getElementById('iris-wr-pane-' + name)) return false;
+    opts = opts || {};
+    if (window.IrisRoomBoard) {
+        /* filters first: the tab mounts with them, or reloads with them */
+        if (name === 'scope' && opts.scope) window.IrisRoomBoard.setScopeFilter(opts.scope);
+        if (name === 'decisions' && opts.status && !opts.decisionId) window.IrisRoomBoard.filterDecisions(opts.status);
+    }
     iris_wroom_show_pane(name);
-    if (name === 'decisions' && opts && opts.decisionId && window.IrisRoomBoard) {
+    if (name === 'decisions' && opts.decisionId && window.IrisRoomBoard) {
         window.IrisRoomBoard.openDecision(opts.decisionId);
     }
     return true;
 }
+var IRIS_WROOM_SCOPE_KEYS = ['q', 'case_id', 'compromised', 'flag', 'kind', 'vulnerable', 'sort', 'dir', 'page'];
 /* true when the address named a tab this page has (and it was opened) */
 function iris_wroom_pane_from_url() {
     var q = new URLSearchParams(window.location.search);
-    var pane = q.get('pane'), d = q.get('d');
+    var pane = q.get('pane'), d = q.get('d'), status = q.get('status');
     if (!pane || !/^[a-z]+$/.test(pane)) return false;
-    return iris_wroom_open_pane(pane, {decisionId: /^\d+$/.test(d || '') ? parseInt(d, 10) : null});
+    var scope = null;
+    if (pane === 'scope') {
+        scope = {};
+        IRIS_WROOM_SCOPE_KEYS.forEach(function (k) { if (q.get(k)) scope[k] = q.get(k); });
+    }
+    return iris_wroom_open_pane(pane, {decisionId: /^\d+$/.test(d || '') ? parseInt(d, 10) : null,
+                                       status: /^[a-z]+$/.test(status || '') ? status : null, scope: scope});
 }
 
 /* Vulnerabilities tab (iris-ng 2026-11-07): the entries the room tracks and the
