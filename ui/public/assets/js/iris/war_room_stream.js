@@ -1021,11 +1021,15 @@
     }
 
     /* ----------------------------------------------------------------- attachments */
+    /* The two attachment slots. A slot read back from the page (data-where) is re-derived here, never reused:
+       anything but 'thread' is the main composer. */
+    function attachSlot(v) { return v === 'thread' ? 'thread' : 'main'; }
     function withTokens(text, where) {
         var toks = S.pending[where].filter(function (p) { return p.token; }).map(function (p) { return p.token; });
         return [text].concat(toks).filter(Boolean).join(text && toks.length ? '\n' : ' ').trim();
     }
     function renderAttach(where) {
+        where = attachSlot(where);
         var box = $id(where === 'main' ? 'iris-st-attach' : 'iris-st-thread-attach');
         if (!box) { return; }
         box.innerHTML = S.pending[where].map(function (p, k) {
@@ -1035,6 +1039,7 @@
         }).join('');
     }
     function uploadFiles(files, where) {
+        where = attachSlot(where);
         Array.prototype.slice.call(files || []).forEach(function (file) {
             var max = S.vocab.limits.file_max_bytes;
             var slot = {filename: file.name || 'file', size: file.size, uploading: true};
@@ -1533,10 +1538,10 @@
                 return;
             }
             if (act === 'send-thread') { sendThread(); return; }
-            if (act === 'attach') { var fi = $id('iris-st-file-input'); fi.setAttribute('data-where', a.getAttribute('data-where') || 'main'); fi.click(); return; }
-            if (act === 'unattach') { S.pending[a.getAttribute('data-where')].splice(parseInt(a.getAttribute('data-k'), 10), 1); renderAttach(a.getAttribute('data-where')); return; }
+            if (act === 'attach') { var fi = $id('iris-st-file-input'); fi.setAttribute('data-where', attachSlot(a.getAttribute('data-where'))); fi.click(); return; }
+            if (act === 'unattach') { var uw = attachSlot(a.getAttribute('data-where')); S.pending[uw].splice(parseInt(a.getAttribute('data-k'), 10), 1); renderAttach(uw); return; }
             if (act === 'emoji') {
-                var where = a.getAttribute('data-where') || 'main';
+                var where = attachSlot(a.getAttribute('data-where'));
                 openPicker(a, function (em) { insertAt($id(where === 'main' ? 'iris-wr-msg-input' : 'iris-st-thread-input'), em); });
                 return;
             }
@@ -1622,7 +1627,7 @@
         $id('iris-st-actlist').addEventListener('scroll', function () { if (this.scrollTop < 40) { load('rail', true); } });
         /* attachments: picker, drop, paste */
         $id('iris-st-file-input').addEventListener('change', function () {
-            uploadFiles(this.files, this.getAttribute('data-where') || 'main');
+            uploadFiles(this.files, attachSlot(this.getAttribute('data-where')));
             this.value = '';
         });
         var main = $id('iris-st-main'), drop = $id('iris-st-drop'), depth = 0;
