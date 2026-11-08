@@ -75,6 +75,8 @@ EVENT_CATALOG = {
     'sitrep_published_leadership': 'SitRep published (leadership team / room lead)',
     # iris-ng 2026-11-07: a war-room decision names you as an approver (Decisions tab).
     'decision_approval_requested': 'A war-room decision awaits your approval',
+    # iris-ng 2026-11-08: a reply in a war-room thread you follow (Stream tab).
+    'war_room_thread_reply': 'A reply in a war-room thread you follow',
     'custom_module_notification': 'Custom module notification',
 }
 

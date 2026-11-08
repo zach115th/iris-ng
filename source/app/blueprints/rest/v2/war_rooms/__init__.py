@@ -72,7 +72,6 @@ from app.business.war_rooms import sitrep_revisions
 from app.business.war_rooms import update_sitrep
 from app.business.war_rooms import remove_member
 from app.business.war_rooms import role_at_least
-from app.business.war_rooms import room_stream
 from app.business.war_rooms import rooms_for_user
 from app.business.war_rooms import set_member_role
 from app.business.war_rooms import update_room
@@ -2098,20 +2097,4 @@ def get_war_room_case_note(room_id, case_id, note_id):
     return response_api_success(out)
 
 
-# ------------------------------------------------------------------ stream
-
-@war_rooms_blueprint.route('/war-rooms/<int:room_id>/stream', methods=['GET'])
-@ac_room_api_requires()
-def war_room_stream(room_id):
-    from app.business.war_rooms import room_topics
-    room, _, err = _resolve(room_id, 'observer', guests=True)
-    if err:
-        return err
-    items = room_stream(room, _uid(), viewer_guest_id=_gid(),
-                        limit=request.args.get('limit', 50))
-    for i in items:
-        i['created_at'] = _iso(i['created_at'])
-        if i.get('poll'):
-            i['poll']['closes_at'] = _iso(i['poll']['closes_at'])
-    # Topics come from a DISTINCT over all messages, not the limited window.
-    return response_api_success({'stream': items, 'topics': room_topics(room)})
+# The stream (GET /war-rooms/<id>/stream) lives in app/blueprints/rest/v2/war_room_stream (iris-ng 2026-11-08).

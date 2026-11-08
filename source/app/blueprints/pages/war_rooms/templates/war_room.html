@@ -81,7 +81,6 @@
     .iris-wr-rail-h svg { width: 11px; height: 11px; }
     .iris-wr-rail-hint { color: #6a6a75; font-size: 0.72rem; }
     .iris-wr-rail label { font-weight: normal; color: #c8c8d0; margin-bottom: 2px; }
-    .iris-wr-clear { float: right; font-size: 0.72rem; }
     /* v3 rail rows: label left, blue checkbox right */
     .iris-wr-railrow {
         display: flex; align-items: center; padding: 2px 0;
@@ -94,10 +93,6 @@
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         min-width: 0; cursor: default;
     }
-    .iris-wr-sublanes { margin-left: 16px; display: none; }
-    .iris-wr-sublanes.open { display: block; }
-    .iris-wr-chev { cursor: pointer; color: #7a7a85; margin-right: 4px;
-        display: inline-block; width: 10px; }
     .iris-wr-cmdlist { display: none; }
     .iris-wr-cmdlist.open { display: block; }
     .iris-wr-cmdlist code {
@@ -109,50 +104,13 @@
         color: #6a6a75; font-size: 0.7rem; margin: 0 0 0 2px;
     }
 
-    /* Chat */
-    #iris-wr-chat {
-        height: 560px; overflow-y: auto; padding: 4px 8px;
-        display: flex; flex-direction: column;
-    }
-    .iris-wr-datesep {
-        text-align: center; color: #7a7a85; font-size: 0.72rem;
-        margin: 12px 0 8px 0; position: relative;
-    }
-    .iris-wr-datesep span {
-        background: #15151a; padding: 0 10px; position: relative; z-index: 1;
-    }
-    .iris-wr-datesep:before {
-        content: ''; position: absolute; left: 0; right: 0; top: 50%;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .iris-wr-msgrow { display: flex; gap: 10px; padding: 5px 2px;
-        border-radius: 8px; position: relative; }
-    .iris-wr-msgrow:hover { background: rgba(255, 255, 255, 0.02); }
-    .iris-wr-msgrow.iris-wr-kind-decision {
-        border-left: 3px solid rgba(244, 196, 48, 0.6);
-        background: rgba(244, 196, 48, 0.04); padding-left: 8px;
-    }
-    .iris-wr-msgrow.iris-wr-kind-note {
-        border-left: 3px solid rgba(139, 92, 246, 0.55);
-        background: rgba(139, 92, 246, 0.04); padding-left: 8px;
-    }
-    .iris-wr-msgrow.iris-wr-reply { margin-left: 34px; }
-    .iris-wr-reply-ref {
-        color: #7a7a85; font-size: 0.7rem; margin-bottom: 1px;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
+    /* Chat: the Stream tab styles itself (war_room_stream.js) */
     .iris-wr-thread-badge {
         display: inline-block; padding: 0 8px; font-size: 0.7rem;
         border-radius: 8px; margin-left: 6px;
         background: rgba(94, 114, 228, 0.12);
         border: 1px solid rgba(94, 114, 228, 0.4); color: #8fa3ef;
     }
-    .iris-wr-msg-actions {
-        position: absolute; right: 8px; top: 4px; display: none;
-        gap: 8px; font-size: 0.7rem;
-    }
-    .iris-wr-msgrow:hover .iris-wr-msg-actions { display: flex; }
-    .iris-wr-msg-actions a { color: #9a9aa5; }
     .iris-wr-cmd-pop {
         border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px;
         background: #1a1a22; padding: 6px 10px; margin-bottom: 6px;
@@ -579,25 +537,6 @@
         font-size: 0.68rem; font-weight: 600; color: #e8e8ee;
         margin-top: 2px;
     }
-    .iris-wr-msg-head { font-size: 0.8rem; }
-    .iris-wr-msg-head strong { color: #e8e8ee; }
-    .iris-wr-msg-time { color: #7a7a85; font-size: 0.7rem; margin-left: 8px; }
-    .iris-wr-msg-body {
-        font-size: 0.85rem; color: #c8c8d0; white-space: pre-wrap;
-        word-break: break-word;
-    }
-    .iris-wr-sysrow {
-        display: flex; align-items: center; gap: 8px;
-        padding: 4px 8px; margin: 3px 0; font-size: 0.76rem; color: #9a9aa5;
-        border: 1px dashed rgba(255, 255, 255, 0.08); border-radius: 8px;
-    }
-    .iris-wr-sysrow .iris-wr-case-chip { margin-left: auto; }
-    .iris-wr-case-chip {
-        display: inline-block; padding: 0 8px; font-size: 0.7rem;
-        border-radius: 8px; background: rgba(139, 92, 246, 0.12);
-        border: 1px solid rgba(139, 92, 246, 0.35); color: #d4c4ff;
-        white-space: nowrap;
-    }
     .iris-wr-composer-hints { color: #6a6a75; font-size: 0.7rem; margin-top: 4px; }
     .iris-wr-composer-hints kbd {
         background: rgba(255, 255, 255, 0.06); border-radius: 4px;
@@ -725,86 +664,123 @@
         {% endif %}
     </div>
 
-    {# ================= Stream pane ================= #}
+    {# ================= Stream pane (iris-ng 2026-11-08) =================
+       Three columns, drawn by war_room_stream.js (IrisRoomStream): Conversation (topics, threads,
+       Decisions & Pins, slash commands), the chat with its composer, and the Activity panel (or the
+       thread panel while a thread is open). The ids below are the ones war_room.js also reads. #}
     <div class="iris-wr-pane" id="iris-wr-pane-stream">
-        <div class="row">
-            <div class="col-md-3">
-                <div class="iris-wr-rail">
-                    <div class="iris-wr-rail-h">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                        Filters {{ help_tip('room.stream') }} <a href="#" class="iris-wr-clear" id="iris-wr-clear-filters">Clear all</a>
-                    </div>
-
-                    <div class="iris-wr-rail-h">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg>
-                        Topics {{ help_tip('room.topics') }}
-                        <a href="#" id="iris-wr-topic-add" class="ml-auto" title="New topic" style="color:#7a7a85;">+</a>
-                    </div>
-                    <div id="iris-wr-rail-topics"></div>
-
-                    <div class="iris-wr-rail-h">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        Threads (<span id="iris-wr-thread-count">0</span>) {{ help_tip('room.threads') }}</div>
-                    <div id="iris-wr-rail-threads"></div>
-                    <div class="iris-wr-rail-hint" id="iris-wr-thread-hint">Reply to any message or use <code>/thread</code> to start one.</div>
-
-                    <div class="iris-wr-rail-h">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 12.5-8 8a2.119 2.119 0 1 1-3-3l8-8"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>
-                        Decisions &amp; Pins (<span id="iris-wr-dp-count">0</span>) {{ help_tip('room.decisions_pins') }}</div>
-                    <div class="iris-wr-rail-hint">Use <code>/decision</code> or <code>/pin</code> to record something the room should remember.</div>
-
-                    <div class="iris-wr-rail-h">Stream lanes {{ help_tip('room.stream_lanes') }}</div>
-                    <div id="iris-wr-rail-lanes"></div>
-
-                    <div class="iris-wr-rail-h">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2.5"/><path d="m10.2 6.3-3.9 3.9"/><circle cx="4.5" cy="12" r="2.5"/><path d="M7 12h10"/><circle cx="19.5" cy="12" r="2.5"/><path d="m13.8 17.7 3.9-3.9"/><circle cx="12" cy="19.5" r="2.5"/></svg>
-                        Cases (<span id="iris-wr-rail-case-count">0</span>) {{ help_tip('room.case_activity') }}</div>
-                    <div id="iris-wr-rail-cases"></div>
-
-                    <div class="iris-wr-rail-h" id="iris-wr-cmd-toggle" style="cursor:pointer;">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                        Slash commands {{ help_tip('room.slash_commands') }}</div>
-                    <div class="iris-wr-cmdlist" id="iris-wr-cmdlist"></div>
+        <div id="iris-st">
+            <aside class="iris-st-col iris-st-conv" id="iris-st-conv" aria-label="Conversation">
+                <div class="iris-st-convhead">
+                    <svg class="iris-st-ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>
+                    Conversation {{ help_tip('room.stream') }}
+                    <a href="#" data-act="settings" title="Stream filters moved to the Activity settings">Activity settings</a>
                 </div>
-            </div>
-            <div class="col-md-9">
-                <div class="card" style="margin-bottom: 0;">
-                    <div class="card-body" style="padding: 12px 14px;">
-                        <input type="text" class="form-control form-control-sm mb-2" id="iris-wr-chat-filter"
-                               placeholder="Filter the stream &mdash; messages, decisions, case activity&hellip;">
-                        <div id="iris-wr-chat"></div>
-                        <div id="iris-wr-stream-empty" class="text-muted" style="display:none;">Nothing here yet.</div>
-                        <div id="iris-wr-composer" class="mt-2" style="display:none;">
-                            <div class="iris-wr-cmd-pop" id="iris-wr-cmd-pop"></div>
-                            <div class="iris-wr-cmd-pop" id="iris-wr-mention-pop"></div>
-                            <div class="mb-1" style="font-size:0.72rem; color:#7a7a85;">
-                                Posting to <span class="iris-wr-topic-chip" id="iris-wr-post-target"># Main</span>
-                                <a href="#" id="iris-wr-target-clear" class="ml-1" style="display:none; color:#9a9aa5;" title="Back to # Main">&times;</a>
-                            </div>
-                            <div class="d-flex align-items-end" style="position:relative;">
-                                <div id="iris-wr-resource-pop" class="iris-wr-resource-pop"></div>
-                                <span class="text-muted mr-2" style="white-space:nowrap;">
-                                    <a href="#" id="iris-wr-poll-btn" title="New poll" style="color:inherit;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></a>
-                                    <a href="#" id="iris-wr-resource-btn" title="Reference a case resource" style="color:inherit;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></a>
-                                    {{ help_tip('room.resource_tokens') }}
-                                </span>
-                                <textarea class="form-control" id="iris-wr-msg-input" rows="1"
-                                          placeholder="Type a message, /command, @user or #resource..." maxlength="4000"
-                                          style="resize:none; overflow-y:auto; max-height:120px;"></textarea>
-                                <button class="btn btn-primary ml-2" id="iris-wr-msg-send">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
-                                    Send</button>
-                            </div>
-                            <div class="iris-wr-composer-hints">
-                                <kbd>Enter</kbd> to send &middot; <kbd>Shift+Enter</kbd> for newline &middot; <kbd>/</kbd> for commands &middot; <kbd>@</kbd> to mention, <kbd>Tab</kbd> completes {{ help_tip('room.mentions') }}
-                                <span id="iris-wr-cmd-status" class="ml-2"></span>
-                            </div>
-                        </div>
+                <div class="iris-st-h">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg>
+                    Topics {{ help_tip('room.topics') }}
+                    <a href="#" id="iris-wr-topic-add" title="New topic" aria-label="New topic" style="color:#9a9aa5;">+</a>
+                </div>
+                <div id="iris-st-only" class="iris-st-hint mb-1" style="display:none;"></div>
+                <div id="iris-st-topics"></div>
+
+                <div class="iris-st-h">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Threads (<span id="iris-st-thread-count">0</span>) {{ help_tip('room.threads') }}</div>
+                <div id="iris-st-threads"></div>
+                <div class="iris-st-hint" id="iris-wr-thread-hint">Hover a message and choose Reply in thread, or use <code>/thread</code> to start one.</div>
+
+                <div class="iris-st-h">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 12.5-8 8a2.119 2.119 0 1 1-3-3l8-8"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>
+                    Decisions &amp; Pins (<span id="iris-st-index-count">0</span>) {{ help_tip('room.decisions_pins') }}</div>
+                <div class="iris-st-search">
+                    <svg class="iris-st-ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" class="form-control form-control-sm" id="iris-st-indexq" placeholder="Search decisions &amp; pins" aria-label="Search decisions &amp; pins">
+                </div>
+                <div id="iris-st-index"></div>
+
+                <div class="iris-st-h" id="iris-wr-cmd-toggle" style="cursor:pointer;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                    Slash commands {{ help_tip('room.slash_commands') }}</div>
+                <div class="iris-wr-cmdlist" id="iris-wr-cmdlist"></div>
+            </aside>
+
+            <section class="iris-st-col iris-st-main" id="iris-st-main" aria-label="Chat">
+                <div class="iris-st-drop" id="iris-st-drop">Drop files to attach</div>
+                <div class="iris-st-mainhead mb-2">
+                    <div class="iris-st-search">
+                        <svg class="iris-st-ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input type="text" class="form-control form-control-sm" id="iris-wr-chat-filter"
+                               placeholder="Filter the stream &mdash; messages, decisions, case activity&hellip;" aria-label="Filter the stream">
+                    </div>
+                    <span class="iris-st-matches" id="iris-st-matches"></span>
+                    <button type="button" class="btn btn-xs btn-dark" id="iris-st-showrail" data-act="showrail" style="display:none;" title="Show the Activity panel">
+                        <svg class="iris-st-ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg> Activity</button>
+                </div>
+                <div id="iris-wr-chat" class="iris-st-chat" aria-live="polite"></div>
+                <div id="iris-wr-stream-empty" class="text-muted iris-st-hint" style="display:none;">Nothing here yet.</div>
+                <div id="iris-wr-composer" class="iris-st-compose mt-2" style="display:none;">
+                    <div class="iris-wr-cmd-pop" id="iris-wr-cmd-pop"></div>
+                    <div class="iris-wr-cmd-pop" id="iris-wr-mention-pop"></div>
+                    <div class="iris-st-ac" id="iris-st-ac" style="display:none;"></div>
+                    <div class="mb-1" style="font-size:0.72rem; color:#7a7a85;">
+                        Posting to <span class="iris-st-target"><span class="iris-wr-topic-chip" id="iris-wr-post-target" role="button" tabindex="0" title="Change target topic"># Main</span>
+                        <span class="iris-st-dropdown" id="iris-st-target-dd" style="display:none;"></span></span>
+                        <span id="iris-st-target-note" class="ml-1" style="display:none; color:#f3d77e;"></span>
+                    </div>
+                    <div class="iris-st-attach" id="iris-st-attach"></div>
+                    <div class="d-flex align-items-end" style="position:relative;">
+                        <div id="iris-wr-resource-pop" class="iris-wr-resource-pop"></div>
+                        <span class="iris-st-ctools mr-2" style="white-space:nowrap;">
+                            <a href="#" id="iris-wr-poll-btn" title="Create a poll" aria-label="Create a poll">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></a>
+                            <button type="button" data-act="attach" data-where="main" title="Attach files" aria-label="Attach files">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
+                            <button type="button" data-act="emoji" data-where="main" title="Insert emoji" aria-label="Insert emoji">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg></button>
+                            <a href="#" id="iris-wr-resource-btn" title="Reference a case resource" aria-label="Reference a case resource">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg></a>
+                            {{ help_tip('room.resource_tokens') }}
+                        </span>
+                        <textarea class="form-control" id="iris-wr-msg-input" rows="1"
+                                  placeholder="Type a message, /command, @user, #resource or :emoji&hellip;" maxlength="20000" aria-label="Message"
+                                  style="resize:none; overflow-y:auto; max-height:120px;"></textarea>
+                        <button class="btn btn-primary ml-2" id="iris-wr-msg-send">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
+                            Send</button>
+                    </div>
+                    <div class="iris-wr-composer-hints">
+                        <kbd>Enter</kbd> to send &middot; <kbd>Shift+Enter</kbd> for newline &middot; <kbd>/</kbd> for commands &middot; <kbd>@</kbd> to mention, <kbd>Tab</kbd> completes &middot; <kbd>:</kbd> for emoji {{ help_tip('room.mentions') }} {{ help_tip('room.attachments') }}
+                        <span id="iris-wr-cmd-status" class="ml-2"></span>
                     </div>
                 </div>
-            </div>
+                <input type="file" id="iris-st-file-input" multiple style="display:none;" aria-hidden="true" tabindex="-1">
+            </section>
+
+            <aside class="iris-st-col iris-st-act" id="iris-st-act" aria-label="Activity">
+                <div class="iris-st-resize" id="iris-st-resize" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Resize the Activity panel"></div>
+                <div class="iris-st-acthead">
+                    <span class="iris-st-live" id="iris-st-live" aria-hidden="true"></span>
+                    <p>Activity</p> <span class="iris-st-count" id="iris-st-act-count">0</span> {{ help_tip('room.activity') }}
+                    <span class="iris-st-tools">
+                        <button type="button" id="iris-st-pause" data-act="pause" title="Pause activity" aria-label="Pause activity" aria-pressed="false"></button>
+                        <button type="button" data-act="settings" title="Activity settings" aria-label="Activity settings">
+                            <svg class="iris-st-ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg></button>
+                        <button type="button" data-act="closerail" title="Hide the Activity panel" aria-label="Hide the Activity panel">
+                            <svg class="iris-st-ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg></button>
+                    </span>
+                </div>
+                <div class="iris-st-search mx-2">
+                    <svg class="iris-st-ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" class="form-control form-control-sm" id="iris-st-actfilter" placeholder="Filter activity&hellip;" aria-label="Filter activity">
+                </div>
+                <div class="iris-st-chips" id="iris-st-chips"></div>
+                <div class="iris-st-banner" id="iris-st-act-banner" data-act="pause" role="button" style="display:none;"></div>
+                <div class="iris-st-actlist" id="iris-st-actlist" aria-live="polite"></div>
+                <div class="iris-st-actfoot" id="iris-st-actfoot" style="display:none;"></div>
+            </aside>
+
+            <aside class="iris-st-col iris-st-thread" id="iris-st-thread" aria-label="Thread" style="display:none;"></aside>
         </div>
     </div>
 
@@ -1564,6 +1540,22 @@
         </div>
     </div>
 </div>
+{# iris-ng 2026-11-08: the Stream's Activity settings, drawn by war_room_stream.js #}
+<div class="modal fade" id="iris-st-settings-modal" tabindex="-1" role="dialog" aria-labelledby="iris-st-settings-title">
+    <div class="modal-dialog" role="document" style="max-width:560px;">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:0; padding-bottom:0;">
+                <h5 class="modal-title" id="iris-st-settings-title">Activity settings {{ help_tip('room.stream_lanes') }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" id="iris-st-settings-body" style="font-size:0.82rem; max-height:70vh; overflow-y:auto;"></div>
+            <div class="modal-footer" style="border-top:0;">
+                <button type="button" class="btn btn-outline-dark" id="iris-st-settings-reset">Reset</button>
+                <button type="button" class="btn btn-primary" id="iris-st-settings-done">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}
 
 {% block javascripts %}
@@ -1571,5 +1563,6 @@
     {% if not guest_mode %}<script src="/static/assets/js/iris/vuln_common.js"></script>{% endif %}
     <script src="/static/assets/js/iris/asset_flags.js"></script>
     <script src="/static/assets/js/iris/war_room_board.js"></script>
+    <script src="/static/assets/js/iris/war_room_stream.js"></script>
     <script src="/static/assets/js/iris/war_room.js"></script>
 {% endblock javascripts %}

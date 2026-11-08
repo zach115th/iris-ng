@@ -93,6 +93,10 @@ _ROLE_TO_ICS = {
 }
 # Caps on what the seed writes into a note — a note is for people to read.
 _LOG_ROWS_CAP = 200
+# The stream kinds the 214 log carries, and the room activity among them (iris-ng 2026-11-08).
+_ICS_LOG_KINDS = ('message', 'poll', 'priority', 'note', 'pin', 'decision', 'sitrep_published', 'case_attached',
+                  'case_detached', 'task_assigned', 'task_completed', 'system', 'war_room_activity')
+_ICS_ROOM_TYPES = ('member.added', 'member.removed', 'member.guest_invited', 'member.guest_revoked', 'task.created')
 _LOG_CELL_CAP = 300
 _TASKS_CAP = 60
 _CLOSED_TASK_STATES = {'done', 'cancelled', 'canceled'}
@@ -261,24 +265,30 @@ def build_ics_context(room, actor_id=None) -> dict:
     work_assignments = '\n'.join(work) or '- —'
 
     # ICS 214 §7: the room stream, oldest first — room-level events only
-    # (messages, decisions, cases attached, members added, tasks, SitReps,
-    # polls). Per-case audit activity stays on the case pages: it is per
-    # action, not per decision, and would bury the log.
+    # (messages, decisions, cases attached / detached, members, tasks,
+    # SitReps, polls, the room's state and priority). Per-case audit activity
+    # stays on the case pages: it is per action, not per decision, and would
+    # bury the log; so do the room's routine edits (notes saved, timelines).
     log_rows = []
     try:
-        stream = room_stream(room, actor_id, limit=300)
+        stream = room_stream(room, actor_id, limit=300, kinds=_ICS_LOG_KINDS, include_replies=True)
     except Exception as exc:  # noqa: BLE001 - the log is a convenience
         log.warning('ICS 214 seed: stream unavailable for room %s: %s', room.id, exc)
         stream = []
     for item in reversed(stream):
-        if item.get('kind') == 'case_activity':
+        kind = item.get('kind')
+        if kind == 'war_room_activity' and item.get('activity_type') not in _ICS_ROOM_TYPES:
             continue
         content = item.get('content') or ''
-        if item.get('kind') == 'message':
+        if kind == 'message':
             who = item.get('user_name') or 'someone'
             mk = item.get('msg_kind')
             tag = {'decision': 'DECISION', 'note': 'NOTE'}.get(mk)
             content = '%s%s: %s' % (('[%s] ' % tag) if tag else '', who, content)
+        elif kind == 'poll':
+            content = 'Poll by %s: %s' % (item.get('user_name') or 'someone', content)
+        elif item.get('actor_name'):
+            content = '%s %s' % (item['actor_name'], content[:1].lower() + content[1:])
         if len(content) > _LOG_CELL_CAP:
             content = content[:_LOG_CELL_CAP - 1] + '…'
         log_rows.append('| %s | %s |' % (_iso_minute(item.get('created_at')), _cell(content)))

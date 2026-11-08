@@ -18,61 +18,12 @@ var IRIS_WROOM = {
     _pollTimer: null,
     _sitrep: null,
     _corr: null,
-    _stream: [],
-    _topics: ['main'],
     _users: [],
-    /* v3 stream lanes (matching the preview): message / task_event /
-     * sitrep / notes_pins / system / case_link. Case activity is filtered
-     * via the per-case sub-lanes instead of a top lane. */
-    _lanes: {message: true, task_event: true, sitrep: true,
-             notes_pins: true, system: true, case_link: true,
-             decision: true},
-    _topicSel: null,       /* null = all topics; otherwise a Set of names */
-    _threadSel: null,      /* null = all threads; otherwise a Set of root ids */
-    _caseLanes: {},        /* case_id -> {sublane: bool}; absent = all on */
-    _caseOpen: {},         /* case_id -> sub-lane list expanded */
-    _chatQ: '',
-    /* Composer target: topic mode or reply/thread mode. */
+    /* Composer target: the topic the main composer posts to (the Stream tab,
+       war_room_stream.js, keeps it in step; replies go through the thread panel). */
     _target: {mode: 'topic', topic: 'main', parentId: null, label: null},
     _loadedTabs: {}
 };
-
-var IRIS_WROOM_LANES = [
-    ['message', 'Messages'],
-    ['task_event', 'Tasks'],
-    ['sitrep', 'SitReps'],
-    ['notes_pins', 'Notes / Pins'],
-    ['system', 'System'],
-    ['case_link', 'Case attached / detached'],
-    /* iris-ng 2026-11-07: the decision register's outcomes (derived from its trail) */
-    ['decision', 'Decisions']
-];
-
-var IRIS_WROOM_SUBLANES = [
-    ['notes', 'Notes'], ['iocs', 'IOCs'], ['assets', 'Assets'],
-    ['evidence', 'Evidence'], ['tasks', 'Tasks'],
-    ['timeline', 'Timeline events'], ['lifecycle', 'Case lifecycle'],
-    ['other', 'Other']
-];
-
-/* Case-activity rows are text-only (the Phase 5 bell trade-off), so the
- * per-case sub-lanes classify by keyword — heuristic by design. */
-function iris_wroom_classify(desc) {
-    var d = (desc || '').toLowerCase();
-    if (d.indexOf('ioc') !== -1) return 'iocs';
-    if (d.indexOf('task') !== -1) return 'tasks';
-    if (d.indexOf('asset') !== -1) return 'assets';
-    if (d.indexOf('evidence') !== -1 || d.indexOf('file') !== -1
-        || d.indexOf('datastore') !== -1) return 'evidence';
-    if (d.indexOf('event') !== -1 || d.indexOf('timeline') !== -1)
-        return 'timeline';
-    if (d.indexOf('note') !== -1) return 'notes';
-    if (d.indexOf('review') !== -1 || d.indexOf('clos') !== -1
-        || d.indexOf('open') !== -1 || d.indexOf('state') !== -1
-        || d.indexOf('status') !== -1 || d.indexOf('summary') !== -1)
-        return 'lifecycle';
-    return 'other';
-}
 
 var IRIS_WROOM_COMMANDS = [
     ['/note <text>', 'Create a room note on the Notes tab (first line = title)'],
@@ -89,6 +40,17 @@ var IRIS_WROOM_COMMANDS = [
     ['/thread <title>', 'Open a named thread'],
     ['/topic <name>', 'Create + switch to a topic']
 ];
+
+/* The slash-command catalogue of the Conversation rail (rendered once). */
+function iris_wroom_render_cmdlist() {
+    var cmd = document.getElementById('iris-wr-cmdlist');
+    if (!cmd || cmd.childElementCount) return;
+    cmd.innerHTML = IRIS_WROOM_COMMANDS.map(function (c) {
+        return '<div><code>' + iris_wroom_esc(c[0]) + '</code>' +
+            '<div class="iris-wr-cmddesc">' + iris_wroom_esc(c[1]) +
+            '</div></div>';
+    }).join('');
+}
 
 function iris_wroom_esc(s) {
     return String(s == null ? '' : s)
@@ -457,8 +419,8 @@ function iris_wroom_render_cases() {
     var inline = document.querySelector('#iris-wr-cs-list .iris-wr-nt-inline input');
     if (inline) { inline.focus(); inline.select(); }
 
-    /* Left-rail case rows render in iris_wroom_render_rail(). */
-    iris_wroom_render_rail();
+    /* The Stream's case lanes follow the attached cases (iris-ng 2026-11-08). */
+    if (window.IrisRoomStream) window.IrisRoomStream.casesChanged();
 }
 
 function iris_wroom_cs_peek(caseId) {
@@ -514,16 +476,6 @@ function iris_wroom_load_room() {
 
 /* ------------------------------------------------------------------ chat */
 
-function iris_wroom_lane_of(i) {
-    if (i.kind === 'message') {
-        if (i.msg_kind === 'note' || i.msg_kind === 'decision' || i.pinned)
-            return 'notes_pins';
-        return 'message';
-    }
-    if (i.kind === 'poll') return 'message';   /* polls ride the Messages lane */
-    return i.kind;   /* task_event / sitrep / system / case_link / case_activity */
-}
-
 /* #resource tokens: #[type:case_id:object_id|title] inserted by the picker,
  * rendered as linked chips. Runs on the ESCAPED text, so title content is
  * already safe. */
@@ -551,248 +503,10 @@ function iris_wroom_render_body(content) {
     return html;
 }
 
-function iris_wroom_visible_stream() {
-    return IRIS_WROOM._stream.filter(function (i) {
-        if (i.kind === 'case_activity') {
-            /* Filtered via the per-case sub-lanes, not a top lane. */
-            var lanes = IRIS_WROOM._caseLanes[i.case_id];
-            if (lanes && lanes.__all === false) return false;
-            if (lanes && lanes[iris_wroom_classify(i.content)] === false)
-                return false;
-        } else if (i.kind === 'case_link' && i.case_id) {
-            var cl = IRIS_WROOM._caseLanes[i.case_id];
-            if (cl && cl.__all === false) return false;
-            if (!IRIS_WROOM._lanes.case_link) return false;
-        } else if (!IRIS_WROOM._lanes[iris_wroom_lane_of(i)]) {
-            return false;
-        }
-        if (i.kind === 'message') {
-            if (IRIS_WROOM._topicSel !== null
-                    && !IRIS_WROOM._topicSel.has(i.topic || 'main'))
-                return false;
-            if (IRIS_WROOM._threadSel !== null) {
-                var root = i.parent_id || (i.thread_title ? i.id : null);
-                if (root !== null && !IRIS_WROOM._threadSel.has(root))
-                    return false;
-            }
-        }
-        if (IRIS_WROOM._chatQ) {
-            var hay = ((i.content || '') + ' ' + (i.user_name || '') + ' '
-                + (i.thread_title || '')).toLowerCase();
-            if (hay.indexOf(IRIS_WROOM._chatQ) === -1) return false;
-        }
-        return true;
-    });
-}
-
-/* ------------------------------------------------------------- left rail */
-
-function iris_wroom_render_rail() {
-    var msgs = IRIS_WROOM._stream.filter(function (i) {
-        return i.kind === 'message';
-    });
-
-    /* Topics */
-    var tbox = document.getElementById('iris-wr-rail-topics');
-    tbox.innerHTML = '';
-    IRIS_WROOM._topics.forEach(function (t) {
-        var checked = IRIS_WROOM._topicSel === null
-            || IRIS_WROOM._topicSel.has(t);
-        var row = document.createElement('div');
-        row.className = 'iris-wr-railrow';
-        row.innerHTML = '<span class="iris-wr-railtxt"># ' +
-            iris_wroom_esc(t === 'main' ? 'Main' : t) + '</span>' +
-            '<input type="checkbox" class="iris-wr-railtopic" data-topic="' +
-            iris_wroom_esc(t) + '"' + (checked ? ' checked' : '') + '>';
-        tbox.appendChild(row);
-    });
-
-    /* Threads: roots = named threads or messages with replies. */
-    var rootIds = {};
-    msgs.forEach(function (m) {
-        if (m.thread_title) rootIds[m.id] = m.thread_title;
-        if (m.parent_id) {
-            if (!rootIds[m.parent_id])
-                rootIds[m.parent_id] = m.parent_snippet || ('#' + m.parent_id);
-        }
-    });
-    var roots = Object.keys(rootIds);
-    document.getElementById('iris-wr-thread-count').textContent = roots.length;
-    document.getElementById('iris-wr-thread-hint').style.display =
-        roots.length ? 'none' : '';
-    var thbox = document.getElementById('iris-wr-rail-threads');
-    thbox.innerHTML = '';
-    roots.forEach(function (rid) {
-        var checked = IRIS_WROOM._threadSel === null
-            || IRIS_WROOM._threadSel.has(parseInt(rid, 10));
-        var row = document.createElement('div');
-        row.className = 'iris-wr-railrow';
-        row.innerHTML = '<span class="iris-wr-railtxt" title="' +
-            iris_wroom_esc(rootIds[rid]) + '">&#128172; ' +
-            iris_wroom_esc(String(rootIds[rid]).slice(0, 26)) + '</span>' +
-            '<input type="checkbox" class="iris-wr-railthread" ' +
-            'data-root-id="' + rid + '"' + (checked ? ' checked' : '') + '>';
-        thbox.appendChild(row);
-    });
-
-    /* Decisions & pins counter */
-    var dp = msgs.filter(function (m) {
-        return m.msg_kind === 'decision' || m.pinned;
-    }).length;
-    document.getElementById('iris-wr-dp-count').textContent = dp;
-
-    /* Stream lanes */
-    var lbox = document.getElementById('iris-wr-rail-lanes');
-    lbox.innerHTML = '';
-    IRIS_WROOM_LANES.forEach(function (lane) {
-        var row = document.createElement('div');
-        row.className = 'iris-wr-railrow';
-        row.innerHTML = '<span class="iris-wr-railtxt">' + lane[1] + '</span>' +
-            '<input type="checkbox" class="iris-wr-lane" data-kind="' +
-            lane[0] + '"' + (IRIS_WROOM._lanes[lane[0]] ? ' checked' : '') + '>';
-        lbox.appendChild(row);
-    });
-
-    /* Per-case sub-lanes */
-    var cases = (IRIS_WROOM._room && IRIS_WROOM._room.cases) || [];
-    document.getElementById('iris-wr-rail-case-count').textContent =
-        cases.length;
-    var cbox = document.getElementById('iris-wr-rail-cases');
-    cbox.innerHTML = '';
-    cases.forEach(function (c) {
-        var lanes = IRIS_WROOM._caseLanes[c.case_id] || {};
-        var open = !!IRIS_WROOM._caseOpen[c.case_id];
-        var row = document.createElement('div');
-        row.innerHTML =
-            '<div class="iris-wr-railrow">' +
-            '<span class="iris-wr-chev iris-wr-case-chev" data-case-id="' +
-            c.case_id + '">' + (open ? '&#9662;' : '&#9656;') + '</span>' +
-            '<span class="iris-wr-railtxt" title="' +
-            iris_wroom_esc(c.case_name) + '">#' + c.case_id + ' - ' +
-            iris_wroom_esc(c.case_name) + '</span>' +
-            '<input type="checkbox" class="iris-wr-railcase" data-case-id="' +
-            c.case_id + '"' + (lanes.__all === false ? '' : ' checked') + '>' +
-            '</div>' +
-            '<div class="iris-wr-sublanes' + (open ? ' open' : '') +
-            '" data-case-id="' + c.case_id + '">' +
-            IRIS_WROOM_SUBLANES.map(function (sl) {
-                return '<div class="iris-wr-railrow">' +
-                    '<span class="iris-wr-railtxt">' + sl[1] + '</span>' +
-                    '<input type="checkbox" class="iris-wr-railsub" ' +
-                    'data-case-id="' + c.case_id + '" data-sublane="' + sl[0] +
-                    '"' + (lanes[sl[0]] === false ? '' : ' checked') + '></div>';
-            }).join('') + '</div>';
-        cbox.appendChild(row);
-    });
-
-    /* Slash-command catalog */
-    var cmd = document.getElementById('iris-wr-cmdlist');
-    if (!cmd.childElementCount) {
-        cmd.innerHTML = IRIS_WROOM_COMMANDS.map(function (c) {
-            return '<div><code>' + iris_wroom_esc(c[0]) + '</code>' +
-                '<div class="iris-wr-cmddesc">' + iris_wroom_esc(c[1]) +
-                '</div></div>';
-        }).join('');
-    }
-}
-
-function iris_wroom_render_chat() {
-    var box = document.getElementById('iris-wr-chat');
-    var stick = (box.scrollHeight - box.scrollTop - box.clientHeight) < 80
-        || box.childElementCount === 0;
-    /* v3 chat is chronological: oldest at top, composer at the bottom. */
-    var items = iris_wroom_visible_stream().slice().reverse();
-    document.getElementById('iris-wr-stream-empty').style.display =
-        items.length ? 'none' : '';
-    box.innerHTML = '';
-    var lastDate = '';
-    items.forEach(function (i) {
-        var d = i.created_at ? new Date(i.created_at) : null;
-        var dateKey = d ? ((d.getMonth() + 1) + '/' + d.getDate() + '/' +
-            d.getFullYear()) : '';
-        if (dateKey && dateKey !== lastDate) {
-            lastDate = dateKey;
-            var sep = document.createElement('div');
-            sep.className = 'iris-wr-datesep';
-            sep.innerHTML = '<span>' + dateKey + '</span>';
-            box.appendChild(sep);
-        }
-        var mnames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
-                      'Sep', 'Oct', 'Nov', 'Dec'];
-        var time = d ? (mnames[d.getMonth()] + ' ' + d.getDate() + ', ' +
-            d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}))
-            : '';
-        var div = document.createElement('div');
-        if (i.kind === 'message') {
-            div.className = 'iris-wr-msgrow';
-            if (i.msg_kind === 'decision') div.className += ' iris-wr-kind-decision';
-            if (i.msg_kind === 'note') div.className += ' iris-wr-kind-note';
-            if (i.parent_id) div.className += ' iris-wr-reply';
-            var head = '<strong>' + iris_wroom_esc(i.user_name) + '</strong>' +
-                (i.is_guest ? ' <span class="iris-wr-thread-badge" title="Guest participant (portal)">guest</span>' : '') +
-                '<span class="iris-wr-msg-time">' + time + '</span>' +
-                (i.pinned ? ' <span title="Pinned">&#128204;</span>' : '') +
-                (i.msg_kind === 'decision'
-                    ? ' <span class="iris-wr-thread-badge">decision</span>' : '') +
-                (i.msg_kind === 'note'
-                    ? ' <span class="iris-wr-thread-badge">note</span>' : '') +
-                (i.thread_title
-                    ? ' <span class="iris-wr-thread-badge"># ' +
-                      iris_wroom_esc(i.thread_title) + '</span>' : '') +
-                (i.topic && i.topic !== 'main'
-                    ? ' <span class="iris-wr-thread-badge">#' +
-                      iris_wroom_esc(i.topic) + '</span>' : '');
-            var replyRef = i.parent_id
-                ? '<div class="iris-wr-reply-ref">&#8618; replying to ' +
-                  iris_wroom_esc(i.parent_snippet || 'a message') + '</div>'
-                : '';
-            var actions = (iris_wroom_can('responder') && iris_wroom_active())
-                ? '<div class="iris-wr-msg-actions">' +
-                  '<a href="#" class="iris-wr-act-reply" data-msg-id="' + i.id +
-                  '" data-snippet="' + iris_wroom_esc(
-                      (i.thread_title || i.content || '').slice(0, 40)) +
-                  '">Reply</a>' +
-                  '<a href="#" class="iris-wr-act-pin" data-msg-id="' + i.id +
-                  '" data-pinned="' + (i.pinned ? '1' : '0') + '">' +
-                  (i.pinned ? 'Unpin' : 'Pin') + '</a></div>'
-                : '';
-            div.innerHTML = iris_wroom_avatar(i.user_name) +
-                '<div style="min-width:0; flex:1 1 auto;">' + replyRef +
-                '<div class="iris-wr-msg-head">' + head + '</div>' +
-                '<div class="iris-wr-msg-body">' +
-                iris_wroom_render_body(i.content) +
-                '</div></div>' + actions;
-        } else if (i.kind === 'poll' && i.poll) {
-            div.innerHTML = iris_wroom_render_poll(i.poll, time);
-        } else {
-            div.className = 'iris-wr-sysrow';
-            var icon = {system: '&#9881;', sitrep: '&#128196;',
-                        task_event: '&#9989;', case_link: '&#128279;',
-                        case_activity: '&#9679;', decision: '&#9878;'}[i.kind] || '&#9881;';
-            div.innerHTML = icon + ' ' + iris_wroom_esc(i.content) +
-                (i.kind === 'decision' && /^\d+$/.test(String(i.decision_id))
-                    ? ' <a href="#" class="iris-wr-open-decision" data-decision-id="' +
-                      String(parseInt(i.decision_id, 10)) + '">Open</a>' : '') +
-                (i.case_id ? '<span class="iris-wr-case-chip">' +
-                    '<a href="/case?cid=' + i.case_id + '">Case #' +
-                    i.case_id + '</a></span>' : '') +
-                '<span class="iris-wr-msg-time"' +
-                (i.case_id ? '' : ' style="margin-left:auto;"') + '>' +
-                time + '</span>';
-        }
-        box.appendChild(div);
-    });
-    if (stick) box.scrollTop = box.scrollHeight;
-    iris_wroom_render_rail();
-}
-
+/* The Stream tab (three columns, Activity panel, threads...) is drawn by
+   war_room_stream.js; this refreshes it after a change made here. */
 function iris_wroom_load_stream() {
-    iris_wroom_api('GET', '/stream?limit=200').then(function (res) {
-        if (!res.ok) return;
-        IRIS_WROOM._stream = res.j.stream || [];
-        IRIS_WROOM._topics = res.j.topics || ['main'];
-        iris_wroom_render_chat();
-    });
+    if (window.IrisRoomStream) window.IrisRoomStream.afterPost();
 }
 
 /* ------------------------------------------------------------------ polls */
@@ -987,29 +701,19 @@ function iris_wroom_cmd_status(txt) {
 }
 
 function iris_wroom_set_target(target) {
-    IRIS_WROOM._target = target;
-    var chip = document.getElementById('iris-wr-post-target');
-    var clear = document.getElementById('iris-wr-target-clear');
-    if (target.mode === 'topic') {
-        chip.textContent = '# ' + (target.topic === 'main'
-            ? 'Main' : target.topic);
-        clear.style.display = target.topic === 'main' ? 'none' : '';
-    } else {
-        chip.textContent = '↪ ' + (target.label || 'thread');
-        clear.style.display = '';
-    }
+    /* topics only: a reply goes through the thread panel (war_room_stream.js) */
+    var topic = (target && target.topic) || 'main';
+    IRIS_WROOM._target = {mode: 'topic', topic: topic, parentId: null, label: null};
+    if (window.IrisRoomStream) window.IrisRoomStream.setTarget(topic);
 }
 
 function iris_wroom_post(fields, keepTarget) {
+    /* the box is cleared once the post lands - unless the person has typed on since */
+    var input = document.getElementById('iris-wr-msg-input');
+    var sent = input.value;
     return iris_wroom_api('POST', '/messages', fields).then(function (res) {
         if (res.ok) {
-            document.getElementById('iris-wr-msg-input').value = '';
-            /* A one-off reply resets to # Main; a named-thread target
-             * (persistent) keeps receiving messages until cleared. */
-            if (!keepTarget && IRIS_WROOM._target.mode === 'reply'
-                    && !IRIS_WROOM._target.persistent) {
-                iris_wroom_set_target({mode: 'topic', topic: 'main'});
-            }
+            if (input.value === sent) input.value = '';
             iris_wroom_load_stream();
         } else {
             iris_wroom_cmd_status(res.j.message || 'Failed');
@@ -1043,7 +747,43 @@ function iris_wroom_resolve_user(login) {
  * the last whitespace, NOT the last '@' — an email-shaped login contains
  * its own '@' and must not break the palette mid-completion. */
 
-var IRIS_WROOM_MENTION = {open: false, items: [], idx: 0, start: -1};
+var IRIS_WROOM_MENTION = {open: false, items: [], idx: 0, start: -1,
+                          input: null, pop: null};
+
+/* iris-ng 2026-11-08: the palette follows the composer being typed in (the
+   main one by default, the thread panel's when bound). */
+function iris_wroom_mention_bind(input, pop) {
+    IRIS_WROOM_MENTION.input = input || null;
+    IRIS_WROOM_MENTION.pop = pop || null;
+}
+function iris_wroom_mention_input() {
+    return IRIS_WROOM_MENTION.input || document.getElementById('iris-wr-msg-input');
+}
+function iris_wroom_mention_pop() {
+    return IRIS_WROOM_MENTION.pop || document.getElementById('iris-wr-mention-pop');
+}
+/* An open palette owns Tab / Enter / arrows / Escape; true when it took the key. */
+function iris_wroom_mention_key(e) {
+    var ms = IRIS_WROOM_MENTION;
+    if (!ms.open) return false;
+    if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        iris_wroom_mention_complete();
+        return true;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        ms.idx = (ms.idx + (e.key === 'ArrowDown' ? 1 : ms.items.length - 1)) % ms.items.length;
+        iris_wroom_mention_render();
+        return true;
+    }
+    if (e.key === 'Escape') {
+        ms.open = false;
+        iris_wroom_mention_render();
+        return true;
+    }
+    return false;
+}
 
 function iris_wroom_mention_candidates() {
     var out = [];
@@ -1071,7 +811,7 @@ function iris_wroom_mention_candidates() {
 }
 
 function iris_wroom_mention_ctx() {
-    var input = document.getElementById('iris-wr-msg-input');
+    var input = iris_wroom_mention_input();
     var pos = input.selectionStart;
     var before = input.value.slice(0, pos);
     var ws = Math.max(before.lastIndexOf(' '), before.lastIndexOf('\n'),
@@ -1082,7 +822,8 @@ function iris_wroom_mention_ctx() {
 }
 
 function iris_wroom_mention_render() {
-    var pop = document.getElementById('iris-wr-mention-pop');
+    var pop = iris_wroom_mention_pop();
+    if (!pop) return;
     var s = IRIS_WROOM_MENTION;
     if (!s.open || !s.items.length) {
         s.open = false;
@@ -1128,7 +869,7 @@ function iris_wroom_mention_complete(i) {
     var s = IRIS_WROOM_MENTION;
     var it = s.items[i === undefined ? s.idx : i];
     if (!it) { return; }
-    var input = document.getElementById('iris-wr-msg-input');
+    var input = iris_wroom_mention_input();
     var v = input.value;
     input.value = v.slice(0, s.start) + '@' + it.login + ' '
         + v.slice(input.selectionStart);
@@ -1263,22 +1004,29 @@ function iris_wroom_run_command(line) {
         });
     case 'thread':
         if (!arg) return need('/thread <title>');
-        return iris_wroom_post({content: arg, thread_title: arg}, true)
+        return iris_wroom_post(Object.assign({content: arg, thread_title: arg}, base), true)
             .then(function (res) {
                 if (res.ok) {
-                    iris_wroom_set_target({mode: 'reply', parentId: res.j.id,
-                                           label: arg, persistent: true});
+                    if (window.IrisRoomStream) window.IrisRoomStream.openThread(res.j.id);
                     iris_wroom_cmd_status('Thread "' + arg + '" opened');
                 }
             });
     case 'topic': {
         if (!arg) return need('/topic <name>');
-        var name = arg.replace(/^#/, '').slice(0, 64);
-        iris_wroom_set_target({mode: 'topic', topic: name});
-        document.getElementById('iris-wr-msg-input').value = '';
-        iris_wroom_cmd_status('Posting to # ' + name +
-            ' — the topic appears once you send a message');
-        return;
+        var name = arg.replace(/^#/, '').trim().slice(0, 64);
+        return iris_wroom_api('POST', '/topics', {name: name}).then(function (res) {
+            /* an existing live topic is fine: switch to it */
+            if (!res.ok && res.status !== 409) {
+                return iris_wroom_cmd_status(res.j.message || 'Topic failed');
+            }
+            if (!res.ok && /archived/.test(res.j.message || '')) {
+                return iris_wroom_cmd_status(res.j.message);
+            }
+            document.getElementById('iris-wr-msg-input').value = '';
+            iris_wroom_set_target({mode: 'topic', topic: res.ok ? res.j.name : name});
+            iris_wroom_cmd_status('Posting to # ' + (res.ok ? res.j.name : name));
+            iris_wroom_load_stream();
+        });
     }
     default:
         iris_wroom_cmd_status('Unknown command /' + cmd +
@@ -1287,20 +1035,20 @@ function iris_wroom_run_command(line) {
 }
 
 function iris_wroom_send() {
-    var input = document.getElementById('iris-wr-msg-input');
-    var content = input.value.trim();
-    if (!content) return;
     iris_wroom_cmd_status('');
     document.getElementById('iris-wr-cmd-pop').style.display = 'none';
+    /* the Stream tab adds the attachments and the topic (war_room_stream.js) */
+    if (window.IrisRoomStream) {
+        window.IrisRoomStream.send();
+        return;
+    }
+    var content = document.getElementById('iris-wr-msg-input').value.trim();
+    if (!content) return;
     if (content.charAt(0) === '/') {
         iris_wroom_run_command(content);
         return;
     }
-    var t = IRIS_WROOM._target;
-    var fields = t.mode === 'topic'
-        ? {content: content, topic: t.topic}
-        : {content: content, parent_id: t.parentId};
-    iris_wroom_post(fields, t.mode === 'reply' && t.persistent);
+    iris_wroom_post({content: content, topic: IRIS_WROOM._target.topic});
 }
 
 /* -------------------------------------------------------------- room tasks */
@@ -3023,10 +2771,7 @@ function iris_wroom_show_pane(name) {
     iris_wroom_fit_doc();
     /* The stream renders while hidden (the 5 s poll) and a hidden box cannot
        scroll: showing it lands on the newest message (a room opens on its Board). */
-    if (name === 'stream') {
-        var chat = document.getElementById('iris-wr-chat');
-        if (chat) chat.scrollTop = chat.scrollHeight;
-    }
+    if (name === 'stream' && window.IrisRoomStream) window.IrisRoomStream.shown();
     /* The Board refreshes when shown again after a minute away. */
     if (name === 'board' && IRIS_WROOM._loadedTabs.board && window.IrisRoomBoard) window.IrisRoomBoard.boardShown();
     /* Lazy-load the read-only aggregation tabs on first open. */
@@ -3087,6 +2832,11 @@ function iris_wroom_pane_from_url() {
     var q = new URLSearchParams(window.location.search);
     var pane = q.get('pane'), d = q.get('d'), status = q.get('status');
     if (!pane || !/^[a-z]+$/.test(pane)) return false;
+    /* ?pane=stream&thread=<id>: a thread-reply notification opens the thread panel */
+    var thread = q.get('thread');
+    if (pane === 'stream' && /^\d+$/.test(thread || '') && window.IrisRoomStream) {
+        window.IrisRoomStream.openThread(parseInt(thread, 10));
+    }
     var scope = null;
     if (pane === 'scope') {
         scope = {};
@@ -3126,16 +2876,21 @@ document.addEventListener('DOMContentLoaded', function () {
        case deep links into text. */
     IRIS_WROOM._guest = !!document.getElementById('iris-wr-guest-mode');
 
+    iris_wroom_render_cmdlist();
     iris_wroom_load_room().then(function (room) {
         if (!room) return;
-        iris_wroom_load_stream();
+        if (window.IrisRoomStream) {
+            window.IrisRoomStream.mount({roomId: IRIS_WROOM._rid, guest: IRIS_WROOM._guest});
+        }
         iris_wroom_load_sitreps();
         if (!IRIS_WROOM._guest) iris_wroom_load_correlation();
         iris_wroom_load_room_tasks();
         /* Teams used to load lazily on the Teams tab; the @-mention palette
          * needs the slugs at composer time, so load them at boot too. */
         iris_wroom_load_teams();
-        IRIS_WROOM._pollTimer = setInterval(iris_wroom_load_stream, 5000);
+        IRIS_WROOM._pollTimer = setInterval(function () {
+            if (window.IrisRoomStream) window.IrisRoomStream.poll();
+        }, 5000);
         /* ?note=<id> (Copy link on the Notes rail) opens that note;
            ?pane=<name>[&d=<decision id>] opens a tab (notifications link there);
            otherwise the room opens on its Board (2026-11-07). */
@@ -3170,88 +2925,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    /* Stream filters — delegated on the rail (it re-renders per refresh). */
-    document.querySelector('.iris-wr-rail')
-        .addEventListener('change', function (e) {
-            var cb = e.target;
-            if (cb.classList.contains('iris-wr-lane')) {
-                IRIS_WROOM._lanes[cb.getAttribute('data-kind')] = cb.checked;
-            } else if (cb.classList.contains('iris-wr-railtopic')) {
-                var sel = new Set();
-                document.querySelectorAll('.iris-wr-railtopic')
-                    .forEach(function (c) {
-                        if (c.checked) sel.add(c.getAttribute('data-topic'));
-                    });
-                IRIS_WROOM._topicSel =
-                    (sel.size === IRIS_WROOM._topics.length) ? null : sel;
-            } else if (cb.classList.contains('iris-wr-railthread')) {
-                var all = document.querySelectorAll('.iris-wr-railthread');
-                var tsel = new Set();
-                all.forEach(function (c) {
-                    if (c.checked)
-                        tsel.add(parseInt(c.getAttribute('data-root-id'), 10));
-                });
-                IRIS_WROOM._threadSel = (tsel.size === all.length) ? null : tsel;
-            } else if (cb.classList.contains('iris-wr-railcase')) {
-                var cid = parseInt(cb.getAttribute('data-case-id'), 10);
-                var lanes = IRIS_WROOM._caseLanes[cid] || {};
-                lanes.__all = cb.checked;
-                IRIS_WROOM._caseLanes[cid] = lanes;
-            } else if (cb.classList.contains('iris-wr-railsub')) {
-                var scid = parseInt(cb.getAttribute('data-case-id'), 10);
-                var slanes = IRIS_WROOM._caseLanes[scid] || {};
-                slanes[cb.getAttribute('data-sublane')] = cb.checked;
-                IRIS_WROOM._caseLanes[scid] = slanes;
-            } else {
-                return;
-            }
-            iris_wroom_render_chat();
-        });
-    document.querySelector('.iris-wr-rail')
-        .addEventListener('click', function (e) {
-            var chev = e.target.closest('.iris-wr-case-chev');
-            if (chev) {
-                var cid = parseInt(chev.getAttribute('data-case-id'), 10);
-                IRIS_WROOM._caseOpen[cid] = !IRIS_WROOM._caseOpen[cid];
-                iris_wroom_render_rail();
-            }
-        });
     document.getElementById('iris-wr-cmd-toggle')
         .addEventListener('click', function () {
             document.getElementById('iris-wr-cmdlist')
                 .classList.toggle('open');
         });
-    document.getElementById('iris-wr-topic-add')
-        .addEventListener('click', function (e) {
-            e.preventDefault();
-            var name = window.prompt('New topic name:');
-            if (name && name.trim()) {
-                iris_wroom_set_target({mode: 'topic',
-                    topic: name.trim().replace(/^#/, '').slice(0, 64)});
-                iris_wroom_cmd_status('Posting to # ' + IRIS_WROOM._target.topic +
-                    ' — the topic appears once you send a message');
-                document.getElementById('iris-wr-msg-input').focus();
-            }
-        });
-    document.getElementById('iris-wr-chat-filter')
-        .addEventListener('input', function () {
-            IRIS_WROOM._chatQ = this.value.trim().toLowerCase();
-            iris_wroom_render_chat();
-        });
-    document.getElementById('iris-wr-clear-filters')
-        .addEventListener('click', function (e) {
-            e.preventDefault();
-            IRIS_WROOM._chatQ = '';
-            document.getElementById('iris-wr-chat-filter').value = '';
-            IRIS_WROOM._topicSel = null;
-            IRIS_WROOM._threadSel = null;
-            IRIS_WROOM._caseLanes = {};
-            IRIS_WROOM._lanes = {message: true, task_event: true, sitrep: true,
-                                 notes_pins: true, system: true,
-                                 case_link: true};
-            iris_wroom_render_chat();
-        });
-
     /* Composer: Enter sends, Shift+Enter newline; '/' opens the palette. */
     document.getElementById('iris-wr-msg-send')
         .addEventListener('click', iris_wroom_send);
@@ -3259,40 +2937,23 @@ document.addEventListener('DOMContentLoaded', function () {
         .addEventListener('keydown', function (e) {
             /* An open @-palette owns Tab/Enter/arrows/Escape — Enter
              * completes the mention instead of sending. */
-            var ms = IRIS_WROOM_MENTION;
-            if (ms.open) {
-                if (e.key === 'Tab' || e.key === 'Enter') {
-                    e.preventDefault();
-                    iris_wroom_mention_complete();
-                    return;
-                }
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    ms.idx = (ms.idx + 1) % ms.items.length;
-                    iris_wroom_mention_render();
-                    return;
-                }
-                if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    ms.idx = (ms.idx + ms.items.length - 1) % ms.items.length;
-                    iris_wroom_mention_render();
-                    return;
-                }
-                if (e.key === 'Escape') {
-                    ms.open = false;
-                    iris_wroom_mention_render();
-                    return;
-                }
-            }
+            iris_wroom_mention_bind(null, null);
+            if (iris_wroom_mention_key(e)) return;
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 iris_wroom_send();
             }
         });
     document.getElementById('iris-wr-msg-input')
-        .addEventListener('input', iris_wroom_mention_update);
+        .addEventListener('input', function () {
+            iris_wroom_mention_bind(null, null);
+            iris_wroom_mention_update();
+        });
     document.getElementById('iris-wr-msg-input')
-        .addEventListener('click', iris_wroom_mention_update);
+        .addEventListener('click', function () {
+            iris_wroom_mention_bind(null, null);
+            iris_wroom_mention_update();
+        });
     document.getElementById('iris-wr-msg-input')
         .addEventListener('blur', function () {
             /* Delayed so a click on the palette can land first. */
@@ -3301,12 +2962,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 iris_wroom_mention_render();
             }, 200);
         });
-    document.getElementById('iris-wr-mention-pop')
-        .addEventListener('click', function (e) {
-            var opt = e.target.closest('.iris-wr-cmd-opt');
-            if (!opt) { return; }
-            iris_wroom_mention_complete(parseInt(opt.getAttribute('data-i'), 10));
-        });
+    /* the main composer's palette and the thread panel's (it re-renders) */
+    document.addEventListener('click', function (e) {
+        var opt = e.target.closest('#iris-wr-mention-pop .iris-wr-cmd-opt, #iris-st-thread-mention-pop .iris-wr-cmd-opt');
+        if (!opt) { return; }
+        iris_wroom_mention_complete(parseInt(opt.getAttribute('data-i'), 10));
+    });
     document.getElementById('iris-wr-msg-input')
         .addEventListener('input', function () {
             var pop = document.getElementById('iris-wr-cmd-pop');
@@ -3338,12 +2999,6 @@ document.addEventListener('DOMContentLoaded', function () {
             this.style.display = 'none';
             input.focus();
         });
-    document.getElementById('iris-wr-target-clear')
-        .addEventListener('click', function (e) {
-            e.preventDefault();
-            iris_wroom_set_target({mode: 'topic', topic: 'main'});
-        });
-
     /* Polls */
     document.getElementById('iris-wr-poll-btn')
         .addEventListener('click', function (e) {
@@ -3457,47 +3112,6 @@ document.addEventListener('DOMContentLoaded', function () {
             pop.style.display = 'none';
         }
     });
-
-    /* Message hover actions: Reply + Pin (delegated on the chat box). */
-    document.getElementById('iris-wr-chat')
-        .addEventListener('click', function (e) {
-            var vote = e.target.closest('.iris-wr-poll-opt');
-            if (vote && !vote.classList.contains('closed')) {
-                iris_wroom_api('POST',
-                    '/polls/' + vote.getAttribute('data-poll-id') + '/vote',
-                    {option_id: parseInt(
-                        vote.getAttribute('data-option-id'), 10)})
-                    .then(iris_wroom_load_stream);
-                return;
-            }
-            var pclose = e.target.closest('.iris-wr-poll-close');
-            if (pclose) {
-                e.preventDefault();
-                iris_wroom_api('POST',
-                    '/polls/' + pclose.getAttribute('data-poll-id') + '/close', {})
-                    .then(iris_wroom_load_stream);
-                return;
-            }
-            var reply = e.target.closest('.iris-wr-act-reply');
-            if (reply) {
-                e.preventDefault();
-                iris_wroom_set_target({
-                    mode: 'reply',
-                    parentId: parseInt(reply.getAttribute('data-msg-id'), 10),
-                    label: reply.getAttribute('data-snippet')
-                });
-                document.getElementById('iris-wr-msg-input').focus();
-                return;
-            }
-            var pin = e.target.closest('.iris-wr-act-pin');
-            if (pin) {
-                e.preventDefault();
-                iris_wroom_api('POST',
-                    '/messages/' + pin.getAttribute('data-msg-id') + '/pin',
-                    {pinned: pin.getAttribute('data-pinned') !== '1'})
-                    .then(iris_wroom_load_stream);
-            }
-        });
 
     /* Room tasks (v3 tab) */
     document.getElementById('iris-wr-rtask-new')

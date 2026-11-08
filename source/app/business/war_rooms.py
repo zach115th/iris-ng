@@ -68,6 +68,9 @@ from app.models.models import WarRoomTimelineEvent
 
 log = app.app.logger
 
+# iris-ng 2026-11-08: importing the activity log module attaches its session listener (app and workers).
+from app.business import war_room_activity as _war_room_activity  # noqa: E402,F401
+
 ROLE_RANK = {'observer': 1, 'responder': 2, 'lead': 3}
 
 # v3 four-state model (maintainer decision). Only 'closed' is read-only;
@@ -168,6 +171,9 @@ def create_room(name, description, creator_id):
                                  role='lead', added_by=creator_id))
     # #115: default teams ride in the SAME transaction as the room.
     seed_default_teams(room, creator_id)
+    # iris-ng 2026-11-08: every room has its # Main topic row.
+    from app.business.war_room_stream import ensure_topic
+    ensure_topic(room, 'main', user_id=creator_id)
     db.session.commit()
     return room
 
@@ -235,8 +241,12 @@ def delete_room(room):
     """
     AiArtifact.query.filter_by(anchor_type='war_room',
                                anchor_id=room.id).delete()
-    WarRoom.query.filter_by(id=room.id).delete()
+    room_id = room.id
+    WarRoom.query.filter_by(id=room_id).delete()
     db.session.commit()
+    # iris-ng 2026-11-08: the files attached in its chat go with it (fail-soft; the rows cascaded).
+    from app.business.war_room_stream import delete_room_files
+    delete_room_files(room_id)
 
 
 def _room_summary_refresh(room, actor_id, reason):
@@ -335,7 +345,9 @@ def attach_case(room, case_id, actor_id):
 
 def detach_case(room, case_id, actor_id=None):
     _assert_writable(room)
-    WarRoomCaseLink.query.filter_by(room_id=room.id, case_id=case_id).delete()
+    # An ORM delete (not a bulk one) so the activity log records the detach.
+    for link in WarRoomCaseLink.query.filter_by(room_id=room.id, case_id=case_id).all():
+        db.session.delete(link)
     db.session.commit()
     _room_summary_refresh(room, actor_id, 'case_detached')
 
@@ -491,7 +503,8 @@ def add_team_member(room, team_id, user_id):
 def remove_team_member(room, team_id, user_id):
     _assert_writable(room)
     t = _get_team(room, team_id)
-    WarRoomTeamMember.query.filter_by(team_id=t.id, user_id=user_id).delete()
+    for row in WarRoomTeamMember.query.filter_by(team_id=t.id, user_id=user_id).all():
+        db.session.delete(row)
     db.session.commit()
 
 
@@ -513,7 +526,8 @@ def add_team_guest(room, team_id, guest_id):
 def remove_team_guest(room, team_id, guest_id):
     _assert_writable(room)
     t = _get_team(room, team_id)
-    WarRoomTeamGuest.query.filter_by(team_id=t.id, guest_id=int(guest_id)).delete()
+    for row in WarRoomTeamGuest.query.filter_by(team_id=t.id, guest_id=int(guest_id)).all():
+        db.session.delete(row)
     db.session.commit()
 
 
@@ -720,30 +734,50 @@ MESSAGE_KINDS = ('message', 'note', 'decision')
 def add_message(room, user_id, content, topic='main', kind='message',
                 parent_id=None, thread_title=None, pinned=False,
                 guest_id=None):
+    from app.business import war_room_stream as _ws
+    from app.models import war_room_stream_vocab as _sv
     _assert_writable(room)
     content = (content or '').strip()
     if not content:
         raise BusinessProcessingError('Empty message')
-    if len(content) > 20000:
+    if len(content) > _sv.MESSAGE_MAX:
         raise BusinessProcessingError('Message is too long')
     if kind not in MESSAGE_KINDS:
         raise BusinessProcessingError('Invalid message kind')
-    topic = (topic or 'main').strip()[:64] or 'main'
-    root_id = None
+    topic = _ws.clean_topic_name(topic or 'main')
+    root = None
     if parent_id:
         parent = db.session.get(WarRoomMessage, int(parent_id))
         # A reply is only valid inside its own room, and always anchors to
         # the ROOT of the thread (one-level threading, replies to a reply
         # re-anchor to the same root).
-        if parent is None or parent.room_id != room.id:
+        if parent is None or parent.room_id != room.id or parent.deleted_at is not None:
             raise BusinessProcessingError('Invalid reply target')
-        root_id = parent.parent_id or parent.id
+        root = db.session.get(WarRoomMessage, parent.parent_id) if parent.parent_id else parent
+        if root is None or root.deleted_at is not None:
+            raise BusinessProcessingError('Invalid reply target')
+        # A reply lives in its thread's topic.
+        topic = root.topic
+    # iris-ng 2026-11-08: an archived topic is read-only; attachments must be files of this room.
+    _ws.assert_topic_open(room, topic)
+    _ws.check_message_files(room, content)
+    _ws.ensure_topic(room, topic, user_id=user_id, guest_id=guest_id)
+    title = ' '.join((thread_title or '').split())[:_sv.THREAD_TITLE_MAX] or None
     msg = WarRoomMessage(room_id=room.id, user_id=user_id, guest_id=guest_id,
                          content=content,
-                         topic=topic, kind=kind, parent_id=root_id,
-                         thread_title=(thread_title or '').strip() or None,
+                         topic=topic, kind=kind, parent_id=root.id if root else None,
+                         thread_title=title if root is None else None,
                          pinned=bool(pinned))
     db.session.add(msg)
+    db.session.flush()
+    # Followers: the author of a named thread follows it; a reply makes the thread's author and the
+    # replier followers (unless either unfollowed it before).
+    if root is not None:
+        _ws.ensure_follow(root.id, user_id=root.user_id if root.guest_id is None else None,
+                          guest_id=root.guest_id)
+        _ws.ensure_follow(root.id, user_id=user_id, guest_id=guest_id)
+    elif title:
+        _ws.ensure_follow(msg.id, user_id=user_id, guest_id=guest_id)
     db.session.commit()
     # Post-commit, both fail-soft by contract. war_room_message is
     # QUIET-BY-DEFAULT (per-event code default in notifications.py) so
@@ -770,13 +804,15 @@ def add_message(room, user_id, content, topic='main', kind='message',
         room, content,
         f'{author_name} mentioned you in war room "{room.name}"',
         content[:500], actor_guest_id=guest_id)
+    if root is not None:
+        _ws.notify_thread_reply(room, root, msg, author_name, actor_id=user_id, actor_guest_id=guest_id)
     return msg
 
 
 def set_message_pinned(room, message_id, pinned):
     _assert_writable(room)
     msg = db.session.get(WarRoomMessage, int(message_id))
-    if msg is None or msg.room_id != room.id:
+    if msg is None or msg.room_id != room.id or msg.deleted_at is not None:
         raise BusinessProcessingError('Invalid message')
     msg.pinned = bool(pinned)
     db.session.commit()
@@ -1059,12 +1095,9 @@ def serialize_poll(poll, viewer_id, viewer_guest_id=None):
 # ------------------------------------------------------------------- topics
 
 def room_topics(room):
-    """Distinct topics, 'main' always first."""
-    rows = (db.session.query(WarRoomMessage.topic)
-            .filter_by(room_id=room.id).distinct().all())
-    topics = {r[0] for r in rows}
-    topics.add('main')
-    return ['main'] + sorted(t for t in topics if t != 'main')
+    """Topic names, 'main' always first (the topics endpoint carries their state)."""
+    from app.business.war_room_stream import topic_rows
+    return [t['name'] for t in topic_rows(room)]
 
 
 def list_messages(room, before_id=None, limit=50):
@@ -1264,130 +1297,16 @@ def sitrep_revisions(sitrep):
             .order_by(desc(SitRepRevision.revision_number)).all())
 
 
-def room_stream(room, viewer_id, limit=50, viewer_guest_id=None):
-    """The unified stream. Kinds (matching the v3 stream lanes):
-
-      message       chat (incl. /note + /decision via `kind` sub-field,
-                    replies via parent_id, named threads via thread_title)
-      task_event    room-task created/completed (derived from WarRoomTask)
-      sitrep        SitRep published (derived from SitRep rows)
-      system        member added (derived from WarRoomMember rows)
-      case_link     case attached (derived from WarRoomCaseLink rows —
-                    v3's "Case attached / detached" lane)
-      case_activity activity on linked cases, FILTERED to cases the VIEWER
-                    can access (membership does not grant case access)
-      decision      decision proposed / approved / rejected / superseded /
-                    implemented (derived from war_room_decision_event rows)
-
-    Everything except messages and case activity is DERIVED from stored
-    rows — no event log table. Newest-first."""
-    limit = min(int(limit or 50), 300)
-    items = []
-    msgs = list_messages(room, limit=limit)
-    root_snippets = {m.id: (m.thread_title or (m.content or '')[:60])
-                     for m in msgs}
-    for m in msgs:
-        items.append({
-            'kind': 'message', 'id': m.id, 'user_id': m.user_id,
-            'user_name': actor_label(m.user, m.guest),
-            'guest_id': m.guest_id, 'is_guest': m.guest_id is not None,
-            'content': m.content, 'created_at': m.created_at,
-            'topic': m.topic, 'msg_kind': m.kind,
-            'parent_id': m.parent_id,
-            'parent_snippet': root_snippets.get(m.parent_id),
-            'thread_title': m.thread_title, 'pinned': m.pinned,
-        })
-    visible = room_visible_case_ids(room.id, viewer_id,
-                                    guest=viewer_guest_id is not None)
-    if visible:
-        acts = (UserActivity.query.filter(
-                    UserActivity.case_id.in_(visible),
-                    UserActivity.display_in_ui.is_(True))
-                .order_by(desc(UserActivity.activity_date))
-                .limit(limit).all())
-        for a in acts:
-            items.append({
-                'kind': 'case_activity', 'id': a.id, 'case_id': a.case_id,
-                'content': a.activity_desc, 'created_at': a.activity_date,
-            })
-
-    def _uname(uid):
-        u = db.session.get(User, uid) if uid else None
-        return u.name if u else 'someone'
-
-    for link in WarRoomCaseLink.query.filter_by(room_id=room.id).all():
-        c = link.case
-        items.append({
-            'kind': 'case_link', 'case_id': link.case_id,
-            'content': (f'{_uname(link.added_by)} attached case '
-                        f'"{c.name}"' if c else
-                        f'{_uname(link.added_by)} attached case '
-                        f'#{link.case_id}'),
-            'created_at': link.added_at,
-        })
-    for m in WarRoomMember.query.filter_by(room_id=room.id).all():
-        items.append({
-            'kind': 'system',
-            'content': (f'{_uname(m.added_by)} added '
-                        f'{m.user.name if m.user else "a user"} '
-                        f'as {m.role}'),
-            'created_at': m.added_at,
-        })
-    for gst in WarRoomGuest.query.filter_by(room_id=room.id).all():
-        items.append({
-            'kind': 'system',
-            'content': f'{_uname(gst.invited_by)} invited guest {gst.label}',
-            'created_at': gst.created_at,
-        })
-        if gst.first_seen_at:
-            items.append({
-                'kind': 'system',
-                'content': f'Guest {gst.label} joined through the portal',
-                'created_at': gst.first_seen_at,
-            })
-        if gst.revoked_at:
-            items.append({
-                'kind': 'system',
-                'content': f'Guest {gst.label} was revoked',
-                'created_at': gst.revoked_at,
-            })
-    for s in SitRep.query.filter(SitRep.room_id == room.id,
-                                 SitRep.status == 'published').all():
-        items.append({
-            'kind': 'sitrep',
-            'content': (f'{s.publisher.name if s.publisher else "someone"} '
-                        f'published SitRep "{s.title}"'),
-            'created_at': s.published_at,
-        })
-    for p in WarRoomPoll.query.filter_by(room_id=room.id).all():
-        items.append({
-            'kind': 'poll', 'content': p.question,
-            'created_at': p.created_at,
-            'poll': serialize_poll(p, viewer_id, viewer_guest_id),
-        })
-    for t in WarRoomTask.query.filter_by(room_id=room.id).all():
-        assignee = (f' → {actor_label(t.assignee, t.assignee_guest, "")}'
-                    if (t.assignee or t.assignee_guest) else '')
-        creator = (t.created_by_guest.label if t.created_by_guest
-                   else _uname(t.created_by))
-        items.append({
-            'kind': 'task_event',
-            'content': (f'{creator} created task '
-                        f'"{t.title}"{assignee}'),
-            'created_at': t.created_at,
-        })
-        if t.status == 'done' and t.done_at:
-            items.append({
-                'kind': 'task_event',
-                'content': (f'{t.done_by_guest.label if t.done_by_guest else _uname(t.done_by)} '
-                            f'completed task "{t.title}"'),
-                'created_at': t.done_at,
-            })
-    # iris-ng 2026-11-07: decisions proposed / decided / implemented, derived from their trail rows.
-    from app.business.war_room_decisions import stream_items as _decision_stream_items
-    items.extend(_decision_stream_items(room.id))
-    items.sort(key=lambda i: (i['created_at'] or datetime.min), reverse=True)
-    return items[:limit]
+def room_stream(room, viewer_id, limit=50, viewer_guest_id=None, kinds=None, before=None, topics=None,
+                q=None, include_replies=False):
+    """The newest stream items (iris-ng 2026-11-08: one paged feed, app.business.war_room_stream). Kinds:
+    app.models.war_room_stream_vocab.KINDS - messages and polls, the room's activity log (notes, pins,
+    SitReps, cases attached / detached, tasks, members, the room's state and priority...), the attached
+    cases' activity FILTERED to the cases the viewer can open (membership does not grant case access) and
+    the decision trail. Newest first."""
+    from app.business.war_room_stream import stream_page
+    return stream_page(room, viewer_id, viewer_guest_id=viewer_guest_id, kinds=kinds, before=before,
+                       limit=limit, topics=topics, q=q, include_replies=include_replies)['items']
 
 
 # --------------------------------------------- read-only tab aggregations

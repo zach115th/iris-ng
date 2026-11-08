@@ -1742,9 +1742,15 @@ class WarRoomMessage(db.Model):
     pinned = Column(Boolean, nullable=False, default=False,
                     server_default=text('false'))
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
+    # iris-ng 2026-11-08: the author edited it (shown "(edited)"); a deleted message is hidden from
+    # the stream and its thread (soft delete: who deleted it stays on the row).
+    edited_at = Column(DateTime, nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
+    deleted_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    deleted_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
 
-    user = relationship('User')
-    guest = relationship('WarRoomGuest')
+    user = relationship('User', foreign_keys=[user_id])
+    guest = relationship('WarRoomGuest', foreign_keys=[guest_id])
 
     __table_args__ = (
         Index('idx_war_room_message_room_id_id', 'room_id', 'id'),
@@ -2947,3 +2953,124 @@ class WarRoomBoard(db.Model):
     widgets = Column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
     updated_at = Column(DateTime, nullable=True)
     updated_by_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+
+
+# --------------------------------------------------------------------------------------------- the Stream
+# iris-ng 2026-11-08: the war-room Stream in three columns (Conversation, chat, Activity), its room
+# activity log, each person's Activity settings, topics, reactions, followed threads and attached files.
+from app.models import war_room_stream_vocab as _sv  # noqa: E402
+
+
+class WarRoomActivity(db.Model):
+    """The room's activity log: one row per change in the room (members, teams, notes, tasks, timelines,
+    SitReps, cases attached / detached...), with who made it. Written by the session listener in
+    app.business.war_room_activity; `kind` is the stream kind the row shows as, `activity_type` is
+    `<family>.<verb>`. An actor of NULL is IRIS itself (a worker, an automatic step)."""
+    __tablename__ = 'war_room_activity'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(BigInteger, ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False)
+    kind = Column(String(24), nullable=False)
+    activity_type = Column(String(48), nullable=False)
+    body = Column(Text, nullable=False)
+    actor_id = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    actor_guest_id = Column(BigInteger, ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
+    ref_type = Column(String(32), nullable=True)
+    ref_id = Column(BigInteger, nullable=True)
+    ref_case_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    __table_args__ = (
+        CheckConstraint(_sv.sql_in('kind', _sv.ACTIVITY_KINDS), name='ck_war_room_activity_kind'),
+        Index('ix_war_room_activity_room_created', 'room_id', 'created_at'),
+    )
+
+
+class WarRoomStreamPref(db.Model):
+    """A user's Activity settings (where each lane goes, fold, quiet mode, mutes); one row per user,
+    applied in every war room. Normalised by war_room_stream_vocab.normalise_prefs on read and write."""
+    __tablename__ = 'war_room_stream_pref'
+
+    user_id = Column(BigInteger, ForeignKey('user.id', ondelete='CASCADE'), primary_key=True)
+    prefs = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    updated_at = Column(DateTime, nullable=True)
+
+
+class WarRoomTopic(db.Model):
+    """A chat topic of a room (# Main is the one every room has and the only one that cannot be
+    archived). Messages keep the topic NAME in `war_room_message.topic`; this row carries its state.
+    An archived topic is read-only."""
+    __tablename__ = 'war_room_topic'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(BigInteger, ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False)
+    name = Column(String(64), nullable=False)
+    created_by = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    created_by_guest_id = Column(BigInteger, ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    archived_at = Column(DateTime, nullable=True)
+    archived_by = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    archived_by_guest_id = Column(BigInteger, ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('room_id', 'name', name='uq_war_room_topic_room_name'),
+    )
+
+
+class WarRoomMessageReaction(db.Model):
+    """An emoji reaction to a chat message, by a user OR a guest (exactly one)."""
+    __tablename__ = 'war_room_message_reaction'
+
+    id = Column(BigInteger, primary_key=True)
+    message_id = Column(BigInteger, ForeignKey('war_room_message.id', ondelete='CASCADE'), nullable=False,
+                        index=True)
+    user_id = Column(BigInteger, ForeignKey('user.id', ondelete='CASCADE'), nullable=True)
+    guest_id = Column(BigInteger, ForeignKey('war_room_guest.id', ondelete='CASCADE'), nullable=True)
+    emoji = Column(String(32), nullable=False)
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    __table_args__ = (
+        UniqueConstraint('message_id', 'user_id', 'emoji', name='uq_war_room_message_reaction_user'),
+        Index('uq_war_room_message_reaction_guest', 'message_id', 'guest_id', 'emoji', unique=True,
+              postgresql_where=text('guest_id IS NOT NULL')),
+        CheckConstraint('(user_id IS NULL) <> (guest_id IS NULL)', name='ck_war_room_message_reaction_actor'),
+    )
+
+
+class WarRoomThreadFollow(db.Model):
+    """Who follows a thread (its root message): followers hear about every reply. The author of the root
+    and everyone who replies follow it automatically; `following` false keeps an explicit unfollow."""
+    __tablename__ = 'war_room_thread_follow'
+
+    id = Column(BigInteger, primary_key=True)
+    message_id = Column(BigInteger, ForeignKey('war_room_message.id', ondelete='CASCADE'), nullable=False,
+                        index=True)
+    user_id = Column(BigInteger, ForeignKey('user.id', ondelete='CASCADE'), nullable=True)
+    guest_id = Column(BigInteger, ForeignKey('war_room_guest.id', ondelete='CASCADE'), nullable=True)
+    following = Column(Boolean, nullable=False, server_default=text('true'))
+    updated_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    __table_args__ = (
+        UniqueConstraint('message_id', 'user_id', name='uq_war_room_thread_follow_user'),
+        Index('uq_war_room_thread_follow_guest', 'message_id', 'guest_id', unique=True,
+              postgresql_where=text('guest_id IS NOT NULL')),
+        CheckConstraint('(user_id IS NULL) <> (guest_id IS NULL)', name='ck_war_room_thread_follow_actor'),
+    )
+
+
+class WarRoomFile(db.Model):
+    """A file attached to the room's chat. Stored on disk under DATASTORE_PATH/war-rooms/room-<id>/
+    wrf-<uuid>; `mime_type` is an image type only when the first bytes say so (never the declared type)."""
+    __tablename__ = 'war_room_file'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(BigInteger, ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False, index=True)
+    file_uuid = Column(UUID(as_uuid=True), nullable=False, default=uuid.uuid4,
+                       server_default=text('gen_random_uuid()'))
+    filename = Column(Text, nullable=False)
+    mime_type = Column(String(128), nullable=False)
+    size = Column(BigInteger, nullable=False)
+    sha256 = Column(String(64), nullable=False)
+    uploaded_by = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    uploaded_by_guest_id = Column(BigInteger, ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))

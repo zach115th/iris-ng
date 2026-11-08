@@ -57,51 +57,67 @@
     },
     "room.stream": {
       "title": "Stream",
-      "text": "The room's shared feed: messages, decisions, pinned notes and polls, entries IRIS-NG writes itself (members added, guests invited or joining, cases attached, room tasks created and completed, SitReps published) and the activity of the linked cases. It refreshes every 5 seconds and holds the latest 200 entries.\n\nThe filters on this rail and the search box change only what you see, and reset when the page reloads.",
-      "aka": ["chat", "feed", "messages", "filters"],
+      "text": "The room's conversation, in three columns. Left, Conversation: topics, threads, Decisions & Pins and the slash commands. Middle, the chat: messages (react, reply in a thread, edit or delete your own, pin them), polls and the lanes you send to the chat. Right, the Activity panel: what changes in the room and on its cases. The search box filters the chat; older entries load as you scroll up. Where each lane goes is yours to set in the Activity settings.",
+      "aka": ["chat", "feed", "messages", "conversation"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.activity": {
+      "title": "Activity panel",
+      "text": "Everything that happens around the conversation: activity on the attached cases, changes in the room (members, teams, notes, tasks, timelines, SitReps, cases attached or detached, its state and priority), room tasks assigned or completed, and system events. Filter it, pick a lane with the chips, pause it while you read, open a run of similar events with Show all, or quote a line into the chat with Discuss in chat. The bell on a line mutes that kind of event, that case or that lane. Drag its edge to resize it, or hide it.",
+      "aka": ["activity", "rail", "room activity", "audit", "log"],
       "wiki": "War-Rooms#the-stream",
       "guest": true
     },
     "room.stream_lanes": {
-      "title": "Stream lanes",
-      "text": "Turn kinds of stream entries on or off for your view. Activity from the linked cases is filtered per case under Cases, below.",
+      "title": "Activity settings",
+      "text": "Where each lane goes: Rail (the Activity panel), Chat (inline in the conversation) or Off (nowhere). Messages and polls always stay in the chat. Fold bursts turns 3 or more similar events in a row into one line you can open; Quiet mode hides case \"updated\" events and keeps creations, deletions and state changes. Under Cases you can mute an attached case or single kinds of its activity. Saved to your profile and used in every war room you open (a guest's settings stay in its browser).",
       "items": [
-        {"name": "Messages", "text": "Chat messages and polls."},
-        {"name": "Tasks", "text": "Room tasks created and completed."},
-        {"name": "SitReps", "text": "SitReps being published."},
-        {"name": "Notes / Pins", "text": "Decisions, notes and pinned messages."},
-        {"name": "System", "text": "Members added; guests invited, joining or revoked."},
-        {"name": "Case attached / detached", "text": "Cases attached to the room. Detaching a case removes its entry with the link."}
+        {"name": "Case activity", "text": "Activity on the attached cases you can open. Rail by default."},
+        {"name": "War-room activity", "text": "Changes in the room, by family (members, notes, tasks...). Rail by default."},
+        {"name": "Tasks", "text": "Room tasks assigned or completed. Rail by default."},
+        {"name": "System", "text": "The room created, its state changed, a guest joining. Rail by default."},
+        {"name": "Notes / Pins", "text": "Room notes created and messages pinned. Chat by default."},
+        {"name": "Decisions", "text": "Decisions proposed, decided and implemented. Chat by default."},
+        {"name": "SitReps", "text": "SitReps published. Chat by default."},
+        {"name": "Case attached / detached", "text": "Cases joining or leaving the room. Chat by default."}
       ],
-      "aka": ["lanes", "system lane", "filter"],
+      "aka": ["lanes", "filters", "mute", "quiet mode", "fold"],
       "wiki": "War-Rooms#the-stream",
       "guest": true
     },
     "room.case_activity": {
-      "title": "Case activity in the stream",
-      "text": "What happens on the linked cases (notes, IOCs, assets, evidence, tasks, timeline events, lifecycle) is mirrored into the stream. Untick a case to hide its activity, or open it with the arrow to hide single kinds. The kinds are sorted by keywords in the activity text, so some entries land in Other. A member sees activity only from the cases they can open; a guest sees every attached case.",
-      "aka": ["sub-lanes", "case lanes", "activity"],
+      "title": "Case activity",
+      "text": "What happens on the attached cases (notes, IOCs, assets, evidence, tasks, timeline events, the case's lifecycle) shows in the Activity panel by default, each line with who did it and a link to its case. In the Activity settings you can mute a case or single kinds of its activity, and Quiet mode hides its \"updated\" lines. A member sees activity only from the cases they can open; a guest sees every attached case.",
+      "aka": ["case lanes", "activity", "mute"],
       "wiki": "War-Rooms#the-stream",
       "guest": true
     },
     "room.topics": {
       "title": "Topics",
-      "text": "Channels inside the stream; # Main always exists. Use + or /topic <name> to post to a new topic: it appears in this list once a message has been posted to it. Untick topics to hide their messages; 'Posting to' above the message box shows where your next message goes.",
-      "aka": ["channel", "/topic", "main"],
+      "text": "Channels inside the chat; # Main always exists. + or /topic <name> creates one. 'Posting to' above the message box shows and changes where your next message goes (marked post in this list). The dot shows or hides a topic's messages; a click on its name shows only that topic. A lead or the person who created a topic can archive it: its messages leave the chat and it turns read-only, listed under Archived until it is restored.",
+      "aka": ["channel", "/topic", "main", "archive"],
       "wiki": "War-Rooms#the-stream",
       "guest": true
     },
     "room.threads": {
       "title": "Threads",
-      "text": "A thread is a message and its replies. Reply (hover a message) answers it once; /thread <title> starts a named thread and keeps your messages going to it until you clear the target with the x next to 'Posting to'. Threads are one level deep: a reply to a reply joins the same thread. Untick threads to hide them.",
-      "aka": ["reply", "/thread", "conversation"],
+      "text": "A thread is a message and its replies, opened beside the chat (Reply in thread when you hover a message, or the replies chip under it); /thread <title> starts a named one. Replies stay in their thread and the chat counts them. Whoever wrote the first message and everyone who replies follow the thread and hear about each new reply (guests by email); Follow / Unfollow changes that for you. The author or a lead can rename it.",
+      "aka": ["reply", "/thread", "follow", "conversation"],
       "wiki": "War-Rooms#the-stream",
       "guest": true
     },
     "room.decisions_pins": {
       "title": "Decisions and pins",
-      "text": "/decision <text> records a decision; /pin <text> posts a pinned note, and Pin (hover a message) pins an existing one. They are counted here and shown in the Notes / Pins lane, and they are copied into the ICS 214 activity log when the ICS forms are created.",
+      "text": "The room's register of record: its decisions (the Decisions tab), its pinned messages (Pin when you hover a message, or /pin <text>) and its notes. Search them here; a click jumps to the entry - the decision, the message in the chat or in its thread, or the note. Pinned messages and /decision entries are also copied into the ICS 214 activity log when the ICS forms are created.",
       "aka": ["/decision", "/pin", "pinned", "decision log"],
+      "wiki": "War-Rooms#the-stream",
+      "guest": true
+    },
+    "room.attachments": {
+      "title": "Attachments, emoji and reactions",
+      "text": "The paperclip attaches files to a message (or drop them on the chat, or paste a picture); a file can be up to 25 MB and stays with the room. Pictures show in the message, other files download. The smiley inserts an emoji, and :name completes one as you type (for example :tada:). Hover a message to react with an emoji; a click on a reaction adds or takes back yours.",
+      "aka": ["files", "upload", "images", "emoji", "reactions"],
       "wiki": "War-Rooms#the-stream",
       "guest": true
     },
@@ -121,7 +137,7 @@
     },
     "room.resource_tokens": {
       "title": "Resource references",
-      "text": "The paperclip inserts a reference to an event, IOC, asset or task of a linked case you can open. It shows in the message as a chip that links to that page of the case. Everyone in the room sees the chip and its title; the link opens only for people who can open that case.",
+      "text": "The # button inserts a reference to an event, IOC, asset or task of a linked case you can open. It shows in the message as a chip that links to that page of the case. Everyone in the room sees the chip and its title; the link opens only for people who can open that case.",
       "aka": ["#resource", "chip", "reference", "link"],
       "wiki": "War-Rooms#the-stream"
     },
