@@ -51,8 +51,14 @@
     },
     "room.scope": {
       "title": "Scope",
-      "text": "Every asset of the cases attached to this war room that you can open, with its compromise status, its flags and its open vulnerability findings. Filter by case, flag, compromise or findings, or search by name, IP, domain or type. The Board's tiles and flag legend open this tab already filtered. Cases you cannot open are only counted. Guests do not get this tab.",
-      "aka": ["assets", "room assets", "scope"]
+      "text": "Every asset of the cases attached to this war room that you can open: type, IP, customer, compromise and analysis status, flags, linked IOCs and open vulnerability findings. Filter by case, customer, flag, compromise, findings or a vulnerability identifier, or search by name, IP, domain or tags; group by case or by vulnerability. The Board's tiles and flag legend open this tab already filtered. Cases you cannot open are only counted. Guests do not get this tab.",
+      "items": [
+        {"name": "Select assets", "text": "Responders and leads of an open room tick assets to set or remove flags, set the compromise or analysis status, or push them to other attached cases, all at once. Each asset needs full access to its case: the others are reported as refused and left unchanged."},
+        {"name": "Push to cases", "text": "Copies an asset (name, type, description, IP, domain, tags, compromise and analysis status) into other attached cases you can change. The flags are not copied; a case that already holds the asset is skipped."},
+        {"name": "Copy", "text": "Copies a group's assets as a table (pick the columns) to paste into a sheet or a note, or downloads them as CSV."},
+        {"name": "Flag board", "text": "One column per flag. Drag an asset's card onto a flag to set it; a flag that needs a reason or a decision asks for it first."}
+      ],
+      "aka": ["assets", "room assets", "scope", "bulk", "push"]
     }
   }
 }

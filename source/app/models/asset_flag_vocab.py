@@ -143,8 +143,14 @@ BOARD_SEVERITIES = ('high', 'medium', 'low')
 
 # The Scope tab's filters (every asset of the attached cases the viewer can open).
 SCOPE_KINDS = KINDS
-SCOPE_VULNERABLE = ('open', 'exploited', 'kev', 'overdue')
-SCOPE_SORTS = ('case', 'name', 'findings', 'compromise')
+SCOPE_VULNERABLE = ('open', 'exploited', 'kev', 'overdue', 'none')
+SCOPE_SORTS = ('case', 'name', 'findings', 'compromise', 'updated')
+# iris-ng 2026-11-08: the Scope as a workspace - bulk changes and pushes over selected assets.
+SCOPE_GROUPS = ('case', 'vulnerability', 'none')
+SCOPE_BULK_MAX = 500          # assets one bulk change or push may name
+SCOPE_PUSH_CASES_MAX = 50     # target cases one push may name
+SCOPE_COMPROMISE = (('to_be_determined', 'To be determined'), ('compromised', 'Compromised'),
+                    ('not_compromised', 'Not compromised'), ('unknown', 'Unknown'))
 SCOPE_PER_PAGE = 100
 SCOPE_PER_PAGE_MAX = 500
 

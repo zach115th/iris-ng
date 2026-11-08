@@ -2803,8 +2803,9 @@ function iris_wroom_mount_decisions() {
     var host = document.getElementById('iris-wr-decisions');
     if (host && window.IrisRoomBoard) window.IrisRoomBoard.mountDecisions(host, iris_wroom_board_ctx());
 }
-/* Scope tab (iris-ng 2026-11-07): every asset of the attached cases you can open. Members
-   only - guests never get the tab (the template leaves it out, the API refuses them). */
+/* Scope tab (iris-ng 2026-11-07; war_room_scope.js since 2026-11-08): every asset of the attached
+   cases you can open. Members only - guests never get the tab (the template leaves it out, and
+   war_room_scope.js with it; the API refuses them). */
 function iris_wroom_mount_scope() {
     var host = document.getElementById('iris-wr-scope');
     if (host && window.IrisRoomBoard && !IRIS_WROOM._guest) window.IrisRoomBoard.mountScope(host, iris_wroom_board_ctx());
@@ -2826,7 +2827,7 @@ function iris_wroom_open_pane(name, opts) {
     }
     return true;
 }
-var IRIS_WROOM_SCOPE_KEYS = ['q', 'case_id', 'compromised', 'flag', 'kind', 'vulnerable', 'sort', 'dir', 'page'];
+var IRIS_WROOM_SCOPE_KEYS = ['q', 'case_id', 'customer_id', 'compromised', 'flag', 'kind', 'vulnerable', 'vuln', 'sort', 'dir', 'page'];
 /* true when the address named a tab this page has (and it was opened) */
 function iris_wroom_pane_from_url() {
     var q = new URLSearchParams(window.location.search);

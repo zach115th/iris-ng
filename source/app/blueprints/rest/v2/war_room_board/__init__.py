@@ -27,6 +27,9 @@
   /api/v2/war-rooms/<rid>/board                        GET (members + guests)
   /api/v2/war-rooms/<rid>/board/widgets                PUT {widgets: [...] | null} (lead)
   /api/v2/war-rooms/<rid>/scope/assets                 GET (members; never guests): the Scope tab
+  /api/v2/war-rooms/<rid>/scope/assets/flags           POST (responder): set / remove flags on a selection
+  /api/v2/war-rooms/<rid>/scope/assets/status          POST (responder): compromise / analysis status
+  /api/v2/war-rooms/<rid>/scope/assets/push            POST (responder): copy assets to other attached cases
 
 Room access is the war rooms' own (_resolve: non-members 404). Guests read the
 register and the board and change nothing (maintainer decision 2026-11-07); the
@@ -293,3 +296,41 @@ def get_room_scope_assets(room_id):
         return response_api_success(ws.scope_assets(room, uid, request.args))
     except ScopeError as e:
         return _err(e)
+
+
+# iris-ng 2026-11-08: changes over a selection of Scope assets. Responders and leads of an open room; never
+# guests. Each asset is changed only in a case the caller holds full access to - the others come back refused,
+# one result per asset (and per flag or target case), so a selection spanning cases can partly succeed.
+
+def _scope_change(room_id, run):
+    from flask_login import current_user
+    from app.blueprints.rest.v2.asset_flags import _is_admin
+    room, _, err = _resolve(room_id, 'responder')
+    if err is not None:
+        return err
+    try:
+        return response_api_success(run(room, current_user, _is_admin(), _json()))
+    except ScopeError as e:
+        db.session.rollback()
+        return _err(e)
+
+
+@war_room_board_blueprint.route('/war-rooms/<int:room_id>/scope/assets/flags', methods=['POST'])
+@ac_room_api_requires()
+def scope_assets_flags(room_id):
+    """{asset_ids, flag_ids, action: set|remove, reason, decision_id}"""
+    return _scope_change(room_id, lambda room, user, admin, body: ws.bulk_flags(room, user, admin, body))
+
+
+@war_room_board_blueprint.route('/war-rooms/<int:room_id>/scope/assets/status', methods=['POST'])
+@ac_room_api_requires()
+def scope_assets_status(room_id):
+    """{asset_ids, compromise: <key>, analysis_status_id: <id>}"""
+    return _scope_change(room_id, lambda room, user, admin, body: ws.bulk_status(room, user, body))
+
+
+@war_room_board_blueprint.route('/war-rooms/<int:room_id>/scope/assets/push', methods=['POST'])
+@ac_room_api_requires()
+def scope_assets_push(room_id):
+    """{asset_ids, case_ids}: copy the assets into those attached cases."""
+    return _scope_change(room_id, lambda room, user, admin, body: ws.bulk_push(room, user, body))

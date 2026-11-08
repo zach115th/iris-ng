@@ -1203,27 +1203,14 @@
     }
 
     /* ================================================================ Scope */
-    var S = {el: null, filter: {}, data: null, seq: 0};
-    var SCOPE_KEYS = ['q', 'case_id', 'compromised', 'flag', 'kind', 'vulnerable', 'sort', 'dir', 'page'];
-    /* quick filters: [label, the filters they set, the summary figure they show] */
-    var QUICK = [['All', {}, 'assets'], ['Compromised', {compromised: '1'}, 'compromised'], ['Without a flag', {flag: 'none'}, 'no_flag'],
-                 ['Done', {kind: 'done'}, 'done'], ['Exceptions', {kind: 'exception'}, 'exceptions'], ['Vulnerable', {vulnerable: 'open'}, 'vulnerable'],
-                 ['Exploited', {vulnerable: 'exploited'}, 'exploited'], ['KEV', {vulnerable: 'kev'}, 'kev'], ['Overdue findings', {vulnerable: 'overdue'}, 'overdue']];
-    var QUICK_KEYS = ['compromised', 'flag', 'kind', 'vulnerable'];
-    var COMPROMISE = {compromised: ['Compromised', 'iris-rb-pill-red'], not_compromised: ['Not compromised', 'iris-rb-pill-open'],
-                      unknown: ['Unknown', ''], to_be_determined: ['To be determined', '']};
-    function cleanScope(f) {
-        var out = {};
-        SCOPE_KEYS.forEach(function (k) {
-            var v = f && f[k] != null ? String(f[k]) : '';
-            if (v && v.length <= 200) { out[k] = v; }
-        });
-        return out;
-    }
-    /* war_room.js: a Board tile or a ?pane=scope address sets the filters before the tab shows */
+    /* The Scope tab is war_room_scope.js (window.IrisRoomScope). These two stay here: war_room.js and the
+       Board's tiles address the Scope through IrisRoomBoard (a tile or a ?pane=scope address sets the
+       filters before the tab shows). */
     B.setScopeFilter = function (f) {
-        S.filter = cleanScope(f);
-        if (S.el) { drawScopeShell(); loadScope(); }
+        if (window.IrisRoomScope) { window.IrisRoomScope.setFilter(f); }
+    };
+    B.mountScope = function (el, c) {
+        return window.IrisRoomScope ? window.IrisRoomScope.mount(el, c) : null;
     };
     B.filterDecisions = function (status) {
         D.filter = {status: /^[a-z]+$/.test(status || '') ? status : '', q: '', case_id: ''};
@@ -1234,124 +1221,6 @@
             loadList();
         }
     };
-    B.mountScope = function (el, c) {
-        css();
-        ctx = c;
-        S.el = el;
-        var $el = $(el);
-        $el.on('click', '[data-sc="quick"]', function () {
-            var q = QUICK[Number($(this).attr('data-i'))][1];
-            QUICK_KEYS.forEach(function (k) { delete S.filter[k]; });
-            Object.keys(q).forEach(function (k) { S.filter[k] = q[k]; });
-            delete S.filter.page;
-            drawScopeShell();
-            loadScope();
-        });
-        $el.on('change', '[data-sc="field"]', function () {
-            var k = $(this).attr('data-k'), v = $(this).val();
-            if (v) { S.filter[k] = v; } else { delete S.filter[k]; }
-            if (k === 'sort') { S.filter.dir = v === 'findings' || v === 'compromise' ? 'desc' : 'asc'; }
-            delete S.filter.page;
-            loadScope();
-        });
-        var t = null;
-        $el.on('input', '#iris-sc-q', function () {
-            var v = $.trim($(this).val());
-            clearTimeout(t);
-            t = setTimeout(function () { if (v) { S.filter.q = v; } else { delete S.filter.q; } delete S.filter.page; loadScope(); }, 250);
-        });
-        $el.on('click', '[data-sc="page"]', function () {
-            S.filter.page = String(Math.max(1, Number(S.filter.page || 1) + Number($(this).attr('data-d'))));
-            loadScope();
-        });
-        $el.on('click', '[data-sc="clear"]', function () { S.filter = {}; drawScopeShell(); loadScope(); });
-        drawScopeShell();
-        loadScope();
-    };
-    function quickActive(i) {
-        var q = QUICK[i][1];
-        return QUICK_KEYS.every(function (k) { return (S.filter[k] || '') === (q[k] || ''); });
-    }
-    function drawScopeShell() {
-        var f = S.filter;
-        S.el.innerHTML = '<div class="iris-rb-head"><div class="iris-rb-min0"><div class="d-flex align-items-center" style="gap:6px;"><h2 class="iris-rb-h1">Scope</h2>' +
-            IrisHelp.icon('room.scope') + '</div><div class="iris-rb-muted" data-sc="sub">&nbsp;</div></div></div>' +
-            '<div class="iris-rb-fchips" role="group" aria-label="Quick filters">' + QUICK.map(function (q, i) {
-                var on = quickActive(i);
-                return '<button type="button" class="iris-rb-fchip' + (on ? ' active' : '') + '" data-sc="quick" data-i="' + i + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
-                    esc(q[0]) + ' <b data-sc-count="' + q[2] + '">&ndash;</b></button>';
-            }).join('') + '</div>' +
-            '<div class="d-flex flex-wrap align-items-center mb-2" style="gap:6px;">' +
-            '<label class="sr-only" for="iris-sc-q">Search assets</label><input type="search" id="iris-sc-q" class="form-control form-control-sm" style="max-width:230px;" placeholder="Search name, IP, domain, type…" value="' + esc(f.q || '') + '">' +
-            '<label class="sr-only" for="iris-sc-case">Case</label><select id="iris-sc-case" class="form-control form-control-sm" style="max-width:220px;" data-sc="field" data-k="case_id"><option value="">All cases</option></select>' +
-            '<label class="sr-only" for="iris-sc-flag">Flag</label><select id="iris-sc-flag" class="form-control form-control-sm" style="max-width:190px;" data-sc="field" data-k="flag"><option value="">Any flag</option><option value="none">No flag</option></select>' +
-            '<label class="sr-only" for="iris-sc-sort">Sort</label><select id="iris-sc-sort" class="form-control form-control-sm" style="max-width:190px;" data-sc="field" data-k="sort">' +
-            '<option value="case">Sort: case</option><option value="name">Sort: name</option><option value="compromise">Sort: compromised first</option><option value="findings">Sort: most findings</option></select>' +
-            '<button type="button" class="btn btn-sm btn-link" data-sc="clear">Clear filters</button></div>' +
-            '<div data-sc="err" class="text-danger small mb-2" role="alert"></div>' +
-            '<div class="table-responsive"><table class="table table-sm iris-rb-stable"><caption class="sr-only">Assets in scope</caption><thead><tr>' +
-            '<th scope="col">Asset</th><th scope="col">Case</th><th scope="col">Compromise</th><th scope="col">Flags</th><th scope="col" class="text-right">Open findings</th>' +
-            '</tr></thead><tbody data-sc="rows"><tr><td colspan="5" class="iris-rb-muted">Loading&hellip;</td></tr></tbody></table></div>' +
-            '<div class="d-flex align-items-center" style="gap:8px;" data-sc="pager"></div>';
-        $(S.el).find('#iris-sc-sort').val(f.sort || 'case');
-    }
-    function loadScope() {
-        var f = S.filter, q = [], seq = ++S.seq;
-        SCOPE_KEYS.forEach(function (k) { if (f[k]) { q.push(k + '=' + encodeURIComponent(f[k])); } });
-        $(S.el).find('[data-sc="quick"]').each(function () {
-            var on = quickActive(Number($(this).attr('data-i')));
-            $(this).toggleClass('active', on).attr('aria-pressed', on ? 'true' : 'false');
-        });
-        return api('/scope/assets' + (q.length ? '?' + q.join('&') : '')).then(function (res) {
-            if (seq !== S.seq) { return; }   /* a newer request is on its way */
-            var $el = $(S.el);
-            if (!res.ok) {
-                $el.find('[data-sc="err"]').text('The scope could not be loaded: ' + errText(res));
-                $el.find('[data-sc="rows"]').html('<tr><td colspan="5" class="iris-rb-muted">&mdash;</td></tr>');
-                return;
-            }
-            $el.find('[data-sc="err"]').text('');
-            S.data = res.j;
-            drawScope();
-        });
-    }
-    function drawScope() {
-        var j = S.data, $el = $(S.el), f = S.filter;
-        $el.find('[data-sc="sub"]').html('Every asset of the ' + plural(j.case_count, 'attached case') + ' you can open' +
-            (j.cases_restricted ? ' &middot; ' + plural(j.cases_restricted, 'more case') + ' you cannot open' : '') + '.');
-        Object.keys(j.summary || {}).forEach(function (k) { $el.find('[data-sc-count="' + k + '"]').text(Number(j.summary[k])); });
-        var $c = $el.find('#iris-sc-case');
-        if ($c.children().length === 1) {
-            (j.cases || []).forEach(function (c) { $c.append($('<option>').val(String(c.case_id)).text(c.case_name || ('Case #' + c.case_id))); });
-        }
-        $c.val(f.case_id || '');
-        var $f = $el.find('#iris-sc-flag');
-        if ($f.children().length === 2) {
-            (j.flags || []).forEach(function (x) { $f.append($('<option>').val(String(x.flag_id)).text(x.name + ' (' + Number(x.assets) + ')')); });
-        }
-        $f.val(f.flag || '');
-        var rows = j.assets || [];
-        $el.find('[data-sc="rows"]').html(rows.length ? rows.map(scopeRow).join('') :
-            '<tr><td colspan="5" class="iris-rb-muted" data-sc="empty">' + (j.case_count === 0 ? 'No case attached to this war room that you can open.' :
-                (j.summary.assets === 0 ? 'The attached cases you can open have no asset yet.' : 'No asset matches these filters.')) + '</td></tr>');
-        var page = Number(j.page) || 1, per = Number(j.per_page) || 100, from = j.total ? (page - 1) * per + 1 : 0, to = Math.min(j.total, page * per);
-        $el.find('[data-sc="pager"]').html('<span class="iris-rb-muted" data-sc="range">' + from + '&ndash;' + to + ' of ' + plural(j.total, 'asset') + '</span>' +
-            (j.total > per ? '<button type="button" class="iris-rb-ibtn" data-sc="page" data-d="-1" aria-label="Previous page"' + (page <= 1 ? ' disabled' : '') + '>' + ic('chevron-left', '', 14) + '</button>' +
-                '<button type="button" class="iris-rb-ibtn" data-sc="page" data-d="1" aria-label="Next page"' + (to >= j.total ? ' disabled' : '') + '>' + ic('chevron-right', '', 14) + '</button>' : ''));
-    }
-    function scopeRow(r) {
-        var comp = COMPROMISE[r.compromise] || ['Not set', ''];
-        var v = r.findings || {}, where = [r.asset_type, r.asset_ip, r.asset_domain].filter(Boolean).join(' \u00b7 ');
-        var fl = (r.flags || []).length ? r.flags.map(function (x) { return window.IrisFlags ? window.IrisFlags.chip(x) : esc(x.name); }).join(' ') : '<span class="iris-rb-muted">No flag</span>';
-        var fnd = v.open ? '<a href="' + esc(r.vulns_href) + '">' + Number(v.open) + ' open</a>' +
-            (v.exploited_open ? ' &middot; <span class="iris-rb-t-red">' + Number(v.exploited_open) + ' exploited</span>' : '') +
-            (v.kev_open ? ' &middot; <span class="iris-rb-t-red">' + Number(v.kev_open) + ' KEV</span>' : '') +
-            (v.overdue ? ' &middot; <span class="iris-rb-t-amber">' + Number(v.overdue) + ' overdue</span>' : '') : '<span class="iris-rb-muted">&mdash;</span>';
-        return '<tr data-asset="' + Number(r.asset_id) + '"><td><a href="' + esc(r.href) + '">' + esc(r.asset_name || 'Unnamed asset') + '</a>' +
-            (where ? '<div class="iris-rb-meta">' + esc(where) + '</div>' : '') + '</td>' +
-            '<td><a href="/case?cid=' + Number(r.case_id) + '" class="iris-rb-mono">#' + Number(r.case_id) + '</a> <span class="iris-rb-meta">' + esc(caseTitle(r)) + '</span></td>' +
-            '<td><span class="iris-rb-pill ' + comp[1] + '">' + esc(comp[0]) + '</span></td><td>' + fl + '</td><td class="text-right">' + fnd + '</td></tr>';
-    }
 
     window.IrisRoomBoard = B;
 })();

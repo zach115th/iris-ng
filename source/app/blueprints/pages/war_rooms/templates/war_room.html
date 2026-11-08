@@ -798,9 +798,10 @@
     </div>
 
     {% if not guest_mode %}
-    {# ================= Scope pane (iris-ng 2026-11-07) =================
-       Every asset of the attached cases the viewer can open, drawn by war_room_board.js
-       (IrisRoomBoard.mountScope) on first open; the Board's tiles open it filtered. #}
+    {# ================= Scope pane (iris-ng 2026-11-07, a workspace since 2026-11-08) =================
+       Every asset of the attached cases the viewer can open - a table or a flag board, bulk flags /
+       status / push - drawn by war_room_scope.js (IrisRoomScope, reached through
+       IrisRoomBoard.mountScope) on first open; the Board's tiles open it filtered. #}
     <div class="iris-wr-pane" id="iris-wr-pane-scope">
         <div class="card"><div class="card-body">
             <div id="iris-wr-scope"><div class="text-muted">Loading&hellip;</div></div>
@@ -1563,6 +1564,7 @@
     {% if not guest_mode %}<script src="/static/assets/js/iris/vuln_common.js"></script>{% endif %}
     <script src="/static/assets/js/iris/asset_flags.js"></script>
     <script src="/static/assets/js/iris/war_room_board.js"></script>
+    {% if not guest_mode %}<script src="/static/assets/js/iris/war_room_scope.js"></script>{% endif %}
     <script src="/static/assets/js/iris/war_room_stream.js"></script>
     <script src="/static/assets/js/iris/war_room.js"></script>
 {% endblock javascripts %}
