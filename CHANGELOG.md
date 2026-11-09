@@ -11,6 +11,61 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.11.0] — 2026-11-09
+
+A new Alerts page, a case queue on Overview, dashboards you build yourself, and the old Dashboard page retired.
+**Two schema migrations** (`b2d7f4a9c1e6` → `d4c8e1f7a3b9`), both additive: one index and one new table — take a
+database dump before upgrading (migrations are one-way; `scripts/update.sh` does the dump). Only the app image
+changes (application code, page templates, scripts and stylesheets; no requirement changes); the nginx and database
+images, and the guest-portal tunnel agent, do not.
+
+### Added
+- **Alerts is now a triage queue.** Three views, remembered per browser: Split (the queue beside the selected alert),
+  List (one line per alert) and Board (open alerts in columns, unassigned by severity or assigned by status; drag a
+  card to change it, or Take it). The page opens on the open queue; quick tabs My queue, Unassigned, Escalated and
+  All open carry their counts, and the address reproduces the view.
+- **A search language for alerts**, read on the server: `field:value`, `*` and `?` wildcards, `>=` `<=` `>` `<` on
+  severity and dates, ranges `[a TO b]`, `AND` / `OR` / `NOT` / `-` and brackets, or plain words over the title,
+  description, source, source reference and tags. Conditions appear as chips, suggestions come from your own
+  statuses, customers and users, and a mistake is reported at its position instead of returning an empty list.
+- Alerts in a cluster collapse into one expandable row. The detail pane has Overview, Investigation, Assets, Cluster,
+  IOCs, Raw event, Timeline, Notes, Comments and Graph tabs. Also: batch actions, keyboard triage (`j` `k` `e` `m` `x`
+  `/` Enter Esc) and a New alert form for anything that did not come in through a feed.
+- **Overview is now a case queue**, filtered, sorted and paged on the server: search, Show closed, four quick-filter
+  chips, a filter builder with saved filters, a seven-step stage bar and an idle time per case, and a side panel with
+  the stage track, the details, task counts and the executive summary. Cases with no owner now appear.
+- **Dashboards you build yourself** (`/dashboards`). Sections of widgets over cases, alerts, IOCs, assets, tasks,
+  timeline events, evidence, notes and time entries: counts, sums, averages, medians, percentages and lists, as
+  numbers, donuts, pies, bars, lines and tables, with a filter bar and a date range. A shared dashboard is read-only
+  to everyone but its owner and server administrators, and shows each viewer only what they can open. A built-in
+  Statistics dashboard is included, and Metrics is unchanged.
+- **Global tasks on Home**, beside My pending tasks: add, edit and delete, with a status menu on each row and finished
+  tasks hidden until you show them. My pending tasks gets the same status menu.
+- REST: `/api/v2/alert-queue` (read-only), `/api/v2/case-queue` and `/api/v2/custom-dashboards`.
+
+### Changed
+- The sidebar's Dashboard entry opens the new Dashboards page and keeps its icon.
+- The logo and the site root now go to Home. Sign-in already did.
+
+### Removed
+- **The old Dashboard page.** Its address forwards to Home, so links and bookmarks keep working. What it showed is on
+  Home (your cases, tasks and reviews), Overview (Import, New case) and Metrics (case counts, opened vs closed). The
+  Global tasks table's Export and Copy buttons and its right-click module actions did not move with it.
+
+### Fixed
+- Global tasks could not be added or edited: their dialog had been left on the Inventory page since 2.0.0.
+- Changing only a case's state wiped its reviewer and reset its review status (the state menu in the case header, and
+  any API client sending just `state_id`).
+- Saving a filter always failed with "user: Missing data".
+- `GET /overview/filter` returned a 500 when a visible case had no open date.
+- Cancelling a batch delete of alerts left a permanent "being deleted" overlay.
+- Times in Home's Case activities were read as local time instead of UTC.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.11.0`, or the 2.11.0 images / chart 1.11.0). Two migrations run
+at the first start, ending at `d4c8e1f7a3b9`. No permission bit is added. Scripts that read the old page's HTML at
+`/dashboard` now get a redirect to Home; the API routes it used are unchanged.
+
 ## [IRIS-NG-v2.10.1] — 2026-11-08
 
 A security hardening fix for the war-room Stream. **No schema change** — the database head stays at
