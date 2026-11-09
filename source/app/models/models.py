@@ -3130,3 +3130,28 @@ class WarRoomFile(db.Model):
     uploaded_by = Column(BigInteger, ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     uploaded_by_guest_id = Column(BigInteger, ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+
+# ----------------------------------------------------------------------------------------- custom dashboards
+# iris-ng 2026-11-09: a user's dashboards of widgets (models.custom_dashboard_vocab). The built-in ones (Statistics)
+# are code, never rows.
+
+
+class CustomDashboard(db.Model):
+    """A dashboard: sections of widgets, a filter bar and a default range (`definition`, validated by
+    business.custom_dashboards). Its owner (and a server administrator) edits it; `is_shared` shows it to every
+    user, read-only. Each viewer's figures cover only what that viewer may open."""
+    __tablename__ = 'custom_dashboard'
+
+    id = Column(BigInteger, primary_key=True)
+    dashboard_uuid = Column(UUID(as_uuid=True), nullable=False, unique=True, default=uuid.uuid4,
+                            server_default=text('gen_random_uuid()'))
+    name = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    owner_id = Column(BigInteger, ForeignKey('user.id'), nullable=False, index=True)
+    is_shared = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    definition = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    updated_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    owner = relationship('User', foreign_keys=[owner_id])

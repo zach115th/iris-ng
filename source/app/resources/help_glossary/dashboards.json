@@ -340,6 +340,85 @@
       "title": "Stage track",
       "text": "Where the case is in its response: Open, Containment, Eradication, Recovery, Post-Incident, Reporting, Closed. With full access to the case, click a stage to move the case there - you are asked to confirm. Closing needs a reviewer on the case and asks for the closing note; moving a closed case to another stage reopens it. A case in a stage outside the track (such as In progress) shows its stage under the track."
     },
+    "custom_dashboards.page": {
+      "title": "Dashboards",
+      "text": "Dashboards of widgets you build yourself: figures, donuts, bars, lines and tables over cases, alerts, IOCs, assets, tasks, timeline events, evidence, notes and time entries. Each widget counts only what the person looking at it can open, so one shared dashboard shows each viewer their own figures.\n\nThe Statistics dashboard is built in: open it as it is, or clone it to change it. The Metrics page (Manage) stays as it was.",
+      "aka": [
+        "custom dashboards",
+        "statistics",
+        "widgets",
+        "charts"
+      ]
+    },
+    "custom_dashboards.system": {
+      "title": "Built-in dashboards",
+      "text": "Dashboards that come with IRIS. Nobody edits them; Clone makes a private copy you can change."
+    },
+    "custom_dashboards.sharing": {
+      "title": "Shared dashboards",
+      "text": "A dashboard is private until its owner shares it. A shared dashboard is listed for every user, read-only: only its owner (and a server administrator) edits or deletes it, and anyone can clone it to customise a copy.\n\nSharing shares the layout, never the data: every viewer sees figures computed over the cases and alerts they can open.",
+      "aka": [
+        "share",
+        "private dashboard"
+      ]
+    },
+    "custom_dashboards.filter_bar": {
+      "title": "Filter bar",
+      "text": "Pickers shown above the dashboard - Customer, Case, Severity or Owner. A value picked there filters every widget whose source has that field; a widget whose source has none (Severity on IOCs, say) says so under its figure. The date range is always there.",
+      "aka": [
+        "dashboard filters"
+      ]
+    },
+    "custom_dashboards.source": {
+      "title": "Source",
+      "text": "What a widget counts: cases, alerts, IOCs, assets, tasks, timeline events, evidence, notes or time entries. The dashboard's date range applies to each source's own date - a case's open date, an alert's creation time, the date an asset, an evidence item or a timeline event was added, a task's open date, a note's creation date, a time entry's day; IOCs follow their case's open date. A widget set to All time ignores the range."
+    },
+    "custom_dashboards.measure": {
+      "title": "Measure",
+      "text": "The figure a widget computes:",
+      "items": [
+        {
+          "name": "Count",
+          "text": "How many rows."
+        },
+        {
+          "name": "Count distinct",
+          "text": "How many different values of a field (for example how many customers)."
+        },
+        {
+          "name": "Sum / Average / Median / Minimum / Maximum",
+          "text": "Of a number field: days open, days to close, minutes to detect, minutes logged, evidence size."
+        },
+        {
+          "name": "Share matching a filter",
+          "text": "The percentage of the widget's rows that match a second filter - the false positive rate is the share of alerts whose resolution is False Positive."
+        },
+        {
+          "name": "List rows",
+          "text": "A table of the rows themselves, with the columns you pick; the first column links to the row's case or alert."
+        }
+      ]
+    },
+    "custom_dashboards.group_by": {
+      "title": "Group by and split",
+      "text": "Group by gives one bar, slice or point per value of a field. A date field groups by a time bucket - hour, day, week, month, quarter or year; Automatic picks one from the range. Rows without a value form the \"(none)\" group; groups beyond the limit can be summed as \"Other\". Split into series draws one series per value of a second field (bar and line charts). A row with several tags or assignees counts once in each of their groups."
+    },
+    "custom_dashboards.thresholds": {
+      "title": "Thresholds",
+      "text": "For a number widget: colour the figure when it reaches a value (at least / at most). The first rule that matches wins; without one the figure takes the widget's colour."
+    },
+    "custom_dashboards.json": {
+      "title": "JSON mode",
+      "text": "The whole dashboard as JSON - name, description, sharing and the definition (sections, widgets, filter bar, the range it opens with). The server checks it as you type and lists what is wrong; switching back to Visual applies it once it is valid. View JSON on a dashboard shows the same text, ready to copy."
+    },
+    "custom_dashboards.scope": {
+      "title": "Whose figures",
+      "text": "A widget counts only what the viewer can open: cases they have access to (and the IOCs, assets, tasks, events, evidence, notes and time entries of those cases), and alerts of the customers they belong to - every alert for a server administrator. The preview shows your own figures; someone else opening the same dashboard can see different ones.",
+      "aka": [
+        "access",
+        "permissions"
+      ]
+    },
     "search.page": {
       "title": "Search across cases",
       "text": "Searches every case on this server at once, whatever case you are in and whether or not you can open it; the search_across_cases permission is what gives you this page. Each search is written to the activity log with the term you searched. Results name the case and customer they come from.",

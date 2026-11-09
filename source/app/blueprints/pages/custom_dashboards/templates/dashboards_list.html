@@ -1,0 +1,43 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Dashboards {% endblock title %}
+
+{% block stylesheets %}
+{% include 'dash_styles.html' %}
+{% endblock stylesheets %}
+
+{% block content %}
+
+    {{ form.hidden_tag() }}
+    <div class="page-inner iris-dash" id="iris-dash-list">
+        <div class="dash-head">
+            <div class="dash-head-text">
+                <h1 class="dash-title">Dashboards</h1>{{ help_tip('custom_dashboards.page', cls='ml-2') }}
+                <p class="dash-desc">Built-in and user-defined dashboards. Clone Statistics for a quick start.</p>
+            </div>
+            <div class="dash-actions">
+                <a class="dash-btn dash-btn--primary" id="dash-new" href="/dashboards/new">
+                    <svg class="dash-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    New dashboard
+                </a>
+            </div>
+        </div>
+        <section aria-labelledby="dash-sys-h">
+            <h2 class="dash-kicker" id="dash-sys-h">System</h2>{{ help_tip('custom_dashboards.system', cls='ml-1') }}
+            <div class="dash-syscards" id="dash-system"></div>
+        </section>
+        <section aria-labelledby="dash-mine-h">
+            <h2 class="dash-kicker" id="dash-mine-h">Yours and shared</h2>{{ help_tip('custom_dashboards.sharing', cls='ml-1') }}
+            <div class="dash-cards" id="dash-mine"></div>
+        </section>
+        <dialog class="dash-dialog dash-dialog--json"></dialog>
+        <div class="dash-toast" role="status" hidden></div>
+    </div>
+
+    {# Drawn while the page parses from the list embedded here (None = the read failed: the page fetches it). #}
+    <script src="/static/assets/js/iris/custom_dashboards.js"></script>
+    <script>
+        window.IrisDashboards.mountList(document.getElementById('iris-dash-list'), {{ state|tojson }});
+    </script>
+
+{% endblock content %}

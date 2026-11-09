@@ -62,6 +62,7 @@ from app.blueprints.pages.manage.manage_case_templates_routes import manage_case
 from app.blueprints.pages.manage.manage_teams_routes import manage_teams_blueprint
 from app.blueprints.pages.manage.manage_users import manage_users_blueprint
 from app.blueprints.pages.overview.overview_routes import overview_blueprint
+from app.blueprints.pages.custom_dashboards.custom_dashboards_routes import custom_dashboards_page_blueprint
 from app.blueprints.pages.profile.profile_routes import profile_blueprint
 from app.blueprints.pages.search.search_routes import search_blueprint
 from app.blueprints.rest.activities_routes import activities_rest_blueprint
@@ -120,6 +121,7 @@ def register_blusprints(app):
     app.register_blueprint(dashboard_blueprint)
     app.register_blueprint(dashboard_rest_blueprint)
     app.register_blueprint(overview_blueprint)
+    app.register_blueprint(custom_dashboards_page_blueprint)
     app.register_blueprint(overview_rest_blueprint)
     app.register_blueprint(login_blueprint)
     app.register_blueprint(profile_blueprint)

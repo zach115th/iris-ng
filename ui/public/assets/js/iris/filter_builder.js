@@ -4,6 +4,7 @@
  *       fields: [{key, label, type: text|number|choice|date|tags, options: <source key>, ops: [...]}],
  *       operators: {op: label}, noValueOps: [...], dayOps: [...],
  *       options: {<source key>: [{id, name}]}, limits: {depth, conditions, value, days},
+ *       tokens: ['@me'],                // optional: non-numeric values a choice field may hold
  *       onChange: function () {}
  *   });
  *   fb.set(tree); fb.get();            // get() = the COMPLETE conditions only, values re-derived (numbers parsed)
@@ -37,6 +38,7 @@
         var limits = cfg.limits || {depth: 3, conditions: 40, value: 200, days: 36500};
         var noValue = cfg.noValueOps || ['empty', 'not_empty'];
         var dayOps = cfg.dayOps || ['older_than', 'within'];
+        var tokens = cfg.tokens || [];
         var tree = blank();
 
         function blank() { return {logic: 'and', items: []}; }
@@ -56,6 +58,7 @@
             if (k === 'none') { return null; }
             if (k === 'days' || k === 'number' || k === 'choice') {
                 var s = String(v === null || v === undefined ? '' : v).trim();
+                if (k === 'choice' && tokens.indexOf(s) !== -1) { return tokens[tokens.indexOf(s)]; }
                 if (!/^\d{1,12}$/.test(s)) { return undefined; }
                 var n = parseInt(s, 10);
                 if (k === 'days' && n > limits.days) { return undefined; }

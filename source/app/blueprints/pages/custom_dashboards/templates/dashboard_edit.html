@@ -1,0 +1,24 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Edit dashboard {% endblock title %}
+
+{% block stylesheets %}
+{% include 'dash_styles.html' %}
+{% endblock stylesheets %}
+
+{% block content %}
+
+    {{ form.hidden_tag() }}
+    <div class="page-inner iris-dash" id="iris-dash-edit"></div>
+
+    {# The editor draws from the dashboard, the field catalogue and the presets embedded here (None = fetch them). #}
+    <script src="/static/assets/js/core/charts.js"></script>
+    <script src="/static/assets/js/iris/filter_builder.js"></script>
+    <script src="/static/assets/js/iris/dashboard_widgets.js"></script>
+    <script src="/static/assets/js/iris/custom_dashboards.js"></script>
+    <script src="/static/assets/js/iris/dashboard_editor.js"></script>
+    <script>
+        window.IrisDashEditor.mount(document.getElementById('iris-dash-edit'), {{ state|tojson }}, {{ dash_key|tojson }});
+    </script>
+
+{% endblock content %}

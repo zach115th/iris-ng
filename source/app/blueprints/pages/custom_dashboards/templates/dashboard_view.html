@@ -1,0 +1,29 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Dashboard {% endblock title %}
+
+{% block stylesheets %}
+{% include 'dash_styles.html' %}
+{% endblock stylesheets %}
+
+{% block content %}
+
+    {{ form.hidden_tag() }}
+    <div class="page-inner iris-dash" id="iris-dash-view">
+        <div id="dash-view-head"></div>
+        <section class="dash-card dash-filters" id="dash-filters" aria-label="Range and filters"></section>
+        <div class="dash-alert" id="dash-error" role="alert" hidden></div>
+        <div id="dash-sections"></div>
+        <dialog class="dash-dialog dash-dialog--json"></dialog>
+        <div class="dash-toast" role="status" hidden></div>
+    </div>
+
+    {# Drawn while the page parses: the dashboard and its first figures are in the page (None = fetch them). #}
+    <script src="/static/assets/js/core/charts.js"></script>
+    <script src="/static/assets/js/iris/dashboard_widgets.js"></script>
+    <script src="/static/assets/js/iris/custom_dashboards.js"></script>
+    <script>
+        window.IrisDashboards.mountView(document.getElementById('iris-dash-view'), {{ state|tojson }}, {{ dash_key|tojson }});
+    </script>
+
+{% endblock content %}
