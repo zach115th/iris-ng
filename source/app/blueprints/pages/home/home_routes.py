@@ -18,7 +18,7 @@
 """Home page (iris-ng v2, Phase 5). The default post-login landing:
 my cases / my tasks / my reviews / following feed / latest notifications.
 Server-rendered shell; all data comes from the self-scoped v2 endpoints
-(home.js). The /dashboard page is untouched."""
+(home.js). Global tasks live here too; /dashboard forwards here."""
 
 from typing import Union
 

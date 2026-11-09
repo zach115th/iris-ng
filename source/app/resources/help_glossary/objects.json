@@ -41,7 +41,7 @@
     },
     "sector.catalog": {
       "title": "Sector catalog",
-      "text": "The critical-infrastructure sectors offered in the customer and case sector pickers. Each is stored on a case as a MISP machine tag (the DHS CIIP sectors, plus other taxonomies such as threatmatch), and sector tags feed the dashboard's sector metrics. A case created without a sector tag is accepted but logged as missing one.",
+      "text": "The critical-infrastructure sectors offered in the customer and case sector pickers. Each is stored on a case as a MISP machine tag (the DHS CIIP sectors, plus other taxonomies such as threatmatch), and sector tags feed the sector figures on Metrics. A case created without a sector tag is accepted but logged as missing one.",
       "wiki": "Dashboard-Analytics#sector-enforcement",
       "aka": ["sectors", "dhs ciip", "critical infrastructure", "industry"]
     },

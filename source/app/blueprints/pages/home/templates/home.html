@@ -46,6 +46,18 @@
                               border: 1px solid rgba(255,255,255,0.25); color: #c8c6d0;
                               white-space: nowrap; }
     .iris-home-sub { color: #7e7b8c; font-size: 0.74rem; margin-top: 1px; }
+    .iris-home-grow { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    .iris-home-right { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; }
+    .iris-home-status { background: #1f1f26; color: #c8c6d0; border: 1px solid rgba(255,255,255,0.25); border-radius: 10px;
+                        padding: 0 6px; font-size: 0.72rem; height: 24px; max-width: 130px; }
+    .iris-home-status:focus-visible, .iris-home-titlebtn:focus-visible, .iris-home-link:focus-visible { outline: 2px solid #b9a6f0; outline-offset: 1px; }
+    .iris-home-titlebtn { background: none; border: 0; padding: 0; color: #b9a6f0; font-weight: 600; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+    .iris-home-titlebtn:hover { text-decoration: underline; }
+    .iris-home-link { background: none; border: 0; padding: 0; color: #b9a6f0; font-size: 0.75rem; cursor: pointer; }
+    .iris-home-link:hover { text-decoration: underline; }
+    .iris-home-actions { display: inline-flex; align-items: center; gap: 12px; }
+    .iris-home-add { background: #5e64e6; border: 0; border-radius: 6px; color: #fff; font-size: 0.74rem; padding: 2px 10px; cursor: pointer; }
+    .iris-home-scroll { max-height: 360px; overflow-y: auto; }
 </style>
 {% endblock stylesheets %}
 
@@ -117,9 +129,13 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="iris-home-sec">
-                            <span class="t">&#9733; Following<span class="count" id="iris-home-c-follow"></span>{{ help_tip('follow.following') }}</span>
+                            <span class="t">Global tasks<span class="count" id="iris-home-c-gtasks"></span>{{ help_tip('task.global') }}</span>
+                            <span class="iris-home-actions">
+                                <button type="button" class="iris-home-link" id="iris-home-gtask-finished" hidden></button>
+                                <button type="button" class="iris-home-add" id="iris-home-gtask-add">Add</button>
+                            </span>
                         </div>
-                        <div id="iris-home-feed"><div class="iris-home-empty">Loading&hellip;</div></div>
+                        <div id="iris-home-gtasks" class="iris-home-scroll"><div class="iris-home-empty">Loading&hellip;</div></div>
                     </div>
                 </div>
             </div>
@@ -140,6 +156,14 @@
             <div class="col-lg-4">
                 <div class="card">
                     <div class="card-body">
+                        <div class="iris-home-sec">
+                            <span class="t">&#9733; Following<span class="count" id="iris-home-c-follow"></span>{{ help_tip('follow.following') }}</span>
+                        </div>
+                        <div id="iris-home-feed"><div class="iris-home-empty">Loading&hellip;</div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
                         <div class="iris-home-sec"><span class="t">My reviews{{ help_tip('home.my_reviews') }}</span></div>
                         <div id="iris-home-reviews"><div class="iris-home-empty">Loading&hellip;</div></div>
                     </div>
@@ -152,6 +176,11 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+<div class="modal" tabindex="-1" role="dialog" id="modal_add_gtask" data-backdrop="true">
+    <div class="modal-xl modal-dialog" role="document">
+        <div class="modal-content" id="modal_add_gtask_content"></div>
     </div>
 </div>
 {% endblock content %}

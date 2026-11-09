@@ -50,7 +50,7 @@
     },
     "task.global": {
       "title": "Global task",
-      "text": "A task that belongs to no case, for team work not tied to one incident (renewing a licence, wiping a drive). Every signed-in user can see, edit and delete global tasks, the assignee can be any active user, and assigning one sends no notification; they do not appear in My pending tasks.\n\nCase tasks are different: they live on a case's Tasks tab, can only be assigned to people with access to that case, and notify their assignees.",
+      "text": "A task that belongs to no case, for team work not tied to one incident (renewing a licence, wiping a drive). Every signed-in user can see, edit and delete global tasks, the assignee can be any active user, and assigning one sends no notification; they do not appear in My pending tasks.\n\nThey are listed on Home: Add creates one, clicking a title edits or deletes it, the menu on a row sets its status, and finished ones stay hidden until you show them.\n\nCase tasks are different: they live on a case's Tasks tab, can only be assigned to people with access to that case, and notify their assignees.",
       "aka": [
         "global tasks",
         "team task",

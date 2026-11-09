@@ -63,7 +63,7 @@
     },
     "common.case_classification": {
       "title": "Classification",
-      "text": "What kind of incident this is, from the MISP incident-classification taxonomy (for example Malicious code: Ransomware). Classifications drive the dashboard metrics and help find similar cases; one that matches the MISP CERT-XLM taxonomy also adds its CERT-XLM tag to the case. Administrators can add or edit them under Manage.",
+      "text": "What kind of incident this is, from the MISP incident-classification taxonomy (for example Malicious code: Ransomware). Classifications drive the figures on Metrics and help find similar cases; one that matches the MISP CERT-XLM taxonomy also adds its CERT-XLM tag to the case. Administrators can add or edit them under Manage.",
       "values": "case_classification",
       "aka": [
         "incident type",

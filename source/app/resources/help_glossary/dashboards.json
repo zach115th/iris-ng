@@ -4,7 +4,7 @@
   "terms": {
     "home.my_open_cases": {
       "title": "My open cases",
-      "text": "Cases you own (you are the case owner) that are not closed. The Dashboard calls them attributed open cases. Owning a case also brings you the \"Case you own is updated\" notification when someone else edits its details.\n\nOn the Dashboard, Show closed cases lists every case you own, closed ones included.",
+      "text": "Cases you own (you are the case owner) that are not closed. Owning a case also brings you the \"Case you own is updated\" notification when someone else edits its details.",
       "aka": [
         "attributed cases",
         "owner",
@@ -22,7 +22,7 @@
     },
     "home.pending_tasks": {
       "title": "My pending tasks",
-      "text": "Case tasks you are an assignee of whose status is neither Done nor Canceled, in cases that are still open. Global tasks and war-room tasks are not included.\n\nThe Dashboard calls them attributed open tasks; there you can change a task's status in place by clicking its Status cell, and the table refreshes every 30 seconds.",
+      "text": "Case tasks you are an assignee of whose status is neither Done nor Canceled, in cases that are still open. Global tasks and war-room tasks are not included.\n\nThe menu on a row sets the task's status; Done or Canceled takes it off this list.",
       "aka": [
         "attributed tasks",
         "assigned tasks",
@@ -58,23 +58,6 @@
         "switch case",
         "case context",
         "quick actions"
-      ]
-    },
-    "dashboard.page": {
-      "title": "Dashboard",
-      "text": "Your operational view: the cases you can open, the cases, tasks and reviews attributed to you, and the team's global tasks. The two task tables refresh every 30 seconds, the others when you press Refresh.\n\nThe curve in the header counts the cases opened each day over the last 12 months, across every case on the server.",
-      "wiki": "Dashboard-Analytics#where-these-views-live",
-      "aka": [
-        "operational view",
-        "attributed"
-      ]
-    },
-    "dashboard.case_counts": {
-      "title": "Cases (open / all)",
-      "text": "Open cases, then all cases including closed ones, counted over the cases you can open. A case you have no access to is not counted.",
-      "aka": [
-        "case count",
-        "open cases"
       ]
     },
     "dashboard.import_case": {

@@ -21,12 +21,10 @@ from flask import redirect
 from flask import render_template
 from flask import url_for
 from flask_login import current_user
-from flask_wtf import FlaskForm
 
 from app import app
 from app.datamgmt.dashboard.dashboard_db import get_tasks_status
 from app.forms import CaseGlobalTaskForm
-from app.iris_engine.access_control.utils import ac_get_user_case_counts
 from app.models.authorization import User
 from app.models.models import GlobalTasks
 from app.blueprints.access_controls import ac_requires
@@ -45,33 +43,14 @@ def root():
     if app.config['DEMO_MODE_ENABLED'] == 'True':
         return redirect(url_for('demo-landing.demo_landing'))
 
-    return redirect(url_for('index.index'))
+    return redirect(url_for('home.home'))
 
 
 @dashboard_blueprint.route('/dashboard')
-@ac_requires()
+@ac_requires(no_cid_required=True)
 def index(caseid, url_redir):
-    """
-    Index page. Load the dashboard data, create the add customer form
-    :return: Page
-    """
-    if url_redir:
-        return redirect(url_for('index.index', cid=caseid if caseid is not None else 1, redirect=True))
-
-    msg = None
-
-    acgucc = ac_get_user_case_counts(current_user.id)
-
-    data = {
-        "user_open_count": acgucc[2],
-        "cases_open_count": acgucc[1],
-        "cases_count": acgucc[0],
-    }
-
-    # Create the customer form to be able to quickly add a customer
-    form = FlaskForm()
-
-    return render_template('index.html', data=data, form=form, msg=msg)
+    """The retired dashboard's address: links, bookmarks and the redirects that name this endpoint land on Home."""
+    return redirect(url_for('home.home', cid=caseid))
 
 
 @dashboard_blueprint.route('/global/tasks/add/modal', methods=['GET'])

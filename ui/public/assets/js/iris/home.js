@@ -5,6 +5,9 @@
  * CaseDetailsSchema is a bare auto-schema over Cases: the fields are the
  * MODEL columns (name, open_date, close_date), NOT case_name. */
 
+var IRIS_HOME_G = {statuses: [], tasks: [], showFinished: false};
+var IRIS_HOME_FINISHED = ['Done', 'Canceled'];
+
 function iris_home_esc(s) {
     var d = document.createElement('div');
     d.textContent = s == null ? '' : String(s);
@@ -21,6 +24,12 @@ function iris_home_rel(iso) {
     if (secs < 86400) { return Math.floor(secs / 3600) + 'h ago'; }
     if (secs < 2592000) { return Math.floor(secs / 86400) + 'd ago'; }
     return new Date(iso).toISOString().slice(0, 10);
+}
+
+/* The legacy lists send naive UTC ("2026-11-09T21:50:25.216032"); read without a zone it would be local time. */
+function iris_home_utc(s) {
+    var text = String(s || '');
+    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text) && !/(Z|[+-]\d{2}:?\d{2})$/.test(text) ? text + 'Z' : s;
 }
 
 function iris_home_get(url) {
@@ -44,6 +53,26 @@ function iris_home_sev(name) {
     if (!name) { return ''; }
     return '<span class="iris-home-sev iris-home-sev-' + iris_home_esc(String(name).toLowerCase())
         + '">' + iris_home_esc(name) + '</span>';
+}
+
+function iris_home_attr(s) {
+    return iris_home_esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function iris_home_num(v) {
+    var n = parseInt(v, 10);
+    return isNaN(n) ? 0 : n;
+}
+
+/* A status menu for a task row; null until the statuses have loaded. attrs are built from numbers only. */
+function iris_home_status_select(attrs, current, label) {
+    if (!IRIS_HOME_G.statuses.length) { return null; }
+    return '<select class="iris-home-status" ' + attrs + ' aria-label="' + iris_home_attr(label) + '">'
+        + IRIS_HOME_G.statuses.map(function (s) {
+            var id = iris_home_num(s.id);
+            return '<option value="' + id + '"' + (id === iris_home_num(current) ? ' selected' : '') + '>' + iris_home_esc(s.status_name) + '</option>';
+        }).join('')
+        + '</select>';
 }
 
 function iris_home_greeting() {
@@ -129,8 +158,9 @@ function iris_home_tasks() {
                 + iris_home_esc(t.task_title) + '</a>'
                 + '<div class="iris-home-sub">#' + t.case_id + ' &middot; '
                 + iris_home_esc(caseName) + '</div></span>'
-                + '<span><span class="iris-home-pill-outline">'
-                + iris_home_esc(t.status_name || '') + '</span>'
+                + '<span class="iris-home-right">'
+                + (iris_home_status_select('data-task="' + iris_home_num(t.task_id) + '" data-case="' + iris_home_num(t.case_id) + '"', t.task_status_id, 'Status of ' + t.task_title)
+                   || '<span class="iris-home-pill-outline">' + iris_home_esc(t.status_name || '') + '</span>')
                 + ' <span class="meta">' + iris_home_rel(t.task_last_update) + '</span></span>'
                 + '</div>';
         });
@@ -213,18 +243,146 @@ function iris_home_activities() {
                 + '<div class="text-muted" style="font-size:0.74rem;">'
                 + iris_home_esc(a.case_name || '') + (a.user_name ? ' &middot; ' + iris_home_esc(a.user_name) : '')
                 + '</div></span>'
-                + '<span class="meta">' + iris_home_rel(a.activity_date) + '</span>'
+                + '<span class="meta">' + iris_home_rel(iris_home_utc(a.activity_date)) + '</span>'
                 + '</div>';
         });
         iris_home_fill('iris-home-activities', rows, 'No recent activity.');
     }).catch(function () { iris_home_fill('iris-home-activities', [], 'Failed to load.'); });
 }
 
+/* ---- Global tasks: team work that belongs to no case. */
+
+function iris_home_gtask(id) {
+    return IRIS_HOME_G.tasks.filter(function (t) { return iris_home_num(t.task_id) === id; })[0];
+}
+
+function iris_home_gtask_row(t) {
+    var id = iris_home_num(t.task_id);
+    var title = String(t.task_title || '').trim() || '#' + id;
+    var tags = String(t.task_tags || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 3);
+    return '<div class="iris-home-item" data-gtask-row="' + id + '">'
+        + '<span class="iris-home-grow"><button type="button" class="iris-home-titlebtn" data-gtask-edit="' + id + '" title="Edit this task">' + iris_home_esc(title) + '</button>'
+        + '<div class="iris-home-sub">' + iris_home_esc(t.user_name || '')
+        + tags.map(function (x) { return ' <span class="iris-home-chip">' + iris_home_esc(x) + '</span>'; }).join('')
+        + '</div></span>'
+        + '<span class="iris-home-right">'
+        + (iris_home_status_select('data-gtask="' + id + '"', t.task_status_id, 'Status of ' + title)
+           || '<span class="iris-home-pill-outline">' + iris_home_esc(t.status_name || '') + '</span>')
+        + ' <span class="meta">' + iris_home_rel(iris_home_utc(t.task_last_update)) + '</span></span>'
+        + '</div>';
+}
+
+function iris_home_draw_gtasks() {
+    var finishedOf = function (t) { return IRIS_HOME_FINISHED.indexOf(t.status_name) !== -1; };
+    var recent = function (a, b) { return String(b.task_last_update || '').localeCompare(String(a.task_last_update || '')); };
+    var open = IRIS_HOME_G.tasks.filter(function (t) { return !finishedOf(t); }).sort(recent);
+    var finished = IRIS_HOME_G.tasks.filter(finishedOf).sort(recent);
+    var shown = IRIS_HOME_G.showFinished ? open.concat(finished) : open;
+    iris_home_fill('iris-home-gtasks', shown.map(iris_home_gtask_row), finished.length ? 'No open global tasks.' : 'No global tasks yet. Add one for team work not tied to a case.');
+    iris_home_set('iris-home-c-gtasks', open.length ? String(open.length) : '');
+    var toggle = document.getElementById('iris-home-gtask-finished');
+    toggle.hidden = !finished.length;
+    toggle.textContent = (IRIS_HOME_G.showFinished ? 'Hide finished (' : 'Show finished (') + finished.length + ')';
+    toggle.setAttribute('aria-pressed', IRIS_HOME_G.showFinished ? 'true' : 'false');
+}
+
+/* Also the source of the task statuses the two status menus offer. */
+function iris_home_gtasks() {
+    return iris_home_get('/global/tasks/list').then(function (resp) {
+        var d = (resp && resp.data) || {};
+        IRIS_HOME_G.statuses = d.tasks_status || [];
+        IRIS_HOME_G.tasks = d.tasks || [];
+        iris_home_draw_gtasks();
+    }).catch(function () { iris_home_fill('iris-home-gtasks', [], 'Failed to load.'); });
+}
+
+function iris_home_gtask_saved(data) {
+    if (notify_auto_api(data)) {
+        iris_home_gtasks();
+        $('#modal_add_gtask').modal('hide');
+    }
+}
+
+function iris_home_gtask_form() {
+    var data = $('#form_new_gtask').serializeObject();
+    data.task_tags = $('#task_tags').val();
+    data.task_assignee_id = $('#task_assignee_id').val();
+    data.task_status_id = $('#task_status_id').val();
+    data.csrf_token = $('#csrf_token').val();
+    return JSON.stringify(data);
+}
+
+function add_gtask() {
+    var url = '/global/tasks/add/modal' + case_param();
+    $('#modal_add_gtask_content').load(url, function (response, status, xhr) {
+        if (status !== 'success') {
+            ajax_notify_error(xhr, url);
+            return false;
+        }
+        $('#submit_new_gtask').on('click', function () {
+            post_request_api('/global/tasks/add', iris_home_gtask_form(), true).done(iris_home_gtask_saved);
+            return false;
+        });
+        $('#modal_add_gtask').modal({show: true});
+    });
+}
+
+function edit_gtask(id) {
+    var url = '/global/tasks/update/' + iris_home_num(id) + '/modal' + case_param();
+    $('#modal_add_gtask_content').load(url, function (response, status, xhr) {
+        if (status !== 'success') {
+            ajax_notify_error(xhr, url);
+            return false;
+        }
+        $('#modal_add_gtask').modal({show: true});
+    });
+}
+
+/* The two below are called from the dialog's own buttons. */
+function update_gtask(id) {
+    post_request_api('/global/tasks/update/' + iris_home_num(id), iris_home_gtask_form(), true).done(iris_home_gtask_saved);
+}
+
+function delete_gtask(id) {
+    do_deletion_prompt('You are about to delete this global task.').then(function (doDelete) {
+        if (doDelete) {
+            post_request_api('/global/tasks/delete/' + iris_home_num(id)).done(iris_home_gtask_saved);
+        }
+    });
+}
+
+function iris_home_wire_tasks() {
+    $('#iris-home-gtask-add').on('click', function () { add_gtask(); });
+    $('#iris-home-gtask-finished').on('click', function () {
+        IRIS_HOME_G.showFinished = !IRIS_HOME_G.showFinished;
+        iris_home_draw_gtasks();
+    });
+    $('#iris-home-gtasks').on('click', 'button[data-gtask-edit]', function () { edit_gtask(this.getAttribute('data-gtask-edit')); });
+    $('#iris-home-gtasks').on('change', 'select[data-gtask]', function () {
+        var id = iris_home_num(this.getAttribute('data-gtask'));
+        var t = iris_home_gtask(id);
+        if (!t) { return; }
+        var body = {task_title: t.task_title, task_assignee_id: t.task_assignee_id, task_status_id: iris_home_num(this.value), csrf_token: $('#csrf_token').val()};
+        post_request_api('/global/tasks/update/' + id, JSON.stringify(body), true)
+            .done(function (data) { notify_auto_api(data); iris_home_gtasks(); })
+            .fail(function () { iris_home_gtasks(); });
+    });
+    /* The address carries the task's own case, not the one the page happens to be on. */
+    $('#iris-home-tasks').on('change', 'select[data-task]', function () {
+        var caseId = iris_home_num(this.getAttribute('data-case'));
+        var body = {task_id: iris_home_num(this.getAttribute('data-task')), case_id: caseId, task_status_id: iris_home_num(this.value), csrf_token: $('#csrf_token').val()};
+        post_request_api('/user/tasks/status/update', JSON.stringify(body), true, undefined, caseId)
+            .done(function (data) { notify_auto_api(data); iris_home_tasks(); })
+            .fail(function () { iris_home_tasks(); });
+    });
+}
+
 $(function () {
     iris_home_greeting();
+    iris_home_wire_tasks();
     iris_home_cases();
     iris_home_alerts();
-    iris_home_tasks();
+    iris_home_gtasks().then(iris_home_tasks);
     iris_home_reviews();
     iris_home_notifs();
     iris_home_feed();
