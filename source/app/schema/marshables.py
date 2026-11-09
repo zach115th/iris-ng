@@ -2606,6 +2606,11 @@ class SavedFilterSchema(ma.SQLAlchemyAutoSchema):
 
     """
 
+    # iris-ng 2026-11-08: dump-only. Loaded, the relationship was a required field that also needed a database
+    # session this schema does not have, so every POST /filters/add failed ("user: Missing data") - the Alerts
+    # page's Save filter included. The owner is created_by, which the route takes from the session.
+    user = auto_field('user', dump_only=True)
+
     class Meta:
         model = SavedFilter
         load_instance = True

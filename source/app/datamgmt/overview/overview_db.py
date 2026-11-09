@@ -59,7 +59,8 @@ def get_overview_db(user_id, show_full):
     # open_cases_list = []
     for case in open_cases:
         c_case = CaseDetailsSchema().dump(case)
-        c_case['case_open_since_days'] = (datetime.date.today() - case.open_date).days
+        # iris-ng 2026-11-08: a case without an open date made this whole endpoint a 500.
+        c_case['case_open_since_days'] = (datetime.date.today() - case.open_date).days if case.open_date else None
         c_case['tasks_status'] = tmap.get(case.case_id)
         cases_list.append(c_case)
 

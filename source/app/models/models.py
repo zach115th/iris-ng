@@ -1387,6 +1387,10 @@ class GlobalTasks(db.Model):
 
 class UserActivity(db.Model):
     __tablename__ = "user_activity"
+    # iris-ng 2026-11-08: the case queue reads each case's newest entry (migration b2d7f4a9c1e6).
+    __table_args__ = (
+        Index('ix_user_activity_case_date', 'case_id', 'activity_date'),
+    )
 
     id = Column(BigInteger, primary_key=True)
     user_id = Column(ForeignKey('user.id'), nullable=True)

@@ -344,7 +344,11 @@ def cases_update(case_identifier, request_data):
             request_data['case_name'] = f'#{case_i.case_id} - {short_case_name}'
         request_data['case_customer'] = case_i.client_id if not request_data.get('case_customer') else request_data.get(
             'case_customer')
-        request_data['reviewer_id'] = None if request_data.get('reviewer_id') == '' else request_data.get('reviewer_id')
+        # iris-ng 2026-11-08: only when the body names the reviewer. Setting the key unconditionally made every partial
+        # save (the case header's state menu, the case queue's stage track, an API client sending {state_id}) clear
+        # the reviewer and reset the review status to Not reviewed.
+        if 'reviewer_id' in request_data:
+            request_data['reviewer_id'] = None if request_data.get('reviewer_id') == '' else request_data.get('reviewer_id')
 
         case = _load(request_data, instance=case_i, partial=True)
 

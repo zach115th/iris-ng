@@ -1,160 +1,352 @@
 {% extends "layouts/default.html" %}
 
-{% block title %} Overview {% endblock title %}
+{% block title %} Case queue {% endblock title %}
 
 {% block stylesheets %}
-
-    <link rel="stylesheet" href="/static/assets/css/suggestags.css">
-    <link href="/static/assets/css/dataTables.buttons.min.css" rel="stylesheet">
-    <link href="/static/assets/css/dataTables.contextualActions.min.css" rel="stylesheet">
-    <link href="/static/assets/css/dataTables.select.min.css" rel="stylesheet">
-    <link href="/static/assets/css/dataTables.responsive.css" rel="stylesheet">
-    <link href="/static/assets/css/dataTables.searchBuilder.css" rel="stylesheet">
-
     <style>
-        /* v3-parity styling (page-local overlay - project pattern). */
-        #overviewTableTitle { font-size: 1.35rem; font-weight: 600; }
-        .iris-ov-sub { color: #7e7b8c; font-size: 0.72rem; margin-top: 1px; }
-        .iris-ov-pill { border-radius: 10px; padding: 1px 10px; font-size: 0.74rem;
-                        white-space: nowrap; display: inline-block; }
-        /* state colours - v3's mapping, matched by NAME slug with a muted fallback */
-        .iris-ov-st-open          { background: rgba(94,114,228,0.16); color: #7f95f0; }
-        .iris-ov-st-containment   { background: rgba(251,99,64,0.16);  color: #fb6340; }
-        .iris-ov-st-eradication   { background: rgba(139,92,246,0.18); color: #b9a6f0; }
-        .iris-ov-st-remediation   { background: rgba(17,205,239,0.14); color: #11cdef; }
-        .iris-ov-st-recovery      { background: rgba(45,206,137,0.14); color: #2dce89; }
-        .iris-ov-st-reporting     { background: rgba(17,205,239,0.14); color: #11cdef; }
-        .iris-ov-st-closed        { background: rgba(45,206,137,0.16); color: #2dce89; }
-        .iris-ov-st-default       { background: rgba(255,255,255,0.07); color: #9a9aa5; }
-        /* severity colours */
-        .iris-ov-sev-critical      { background: rgba(245,54,92,0.22);  color: #ff8095; }
-        .iris-ov-sev-high          { background: rgba(245,54,92,0.14);  color: #f5365c; }
-        .iris-ov-sev-medium        { background: rgba(244,196,48,0.16); color: #f4c430; }
-        .iris-ov-sev-low           { background: rgba(255,255,255,0.07); color: #9a9aa5; }
-        .iris-ov-sev-informational { background: rgba(94,114,228,0.14); color: #7f95f0; }
-        .iris-ov-sev-default       { background: rgba(255,255,255,0.07); color: #9a9aa5; }
-    </style>
+        /* The case queue (iris-ng 2026-11-08) - page-local styles, cq-* (the queue) and fb-* (the filter builder). */
+        .iris-cq { color: #e8e8ee; padding-top: 18px; }
+        .iris-cq .cq-i { width: 15px; height: 15px; flex: 0 0 auto; vertical-align: -2px; }
+        .iris-cq .cq-spacer { flex: 1 1 auto; }
+        .iris-cq .cq-dim { color: #8a8a96; }
+        .iris-cq .cq-hot { color: #fb6340; }
+        .iris-cq .cq-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+        .cq-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 18px; margin-bottom: 14px; }
+        .cq-head-text { flex: 1 1 260px; min-width: 0; }
+        .cq-title { display: inline; font-size: 1.45rem; font-weight: 700; margin: 0; color: #f2f2f6; letter-spacing: -0.01em; }
+        .cq-sub { color: #9a9aa5; font-size: 0.82rem; margin-top: 2px; min-height: 1.2em; }
+        .cq-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .cq-search { position: relative; display: flex; align-items: center; margin: 0; }
+        .cq-search .cq-i { position: absolute; left: 10px; color: #8a8a96; pointer-events: none; }
+        .cq-search input { width: 240px; max-width: 60vw; height: 34px; padding: 0 10px 0 32px; border-radius: 8px;
+                           border: 1px solid rgba(255,255,255,0.14); background: #15151a; color: #e8e8ee; font-size: 0.85rem; }
+        .cq-search input:focus, .cq-select:focus, .fb-group select:focus, .fb-group input:focus, .cq-dlg-input:focus {
+            outline: 2px solid rgba(84,100,216,0.65); outline-offset: 1px; }
+        .cq-showclosed { display: inline-flex; align-items: center; gap: 6px; margin: 0; height: 34px; padding: 0 10px;
+                         border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; font-size: 0.82rem; cursor: pointer; }
+        .cq-sep { width: 1px; height: 22px; background: rgba(255,255,255,0.14); margin: 0 2px; }
+
+        .cq-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px;
+                  border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #e8e8ee;
+                  font-size: 0.82rem; font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap; }
+        .cq-btn:hover { background: rgba(255,255,255,0.07); color: #fff; text-decoration: none; }
+        .cq-btn:disabled { opacity: 0.45; cursor: default; }
+        .cq-btn--primary { background: #5464d8; border-color: #5464d8; color: #fff; }
+        .cq-btn--primary:hover { background: #4655c4; border-color: #4655c4; }
+        .cq-btn--danger { background: rgba(245,54,92,0.85); border-color: rgba(245,54,92,0.85); color: #fff; }
+        .cq-btn--ghost { background: transparent; border-color: transparent; }
+        .cq-btn--on { border-color: rgba(84,100,216,0.7); background: rgba(84,100,216,0.18); }
+        .cq-btn--sm { height: 28px; padding: 0 10px; font-size: 0.78rem; }
+        .cq-badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #5464d8; color: #fff;
+                    font-size: 0.7rem; line-height: 18px; text-align: center; }
+        .cq-link { background: none; border: 0; padding: 0; color: #8fa3ef; text-decoration: underline; cursor: pointer; font: inherit; }
+
+        .cq-subhead { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .cq-kpis { display: flex; flex-wrap: wrap; gap: 8px; }
+        .cq-kpi { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 8px;
+                  border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: #c8c8d0; cursor: pointer; }
+        span.cq-kpi { cursor: default; }
+        .cq-kpi:hover { background: rgba(255,255,255,0.07); }
+        .cq-kpi--on { border-color: #5464d8; box-shadow: inset 0 0 0 1px #5464d8; background: rgba(84,100,216,0.12); }
+        .cq-kpi-dot { width: 7px; height: 7px; border-radius: 2px; background: #5464d8; }
+        .cq-kpi--critical .cq-kpi-dot { background: #f5365c; }
+        .cq-kpi--stalled .cq-kpi-dot { background: #f4a020; }
+        .cq-kpi--mine .cq-kpi-dot { background: #3b8cf0; }
+        .cq-kpi-lbl { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+        .cq-kpi-val { font-size: 0.95rem; font-weight: 700; color: #f2f2f6; }
+        .cq-view { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .cq-select { height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.14); background: #15151a; color: #e8e8ee;
+                     font-size: 0.8rem; padding: 0 8px; }
+        .cq-density { display: inline-flex; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; overflow: hidden; }
+        .cq-density button { height: 30px; padding: 0 11px; border: 0; background: transparent; color: #9a9aa5; font-size: 0.76rem; font-weight: 600; cursor: pointer; }
+        .cq-density button.cq-density--on { background: #5464d8; color: #fff; }
+
+        .cq-filterpanel { border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.025);
+                          padding: 12px 14px; margin-bottom: 12px; }
+        .cq-fp-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .cq-fp-title { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #9a9aa5; font-weight: 700; }
+        .cq-fp-foot { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+        .cq-saved { position: relative; }
+        .cq-menu { position: absolute; right: 0; top: 38px; z-index: 950; width: 320px; max-height: 360px; overflow: auto;
+                   background: #1d1d26; border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 6px;
+                   box-shadow: 0 10px 30px rgba(0,0,0,0.45); }
+        .cq-menu-head { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: #8a8a96; padding: 6px 8px; }
+        .cq-menu-row { display: flex; align-items: stretch; border-radius: 6px; }
+        .cq-menu-row--on { background: rgba(84,100,216,0.16); }
+        .cq-menu-item { flex: 1 1 auto; display: flex; flex-direction: column; text-align: left; width: 100%; padding: 6px 8px;
+                        background: none; border: 0; color: #e8e8ee; border-radius: 6px; cursor: pointer; font-size: 0.82rem; }
+        .cq-menu-item:hover:not(:disabled) { background: rgba(255,255,255,0.06); }
+        .cq-menu-item:disabled { opacity: 0.45; cursor: default; }
+        .cq-menu-sub { font-size: 0.72rem; color: #8a8a96; }
+        .cq-menu-del { background: none; border: 0; color: #8a8a96; padding: 0 10px; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+        .cq-menu-del:hover { color: #f5365c; background: rgba(245,54,92,0.12); }
+        .cq-menu-sep { height: 1px; background: rgba(255,255,255,0.1); margin: 6px 2px; }
+        .cq-menu-empty { padding: 8px; font-size: 0.8rem; color: #9a9aa5; }
+
+        .fb-group { display: flex; flex-direction: column; gap: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px;
+                    padding: 10px; background: rgba(255,255,255,0.02); }
+        .fb-depth-1 { border-color: rgba(84,100,216,0.35); background: rgba(84,100,216,0.05); }
+        .fb-depth-2 { border-color: rgba(244,160,32,0.35); background: rgba(244,160,32,0.05); }
+        .fb-head { display: flex; align-items: center; gap: 10px; }
+        .fb-match { font-size: 0.68rem; letter-spacing: 0.07em; text-transform: uppercase; color: #9a9aa5; font-weight: 700; }
+        .fb-logicset { display: inline-flex; border: 1px solid rgba(255,255,255,0.14); border-radius: 7px; overflow: hidden; }
+        .fb-logic { height: 26px; padding: 0 10px; border: 0; background: transparent; color: #c8c8d0; font-size: 0.76rem; font-weight: 600; cursor: pointer; }
+        .fb-logic--on { background: #5464d8; color: #fff; }
+        .fb-count { font-size: 0.74rem; color: #8a8a96; }
+        .fb-items { display: flex; flex-direction: column; gap: 6px; }
+        .fb-items:empty { display: none; }
+        .fb-leaf { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(150px, 1fr) minmax(170px, 2fr) auto; gap: 6px; }
+        .fb-group select, .fb-group input { height: 32px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.14); background: #15151a;
+                                            color: #e8e8ee; font-size: 0.82rem; padding: 0 8px; min-width: 0; }
+        .fb-group input:disabled { color: #6f6f7a; }
+        .fb-group input[type="date"] { color-scheme: dark; }
+        .fb-icon { width: 30px; height: 32px; border: 0; background: none; color: #8a8a96; border-radius: 7px; cursor: pointer; font-size: 1.05rem; }
+        .fb-icon:hover { color: #f5365c; background: rgba(245,54,92,0.1); }
+        .fb-remove-group { margin-left: auto; }
+        .fb-foot { display: flex; flex-wrap: wrap; gap: 8px; }
+        .fb-add { height: 30px; padding: 0 12px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03);
+                  color: #e8e8ee; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+        .fb-add:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
+        .fb-add:disabled { opacity: 0.45; cursor: default; }
+
+        .cq-split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(360px, 1fr); gap: 14px; align-items: start; }
+        .cq-queue, .cq-detail { border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.02); min-width: 0; }
+        .cq-qhead, .cq-rowbtn { display: grid; grid-template-columns: minmax(0, 1fr) 150px 170px 104px; gap: 12px; align-items: center; }
+        .cq-qhead { padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 0.68rem; letter-spacing: 0.07em;
+                    text-transform: uppercase; color: #8a8a96; font-weight: 700; }
+        .cq-h-age { display: flex; justify-content: flex-end; align-items: center; gap: 3px; }
+        .cq-sort { background: none; border: 0; padding: 0; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+        .cq-sort:hover, .cq-sort--on { color: #e8e8ee; }
+        .cq-sort-arrow { margin-left: 3px; font-size: 0.6rem; }
+        .cq-list { min-height: 120px; }
+        .cq--loading .cq-list { opacity: 0.55; transition: opacity 0.15s; }
+        .cq-row { border-bottom: 1px solid rgba(255,255,255,0.06); border-left: 3px solid transparent; }
+        .cq-row--active { background: rgba(84,100,216,0.12); border-left-color: #5464d8; }
+        .cq-rowbtn { width: 100%; padding: 11px 14px 11px 11px; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+        .cq-row:hover:not(.cq-row--active) { background: rgba(255,255,255,0.03); }
+        .cq-rowbtn:focus-visible { outline: 2px solid rgba(84,100,216,0.8); outline-offset: -2px; }
+        .cq-c-case { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .cq-line1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .cq-title { font-weight: 600; color: #f2f2f6; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cq-line2 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 0.72rem; color: #8a8a96; }
+        .cq-cust { color: #9fa6d8; }
+        .cq-dot { color: #5f5f6a; }
+        .cq-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+        .cq-tag { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.68rem; padding: 1px 7px;
+                  border-radius: 9px; border: 1px solid rgba(255,255,255,0.14); color: #c8c8d0; }
+        .cq-tag--more { color: #9a9aa5; }
+        .cq-sev { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 9px; font-size: 0.74rem; font-weight: 600;
+                  border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color: #9a9aa5; white-space: nowrap; }
+        .cq-sev .cq-i--sev { width: 12px; height: 12px; }
+        .cq-sev--critical { background: rgba(245,54,92,0.16); border-color: rgba(245,54,92,0.45); color: #ff8095; }
+        .cq-sev--high { background: rgba(251,140,60,0.14); border-color: rgba(251,140,60,0.45); color: #fda26a; }
+        .cq-sev--medium { background: rgba(244,196,48,0.13); border-color: rgba(244,196,48,0.4); color: #f4c430; }
+        .cq-sev--low { background: rgba(84,140,240,0.13); border-color: rgba(84,140,240,0.4); color: #8fb4ff; }
+        .cq-sev--informational { background: rgba(94,114,228,0.13); border-color: rgba(94,114,228,0.4); color: #8fa3ef; }
+        .cq-c-stage { display: flex; flex-direction: column; gap: 5px; font-size: 0.82rem; color: #d6d6de; }
+        .cq-pipe { display: flex; gap: 3px; }
+        .cq-seg { width: 15px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.12); }
+        .cq-seg--done { background: rgba(84,100,216,0.75); }
+        .cq-seg--now { background: #8fa3ef; }
+        .cq-c-owner, .cq-owner { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 0.82rem; }
+        .cq-avatar { width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%; background: rgba(84,100,216,0.22); color: #a9b6f3;
+                     font-size: 0.6rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+        .cq-avatar--none { background: rgba(255,255,255,0.07); color: #8a8a96; }
+        .cq-owner-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cq-owner-none { color: #8a8a96; font-style: italic; }
+        .cq-c-age { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .cq-age { font-weight: 700; color: #f2f2f6; font-size: 0.86rem; }
+        .cq-idle { font-size: 0.7rem; color: #8a8a96; white-space: nowrap; }
+        .cq-idle--hot { color: #fb6340; }
+        .cq-row--closed .cq-title { color: #b8b8c2; }
+        .cq-empty { padding: 28px 16px; text-align: center; color: #9a9aa5; font-size: 0.86rem; }
+        .cq-empty--error { color: #ff8095; }
+        .cq-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px;
+                   border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.76rem; color: #9a9aa5; }
+
+        .cq--compact .cq-rowbtn { padding-top: 6px; padding-bottom: 6px; }
+        .cq--compact .cq-tags { display: none; }
+        .cq--compact .cq-c-case { flex-direction: row; align-items: center; gap: 10px; }
+        .cq--compact .cq-line1 { flex: 0 1 auto; min-width: 0; }
+        .cq--compact .cq-line2 { flex-wrap: nowrap; white-space: nowrap; }
+
+        .cq-detail { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow: auto; }
+        .cq-d-empty { padding: 40px 18px; text-align: center; color: #9a9aa5; font-size: 0.86rem; }
+        .cq-d-back { display: none; align-items: center; gap: 6px; margin: 12px 16px 0; background: none; border: 0; color: #8fa3ef; cursor: pointer; padding: 0; font-size: 0.82rem; }
+        .cq-d-head { padding: 16px 18px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .cq-d-top { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: #8a8a96; }
+        .cq-d-state { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 9px; background: rgba(84,100,216,0.16);
+                      color: #8fa3ef; font-weight: 600; }
+        .cq-d-state--closed { background: rgba(45,206,137,0.14); color: #2dce89; }
+        .cq-d-title { font-size: 1.08rem; font-weight: 700; color: #f2f2f6; margin: 9px 0 11px; line-height: 1.35; word-break: break-word; }
+        .cq-d-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .cq-stalled { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 9px; font-size: 0.74rem; font-weight: 600;
+                      background: rgba(251,99,64,0.14); color: #fb6340; }
+        .cq-steps-wrap { margin-top: 14px; }
+        .cq-steps-head { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-size: 0.64rem; letter-spacing: 0.07em;
+                         text-transform: uppercase; color: #8a8a96; font-weight: 700; }
+        .cq-steps { list-style: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); margin: 0; padding: 0; }
+        .cq-step { position: relative; display: flex; justify-content: center; }
+        .cq-step::before { content: ''; position: absolute; top: 9px; left: -50%; right: 50%; height: 2px; background: rgba(255,255,255,0.14); }
+        .cq-step:first-child::before { display: none; }
+        .cq-step--done::before, .cq-step--now::before { background: rgba(84,100,216,0.75); }
+        .cq-step-btn { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: 0;
+                       padding: 0 2px; color: #8a8a96; cursor: pointer; min-width: 0; width: 100%; }
+        .cq-step-btn:disabled { cursor: default; }
+        .cq-step-btn:not(:disabled):hover .cq-step-mark { border-color: #8fa3ef; box-shadow: 0 0 0 3px rgba(84,100,216,0.25); }
+        .cq-step-btn:not(:disabled):hover .cq-step-lbl { color: #e8e8ee; }
+        .cq-step-mark { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.22); background: #1a1a22;
+                        display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+        .cq-i--step { width: 11px; height: 11px; }
+        .cq-step--done .cq-step-mark { background: #5464d8; border-color: #5464d8; }
+        .cq-step--now .cq-step-mark { border-color: #8fa3ef; box-shadow: inset 0 0 0 4px #1a1a22; background: #8fa3ef; }
+        .cq-step-lbl { font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+        .cq-step--now .cq-step-lbl { color: #8fa3ef; }
+        .cq-d-offtrack { margin-top: 8px; font-size: 0.76rem; color: #9a9aa5; }
+        .cq-d-body { padding: 14px 18px 18px; }
+        .cq-meta { display: grid; grid-template-columns: 1fr 1fr; margin: 0 0 16px; border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; overflow: hidden; }
+        .cq-meta-cell { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); min-width: 0; }
+        .cq-meta-cell:nth-child(odd):not(.cq-meta-cell--wide) { border-right: 1px solid rgba(255,255,255,0.06); }
+        .cq-meta-cell--wide { grid-column: 1 / -1; border-bottom: 0; }
+        .cq-meta-lbl { font-size: 0.64rem; letter-spacing: 0.07em; text-transform: uppercase; color: #8a8a96; font-weight: 700; margin-bottom: 3px; }
+        .cq-meta-val { margin: 0; font-size: 0.84rem; color: #e8e8ee; overflow-wrap: anywhere; }
+        .cq-meta-val .cq-tag { display: inline-block; margin: 0 4px 4px 0; }
+        .cq-d-section { margin-top: 12px; }
+        .cq-d-section-title { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: #9a9aa5; font-weight: 700; margin: 0 0 8px; }
+        .cq-md { font-size: 0.86rem; line-height: 1.55; color: #dcdce4; overflow-wrap: anywhere; }
+        .cq-md h1, .cq-md h2, .cq-md h3, .cq-md h4 { color: #f2f2f6; font-weight: 700; margin: 12px 0 6px; line-height: 1.3; }
+        .cq-md h1 { font-size: 1.05rem; } .cq-md h2 { font-size: 0.98rem; } .cq-md h3, .cq-md h4 { font-size: 0.9rem; }
+        .cq-md p { margin: 0 0 8px; }
+        .cq-md ul, .cq-md ol { padding-left: 20px; margin: 0 0 8px; }
+        .cq-md table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 6px 0 10px; display: block; overflow-x: auto; }
+        .cq-md th, .cq-md td { border: 1px solid rgba(255,255,255,0.1); padding: 4px 6px; }
+        .cq-md code { background: rgba(255,255,255,0.07); padding: 0 4px; border-radius: 4px; }
+        .cq-md hr { border-color: rgba(255,255,255,0.1); }
+        .cq-md a { color: #8fa3ef; text-decoration: underline; }
+
+        dialog.cq-dialog { width: min(520px, 92vw); border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; background: #1d1d26;
+                           color: #e8e8ee; padding: 18px 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        dialog.cq-dialog::backdrop { background: rgba(0,0,0,0.55); }
+        .cq-dlg-title { font-size: 1.02rem; font-weight: 700; margin: 0 0 10px; color: #f2f2f6; }
+        .cq-dlg-text { font-size: 0.86rem; color: #c8c8d0; margin: 0 0 12px; }
+        .cq-dlg-lbl { display: block; font-size: 0.74rem; color: #9a9aa5; margin: 10px 0 4px; font-weight: 600; }
+        .cq-dlg-input { width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.14); background: #15151a; color: #e8e8ee;
+                        font-size: 0.86rem; padding: 7px 9px; }
+        .cq-dlg-check { display: flex; align-items: center; gap: 7px; margin: 12px 0 0; font-size: 0.84rem; cursor: pointer; }
+        .cq-dlg-err { color: #ff8095; font-size: 0.82rem; margin-top: 10px; }
+        .cq-dlg-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+        @media (max-width: 1199px) {
+            .cq-split { grid-template-columns: minmax(0, 1fr); }
+            .cq-detail { display: none; position: static; max-height: none; }
+            .iris-cq.cq--detail-open .cq-detail { display: block; }
+            .iris-cq.cq--detail-open .cq-queue { display: none; }
+            .cq-d-back { display: inline-flex; }
+        }
+        @media (max-width: 760px) {
+            .cq-qhead, .cq-rowbtn { grid-template-columns: minmax(0, 1fr) 84px; }
+            .cq-h-stage, .cq-h-owner, .cq-c-stage, .cq-c-owner { display: none; }
+            .cq-view { margin-left: 0; }
+            .fb-leaf { grid-template-columns: 1fr 1fr; }
+            .cq-meta { grid-template-columns: 1fr; }
+            .cq-meta-cell:nth-child(odd):not(.cq-meta-cell--wide) { border-right: 0; }
+        }
+    </style>
 {% endblock stylesheets %}
 
 {% block content %}
 
     {{ form.hidden_tag() }}
-        <div class="page-inner">
-            <div class="row">
-                <div class="loader1 text-center ml-mr-auto" id="loading_msg">Loading...</div>
-                <div class="col-md-12">
-                    <div class="card" id="card_main_load">
-                        <div class="card-header">
-                            <div class="row">
-                                <div class="col d-flex align-items-center">
-                                    {# The title text is replaced by overview.js - the icon sits beside it, not in it. #}
-                                    <div class="card-title" id="overviewTableTitle">Open cases</div>{{ help_tip('overview.cases', cls='ml-2') }}
-                                </div>
-                                <div class="col">
-                                    <button type="button" class="btn btn-sm btn-outline-black float-right" onclick="get_cases_overview(false);">
-                                        Refresh
-                                    </button>
+    <div class="page-inner iris-cq" id="iris-cq">
+        <div class="cq-head">
+            <div class="cq-head-text">
+                <h1 class="cq-title">Case queue</h1>{{ help_tip('overview.cases', cls='ml-2') }}
+                <div class="cq-sub" id="cq-sub"></div>
+            </div>
+            <div class="cq-tools">
+                <label class="cq-search">
+                    <svg class="cq-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="search" id="cq-q" maxlength="200" autocomplete="off" placeholder="Filter by title, ID, tag&hellip;"
+                           aria-label="Search the queue by title, case ID, SOC ID, tag or customer">
+                </label>
+                <button type="button" class="cq-btn" id="cq-filters-btn" aria-expanded="false" aria-controls="cq-filter-panel">
+                    <svg class="cq-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+                    Filters<span class="cq-badge" id="cq-filter-count" hidden></span>
+                </button>
+                <label class="cq-showclosed"><input type="checkbox" id="cq-closed"> Show closed</label>
+                <span class="cq-sep" aria-hidden="true"></span>
+                <button type="button" class="cq-btn" id="cq-import">
+                    <svg class="cq-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                    Import
+                </button>
+                <button type="button" class="cq-btn cq-btn--primary" id="cq-new">
+                    <svg class="cq-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    Open a case
+                </button>
+            </div>
+        </div>
 
-                              <div class="selectgroup float-right mt--1">
-                                    <div class="form-check float-right">
-                                         <label class="form-check-label">
-                                             <input class="form-check-input" type="checkbox" id="overviewLoadClosedCase">
-                                                 <span class="form-check-sign"> Show closed cases
-                                                 </span>
-                                         </label>
-                                    </div>
-
-                                </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive" id="overview_table_wrapper">
-
-                                                                    <span id="table_buttons"></span>
-                                <table class="table display wrap col-border table-striped table-hover" width="100%"
-                                        cellspacing="0" id="overview_table">
-                                    <thead>
-                                        <tr>
-                                            <th>Outcome</th>
-                                            <th>Case ID</th>
-                                            <th>Classification</th>
-                                            <th>Open since</th>
-                                            <th>Tasks</th>
-                                            <th>Title</th>
-                                            <th>SOC ID{{ help_tip('case.soc_id') }}</th>
-                                            <th>Opened</th>
-                                            <th>Closed</th>
-                                            <th>Customer{{ help_tip('common.customer') }}</th>
-                                            <th>State{{ help_tip('common.case_state') }}</th>
-                                            <th>Severity{{ help_tip('common.severity') }}</th>
-                                            <th>Owner{{ help_tip('case.owner') }}</th>
-                                            <th>Tags{{ help_tip('common.tags') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tfoot>
-                                        <tr>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th>Title</th>
-                                            <th>SOC ID</th>
-                                            <th>Opened</th>
-                                            <th>Closed</th>
-                                            <th>Customer</th>
-                                            <th>State</th>
-                                            <th>Severity</th>
-                                            <th>Owner</th>
-                                            <th>Tags</th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+        <div class="cq-subhead">
+            <div class="cq-kpis" id="cq-kpis" role="group" aria-label="Quick filters"></div>{{ help_tip('overview.kpis') }}
+            <div class="cq-view">
+                <select id="cq-per" class="cq-select" aria-label="Cases per page"></select>
+                <div class="cq-density" id="cq-density" role="group" aria-label="Row density">
+                    <button type="button" data-density="comfortable" aria-pressed="true">Comfortable</button><button type="button" data-density="compact" aria-pressed="false">Compact</button>
                 </div>
             </div>
         </div>
-        <div class="modal modal-case-focus" tabindex="-1" role="dialog" id="caseViewModal" data-backdrop="true">
-            <div class="modal-xl modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <div class="col md-12">
-                            <div class="row">
-                                <div class="col align-self-center">
-                                    <h4 class="modal-title mr-4">Case</h4>
-                                    <small><a class="text-muted modal-subtitle"></a></small>
-                                </div>
-                                <div class="col">
-                                    <div class="row float-right">
-                                        <button type="button" class="pull-right btn bg-transparent" data-dismiss="modal" aria-label="Close"><span
-                                            aria-hidden="true"><i class="fa fa-times"></i></span></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                    </div>
-                    <div class="modal-body">
-                        <div class="container col-md-12">
-
-                        </div>
-                    </div>
-                </div>
+        <div class="cq-filterpanel" id="cq-filter-panel" hidden>
+            <div class="cq-fp-head">
+                <span class="cq-fp-title">Filter the queue</span>{{ help_tip('overview.filter') }}
+                <span class="cq-spacer"></span>
+                <div class="cq-saved">
+                    <button type="button" class="cq-btn" id="cq-saved-btn" aria-expanded="false" aria-controls="cq-saved-menu">
+                        <svg class="cq-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                        <span id="cq-saved-btn-lbl">Saved filters</span>
+                        <svg class="cq-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div class="cq-menu" id="cq-saved-menu" aria-label="Saved filters" hidden></div>
+                </div>{{ help_tip('overview.saved_filters') }}
+            </div>
+            <div class="cq-builder" id="cq-builder"></div>
+            <div class="cq-fp-foot">
+                <button type="button" class="cq-btn" id="cq-save-filter">Save filter</button>
+                <span class="cq-spacer"></span>
+                <button type="button" class="cq-btn cq-btn--ghost" id="cq-clear">Clear</button>
+                <button type="button" class="cq-btn cq-btn--primary" id="cq-apply">Apply</button>
             </div>
         </div>
+
+        <div class="cq-split">
+            <section class="cq-queue" aria-label="Cases">
+                <div class="cq-qhead" id="cq-qhead">
+                    <div class="cq-h-case"><button type="button" class="cq-sort" data-sort="case">Case<span class="cq-sort-arrow" aria-hidden="true"></span></button></div>
+                    <div class="cq-h-stage"><button type="button" class="cq-sort" data-sort="stage">Stage<span class="cq-sort-arrow" aria-hidden="true"></span></button></div>
+                    <div class="cq-h-owner"><button type="button" class="cq-sort" data-sort="owner">Owner<span class="cq-sort-arrow" aria-hidden="true"></span></button></div>
+                    <div class="cq-h-age"><button type="button" class="cq-sort" data-sort="age">Age<span class="cq-sort-arrow" aria-hidden="true"></span></button><span aria-hidden="true">&middot;</span><button type="button" class="cq-sort" data-sort="idle">Idle<span class="cq-sort-arrow" aria-hidden="true"></span></button>{{ help_tip('overview.idle') }}</div>
+                </div>
+                <div class="cq-list" id="cq-list" role="list" aria-label="Cases" aria-busy="false"></div>
+                <div class="cq-foot">
+                    <button type="button" class="cq-btn cq-btn--sm" id="cq-prev" disabled>Prev</button>
+                    <span class="cq-pagelbl" id="cq-pagelbl" aria-live="polite"></span>
+                    <button type="button" class="cq-btn cq-btn--sm" id="cq-next" disabled>Next</button>
+                </div>
+            </section>
+            <aside class="cq-detail" id="cq-detail" aria-label="Selected case"></aside>
+        </div>
+
+        <dialog class="cq-dialog" id="cq-dialog" aria-labelledby="cq-dialog-title"></dialog>
+    </div>
+
+    {% include 'includes/case_import_modal.html' %}
+
+    {# Drawn while the page parses: the queue's first page, figures and panel are in the page (None = fetch them). #}
+    <script src="/static/assets/js/iris/filter_builder.js"></script>
+    <script src="/static/assets/js/iris/case_queue.js"></script>
+    <script>
+        window.IrisCaseQueue.mount(document.getElementById('iris-cq'), {{ queue_state|tojson }});
+    </script>
+
 {% endblock content %}
-
-{% block javascripts %}
-
-    <script src="/static/assets/js/iris/datatablesUtils.js"></script>
-    <script src="/static/assets/js/plugin/datatables/dataTables.responsive.min.js"></script>
-    <script src="/static/assets/js/plugin/datatables/dataTables.searchBuilder.js"></script>
-    <script src="/static/assets/js/plugin/datatables/dataTables.dateTime.min.js"></script>
-    <script src="/static/assets/js/plugin/datatables/dataTables.searchBuilder.bs4.js"></script>
-    <script src="/static/assets/js/iris/overview.js"></script>
-
-{% endblock javascripts %}

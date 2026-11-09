@@ -293,13 +293,52 @@
       ]
     },
     "overview.cases": {
-      "title": "Case overview",
-      "text": "The cases you can open: the open ones, or all of them with Show closed cases. Click a title for a quick view; the arrow opens the case in a new tab. A closed case shows its review status next to Closed, unless that is Not reviewed.\n\nAdd filter can also match columns that are not shown: outcome, case ID, classification, days open and tasks done.",
+      "title": "Case queue",
+      "text": "The cases you can open, one page at a time: the open ones, or the closed ones too with Show closed. Each row shows the severity, the title, the SOC ID, the case number, the customer and the first tags, then the stage, the owner, the case's age and how long it has been idle. Click a row to see the case in the panel on the right; Open workspace opens the case.\n\nThe search box matches the title, the case number, the SOC ID, a tag or the customer. Filters builds a finer filter. The search, the filter, the sort and the page are kept in the address, so a link brings the same view back.",
       "aka": [
         "overview",
         "all cases",
-        "case list"
+        "case list",
+        "queue"
       ]
+    },
+    "overview.kpis": {
+      "title": "Quick filters",
+      "text": "Counts over the open cases you can open, whatever filter is applied. Click one to show those cases:",
+      "items": [
+        {
+          "name": "Open",
+          "text": "Every open case; clears the search and the filter."
+        },
+        {
+          "name": "Critical",
+          "text": "Open cases whose severity is Critical."
+        },
+        {
+          "name": "Opened > 7d",
+          "text": "Open cases opened more than seven days ago."
+        },
+        {
+          "name": "Assigned to me",
+          "text": "Open cases you own."
+        }
+      ]
+    },
+    "overview.filter": {
+      "title": "Filter the queue",
+      "text": "Add conditions on a case's fields - title, case ID, SOC ID, description, customer, severity, stage, classification, outcome, owner, opened by, reviewer, review status, tags, open and close dates, closing note. Match all of them (AND) or any of them (OR); a sub-group has its own AND / OR, so \"severity is High AND (owner is me OR unassigned)\" can be written. Text matches ignore case. Apply runs the filter; a condition without a value is left out."
+    },
+    "overview.saved_filters": {
+      "title": "Saved filters",
+      "text": "Keeps the current filter, with the search and Show closed, under a name. A private filter is visible only to you; a public one to every user. Pick one to apply it; the address names it, so a link opens the queue with it. You can delete the filters you saved."
+    },
+    "overview.idle": {
+      "title": "Age and idle",
+      "text": "Age is the number of days since the case was opened. Idle is the number of days since the last activity in the case - any change to the case or to what it holds (notes, IOCs, assets, tasks, evidence, timeline), as the case's activity log records it; a case with no recorded activity counts from its open date. Idle turns orange after seven days. Sort by either one."
+    },
+    "overview.stage_track": {
+      "title": "Stage track",
+      "text": "Where the case is in its response: Open, Containment, Eradication, Recovery, Post-Incident, Reporting, Closed. With full access to the case, click a stage to move the case there - you are asked to confirm. Closing needs a reviewer on the case and asks for the closing note; moving a closed case to another stage reopens it. A case in a stage outside the track (such as In progress) shows its stage under the track."
     },
     "search.page": {
       "title": "Search across cases",

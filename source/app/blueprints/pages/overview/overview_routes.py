@@ -18,11 +18,16 @@
 
 from flask import Blueprint
 from flask import render_template
+from flask import request
 from flask import url_for
+from flask_login import current_user
 from flask_wtf import FlaskForm
 from werkzeug.utils import redirect
 
+from app import app
+from app import db
 from app.blueprints.access_controls import ac_requires
+from app.business import case_queue
 
 overview_blueprint = Blueprint(
     'overview',
@@ -35,11 +40,20 @@ overview_blueprint = Blueprint(
 @ac_requires()
 def get_overview(caseid, url_redir):
     """
-    Return an overview of the cases
+    The case queue: the cases the user can open, filtered, sorted and paged on the server
     """
     if url_redir:
         return redirect(url_for('index.index', cid=caseid, redirect=True))
 
     form = FlaskForm()
 
-    return render_template('overview.html', caseid=caseid, form=form)
+    # iris-ng 2026-11-08: the case queue. Its first page, figures and vocabulary are drawn in the first frame; None
+    # (the read failed) makes the page fetch them instead.
+    try:
+        queue_state = case_queue.page_state(current_user, request.args)
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.warning('Case queue not embedded (%s); the page will fetch it', exc)
+        queue_state = None
+
+    return render_template('overview.html', caseid=caseid, form=form, queue_state=queue_state)
