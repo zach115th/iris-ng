@@ -18,6 +18,7 @@
 
 from flask import Blueprint
 from flask import render_template
+from flask import request
 from flask import redirect
 from flask import url_for
 from flask_login import current_user
@@ -25,6 +26,9 @@ from flask_wtf import FlaskForm
 from typing import Union
 from werkzeug import Response
 
+from app import app
+from app import db
+from app.business import alert_queue
 from app.datamgmt.alerts.alerts_db import get_alert_by_id
 from app.datamgmt.manage.manage_access_control_db import user_has_client_access
 from app.models.authorization import Permissions
@@ -55,7 +59,15 @@ def alerts_list_view_route(caseid, url_redir) -> Union[str, Response]:
 
     form = FlaskForm()
 
-    return render_template('alerts.html', caseid=caseid, form=form)
+    # iris-ng 2026-11-09: the alert queue draws its first frame from this; None (the read failed) makes the page fetch it.
+    try:
+        queue_state = alert_queue.page_state(current_user, request.args)
+    except Exception as exc:  # noqa: BLE001 - the page then fetches what it could not embed
+        db.session.rollback()
+        app.logger.warning('Alert queue not embedded (%s); the page will fetch it', exc)
+        queue_state = None
+
+    return render_template('alerts.html', caseid=caseid, form=form, queue_state=queue_state)
 
 
 @alerts_blueprint.route('/alerts/<int:cur_id>/comments/modal', methods=['GET'])

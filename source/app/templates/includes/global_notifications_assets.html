@@ -187,8 +187,8 @@
 		});
 	});
 
-	/* Follow stars (case chip in the topbar; alert rows get theirs from
-	   alert_follow.js which shares these classes). Delegated so both work. */
+	/* Follow stars (case chip in the topbar; the alert detail pane gets
+	   its own from alert_detail.js, which shares these classes). Delegated so both work. */
 	function setStar(star, following) {
 		star.textContent = following ? '★' : '☆';
 		star.classList.toggle('following', !!following);

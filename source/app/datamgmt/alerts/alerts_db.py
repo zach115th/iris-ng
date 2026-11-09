@@ -142,7 +142,11 @@ def combine_conditions(conditions, logical_operator):
         return None
 
 
-def get_filtered_alerts(
+class CustomConditionsError(ValueError):
+    """The custom conditions are not valid JSON."""
+
+
+def build_alert_filter(
         start_date: str = None,
         end_date: str = None,
         source_start_date: str = None,
@@ -161,15 +165,12 @@ def get_filtered_alerts(
         assets: List[str] = None,
         iocs: List[str] = None,
         resolution_status: List[int] = None,
-        logical_operator: str = 'and',  # Logical operator: 'and', 'or', 'not'
-        page: int = 1,
-        per_page: int = 10,
-        sort: str = 'desc',
         current_user_id: int = None,
         source_reference=None,
         custom_conditions: List[dict] = None):
     """
-    Get a list of alerts that match the given filter conditions
+    The filter behind the alerts lists: (the Alert query, with the joins the custom conditions need, [conditions]).
+    get_filtered_alerts and the alert queue (business/alert_queue.py) share it.
 
     args:
         start_date (datetime): The start date of the alert creation time
@@ -277,16 +278,7 @@ def get_filtered_alerts(
         if clients_filters is not None:
             conditions.append(Alert.alert_customer_id.in_(clients_filters))
 
-    query = db.session.query(
-        Alert
-    ).options(
-        selectinload(Alert.severity),
-        selectinload(Alert.status),
-        selectinload(Alert.customer),
-        selectinload(Alert.cases),
-        selectinload(Alert.iocs),
-        selectinload(Alert.assets)
-    )
+    query = db.session.query(Alert)
 
     # Apply custom conditions if provided
     if custom_conditions:
@@ -295,7 +287,7 @@ def get_filtered_alerts(
                 custom_conditions = json.loads(custom_conditions)
             except:
                 app.app.logger.exception(f"Error parsing custom_conditions: {custom_conditions}")
-                return
+                raise CustomConditionsError('The custom conditions are not valid JSON.')
 
         # Keep track of which relationships we've already joined
         joined_relationships = set()
@@ -342,7 +334,59 @@ def get_filtered_alerts(
                 condition = build_condition(field, operator, value)
                 conditions.append(condition)
 
-        # Combine conditions
+    return query, conditions
+
+
+def get_filtered_alerts(
+        start_date: str = None,
+        end_date: str = None,
+        source_start_date: str = None,
+        source_end_date: str = None,
+        title: str = None,
+        description: str = None,
+        status: int = None,
+        severity: int = None,
+        owner: int = None,
+        source: str = None,
+        tags: str = None,
+        case_id: int = None,
+        client: int = None,
+        classification: int = None,
+        alert_ids: List[int] = None,
+        assets: List[str] = None,
+        iocs: List[str] = None,
+        resolution_status: List[int] = None,
+        logical_operator: str = 'and',  # Logical operator: 'and', 'or', 'not'
+        page: int = 1,
+        per_page: int = 10,
+        sort: str = 'desc',
+        current_user_id: int = None,
+        source_reference=None,
+        custom_conditions: List[dict] = None):
+    """
+    Get a list of alerts that match the given filter conditions
+    """
+    try:
+        query, conditions = build_alert_filter(
+            start_date=start_date, end_date=end_date, source_start_date=source_start_date,
+            source_end_date=source_end_date, title=title, description=description, status=status,
+            severity=severity, owner=owner, source=source, tags=tags, case_id=case_id, client=client,
+            classification=classification, alert_ids=alert_ids, assets=assets, iocs=iocs,
+            resolution_status=resolution_status, current_user_id=current_user_id,
+            source_reference=source_reference, custom_conditions=custom_conditions)
+    except CustomConditionsError:
+        return None
+
+    query = query.options(
+        selectinload(Alert.severity),
+        selectinload(Alert.status),
+        selectinload(Alert.customer),
+        selectinload(Alert.cases),
+        selectinload(Alert.iocs),
+        selectinload(Alert.assets)
+    )
+
+    # Combine conditions
     combined_conditions = combine_conditions(conditions, logical_operator)
 
     order_func = desc if sort == "desc" else asc

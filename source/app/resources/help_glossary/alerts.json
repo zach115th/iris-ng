@@ -20,6 +20,116 @@
         "query"
       ]
     },
+    "alert.search": {
+      "title": "Searching alerts",
+      "text": "Type conditions in the search bar and press Enter; each becomes a chip you can remove or click to edit. Conditions side by side must all match; OR joins everything before it with everything after it, NOT or a leading - excludes, and brackets group. The server reads the search, so a mistake is reported with what is wrong.\n\nA word on its own searches the title, description, source, source reference and tags. Press / anywhere on the page to jump to the bar.",
+      "items": [
+        {
+          "name": "is:open / is:closed",
+          "text": "Open means not Closed, Merged or Escalated."
+        },
+        {
+          "name": "status, severity, customer, classification, resolution, owner",
+          "text": "By name, in quotes if it holds a space. owner:me is whoever is searching; owner:none and resolution:none are the empty ones. Severity also compares: severity:>=High."
+        },
+        {
+          "name": "title, description, source, ref, note",
+          "text": "Contains the text. An unquoted * or ? makes it a wildcard over the whole value: title:phish*."
+        },
+        {
+          "name": "tag, asset, ioc",
+          "text": "An exact tag; or any attached asset's name or IOC's value containing the text."
+        },
+        {
+          "name": "created, event_time",
+          "text": "A day (created:2026-10-01), a comparison (created:>=2026-10-01), or a range: created:[2026-10-01 TO 2026-10-31]. Times are UTC."
+        },
+        {
+          "name": "id, case, cluster",
+          "text": "An alert ID, a linked case ID, a cluster ID (cluster:none is an alert in no cluster)."
+        }
+      ],
+      "aka": [
+        "query",
+        "query language",
+        "is:open",
+        "owner:me"
+      ]
+    },
+    "alert.views": {
+      "title": "Alert views",
+      "text": "The page remembers your choice in this browser.",
+      "items": [
+        {
+          "name": "List",
+          "text": "One line per alert across the page; opening one replaces the list with its details, and Back returns."
+        },
+        {
+          "name": "Split",
+          "text": "The queue with the selected alert beside it. Drag the divider to resize the queue."
+        },
+        {
+          "name": "Board",
+          "text": "Open alerts in columns: unassigned ones by severity, or assigned ones by status. Dragging a card to another column changes that severity or status; Take assigns the alert to you."
+        }
+      ],
+      "aka": [
+        "board",
+        "kanban",
+        "split view",
+        "triage"
+      ]
+    },
+    "alert.queue_clusters": {
+      "title": "Clusters in the queue",
+      "text": "Alerts grouped by a clustering rule appear as one expandable row, with how many of them match the search; only the matching ones are listed, and pages count these rows. Open goes to the cluster's own page. When a filter names alert IDs or a cluster, the alerts are listed one by one.",
+      "aka": [
+        "cluster row",
+        "grouped alerts"
+      ]
+    },
+    "alert.new_alert": {
+      "title": "New alert",
+      "text": "Raise an alert by hand, for anything that did not come in through a feed: a hotline call, an out-of-band report. It goes through the same steps as an ingested alert, so clustering rules and investigation flows apply to it.",
+      "aka": [
+        "manual alert",
+        "create alert"
+      ]
+    },
+    "alert.keyboard": {
+      "title": "Keyboard triage",
+      "text": "With no text box in focus, in List and Split:",
+      "items": [
+        {
+          "name": "j / k",
+          "text": "Next and previous alert."
+        },
+        {
+          "name": "Enter / Esc",
+          "text": "In List, open the selected alert's details and close them again."
+        },
+        {
+          "name": "e",
+          "text": "Escalate the selected alert to a new case."
+        },
+        {
+          "name": "m",
+          "text": "Merge it into an existing case."
+        },
+        {
+          "name": "x",
+          "text": "Add it to or remove it from the selection for batch actions."
+        },
+        {
+          "name": "/",
+          "text": "Jump to the search bar."
+        }
+      ],
+      "aka": [
+        "shortcuts",
+        "hotkeys"
+      ]
+    },
     "alert.source": {
       "title": "Alert source",
       "text": "The name of the tool or feed that raised the alert, as the sender wrote it (a SIEM or EDR name, for example). Alerts created by a mail rule carry the rule's source label, Mail by default.\n\nIt is used for filtering, by clustering rules and investigation flows (field alert_source), and as the source of the timeline event when the alert is added to a case timeline.",
@@ -69,7 +179,7 @@
     },
     "alert.custom_conditions": {
       "title": "Custom conditions",
-      "text": "Extra filter conditions written as JSON: a list of {\"field\", \"operator\", \"value\"} objects, which must all match together with the fields above. A field is an alert column (alert_title, alert_severity_id, alert_tags...) or a related field written relation.column (severity.severity_name, status.status_name, customer.name). Show Examples has two to copy.\n\nA field that does not exist makes the search fail. This is not the grammar used by clustering rules and investigation flows.",
+      "text": "Extra filter conditions written as JSON: a list of {\"field\", \"operator\", \"value\"} objects, which must all match together with the fields above. A field is an alert column (alert_title, alert_severity_id, alert_tags...) or a related field written relation.column (severity.severity_name, status.status_name, customer.name). The panel shows an example to copy.\n\nA field that does not exist makes the search fail. This is not the grammar used by clustering rules and investigation flows.",
       "items": [
         {
           "name": "eq / not",
@@ -91,7 +201,7 @@
     },
     "alert.saved_filters": {
       "title": "Saved filters",
-      "text": "Save as filter stores the current filter form, custom conditions included, under a name; pick it later from the filter list next to the Filter button to apply it again. A private filter is listed only for you. A shared one is listed for every user, and any user can delete it.",
+      "text": "Save filter (in the Filter panel) stores the panel's fields, custom conditions included, and the search bar under a name; pick it later from Saved filters to apply it again. A private filter is listed only for you. A shared one is listed for every user, and any user can delete it.",
       "aka": [
         "preset",
         "saved search",
@@ -171,7 +281,7 @@
     },
     "alert.close_with_note": {
       "title": "Close with note",
-      "text": "Closes the alert (status Closed) and records, in the same step, its resolution, note and tags. Close on its own changes the status only; Set in progress reopens a closed alert.\n\nWith several alerts selected, they all get the same resolution, and the note you enter replaces each one's note.",
+      "text": "Closes the alert (status Closed) and records, in the same step, its resolution, note and tags. Setting the status to Closed from the status menu changes the status only; setting another status reopens a closed alert.\n\nWith several alerts selected, they all get the same resolution, and the note you enter replaces each one's note.",
       "aka": [
         "close",
         "resolve"
@@ -179,7 +289,7 @@
     },
     "alert.alert_note": {
       "title": "Alert note",
-      "text": "A free-text note kept on the alert itself, shown under Alert note in its details. Saving replaces the previous note (the alert history records that it changed). It is not copied into a case when the alert is escalated; use the escalation note for that.",
+      "text": "A free-text note kept on the alert itself, shown on its Notes tab. Saving replaces the previous note (the alert history records that it changed). It is not copied into a case when the alert is escalated; use the escalation note for that.",
       "aka": [
         "note",
         "comment"

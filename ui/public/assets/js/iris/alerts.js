@@ -1,5 +1,3 @@
-let sortOrder ;
-let editor = null;
 
 function objectToQueryString(obj) {
   return Object.keys(obj)
@@ -18,38 +16,6 @@ async function fetchMultipleAlerts(alertIds) {
     return await response;
 }
 
-const selectsConfig = {
-    alert_status_id: {
-        url: '/manage/alert-status/list',
-        id: 'status_id',
-        name: 'status_name',
-    },
-    alert_severity_id: {
-        url: '/manage/severities/list',
-        id: 'severity_id',
-        name: 'severity_name'
-    },
-    alert_classification_id: {
-        url: '/manage/case-classifications/list',
-        id: 'id',
-        name: 'name_expanded',
-    },
-    alert_customer_id: {
-        url: '/manage/customers/list',
-        id: 'customer_id',
-        name: 'customer_name'
-    },
-    alert_owner_id: {
-        url: '/manage/users/restricted/list',
-        id: 'user_id',
-        name: 'user_name'
-    },
-    alert_resolution_id: {
-        url: '/manage/alert-resolutions/list',
-        id: 'resolution_status_id',
-        name: 'resolution_status_name'
-    }
-};
 
 let alertStatusList = {};
 let alertResolutionList = {};
@@ -273,7 +239,7 @@ function showEscalationModal() {
     $("#escalateModal").modal("show");
 }
 
-function mergeAlertModal(alert_id) {
+function mergeAlertModal(alert_id, existing_case = false) {
 
     const escalateButton = $("#escalateOrMergeButton");
     escalateButton.attr("data-alert-id", alert_id);
@@ -290,7 +256,6 @@ function mergeAlertModal(alert_id) {
             alertDataReq = data;
             let alert_title = filterXSS(alertDataReq.data.alert_title);
 
-            $("#modalAlertId").val(alert_id);
             $("#modalAlertTitle").val(alert_title);
 
             // Configure the modal for both escalation and merging
@@ -412,6 +377,9 @@ function mergeAlertModal(alert_id) {
                         `mergeAlertClicked(${alert_id});`);
 
                     $("#escalateModal").modal("show");
+                    if (existing_case) {
+                        $("input[type='radio'][name='mergeOption'][value='existing_case']").prop('checked', true).trigger('change');
+                    }
                 });
             });
 
@@ -421,14 +389,6 @@ function mergeAlertModal(alert_id) {
 }
 
 
-function mergeAlertClicked(alertId) {
-
-  const merge = $("#escalateOrMergeButton").data("merge");
-  const multiMerge = $("#escalateOrMergeButton").data("multi-merge");
-
-  escalateOrMergeAlert(alertId, merge, multiMerge);
-
-}
 
 
 function mergeAlertCasesSelectOption(data) {
@@ -736,531 +696,14 @@ function escalateOrMergeAlert(alert_id, merge = false, batch = false) {
         });
 }
 
-async function fetchAlerts(page, per_page, filters_string = {}, sort_order= 'desc') {
-    return get_raw_request_api(`/api/v2/alerts?page=${page}&per_page=${per_page}
-  &sort=${sort_order}&${filters_string}`);
 
-}
 
-function alert_severity_to_color(severity) {
-  switch (severity) {
-    case 'Critical':
-      return 'critical';
-    case 'High':
-      return 'danger';
-    case 'Medium':
-      return 'warning';
-    case 'Low':
-      return 'low';
-    case 'Informational':
-      return 'info';
-    default:
-      return 'muted';
-  }
-}
 
-function alertStatusToColor(status) {
-    switch (status) {
-        case 'Closed':
-            return 'alert-card-done';
-        case 'Dismissed':
-            return 'alert-card-done';
-        case 'Merged':
-            return 'alert-card-done';
-        case 'Escalated':
-            return 'alert-card-done';
-        case 'New':
-            return 'alert-card-new';
-        default:
-            return '';
-    }
-}
 
-function generateDefinitionList(obj) {
-  let html = "";
-  for (const key in obj) {
-    const value = obj[key];
-    html += `<dt>${key}:</dt>`;
-    if (typeof value === "object" && value !== null) {
-      html += `<dd><dl>${generateDefinitionList(value)}</dl></dd>`;
-    } else {
-      html += `<dd>${value}</dd>`;
-    }
-  }
-  return html;
-}
 
-function addTagFilter(this_object) {
-    let tag_name = $(this_object).data('tag');
-    let filters = getFiltersFromUrl();
 
-    if (filters['alert_tags']) {
-        for (let tag of filters['alert_tags'].split(',')) {
-            if (tag === tag_name) {
-                return;
-            }
-        }
-        filters['alert_tags'] += `,${tag_name}`;
-    } else {
-        filters['alert_tags'] = tag_name;
-    }
 
-    const queryParams = new URLSearchParams(window.location.search);
-    let page_number = parseInt(queryParams.get('page'));
-    let per_page = parseInt(queryParams.get('per_page'));
 
-    updateAlerts(page_number, per_page, filters)
-        .then(() => {
-            notify_success('Refreshed');
-            $('#newAlertsBadge').text(0).hide();
-        });
-}
-
-function getFiltersFromUrl() {
-    const formData = new FormData($('#alertFilterForm')[0]);
-    const filters = Object.fromEntries(formData.entries());
-
-    filters.custom_conditions = editor.getValue();
-
-    return filters;
-}
-
-function alertResolutionToARC(resolution, alert_id) {
-    if (resolution === null) {
-        return '';
-    }
-    switch (resolution.resolution_status_name) {
-        case 'True Positive With Impact':
-            return `<span class="badge alert-bade-status badge-pill badge-danger mr-2" id="alertResolution-${alert_id}" data-value="true_positive_with_impact">True Positive with impact</span>`
-        case 'True Positive Without Impact':
-            return `<span class="badge alert-bade-status badge-pill badge-warning mr-2" id="alertResolution-${alert_id}" data-value="true_positive_without_impact">True Positive without impact</span>`
-        case 'False Positive':
-            return `<span class="badge alert-bade-status badge-pill badge-success mr-2" id="alertResolution-${alert_id}" data-value="false_positive">False Positive</span>`
-        case 'Legitimate':
-            return `<span class="badge alert-bade-status badge-pill badge-info mr-2" id="alertResolution-${alert_id}" data-value="legitimate">Legitimate</span>`
-        case 'Unknown':
-            return `<span class="badge alert-bade-status badge-pill badge-light mr-2" id="alertResolution-${alert_id}" data-value="unknown">Unknown resolution</span>`
-    }
-}
-
-function renderNestedObject(obj) {
-    let output = '';
-    Object.entries(obj).forEach(([key, value]) => {
-        if (typeof value === 'object' && value !== null) {
-            output += `<dt class="col-sm-3">${filterXSS(key)}:</dt><dd class="col-sm-9"><br /><dl class="row">${renderNestedObject(value)}</dl></dd>`;
-        } else {
-            output += `<dt class="col-sm-3">${filterXSS(key)}:</dt><dd class="col-sm-9">${filterXSS(value)}</dd>`;
-        }
-    });
-    return output;
-}
-
-function renderAlert(alert, expanded=false, modulesOptionsAlertReq,
-                     modulesOptionsIocReq) {
-  const colorSeverity = alert_severity_to_color(alert.severity.severity_name);
-  const alert_color = alertStatusToColor(alert.status.status_name);
-  const alert_resolution = alertResolutionToARC(alert.resolution_status, alert.alert_id);
-
-  if (alert.owner !== null) {
-      alert.owner.user_name = filterXSS(alert.owner.user_name);
-  }
-  alert.alert_title = alert.alert_title ? filterXSS(alert.alert_title) : 'No title provided';
-  alert.alert_description = alert.alert_description ? filterXSS(alert.alert_description) : 'No description provided';
-  alert.alert_source = alert.alert_description ? filterXSS(alert.alert_source) : 'No source provided';
-  alert.alert_source_link = filterXSS(alert.alert_source_link);
-  alert.alert_source_ref = filterXSS(alert.alert_source_ref);
-  alert.alert_note = filterXSS(alert.alert_note);
-
-  let menuOptionsHtmlAlert = '';
-  const menuOptions = modulesOptionsAlertReq;
-  if (menuOptions.length !== 0) {
-
-      menuOptionsHtmlAlert = '<div class="dropdown-divider"></div>';
-      for (let index in menuOptions) {
-        let opt = menuOptions[index];
-        menuOptionsHtmlAlert += `<a class="dropdown-item" href="javascript:void(0);" onclick='init_module_processing_alert(${alert.alert_id}, "${opt.hook_name}",`+
-                    `"${opt.manual_hook_ui_name}","${opt.module_name}");return false;'><i class="fa fa-arrow-alt-circle-right mr-2"></i> ${opt.manual_hook_ui_name}</a>`
-      }
-  }
-
-  return `
-<div class="card alert-card full-height alert-card-selectable ${alert_color}" id="alertCard-${alert.alert_id}">
-  <div class="card-body">
-    <div class="container-fluid">
-      <div class="row">
-        <div class=flex-column>
-          <!-- Avatar group and tickbox -->
-          
-        </div>
-        <div class="col">
-          <!-- Alert details -->
-          <div class="d-flex flex-column">
-            <div class="flex-1 ml-md-4 mr-4 pt-1">
-                <div class="row mb-4">
-                    <div class="flex-column">
-                        <div class="avatar-group ${alert.owner ? '' : 'ml-2 mr-2'}">
-                            <div class="avatar-tickbox-wrapper">
-                              <div class="avatar-wrapper">
-                                <div class="avatar cursor-pointer">
-                                  <span class="avatar-title alert-m-title alert-similarity-trigger rounded-circle bg-${colorSeverity}" data-toggle="collapse" data-target="#additionalDetails-${alert.alert_id}" >
-                                    <i class="fa-solid fa-fire"></i>
-                                  </span>
-                                </div>
-                                ${alert.owner ? get_avatar_initials(alert.owner.user_name, true, `changeAlertOwner(${alert.alert_id})`) : `<div title="Assign to me" class="avatar avatar-sm" onclick="updateAlert(${alert.alert_id}, {alert_owner_id: userWhoami.user_id}, true);"><span class="avatar-title avatar-iris rounded-circle btn-alert-primary" style="cursor:pointer;"><i class="fa-solid fa-hand"></i></span></div>`}
-                              </div>
-                              <div class="tickbox" style="display:none;">
-                                <input type="checkbox" class="alert-selection-checkbox" data-alert-id="${alert.alert_id}" />
-                              </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-9">
-                        <h6 class="text-uppercase fw-bold mb-1 mt-1 ml-3 alert-m-title alert-m-title-${colorSeverity}" data-toggle="collapse" data-target="#additionalDetails-${alert.alert_id}" onclick="fetchSmartRelations(${alert.alert_id});">
-                            ${alert.alert_title}
-                            <span class="text-${colorSeverity} pl-3"></span>
-                            <div class="d-flex mb-3">
-                               
-                                <span title="Alert IDs" class=""><small class="text-muted"><i>#${alert.alert_id} - ${alert.alert_uuid}</i></small></span>
-                            </div>
-                        </h6>
-                    </div>
-                    
-                    <div class="col-xs-12 col">
-                                        
-                        <div class=" d-flex mt-3">
-                            <div class="ml-auto">
-                                <button type="button" class="btn bg-transparent btn-sm mt--4" onclick="comment_element(${alert.alert_id}, 'alerts', true)" title="Comments">
-                                  <span class="btn-label">
-                                    <i class="fa-solid fa-comments"></i><span class="notification" id="object_comments_number_${alert.alert_id}">${alert.comments.length || ''}</span>
-                                  </span>
-                                </button>
-                                <button class="btn btn-sm bg-transparent mt--4" type="button" onclick="editAlert(${alert.alert_id})"><i class="fa fa-pencil"></i></button>
-                                <button class="btn bg-transparent mt--4" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                  <span aria-hidden="true"><i class="fas fa-ellipsis-v"></i></span>
-                                </button>
-                                <div class="dropdown-menu" role="menu">
-                                  <a href="javascript:void(0)" class="dropdown-item" onclick="copyAlertLink(${alert.alert_id});return false;"><small class="fa fa-share mr-2"></small>Share</a>
-                                  <a href="javascript:void(0)" class="dropdown-item" onclick="copyMDAlertLink(${alert.alert_id});return false;"><small class="fa-brands fa-markdown mr-2"></small>Markdown Link</a>
-                                  ${menuOptionsHtmlAlert}
-                                  <div class="dropdown-divider"></div>
-                                  <a href="javascript:void(0)" class="dropdown-item" onclick="showAlertHistory(${alert.alert_id});return false;"><small class="fa fa-clock-rotate-left mr-2"></small>History</a>
-                                  <div class="dropdown-divider"></div>
-                                  <a href="javascript:void(0)" class="dropdown-item text-danger" onclick="delete_alert(${alert.alert_id});"><small class="fa fa-trash mr-2"></small>Delete alert</a>
-                                </div>
-                            </div>
-                        </div>          
-                                        
-                    </div>
-
-                </div>
-                
-                <div class="float-right alert-actions mt--4">
-                      <button type="button" class="btn btn-alert-primary btn-sm ml-2" onclick="mergeAlertModal(${alert.alert_id}, false);">Merge</button>
-                      
-                      <div class="dropdown ml-2 d-inline-block">
-                          <button type="button" class="btn btn-alert-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                              Assign
-                          </button>
-                          <div class="dropdown-menu">
-                              <a class="dropdown-item" href="javascript:void(0)" onclick="updateAlert(${alert.alert_id}, {alert_owner_id: userWhoami.user_id}, true);">Assign to me</a>
-                              <a class="dropdown-item" href="javascript:void(0)" onclick="changeAlertOwner(${alert.alert_id});">Assign</a>
-                          </div>
-                      </div>
-                      <div class="dropdown ml-2 d-inline-block">
-                          <button type="button" class="btn btn-alert-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                              Set status
-                          </button>
-                          <div class="dropdown-menu">
-                              <a class="dropdown-item" href="javascript:void(0)" onclick="changeStatusAlert(${alert.alert_id}, 'New');">New</a>
-                              <a class="dropdown-item" href="javascript:void(0)" onclick="changeStatusAlert(${alert.alert_id}, 'In progress');">In progress</a>
-                              <a class="dropdown-item" href="javascript:void(0)" onclick="changeStatusAlert(${alert.alert_id}, 'Pending');">Pending</a>
-                              <a class="dropdown-item" href="javascript:void(0)" onclick="changeStatusAlert(${alert.alert_id}, 'Closed');">Closed</a>
-                              <a class="dropdown-item" href="javascript:void(0)" onclick="changeStatusAlert(${alert.alert_id}, 'Merged');">Merged</a>
-                            </div>
-                      </div>
-                      ${alert.status.status_name === 'Closed' ? `
-                          <button type="button" class="btn btn-alert-success btn-sm ml-2" onclick="changeStatusAlert(${alert.alert_id}, 'In progress');">Set in progress</button>
-                      `: ` 
-                      <button type="button" class="btn btn-alert-danger btn-sm ml-2" onclick="editAlert(${alert.alert_id}, true);">Close with note</button>
-                      <button type="button" class="btn btn-alert-danger btn-sm ml-2" onclick="changeStatusAlert(${alert.alert_id}, 'Closed');">Close</button>
-                      `}
-                </div>
-                <span class="mt-4">${alert.alert_description.replaceAll('\n', '<br/>').replaceAll('\t', '  ')}</span>
-
-                
-
-              <!-- Additional details and other content -->
-              <div id="additionalDetails-${alert.alert_id}" class="collapse mt-4 ${expanded? 'show': ''} alert-collapsible">
-                <div class="card-no-pd mt-2">
-                    <div class="card-body">
-                    <h3 class="title mb-3"><strong>General info</strong></h3>  
-                        ${alert.alert_source ? `<div class="row"><div class="col-md-3"><b>Source:</b>${IrisHelp.icon('alert.source')}</div>
-                        <div class="col-md-9">${alert.alert_source}</div>
-                      </div>` : ''}
-                      ${alert.alert_source_link ? `<div class="row mt-2">
-                        <div class="col-md-3"><b>Source Link:</b></div>
-                        <div class="col-md-9 copy-value">${
-                            alert.alert_source_link && alert.alert_source_link.startsWith('http') 
-                            ? `<a href="${alert.alert_source_link}" target="_blank" rel="noopener noreferrer">${alert.alert_source_link}</a>
-                                <button class="copy-btn ml-2" data-value="${filterXSS(alert.alert_source_link)}">
-                                    <i class="fa fa-copy text-dark"></i>
-                                </button>`
-                            : 'No valid link provided'
-                          }</div>
-                      </div>` : ''}
-                      ${alert.alert_source_ref ? `<div class="row mt-2">
-                        <div class="col-md-3"><b>Source Reference:</b>${IrisHelp.icon('alert.source_reference')}</div>
-                        <div class="col-md-9 copy-value">
-                            ${alert.alert_source_ref}
-                            <button class="copy-btn ml-2" data-value="${filterXSS(alert.alert_source_ref)}">
-                                    <i class="fa fa-copy text-dark"></i>
-                            </button>
-                        </div>
-                      </div>` : ''}
-                      ${alert.alert_source_event_time ? `<div class="row mt-2">
-                        <div class="col-md-3"><b>Source Event Time:</b>${IrisHelp.icon('alert.source_event_time')}</div>
-                        <div class="col-md-9 copy-value">
-                            ${formatTime(alert.alert_source_event_time)} UTC
-                            <button class="copy-btn ml-2" data-value="${formatTime(alert.alert_source_event_time)}">
-                                    <i class="fa fa-copy text-dark"></i>
-                            </button>
-                        </div>
-                      </div>` : ''}
-                      ${alert.alert_creation_time ? `<div class="row mt-2">
-                        <div class="col-md-3"><b>IRIS Creation Time:</b>${IrisHelp.icon('alert.creation_time')}</div>
-                        <div class="col-md-9 copy-value">
-                            ${formatTime(alert.alert_creation_time)} UTC
-                            <button class="copy-btn ml-2" data-value="${formatTime(alert.alert_creation_time)}">
-                                    <i class="fa fa-copy text-dark"></i>
-                            </button>
-                        </div>
-                      </div>` : ''}
-                    
-                    <div class="separator-solid"></div>
-                    <h3 class="title mb-3"><strong>Alert note</strong>${IrisHelp.icon('alert.alert_note')}</h3>
-                    <pre id=alertNote-${alert.alert_id}>${alert.alert_note}</pre>
-                    
-                    <!-- Alert Context section -->
-                    ${
-                        alert.alert_context && Object.keys(alert.alert_context).length > 0
-                            ? `<div class="separator-solid"></div><h3 class="title mt-3 mb-3"><strong>Context</strong>${IrisHelp.icon('alert.context')}</h3>
-                                <dl class="row">
-                                ${renderNestedObject(alert.alert_context)}
-                                </dl>`
-                            : ''
-                      }
-                    
-                    <div class="separator-solid"></div>
-                    <h3 class="title mt-3 mb-3"><strong>Relationships</strong>${IrisHelp.icon('alert.relationships')}</h3>
-                    <button class="btn btn-sm btn-outline-dark" type="button" data-toggle="collapse" data-target="#relationsAlert-${alert.alert_id}" 
-                    aria-expanded="true" aria-controls="relationsAlert-${alert.alert_id}" onclick="fetchSmartRelations(${alert.alert_id});" id="relationsAlertButton-${alert.alert_id}">Toggle Relations</button>
-                    <div class="collapse mt-3 show" id="relationsAlert-${alert.alert_id}">
-                        The following relationships are automatically generated by IRIS based on the alert's IOCs and assets 
-                        in the system. They are an indication only and may not be accurate. 
-                        <div class="row ml-1">
-                            <div class="selectgroup selectgroup-pills mt-4">
-                                <label class="selectgroup-item">
-                                    <input type="checkbox" name="open_alerts_${alert.alert_id}" class="selectgroup-input filter-graph-alert-checkbox" onclick="refreshAlertRelationships(${alert.alert_id});">
-                                    <span class="selectgroup-button">Show open alerts</span>
-                                </label>
-                                <label class="selectgroup-item">
-                                    <input type="checkbox" name="closed_alerts_${alert.alert_id}" class="selectgroup-input filter-graph-alert-checkbox" onclick="refreshAlertRelationships(${alert.alert_id})">
-                                    <span class="selectgroup-button">Show closed alerts</span>
-                                </label>
-                                <label class="selectgroup-item">
-                                    <input type="checkbox" name="open_cases_${alert.alert_id}" class="selectgroup-input filter-graph-alert-checkbox" onclick="refreshAlertRelationships(${alert.alert_id})">
-                                    <span class="selectgroup-button">Show open cases</span>
-                                </label>
-                                <label class="selectgroup-item">
-                                    <input type="checkbox" name="closed_cases_${alert.alert_id}" class="selectgroup-input filter-graph-alert-checkbox" onclick="refreshAlertRelationships(${alert.alert_id})">
-                                    <span class="selectgroup-button">Show closed cases</span>
-                                </label>
-                            </div>
-                            <div class="mt-4">
-                                <div class="input-group ">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">Nodes limit</span>
-                                    </div>
-                                    <input type="number" name="value" value="100" class="form-control" id="nbResultsGraphFilter-${alert.alert_id}" onchange="refreshAlertRelationships(${alert.alert_id})">
-                                </div>
-                            </div>
-                            <div class="ml-2 mt-4">
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">Lookback (days)</span>
-                                    </div>
-                                    <input type="number" name="value" value="180" class="form-control" id="daysBackGraphFilter-${alert.alert_id}" onchange="refreshAlertRelationships(${alert.alert_id})">
-                                </div>
-                            </div>  
-                        </div>
-                        <div class="row mt-4">
-                                    
-                        </div>
-                        <div id="similarAlertsNotify-${alert.alert_id}" class="row mt-2 ml-2 text-danger"></div>
-                        <div id="similarAlerts-${alert.alert_id}" class="mt-4 similar-alert-graph"></div>
-                    </div>
-
-                
-                    <!-- Alert IOCs section -->
-                    ${
-                      alert.iocs && alert.iocs.length > 0
-                          ? `<div class="separator-solid"></div><h3 class="title mb-3"><strong>IOCs</strong></h3>
-                                       <div class="table-responsive">
-                                         <table class="table table-sm table-striped">
-                                           <thead>
-                                             <tr>
-                                               <th>Value</th>
-                                               <th>Description</th>
-                                               <th>Type${IrisHelp.icon('common.ioc_type')}</th>
-                                               <th>TLP${IrisHelp.icon('common.tlp')}</th>
-                                               <th>Tags</th>
-                                               <th>Enrichment${IrisHelp.icon('alert.enrichment')}</th>
-                                               <th></th>
-                                             </tr>
-                                           </thead>
-                                           <tbody>
-                                             ${alert.iocs
-                              .map(
-                                  (ioc) => `
-                                                 <tr>
-                                                   <td class="copy-value">
-                                                        ${filterXSS(ioc.ioc_value)}
-                                                        <button class="copy-btn ml-2" data-value="${filterXSS(ioc.ioc_value)}">
-                                                            <i class="fa fa-copy text-dark"></i>
-                                                        </button>
-                                                   </td>
-                                                   <td>${filterXSS(ioc.ioc_description)}</td>
-                                                   <td>${ioc.ioc_type ? filterXSS(ioc.ioc_type.type_name) : '-'}</td>
-                                                   <td>${filterXSS(ioc.ioc_tlp) ? ioc.ioc_tlp : '-'}</td>
-                                                   <td>${ioc.ioc_tags ? ioc.ioc_tags.split(',').map((tag) => get_tag_from_data(tag, 'badge badge-pill badge-light ml-1')).join('') : ''}</td>
-                                                   <td>${ioc.ioc_enrichment ? `<button type="button" class="btn btn-sm btn-outline-dark" data-toggle="modal" data-target="#enrichmentModal" onclick="showEnrichment(${JSON.stringify(ioc.ioc_enrichment).replace(/"/g, '&quot;')})">
-                                                      View Enrichment
-                                                    </button>` : ''}
-                                                    </td>
-                                                    <td>
-                                                       <button class="btn bg-transparent" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                          <span aria-hidden="true"><i class="fas fa-ellipsis-v"></i></span>
-                                                        </button>
-                                                        <div class="dropdown-menu" role="menu">
-                                                        ${ modulesOptionsIocReq.length === 0 ? `<a class="dropdown-item" href="javascript:void(0);"><i class="fas fa-rocket mr-2"></i> No module available</a>` :
-                                                          modulesOptionsIocReq.map((opt) => `
-                                                                <a class="dropdown-item" href="javascript:void(0);" onclick='init_module_processing([${ioc.ioc_id}], "${opt.hook_name}","${opt.manual_hook_ui_name}","${opt.module_name}", "ioc");return false;'><i class="fas fa-rocket mr-2"></i> ${opt.manual_hook_ui_name}</a>`
-                                                            ).join('')
-                                                        }
-                                                        </div>
-                                                    </td>
-                                                 </tr>`
-                              )
-                              .join('')}
-                                           </tbody>
-                                         </table>
-                                       </div>`
-                          : ''
-                  }
-                    
-                    <!-- Alert assets section -->
-                    ${
-                    alert.assets && alert.assets.length > 0
-              ? `<div class="separator-solid"></div><h3 class="title mb-3"><strong>Assets</strong></h3>
-                           <div class="table-responsive">
-                             <table class="table table-sm table-striped">
-                               <thead>
-                                 <tr>
-                                   <th>Name</th>
-                                   <th>Description</th>
-                                   <th>Type</th>
-                                   <th>Domain</th>
-                                   <th>IP</th>
-                                   <th>Tags</th>
-                                   <th>Enrichment</th>
-                                 </tr>
-                               </thead>
-                               <tbody>
-                                 ${alert.assets
-                  .map(
-                      (asset) => `
-                                     <tr>
-                                       <td class="copy-value">
-                                            ${asset.asset_name ? filterXSS(asset.asset_name) : '-'}
-                                            <button class="copy-btn ml-2" data-value="${asset.asset_name ? filterXSS(asset.asset_name) : '-'}">
-                                                <i class="fa fa-copy text-dark"></i>
-                                            </button>
-                                       </td>
-                                       <td>${asset.asset_name ? filterXSS(asset.asset_name) : '-'}</td>
-                                       <td>${asset.asset_description ? filterXSS(asset.asset_description) : '-'}</td>
-                                       <td>${asset.asset_type ? filterXSS(asset.asset_type.asset_name) : '-'}</td>
-                                       <td>${asset.asset_domain ? filterXSS(asset.asset_domain) : '-'}</td>
-                                       <td>${asset.asset_ip ? filterXSS(asset.asset_ip) : '-'}</td>
-                                       <td>${asset.asset_tags ? asset.asset_tags.split(',').map((tag) => get_tag_from_data(tag, 'badge badge-pill badge-light ml-1')).join('') : ''}</td>
-                                       <td>${asset.asset_enrichment ? `<button type="button" class="btn btn-sm btn-outline-dark" data-toggle="modal" data-target="#enrichmentModal" onclick="showEnrichment(${JSON.stringify(asset.asset_enrichment).replace(/"/g, '&quot;')})">
-                                          View Enrichment
-                                        </button>` : ''}
-                                        </td>
-                                     </tr>`
-                  )
-                  .join('')}
-                               </tbody>
-                             </table>
-                           </div>`
-              : ''
-      }
-                    
-                    ${
-          alert.alert_source_content
-              ? `<div class="separator-solid"></div><h3 class="title mt-3 mb-3"><strong>Raw Alert</strong>${IrisHelp.icon('alert.raw_alert')}</h3>
-                           <button class="btn btn-sm btn-outline-dark" type="button" data-toggle="collapse" data-target="#rawAlert-${alert.alert_id}" 
-                           aria-expanded="false" aria-controls="rawAlert-${alert.alert_id}">Toggle Raw Alert</button>
-                           <div class="collapse mt-3" id="rawAlert-${alert.alert_id}">
-                             <pre class="pre-scrollable">${filterXSS(JSON.stringify(alert.alert_source_content, null, 2))}</pre>
-                           </div>`
-              : ""
-      }
-                    
-                    </div>
-                  </div>
-              </div>
-              ${alert.cases ? `<div class='row mt-4 mb-2'>` + alert.cases.map((case_) => `
-                <div class="dropdown ml-2 d-inline-block">
-                      <a class="bg-transparent ml-3" title="Merged in case #${case_}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="javascript:void(0)">
-                          <span aria-hidden="true"><i class="fa-solid fa-link"></i>#${case_}</span>
-                      </a>
-                      <div class="dropdown-menu">
-                        <a class="dropdown-item" href="/case?cid=${case_}" target="_blank"><i class="fa-solid fa-eye mr-2"></i> View case #${case_}</a>    
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="unlinkAlertFromCase(${alert.alert_id}, ${case_})"><i class="fa-solid fa-unlink mr-2"></i>Unlink alert from case #${case_}</a>
-                      </div>
-                </div>
-              `).join('') + '</div>' : '<div class="mb-4"></div>'}
-            
-              <div class="">  
-                ${alert_resolution === undefined ? "": alert_resolution} 
-                ${alert.status ? `<span class="badge alert-bade-status badge-pill badge-light mr-3">${alert.status.status_name}</span>` : ''}                    
-                <span title="Alert source event UTC time"><b><i class="fa-regular fa-calendar-check"></i></b>
-                <small class="text-muted ml-1">${formatTime(alert.alert_source_event_time)}</small></span>
-                <span title="Alert severity"><b class="ml-3"><i class="fa-solid fa-bolt"></i></b>
-                  <small class="text-muted ml-1" id="alertSeverity-${alert.alert_id}" data-severity-id="${alert.severity.severity_id}">${alert.severity.severity_name}</small></span>
-                <span title="Alert source"><b class="ml-3"><i class="fa-solid fa-cloud-arrow-down"></i></b>
-                  <small class="text-muted ml-1">${filterXSS(alert.alert_source) || 'Unspecified'}</small></span>
-                <span title="Alert client"><b class="ml-3"><i class="fa-regular fa-circle-user"></i></b>
-                  <small class="text-muted ml-1 mr-2">${filterXSS(alert.customer.customer_name) || 'Unspecified'}</small></span>
-                ${alert.classification && alert.classification.name_expanded ? `<span class="badge badge-pill badge-light" title="Classification" id="alertClassification-${alert.alert_id}" data-classification-id="${alert.classification.id}"><i class="fa-solid fa-shield-virus mr-1"></i>${filterXSS(alert.classification.name_expanded)}</span>`: ''}
-                ${alert.alert_tags ? alert.alert_tags.split(',').map((tag) => `<span class="badge badge-pill badge-light ml-1" title="Add as filter" style="cursor: pointer;" data-tag="${filterXSS(tag)}" onclick="addTagFilter(this);"><i class="fa fa-tag mr-1"></i>${filterXSS(tag)}</span>`).join('') + `<div style="display:none;" id="alertTags-${alert.alert_id}">${filterXSS(alert.alert_tags)}</div>` : ''}
-                
-              </div>
-
-            </div>
-            
-            <div class="mt-auto">
-              <!-- Alert actions -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-</div>    
-</div>  `;
-
-}
 
 function init_module_processing_alert(alert_id, hook_name, hook_ui_name, module_name, data_type) {
     let data = Object();
@@ -1277,54 +720,8 @@ function init_module_processing_alert(alert_id, hook_name, hook_ui_name, module_
     });
 }
 
-let modulesOptionsAlertReq = null;
-let modulesOptionsIocReq = null;
 
-async function showAlertHistory(alertId) {
-    const alertDataReq = await fetchAlert(alertId);
-    if (api_request_failed(alertDataReq)) {
-        return;
-    }
-    let alertData = alertDataReq.data;
-    let entryDiv = $('#modal_alert_history_content');
 
-    for (let entry in alertData.modification_history)  {
-        let date = new Date(Math.floor(entry) * 1000);
-        let dateStr = date.toLocaleString();
-        let entryStr = alertData.modification_history[entry];
-        entryDiv.append('<div class="row"><div class="col-3">' + dateStr + '</div><div class="col-3">' + entryStr.user + '</div><div class="col-6">'+ entryStr.action +'</div></div>');
-
-    }
-
-    $('#modal_alert_history').modal('show');
-}
-
-async function refreshAlert(alertId, alertData, expanded=false) {
-    if (alertData === undefined) {
-        const alertDataReq = await fetchAlert(alertId);
-        if (api_request_failed(alertDataReq)) {
-            return;
-        }
-        alertData = alertDataReq.data;
-    }
-
-      if (modulesOptionsAlertReq === null) {
-    modulesOptionsAlertReq = await fetchModulesOptionsAlert();
-    if (api_request_failed(modulesOptionsAlertReq)) {
-        return;
-    }
-  }
-  if (modulesOptionsIocReq === null) {
-    modulesOptionsIocReq = await fetchModulesOptionsIoc();
-    if (api_request_failed(modulesOptionsIocReq)) {
-        return;
-    }
-  }
-
-    const alertElement = $(`#alertCard-${alertId}`);
-    const alertHtml = renderAlert(alertData, expanded, modulesOptionsAlertReq.data, modulesOptionsIocReq.data);
-    alertElement.replaceWith(alertHtml);
-}
 
 async function fetchModulesOptionsAlert() {
     const response = get_request_api('/dim/hooks/options/alert/list');
@@ -1345,243 +742,15 @@ async function fetchModulesOptionsAsset() {
 }
 
 
-async function updateAlerts(page, per_page, filters = {}, paging=false){
-  if (sortOrder === undefined) { sortOrder = 'desc'; }
-
-  if (paging) {
-      filters = getFiltersFromUrl();
-  }
-
-  filters.custom_conditions = editor.getValue();
-
-  const alertsContainer = $('.alerts-container');
-  alertsContainer.html('<h4 class="ml-auto mr-auto">Retrieving alerts...</h4>');
-
-  const filterString = objectToQueryString(filters);
-  const data = await fetchAlerts(page, per_page, filterString, sortOrder).catch((error) => {
-        notify_error('Failed to fetch alerts');
-        alertsContainer.html('<h4 class="ml-auto mr-auto">Oops error loading the alerts - Check logs</h4>');
-        console.error(error);
-    });
-
-  const alerts = data.data;
-
-  if (modulesOptionsAlertReq === null) {
-    modulesOptionsAlertReq = await fetchModulesOptionsAlert();
-    if (api_request_failed(modulesOptionsAlertReq)) {
-        return;
-    }
-  }
-  if (modulesOptionsIocReq === null) {
-    modulesOptionsIocReq = await fetchModulesOptionsIoc();
-    if (api_request_failed(modulesOptionsIocReq)) {
-        return;
-    }
-  }
-
-  // Check if the selection mode is active
-   const selectionModeActive = $('body').hasClass('selection-mode');
-   selectionModeActive ? $('body').removeClass('selection-mode') : '';
-   $('#toggle-selection-mode').text('Select');
-   $('body').removeClass('selection-mode');
-   $('#select-deselect-all').hide();
-   $('#alerts-batch-actions').hide();
-
-  // Clear the current alerts list
-  const queryParams = new URLSearchParams(window.location.search);
-  const isExpanded = queryParams.get('is-expanded') === 'true';
-
-  alertsContainer.html('');
-  if (alerts.length === 0) {
-    // Display "No results" message when there are no alerts
-    alertsContainer.append('<div class="ml-auto mr-auto">No results</div>');
-  } else {
-
-      // Add the fetched alerts to the alerts container
-      alerts.forEach((alert) => {
-          const alertElement = $('<div></div>');
-
-          const alertHtml = renderAlert(alert, isExpanded, modulesOptionsAlertReq.data,
-                                               modulesOptionsIocReq.data);
-          alertElement.html(alertHtml);
-          alertsContainer.append(alertElement);
-      });
-  }
-
-  // Update the pagination links
-  const currentPage = page;
-  const totalPages = Math.ceil(data.total / per_page);
-  createPagination(currentPage, totalPages, per_page, 'updateAlerts', '.pagination-container');
-
-  // Update the URL with the filter parameters
-  queryParams.set('page', page);
-  queryParams.set('per_page', per_page);
-  let filter_tags_info = [];
-
-  for (const key in filters) {
-    if (filters.hasOwnProperty(key)) {
-      if (filters[key] === '') {
-        queryParams.delete(key);
-      } else {
-        queryParams.set(key, filters[key]);
-        filter_tags_info.push(`  
-          <span class="badge badge-light">
-            <i class="fa-solid fa-magnifying-glass mr-1"></i>${key}: ${filterXSS(filters[key])}
-            <span class="tag-delete-alert-filter" data-filter-key="${key}" style="cursor: pointer;" title="Remove filter"><i class="fa-solid fa-xmark ml-1"></i></span>
-          </span>
-        `)
-      }
-    }
-  }
-
-  queryParams.set('sort', sortOrder);
-
-  history.replaceState(null, null, `?${queryParams.toString()}`);
-
-  $('#alertsInfoFilter').text(`${data.total} Alert${ data.total > 1 ? 's' : ''} ${ filterString ? `(filtered)` : '' }`);
-
-  if (filter_tags_info) {
-    $('#alertsInfoFilterTags').html(filter_tags_info.join(' + '));
-    $('#alertsInfoFilterTags .tag-delete-alert-filter').on('click', function () {
-      const filterKey = $(this).data('filter-key');
-      delete filters[filterKey];
-      queryParams.delete(filterKey);
-      $(`#${filterKey}`).val('');
-
-      resetSavedFilters(queryParams, false);
-
-      history.replaceState(null, null, `?${queryParams.toString()}`);
-      updateAlerts(page, per_page, filters);
-    });
-  } else {
-    $('#alertsInfoFilterTags').html('');
-  }
-
-  filterString || queryParams.get('filter_id') ? $('#resetFilters').show() : $('#resetFilters').hide();
-
-  alertsContainer.show();
-
-  $('.copy-btn').off().on('click', function() {
-      let value = $(this).data('value');
-      copy_text_clipboard(value);
-  });
-}
-
-$('#alertsPerPage').on('change', (e) => {
-  const per_page = parseInt(e.target.value, 10);
-  updateAlerts(1, per_page, undefined, sortOrder); // Update the alerts list with the new 'per_page' value and reset to the first page
-});
 
 
-$('#orderAlertsBtn').on('click', function () {
-  sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
-  const iconClass = sortOrder === 'desc' ? 'fas fa-arrow-up-short-wide' : 'fas fa-arrow-up-wide-short';
-
-  $('#orderAlertsBtn i').attr('class', iconClass);
-
-  const queryParams = new URLSearchParams(window.location.search);
-  let page_number = parseInt(queryParams.get('page'));
-  let per_page = parseInt(queryParams.get('per_page'));
 
 
-  const formData = new FormData($('#alertFilterForm')[0]);
-  const filters = Object.fromEntries(formData.entries());
 
-  updateAlerts(page_number, per_page, filters);
-});
 
-function refreshAlerts(){
-    const queryParams = new URLSearchParams(window.location.search);
-    let page_number = parseInt(queryParams.get('page'));
-    let per_page = parseInt(queryParams.get('per_page'));
 
-    const formData = new FormData($('#alertFilterForm')[0]);
-    const filters = Object.fromEntries(formData.entries());
 
-    filters.custom_conditions = editor.getValue();
 
-    updateAlerts(page_number, per_page, filters)
-        .then(() => {
-            notify_success('Refreshed');
-            $('#newAlertsBadge').text(0).hide();
-        });
-}
-
-function toggleCollapseAllAlerts() {
-    const toggleAllBtn = $('#toggleAllAlertsBtn');
-    const isExpanded = toggleAllBtn.data('is-expanded') || false;
-
-    collapseAlerts(!isExpanded);
-
-    const queryParams = new URLSearchParams(window.location.search);
-    queryParams.set('is-expanded', !isExpanded);
-    window.history.replaceState(null, '', '?' + queryParams.toString());
-}
-
-function collapseAlerts(isExpanded) {
-    const alertsContainer = $('.alert-collapsible');
-    const toggleAllBtn = $('#toggleAllAlertsBtn');
-
-    if (isExpanded) {
-        alertsContainer.collapse('show');
-        toggleAllBtn.text('Collapse All');
-        toggleAllBtn.data('is-expanded', true);
-    } else {
-        alertsContainer.collapse('hide');
-        toggleAllBtn.text('Expand All');
-        toggleAllBtn.data('is-expanded', false);
-    }
-}
-
-$('#alertFilterForm').on('submit', (e) => {
-  e.preventDefault();
-
-  // Get the filter values from the form
-  const formData = new FormData(e.target);
-  const filters = Object.fromEntries(formData.entries());
-
-  const queryParams = new URLSearchParams(window.location.search);
-  let per_page = parseInt(queryParams.get('per_page'));
-  if (!per_page) {
-      per_page = 10;
-  }
-
-  // Update the alerts list with the new filters and reset to the first page
-  updateAlerts(1, per_page, filters);
-});
-
-$('#resetFilters').on('click', function () {
-  const form = $('#alertFilterForm');
-
-    // Reset all input fields
-    form.find('input, select').each((_, element) => {
-        if (element.type === 'checkbox') {
-          $(element).prop('checked', false);
-        } else {
-          $(element).val('');
-        }
-    });
-
-    editor.setValue("", 1);
-    // Reset the saved filters dropdown
-    resetSavedFilters(null);
-
-  // Trigger the form submit event to fetch alerts with the updated filters
-  form.trigger('submit');
-});
-
-function resetSavedFilters(queryParams = null, replaceState = true) {
-    if (queryParams === null || queryParams === undefined) {
-        queryParams = new URLSearchParams(window.location.search);
-    }
-    queryParams.delete('filter_id');
-    if (replaceState) {
-        window.history.replaceState(null, null, `?${queryParams.toString()}`);
-    }
-    $('#savedFilters').selectpicker('val', '');
-
-    return queryParams;
-}
 
 
 function showEnrichment(enrichment) {
@@ -1598,85 +767,14 @@ function delete_alert(alert_id) {
                 post_request_api(`/alerts/delete/${alert_id}`)
                     .then((data) => {
                         if (notify_auto_api(data)) {
-                            setFormValuesFromUrl();
+                            refreshAlerts();
                         }
                     });
             }
         });
 }
 
-function getAlertResolutionName(alert_id) {
-    return $(`#alertResolution-${alert_id}`).data('value');
-}
 
-async function editAlert(alert_id, close=false) {
-
-    const alertTag = $('#editAlertTags');
-    const confirmAlertEdition = $('#confirmAlertEdition');
-
-    alertTag.val($(`#alertTags-${alert_id}`).text())
-    set_suggest_tags(`editAlertTags`);
-    $('#editAlertNote').val($(`#alertNote-${alert_id}`).text());
-
-    let alert_resolution = getAlertResolutionName(alert_id);
-    if (alert_resolution === '') {
-        alert_resolution = 'Unknown';
-    }
-
-    // Uncheck all radio buttons
-    $(`input[type='radio'][name='resolutionStatus']`).prop('checked', false);
-
-    $(`input[type='radio'][name='resolutionStatus'][value='${alert_resolution}']`).prop('checked', true);
-
-    if (close) {
-        confirmAlertEdition.text('Close alert');
-        $('.alert-edition-part').hide();
-        $('#closeAlertModalLabel').text(`Close alert #${alert_id}`);
-    } else {
-        $('.alert-edition-part').show();
-        $('#closeAlertModalLabel').text(`Edit alert #${alert_id}`);
-        confirmAlertEdition.text('Save')
-    }
-
-    fetchSelectOptions('editAlertClassification', selectsConfig['alert_classification_id']).then(() => {
-      $('#editAlertClassification').val($(`#alertClassification-${alert_id}`).data('classification-id'));
-    }).catch(error => {
-      console.error(error);
-    });
-
-    fetchSelectOptions('editAlertSeverity', selectsConfig['alert_severity_id']).then(() => {
-      $('#editAlertSeverity').val($(`#alertSeverity-${alert_id}`).data('severity-id'));
-    }).catch(error => {
-      console.error(error);
-    });
-
-   $('#editAlertModal').modal('show');
-
-    confirmAlertEdition.off('click').on('click', function () {
-        let alert_note = $('#editAlertNote').val();
-        let alert_tags = alertTag.val();
-
-        let data = {
-          alert_note: alert_note,
-          alert_tags: alert_tags,
-          alert_resolution_status_id: getAlertResolutionId($("input[type='radio'][name='resolutionStatus']:checked").val()),
-          alert_severity_id: $('#editAlertSeverity').val(),
-        };
-
-        let alert_classification_id = $('#editAlertClassification').val();
-        if (alert_classification_id)
-            data['alert_classification_id'] = alert_classification_id;
-
-        if (close) {
-            data['alert_status_id'] = getAlertStatusId('Closed');
-        }
-
-        updateAlert(alert_id, data, true, true)
-            .then(() => {
-                $('#editAlertModal').modal('hide');
-            });
-    });
-}
 
 function closeBatchAlerts() {
     const alertTag = $('#editAlertTags');
@@ -1712,123 +810,17 @@ function closeBatchAlerts() {
 
 }
 
-async function fetchSavedFilters() {
-    return get_request_api('/filters/alerts/list')
-        .then((data) => {
-            if (api_request_failed(data)) {
-                return;
-            }
-            const savedFiltersDropdown = $('#savedFiltersDropdown');
 
-            savedFiltersDropdown.empty();
 
-            let dropdownHtml = `
-                <select class="selectpicker ml-2" data-style="btn-sm" data-live-search="true" title="Select preset filter" id="savedFilters">
-            `;
 
-            data.data.forEach(filter => {
-                let filter_name = filterXSS(filter.filter_name);
-                dropdownHtml += `
-                            <option value="${filter.filter_id}" data-content='<div class="d-flex align-items-center"><span>${filter_name} ${filter.filter_is_private ? '(private)' : ''}</span><div class="trash-wrapper hidden-trash"><i class="fas fa-trash delete-filter text-danger" id="dropfilter-id-${filter.filter_id}" title="Delete filter"></i></div></div>'>${filter_name}</option>
-                `;
-            });
+function mergeAlertClicked(alertId) {
 
-            dropdownHtml += '</select>';
+  const merge = $("#escalateOrMergeButton").data("merge");
+  const multiMerge = $("#escalateOrMergeButton").data("multi-merge");
 
-            savedFiltersDropdown.append(dropdownHtml);
+  escalateOrMergeAlert(alertId, merge, multiMerge);
 
-            // Initialize the bootstrap-select component
-            $('#savedFilters').selectpicker();
-
-            // Add the event listener after the selectpicker is loaded
-            $('#savedFilters').on('shown.bs.select', function () {
-                $('.trash-wrapper').removeClass('hidden-trash');
-                $('.delete-filter').off().on('click', function (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-
-                    const filterId = $(this).attr('id').split('-')[2];
-
-                    if (!filterId) return;
-
-                    do_deletion_prompt(`Are you sure you want to delete filter #${filterId}?`, true)
-                        .then((do_delete) => {
-                            if (!do_delete) return;
-                            const data = {
-                                csrf_token: $('#csrf_token').val()
-                            };
-                            post_request_api(`/filters/delete/${filterId}`, JSON.stringify(data))
-                                .then((data) => {
-                                    if (notify_auto_api(data)) {
-                                        fetchSavedFilters();
-                                    }
-                                });
-                    });
-                });
-            }).on('hide.bs.select', function () {
-                $('.trash-wrapper').addClass('hidden-trash');
-            });
-
-            $('#savedFilters').on('change', function() {
-
-                const selectedFilterId = $('#savedFilters').val();
-                if (!selectedFilterId) return;
-
-                get_request_api(`/filters/${selectedFilterId}`)
-                    .then((data) => {
-                        if (api_request_failed(data)) {
-                            return;
-                        }
-                        const queryParams = new URLSearchParams();
-                        Object.entries(data.data.filter_data).forEach(([key, value]) => {
-                            if (value !== '') {
-                                queryParams.set(key, value);
-                            }
-                        });
-
-                        queryParams.set('filter_id', selectedFilterId);
-
-                        // Update the URL and reload the page with the new filter settings
-                        window.location.href = window.location.pathname + case_param() + '&' + queryParams.toString();
-                    })
-            });
-        });
 }
-
-$('#saveFilters').on('click', function () {
-    $('#saveFilterModal').modal('show');
-});
-
-$('#saveFilterButton').on('click', function () {
-    const filterData = $('#alertFilterForm').serializeArray().reduce((obj, item) => {
-        obj[item.name] = item.value;
-        return obj;
-    }, {});
-
-    const filterName = $('#filterName').val();
-    const filterDescription = $('#filterDescription').val();
-    const filterIsPrivate = $('#filterIsPrivate').prop('checked');
-
-    filterData.custom_conditions = editor.getValue();
-
-    if (!filterName) return;
-
-    post_request_api('/filters/add', JSON.stringify({
-        filter_name: filterName,
-        filter_description: filterDescription,
-        filter_data: filterData,
-        filter_is_private: filterIsPrivate,
-        filter_type: 'alerts',
-        csrf_token: $('#csrf_token').val()
-    }))
-    .then(function (data) {
-        if (notify_auto_api(data)) {
-            fetchSavedFilters();
-        }
-    });
-
-    $('#saveFilterModal').modal('hide');
-});
 
 function changeStatusAlert(alert_id, status_name) {
     let status_id = getAlertStatusId(status_name);
@@ -1920,117 +912,12 @@ async function changeBatchAlertOwner(alertId) {
 }
 
 
-async function updateAlert(alert_id, data = {}, do_refresh = false, collapse_toggle = false) {
-  data['csrf_token'] = $('#csrf_token').val();
-  return post_request_api('/alerts/update/' + alert_id, JSON.stringify(data)).then(function (data) {
-    if (notify_auto_api(data)) {
-      if (do_refresh) {
-        const expanded = $(`#additionalDetails-${alert_id}`).hasClass('show');
-        return refreshAlert(alert_id, data.data, expanded)
-            .then(() => {
-                const updatedAlertElement = $(`#alertCard-${alert_id}`);
-                if (updatedAlertElement.length) {
-                    updatedAlertElement.addClass('fade-it');
-                }
-            });
-      }
-    }
-  });
-}
 
 
 
-function setFormValuesFromUrl() {
-  const queryParams = new URLSearchParams(window.location.search);
-  const form = $('#alertFilterForm');
-  const ajaxCalls = [];
-
-  queryParams.forEach((value, key) => {
-    const input = form.find(`[name="${key}"]`);
-   if (key === 'custom_conditions') {
-        // If there's a custom_conditions param, load it into the ACE editor
-        editor.setValue(value, 1); // 1 = move cursor to start
-        return;
-    }
-
-    if (input.length > 0) {
-      if (input.prop('type') === 'checkbox') {
-        input.prop('checked', value in ['true', 'y', 'yes', '1', 'on']);
-      } else if (input.is('select') && selectsConfig[input.attr('id')]) {
-        const ajaxCall = new Promise((resolve, reject) => {
-          input.one('click', function () {
-            fetchSelectOptions(input.attr('id'), selectsConfig[input.attr('id')]).then(() => {
-              input.val(value);
-              resolve();
-            }).catch(error => {
-              console.error(error);
-              reject(error);
-            });
-          }).trigger('click');
-        });
-        ajaxCalls.push(ajaxCall);
-      } else {
-        input.val(value);
-      }
-    }
-    if (key === 'filter_id') {
-        $('#savedFilters').selectpicker('val', value);
-        $('.preset-dropdown-container').show();
-    }
-  });
-
-  Promise.all(ajaxCalls)
-    .then(() => {
-      form.trigger('submit');
-    })
-    .catch(error => {
-      console.error('Error setting form values:', error);
-    });
-}
 
 
-function fetchSelectOptions(selectElementId, configItem) {
-  return new Promise((resolve, reject) => {
-    get_request_api(configItem.url)
-      .then(function (data) {
-        if (api_request_failed(data)) {
-          reject('Failed to fetch options');
-          return;
-        }
-        const selectElement = $(`#${selectElementId}`);
-        selectElement.empty();
-        selectElement.append($('<option>', {
-          value: null,
-          text: ''
-        }));
-        if (selectElementId === 'alert_owner_id') {
-            selectElement.append($('<option>', {
-                value: '-1',
-                text: 'Unassigned'
-            }));
-        }
 
-        data.data.forEach(function (item) {
-          selectElement.append($('<option>', {
-            value: item[configItem.id],
-            text: item[configItem.name]
-          }));
-        });
-        resolve();
-      });
-  });
-}
-
-function getBatchAlerts() {
-    const selectedAlerts = [];
-    $('.tickbox input[type="checkbox"]').each(function() {
-        if ($(this).is(':checked')) {
-          const alertId = $(this).data('alert-id');
-          selectedAlerts.push(alertId);
-        }
-    });
-    return selectedAlerts;
-}
 
 function changeStatusBatchAlerts(status_name) {
     const data = {
@@ -2063,7 +950,7 @@ async function updateBatchAlerts(data_content= {}) {
 
     return post_request_api('/alerts/batch/update', JSON.stringify(data)).then(function (data) {
         if (notify_auto_api(data)) {
-            setFormValuesFromUrl();
+            refreshAlerts();
         }
     }).always(() => {
         window.swal.close();
@@ -2081,6 +968,9 @@ async function deleteBatchAlerts(data_content= {}) {
 
     do_deletion_prompt(`You are about to delete ${selectedAlerts.length} alerts`, true)
     .then((doDelete) => {
+       if (!doDelete) {
+           return;
+       }
        window.swal({
               title: "Alerts are being deleted, please wait",
               text: "This window will close automatically when it's done",
@@ -2097,7 +987,7 @@ async function deleteBatchAlerts(data_content= {}) {
             return post_request_api('/alerts/batch/delete', JSON.stringify(data)).then(
                 (data) => {
                     if (notify_auto_api(data)) {
-                        setFormValuesFromUrl();
+                        refreshAlerts();
                     }
                 }).always(() => {
                 window.swal.close();
@@ -2106,17 +996,7 @@ async function deleteBatchAlerts(data_content= {}) {
     });
 }
 
-let alertCount = 0;
 
-function updateAlertBadge() {
-    const badge = $('#refreshAlertsBadge');
-
-    if (alertCount > 0) {
-        badge.text(alertCount).show();
-    } else {
-        badge.hide();
-    }
-}
 
 function refreshAlertRelationships(alertId) {
     // Get the checked status of each checkbox
@@ -2129,125 +1009,104 @@ function refreshAlertRelationships(alertId) {
         fetch_open_cases, fetch_closed_cases);
 }
 
-$(document).ready(function () {
-    for (const [selectElementId, configItem] of Object.entries(selectsConfig)) {
-        $(`#${selectElementId}`).one('click', function () {
-          fetchSelectOptions(selectElementId, configItem)
-            .catch(error => console.error(error));
-        });
-      }
 
-    editor = ace.edit('custom_conditions');
-    if ($("#custom_conditions").attr("data-theme") != "dark") {
-        editor.setTheme("ace/theme/tomorrow");
-    } else {
-        editor.setTheme("ace/theme/iris_night");
+/* iris-ng 2026-11-09: this file is the Alerts page's actions (the escalate / merge dialog, batch changes, the relations graph);
+ * the queue itself is alert_queue.js, which these call back into. */
+function refreshAlert(alertId) {
+    return window.IrisAlertQueue ? window.IrisAlertQueue.alertChanged(alertId) : Promise.resolve();
+}
+
+function refreshAlerts() {
+    return window.IrisAlertQueue ? window.IrisAlertQueue.reload() : Promise.resolve();
+}
+
+function getBatchAlerts() {
+    return window.IrisAlertQueue ? window.IrisAlertQueue.picked() : [];
+}
+
+async function updateAlert(alert_id, data = {}, do_refresh = false) {
+  data['csrf_token'] = $('#csrf_token').val();
+  return post_request_api('/alerts/update/' + alert_id, JSON.stringify(data)).then(function (data) {
+    if (notify_auto_api(data) && do_refresh) {
+      return refreshAlert(alert_id);
     }
-    editor.session.setMode("ace/mode/json");
-    editor.renderer.setShowGutter(true);
-    editor.setOption("showLineNumbers", true);
-    editor.setOption("showPrintMargin", false);
-    editor.setOption("displayIndentGuides", true);
-    editor.setOption("maxLines", "Infinity");
-    editor.setOption("minLines", "2");
-    editor.setOption("autoScrollEditorIntoView", true);
-    editor.session.setUseWrapMode(true);
-    editor.setOption("indentedSoftWrap", false);
-    editor.renderer.setScrollMargin(8, 5)
-    editor.setOption("enableBasicAutocompletion", true);
+  });
+}
 
-    editor.setOption("enableBasicAutocompletion", true);
-    editor.setOption("enableLiveAutocompletion", true);
+function fillAlertSelect(selector, rows, value) {
+    const select = $(selector);
+    select.empty();
+    rows.forEach((row) => select.append($('<option>').val(row.id).text(row.name)));
+    select.val(value);
+}
 
-        // Use the langTools from ACE for autocompletion
-        let langTools = ace.require("ace/ext/language_tools");
+function editAlert(alert_id, close=false) {
+    const alert = window.IrisAlertQueue ? window.IrisAlertQueue.detailOf(alert_id) : null;
+    if (!alert) {
+        return;
+    }
+    const options = window.IrisAlertQueue.options();
+    const alertTag = $('#editAlertTags');
+    const confirmAlertEdition = $('#confirmAlertEdition');
 
-        // Define a custom completer
-        let customCompleter = {
-            getCompletions: function(editor, session, pos, prefix, callback) {
-                const completions = [
-                    { caption: '"field": "alert_title"', value: '"field": "alert_title"', meta: "field" },
-                    { caption: '"field": "alert_description"', value: '"field": "alert_description"', meta: "field" },
-                    { caption: '"field": "alert_source"', value: '"field": "alert_source"', meta: "field" },
-                    { caption: '"field": "alert_tags"', value: '"field": "alert_tags"', meta: "field" },
-                    { caption: '"field": "alert_status_id"', value: '"field": "alert_status_id"', meta: "field" },
-                    { caption: '"field": "alert_severity_id"', value: '"field": "alert_severity_id"', meta: "field" },
-                    { caption: '"field": "alert_classification_id"', value: '"field": "alert_classification_id"', meta: "field" },
-                    { caption: '"field": "alert_customer_id"', value: '"field": "alert_customer_id"', meta: "field" },
-                    { caption: '"field": "source_start_date"', value: '"field": "source_start_date"', meta: "field" },
-                    { caption: '"field": "source_end_date"', value: '"field": "source_end_date"', meta: "field" },
-                    { caption: '"field": "creation_start_date"', value: '"field": "creation_start_date"', meta: "field" },
-                    { caption: '"field": "creation_end_date"', value: '"field": "creation_end_date"', meta: "field" },
-                    { caption: '"field": "alert_assets"', value: '"field": "alert_assets"', meta: "field" },
-                    { caption: '"field": "alert_iocs"', value: '"field": "alert_iocs"', meta: "field" },
-                    { caption: '"field": "alert_ids"', value: '"field": "alert_ids"', meta: "field" },
-                    { caption: '"field": "source_reference"', value: '"field": "source_reference"', meta: "field" },
-                    { caption: '"field": "case_id"', value: '"field": "case_id"', meta: "field" },
-                    { caption: '"field": "alert_owner_id"', value: '"field": "alert_owner_id"', meta: "field" },
-                    { caption: '"field": "alert_resolution_id"', value: '"field": "alert_resolution_id"', meta: "field" },
-                    { caption: '"operator": "in"', value: '"operator": "in"', meta: "operator" },
-                    { caption: '"operator": "not_in"', value: '"operator": "not_in"', meta: "operator" },
-                    { caption: '"operator": "eq"', value: '"operator": "eq"', meta: "operator" },
-                    { caption: '"operator": "like"', value: '"operator": "like"', meta: "operator" },
-                    { caption: '"value": [1]', value: '"value": [1]', meta: "value" }
-                ];
+    alertTag.val(alert.alert_tags || '');
+    set_suggest_tags(`editAlertTags`);
+    $('#editAlertNote').val(alert.alert_note || '');
 
-                // Filter the completions based on the current prefix if desired
-                let filtered = completions;
-                if (prefix) {
-                    filtered = completions.filter(item => item.caption.toLowerCase().includes(prefix.toLowerCase()));
-                }
+    const resolutionName = (alert.resolution_status || {}).resolution_status_name;
+    const resolutionValue = resolutionName ? resolutionName.toLowerCase().replace(/ /g, '_') : 'unknown';
+    $(`input[type='radio'][name='resolutionStatus']`).prop('checked', false)
+        .filter(function () { return this.value === resolutionValue; }).prop('checked', true);
 
-                callback(null, filtered);
-            }
+    if (close) {
+        confirmAlertEdition.text('Close alert');
+        $('.alert-edition-part').hide();
+        $('#closeAlertModalLabel').text(`Close alert #${alert_id}`);
+    } else {
+        $('.alert-edition-part').show();
+        $('#closeAlertModalLabel').text(`Edit alert #${alert_id}`);
+        confirmAlertEdition.text('Save');
+    }
+
+    fillAlertSelect('#editAlertClassification', options.classifications || [], alert.alert_classification_id);
+    fillAlertSelect('#editAlertSeverity', options.severities || [], alert.alert_severity_id);
+
+    $('#editAlertModal').modal('show');
+
+    confirmAlertEdition.off('click').on('click', function () {
+        let data = {
+          alert_note: $('#editAlertNote').val(),
+          alert_tags: alertTag.val(),
+          alert_resolution_status_id: getAlertResolutionId($("input[type='radio'][name='resolutionStatus']:checked").val()),
+          alert_severity_id: $('#editAlertSeverity').val(),
         };
 
-        // Add the custom completer to ACE
-        langTools.addCompleter(customCompleter);
+        let alert_classification_id = $('#editAlertClassification').val();
+        if (alert_classification_id)
+            data['alert_classification_id'] = alert_classification_id;
 
-    fetchSavedFilters()
-        .then(() => {
-            setFormValuesFromUrl();
-        });
+        if (close) {
+            data['alert_status_id'] = getAlertStatusId('Closed');
+        }
+
+        updateAlert(alert_id, data, true)
+            .then(() => {
+                $('#editAlertModal').modal('hide');
+            });
+    });
+}
+
+$(document).ready(function () {
     getAlertStatusList();
     getAlertResolutionList();
 
-    // Connect to socket.io alerts namespace
+    if (typeof io === 'undefined') {
+        return;
+    }
     const socket = io.connect('/alerts');
-
-  $('#toggle-selection-mode').on('click', function() {
-    // Toggle the 'selection-mode' class on the body element
-    $('body').toggleClass('selection-mode');
-
-    // Check if the selection mode is active
-    const selectionModeActive = $('body').hasClass('selection-mode');
-
-    // Update the button text
-    $(this).text(selectionModeActive ? 'Cancel' : 'Select');
-
-    // Toggle the display of avatars, tickboxes and selection-related buttons
-    $('.alert-card-selectable').each(function() {
-      const avatarTickboxWrapper = $(this).find('.avatar-tickbox-wrapper');
-      avatarTickboxWrapper.find('.avatar-wrapper').toggle(!selectionModeActive);
-      avatarTickboxWrapper.find('.tickbox').toggle(selectionModeActive);
+    socket.on('new_alert', function () {
+        if (window.IrisAlertQueue) {
+            window.IrisAlertQueue.newAlert();
+        }
     });
-
-    $('#select-deselect-all').toggle(selectionModeActive).text('Select all');
-    $('#alerts-batch-actions').toggle(selectionModeActive);
-  });
-
-  $('#select-deselect-all').on('click', function() {
-    const allSelected = $('.tickbox input[type="checkbox"]:not(:checked)').length === 0;
-
-    $('.tickbox input[type="checkbox"]').prop('checked', !allSelected);
-    $(this).text(allSelected ? 'Select all' : 'Deselect all');
-  });
-
-    socket.on('new_alert', function (data) {
-        const badge = $('#newAlertsBadge');
-        const currentCount = parseInt(badge.text()) || 0;
-        badge.text(currentCount + 1).show();
-        badge.attr('title', 'New alerts available');
-    });
-
 });
