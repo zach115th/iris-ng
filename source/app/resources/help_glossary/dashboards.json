@@ -325,7 +325,7 @@
     },
     "custom_dashboards.page": {
       "title": "Dashboards",
-      "text": "Dashboards of widgets you build yourself: figures, donuts, bars, lines and tables over cases, alerts, IOCs, assets, tasks, timeline events, evidence, notes and time entries. Each widget counts only what the person looking at it can open, so one shared dashboard shows each viewer their own figures.\n\nThe Statistics dashboard is built in: open it as it is, or clone it to change it. The Metrics page (Manage) stays as it was.",
+      "text": "Dashboards of widgets you build yourself: figures, donuts, bars, lines and tables over cases, alerts, IOCs, assets, tasks, timeline events, evidence, notes and time entries. Each widget counts only what the person looking at it can open, so one shared dashboard shows each viewer their own figures. Cases and alerts of the IrisInitialClient test customer are left out of every figure.\n\nThe Statistics dashboard is built in: open it as it is, or clone it to change it. The Metrics page (Manage) stays as it was.",
       "aka": [
         "custom dashboards",
         "statistics",
@@ -396,7 +396,7 @@
     },
     "custom_dashboards.scope": {
       "title": "Whose figures",
-      "text": "A widget counts only what the viewer can open: cases they have access to (and the IOCs, assets, tasks, events, evidence, notes and time entries of those cases), and alerts of the customers they belong to - every alert for a server administrator. The preview shows your own figures; someone else opening the same dashboard can see different ones.",
+      "text": "A widget counts only what the viewer can open: cases they have access to (and the IOCs, assets, tasks, events, evidence, notes and time entries of those cases), and alerts of the customers they belong to - every alert for a server administrator. The IrisInitialClient test customer counts for nobody: its cases, what they hold and its alerts are left out, and the customer and case lists never offer it. The preview shows your own figures; someone else opening the same dashboard can see different ones.",
       "aka": [
         "access",
         "permissions"

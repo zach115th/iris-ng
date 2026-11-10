@@ -29,7 +29,9 @@
 A widget never names a table or a column: it names a source and fields of models.custom_dashboard_vocab, and this
 module maps them to SQL. Every widget counts only rows the viewer may open: cases with any access but deny_all (the
 case queue's rule) and what those cases hold; alerts of the viewer's customers (every alert for a server
-administrator). A shared dashboard therefore shows each viewer their own figures.
+administrator). A shared dashboard therefore shows each viewer their own figures. The customers of the Metrics page's
+exclusion list (dashboard_metrics.EXCLUDED_CLIENT_NAMES: IrisInitialClient, the bootstrap customer kept for testing)
+count nowhere: not their cases, nor what those cases hold, nor their alerts, and no option list offers them.
 """
 
 import copy
@@ -58,6 +60,7 @@ from sqlalchemy import text
 from app import app
 from app import db
 from app.business import case_queue as cq
+from app.business import dashboard_metrics as dm
 from app.iris_engine.access_control.utils import ac_user_has_permission
 from app.models import custom_dashboard_vocab as dv
 from app.models.alerts import Alert
@@ -954,13 +957,21 @@ def _is_admin(user):
         return False
 
 
+def _left_out_clients():
+    """The customers no dashboard counts or offers: the Metrics page's list, read at call time so there is one."""
+    return select(Client.client_id).where(Client.name.in_(dm.EXCLUDED_CLIENT_NAMES))
+
+
 def _scope(source, ctx):
     spec = _spec(source)
     if source == 'alerts':
+        kept = Alert.alert_customer_id.notin_(_left_out_clients())  # alert_customer_id is NOT NULL
         if ctx['admin']:
-            return None
-        return Alert.alert_customer_id.in_(select(UserClient.client_id).where(UserClient.user_id == ctx['uid']))
-    return spec.case_col.in_(cq._accessible(ctx['uid']))
+            return kept
+        return and_(Alert.alert_customer_id.in_(select(UserClient.client_id).where(UserClient.user_id == ctx['uid'])),
+                    kept)
+    left_out = select(Cases.case_id).where(Cases.client_id.in_(_left_out_clients()))
+    return and_(spec.case_col.in_(cq._accessible(ctx['uid'])), spec.case_col.notin_(left_out))
 
 
 def _range_clause(source, widget, ctx):
@@ -1394,22 +1405,25 @@ def parse_render_args(args, definition, now=None):
 # ------------------------------------------------------------------ the option lists
 
 def _customers(user, admin):
+    kept = Client.client_id.notin_(_left_out_clients())
     if admin:
-        rows = db.session.execute(select(Client.client_id, Client.name).order_by(func.lower(Client.name))).all()
+        rows = db.session.execute(select(Client.client_id, Client.name).where(kept)
+                                  .order_by(func.lower(Client.name))).all()
     else:
         rows = db.session.execute(
             select(Client.client_id, Client.name)
             .where(or_(Client.client_id.in_(select(Cases.client_id).where(Cases.case_id.in_(cq._accessible(user.id)))),
-                       Client.client_id.in_(select(UserClient.client_id).where(UserClient.user_id == user.id))))
+                       Client.client_id.in_(select(UserClient.client_id).where(UserClient.user_id == user.id))), kept)
             .order_by(func.lower(Client.name))).all()
     return [{'id': cid, 'name': name or '#%d' % cid} for cid, name in rows]
 
 
 def options(user):
-    """What choice fields pick from. Customers and cases: only those the viewer may see."""
+    """What choice fields pick from. Customers and cases: only those the viewer may see, never a left-out customer's."""
     admin = _is_admin(user)
     out = {'customers': _customers(user, admin)}
-    cases = db.session.execute(select(Cases.case_id, Cases.name).where(Cases.case_id.in_(cq._accessible(user.id)))
+    cases = db.session.execute(select(Cases.case_id, Cases.name).where(Cases.case_id.in_(cq._accessible(user.id)),
+                                                                       Cases.client_id.notin_(_left_out_clients()))
                                .order_by(Cases.case_id.desc()).limit(1000)).all()
     out['cases'] = [{'id': cid, 'name': '#%d %s' % (cid, cq.display_title(name))} for cid, name in cases]
     out['users'] = [{'id': u.id, 'name': u.name or u.user, 'active': bool(u.active)}
