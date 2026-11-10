@@ -11,6 +11,44 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.12.0] — 2026-11-10
+
+War-room categories, archive and datastore, a Vulnerabilities layer on the case graph, and three code-scanning
+findings closed. **One schema migration** (`b7e2c9f4a1d6`), additive: three new tables and three new columns on
+`war_room` — take a database dump before upgrading (migrations are one-way; `scripts/update.sh` does the dump). Only
+the app image changes (application code, page templates and scripts; no requirement changes); the nginx and database
+images, and the guest-portal tunnel agent, do not.
+
+### Added
+- **War-room categories.** One shared list in a sidebar of the War Rooms page: All, Uncategorised and each category
+  with its count, the choice remembered per browser. Anyone adds or renames a category; deleting one is for its
+  creator or a server administrator, and only takes its rooms out of it. A room's leads file it by dragging its card
+  onto a category, through the card's Move menu, or when they create it.
+- **Archiving a war room.** A lead (or a server administrator) archives a room from its card or its header. An
+  archived room keeps its state and everything in it, and still works; it waits in the Archived section at the bottom
+  of the War Rooms page, with a banner in the room, until it is restored. Archived is neither closed nor deleted.
+- **A datastore for each war room**, opened from the room header: folders, and files with a description and tags.
+  Observers browse and download; responders, leads and portal guests upload (100 MB a file, 20 at once, or drop files
+  on the list), rename, replace and move; deleting is for whoever created the file or folder, or a lead, and deleting
+  a folder moves what it held up one level. A closed room's datastore is read-only. Stream attachments lists the files
+  posted in the Stream. Any file can be copied as a Markdown link, or copied into the datastore of a case attached to
+  the room (folder "War rooms"; full access to that case is needed, and guests cannot).
+- **A Vulnerabilities layer on the case graph.** Every catalogue entry with an open finding (under analysis, affected
+  or mitigated) on a case asset is an ellipse coloured by its severity, linked to each asset it affects. An affected
+  asset that is on no timeline event joins the map while the layer is on.
+- REST: `/api/v2/war-rooms/categories`, `/api/v2/war-rooms/<id>/archive` (POST archives, DELETE restores),
+  `/api/v2/war-rooms/<id>/category` and `/api/v2/war-rooms/<id>/datastore/…`.
+
+### Changed
+- A war room's `archived_at` now reports when it was archived; the time it was closed is `closed_at` (until now
+  `archived_at` carried the close time). The room list also returns `archived`, `category_id` and `can_manage`, and
+  takes `?archived=0` or `?archived=1`.
+
+### Fixed
+- `GET /api/v2/case-queue` answered 500 when `per_page` or `page` carried one of the control characters
+  U+001C–U+001F around the number, and a dashboard's `f_<key>=` filter failed the same way; they now read the number.
+  The same change closes code scanning alerts #51–#53 (number patterns that opened with `\s*`).
+
 ## [IRIS-NG-v2.11.0] — 2026-11-09
 
 A new Alerts page, a case queue on Overview, dashboards you build yourself, and the old Dashboard page retired.
