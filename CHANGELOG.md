@@ -11,6 +11,25 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.12.1] — 2026-11-10
+
+Vulnerability tags entered like every other tag field, and dashboards that leave out the test customer. **No schema
+migration.** Only the app image changes (application code and one page script; no requirement changes); the nginx and
+database images, and the guest-portal tunnel agent, do not.
+
+### Changed
+- **Vulnerability tags.** The Tags field of the vulnerability form is now the tag widget the other tag fields use:
+  Enter adds a tag, typing suggests the tags already used on this server and those of the bundled MISP catalog, and a
+  tag still being typed when the form is saved is kept. When a vulnerability is saved, its tags join the server's tag
+  list, so they are suggested on every tag field. Through the API (`POST` / `PUT /api/v2/manage/vulnerabilities…`), a
+  tag may now be up to 512 characters (it was 64) and a `|` belongs to the tag instead of separating two; commas and
+  line breaks still separate tags, and at most 30 are kept.
+
+### Fixed
+- Dashboards - the built-in Statistics and every dashboard someone builds - counted the cases of IrisInitialClient,
+  the bootstrap customer kept for testing, what those cases hold and its alerts, and offered it in the Customer filter
+  and the editor's customer and case lists. They now leave it out entirely, as the Metrics page always has.
+
 ## [IRIS-NG-v2.12.0] — 2026-11-10
 
 War-room categories, archive and datastore, a Vulnerabilities layer on the case graph, and three code-scanning
