@@ -125,8 +125,10 @@ def _int(value):
         return None
     if isinstance(value, int):
         return value
-    if isinstance(value, str) and re.fullmatch(r'\s*\d{1,12}\s*', value):
-        return int(value)
+    if isinstance(value, str):
+        text_ = value.strip()  # trimmed here, not with \s* in the pattern (code scanning #51)
+        if re.fullmatch(r'\d{1,12}', text_):
+            return int(text_)
     return None
 
 
@@ -135,9 +137,10 @@ def _number(value):
         return None
     if isinstance(value, (int, float)):
         return value if value == value and abs(value) < 1e15 else None
-    if isinstance(value, str) and re.fullmatch(r'\s*-?\d{1,15}(\.\d{1,6})?\s*', value):
+    if isinstance(value, str):
         text_ = value.strip()
-        return float(text_) if '.' in text_ else int(text_)
+        if re.fullmatch(r'-?\d{1,15}(\.\d{1,6})?', text_):
+            return float(text_) if '.' in text_ else int(text_)
     return None
 
 

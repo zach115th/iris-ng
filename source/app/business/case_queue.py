@@ -90,8 +90,10 @@ def _int(value):
         return None
     if isinstance(value, int):
         return value
-    if isinstance(value, str) and re.fullmatch(r'\s*\d{1,12}\s*', value):
-        return int(value)
+    if isinstance(value, str):
+        text_ = value.strip()  # trimmed here, not with \s* in the pattern (code scanning #51)
+        if re.fullmatch(r'\d{1,12}', text_):
+            return int(text_)
     return None
 
 
