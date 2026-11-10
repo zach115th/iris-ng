@@ -73,6 +73,70 @@
         background: rgba(139, 92, 246, 0.12);
         border: 1px solid rgba(139, 92, 246, 0.35); color: #d4c4ff;
     }
+
+    /* iris-ng 2026-11-10: categories sidebar, card actions, the Archived section. */
+    .iris-wr-layout { display: flex; gap: 18px; align-items: flex-start; }
+    .iris-wr-cats { width: 210px; flex-shrink: 0; position: sticky; top: 80px; }
+    .iris-wr-main { flex: 1 1 auto; min-width: 0; }
+    .iris-wr-cats-head {
+        display: flex; align-items: center; gap: 4px; padding: 0 6px 6px;
+        font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: #8a8a95;
+    }
+    .iris-wr-iconbtn {
+        background: none; border: 0; padding: 2px 4px; border-radius: 4px; color: #9a9aa5; line-height: 1;
+        cursor: pointer;
+    }
+    .iris-wr-iconbtn:hover, .iris-wr-iconbtn:focus { background: rgba(255, 255, 255, 0.08); color: #e4e4ea; }
+    .iris-wr-iconbtn svg { width: 14px; height: 14px; vertical-align: -2px; }
+    .iris-wr-cat {
+        display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
+        font-size: 0.82rem; color: #c8c8d0; cursor: pointer; border: 1px solid transparent;
+    }
+    .iris-wr-cat svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .iris-wr-cat:hover { background: rgba(255, 255, 255, 0.04); }
+    .iris-wr-cat.active { background: rgba(139, 92, 246, 0.14); color: #d4c4ff; }
+    .iris-wr-cat.iris-wr-drop { border-color: rgba(139, 92, 246, 0.7); background: rgba(139, 92, 246, 0.2); }
+    .iris-wr-cat-pick {
+        display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; background: none; border: 0;
+        padding: 0; color: inherit; text-align: left; cursor: pointer; font-size: inherit;
+    }
+    .iris-wr-cat-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .iris-wr-cat-count { font-size: 0.72rem; color: #8a8a95; font-variant-numeric: tabular-nums; }
+    .iris-wr-cat-tools { display: none; }
+    .iris-wr-cat:hover .iris-wr-cat-tools, .iris-wr-cat:focus-within .iris-wr-cat-tools { display: inline-flex; }
+    .iris-wr-cat:hover .iris-wr-cat-count, .iris-wr-cat:focus-within .iris-wr-cat-count { display: none; }
+    .iris-wr-cat input, #iris-wr-cat-newname { height: 26px; font-size: 0.8rem; padding: 2px 6px; }
+    .iris-wr-cats-hint { font-size: 0.72rem; color: #7a7a85; padding: 8px 8px 0; margin: 0; }
+    .iris-wr-chip-count { font-variant-numeric: tabular-nums; opacity: 0.7; }
+    .iris-wr-card-actions { margin-left: auto; display: inline-flex; gap: 2px; }
+    .iris-wr-card .iris-wr-card-actions .iris-wr-iconbtn { visibility: hidden; }
+    .iris-wr-card:hover .iris-wr-card-actions .iris-wr-iconbtn,
+    .iris-wr-card:focus-within .iris-wr-card-actions .iris-wr-iconbtn { visibility: visible; }
+    .iris-wr-card-cat {
+        display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 0.7rem; color: #a5a5b0;
+    }
+    .iris-wr-card-cat svg { width: 11px; height: 11px; }
+    .iris-wr-card[draggable="true"] { cursor: grab; }
+    .iris-wr-card.iris-wr-archived { opacity: 0.8; }
+    .iris-wr-movemenu {
+        position: fixed; z-index: 1050; min-width: 190px; max-height: 320px; overflow-y: auto; padding: 4px;
+        background: #1f1f27; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+    .iris-wr-movemenu-title { font-size: 0.7rem; color: #8a8a95; padding: 4px 8px; }
+    .iris-wr-movemenu button {
+        display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; background: none; border: 0;
+        color: #d4d4da; font-size: 0.8rem; padding: 5px 8px; border-radius: 4px; cursor: pointer;
+    }
+    .iris-wr-movemenu button:hover, .iris-wr-movemenu button:focus { background: rgba(139, 92, 246, 0.18); }
+    .iris-wr-movemenu .iris-wr-check { width: 12px; display: inline-block; color: #b39dff; }
+    .iris-wr-arch-head {
+        display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 4px 0; color: #8a8a95;
+        font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; cursor: pointer;
+    }
+    .iris-wr-arch-head:hover { color: #e4e4ea; }
+    .iris-wr-arch-head svg { width: 14px; height: 14px; transition: transform 0.15s; }
+    .iris-wr-arch-head[aria-expanded="true"] svg { transform: rotate(90deg); }
 </style>
 {% endblock stylesheets %}
 
@@ -97,6 +161,25 @@
         </div>
     </div>
 
+    <div class="iris-wr-layout">
+    {# iris-ng 2026-11-10: one shared list of categories; a room's leads file it (drag a card here or use its
+       Move menu). The filter is remembered in this browser. #}
+    <aside class="iris-wr-cats" id="iris-wr-cats" aria-label="Categories">
+        <div class="iris-wr-cats-head">
+            <span>Categories</span>{{ help_tip('room.category') }}
+            <button type="button" class="iris-wr-iconbtn ml-auto" id="iris-wr-cat-new" title="New category" aria-label="New category">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            </button>
+        </div>
+        <div id="iris-wr-cat-newrow" class="px-1 pb-1" style="display:none;">
+            <label class="sr-only" for="iris-wr-cat-newname">New category name</label>
+            <input type="text" class="form-control" id="iris-wr-cat-newname" maxlength="64" placeholder="Category name">
+        </div>
+        <div id="iris-wr-cat-list" role="list"></div>
+        <p class="iris-wr-cats-hint">Create categories to file war rooms, then drag a room here or use its Move menu.</p>
+    </aside>
+    <div class="iris-wr-main">
+
     {# v3 status chips — icons scraped verbatim (search / shield-alert / radio / moon / archive) #}
     <div class="mb-3" id="iris-wr-chips">
         <button type="button" class="iris-wr-chip active" data-status="">
@@ -119,6 +202,19 @@
 
     <div class="row" id="iris-wr-cards"></div>
     <div id="iris-wr-empty" class="text-muted" style="display:none;"></div>
+
+    {# iris-ng 2026-11-10: archived rooms keep their state; they wait here until a lead restores them. #}
+    <section id="iris-wr-archived" class="mt-2" style="display:none;">
+        <div class="d-flex align-items-center">
+            <button type="button" class="iris-wr-arch-head" id="iris-wr-arch-toggle" aria-expanded="false" aria-controls="iris-wr-arch-cards">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                Archived <span class="iris-wr-chip-count" id="iris-wr-arch-count"></span>
+            </button>{{ help_tip('room.archive', cls='ml-1') }}
+        </div>
+        <div class="row mt-2" id="iris-wr-arch-cards" style="display:none;"></div>
+    </section>
+    </div>
+    </div>
 
     <div class="row mt-3">
         <div class="col-md-12">
@@ -161,6 +257,10 @@
                 <div class="form-group">
                     <label for="iris-wr-new-desc">Description</label>
                     <textarea class="form-control" id="iris-wr-new-desc" rows="3"></textarea>
+                </div>
+                <div class="form-group" id="iris-wr-new-cat-row" style="display:none;">
+                    <label for="iris-wr-new-cat">Category (optional)</label>
+                    <select class="form-control" id="iris-wr-new-cat"><option value="">No category</option></select>
                 </div>
                 <div class="text-danger" id="iris-wr-new-error" style="display:none;"></div>
             </div>

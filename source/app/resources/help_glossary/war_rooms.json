@@ -11,15 +11,42 @@
     },
     "room.status": {
       "title": "Room status",
-      "text": "The room's state, set by a lead (status menu or /state). Open, active and standby are labels: they differ in meaning, not in what they allow.\n\nClosed is not a label. A closed room's content is read-only for everyone, its guests lose access, its operational summary stops refreshing, and a room promoted from a correlation group frees that group to be promoted again. Choosing another status reopens the room and restores guest access. Deleting a room (lead only, also when closed) removes the room and everything in it; the attached cases are not touched.",
+      "text": "The room's state, set by a lead (status menu or /state). Open, active and standby are labels: they differ in meaning, not in what they allow.\n\nClosed is not a label. A closed room's content is read-only for everyone, its guests lose access, its operational summary stops refreshing, and a room promoted from a correlation group frees that group to be promoted again. Choosing another status reopens the room and restores guest access. Deleting a room (lead only, also when closed) removes the room and everything in it; the attached cases are not touched. Archiving is neither: an archived room keeps its status and only leaves the War Rooms list.",
       "items": [
         {"name": "Open", "text": "The state of a new room."},
         {"name": "Active", "text": "Response under way."},
         {"name": "Standby", "text": "Paused or monitoring."},
         {"name": "Closed", "text": "Read-only; guest access ends until the room is reopened."}
       ],
-      "aka": ["state", "open", "active", "standby", "closed", "archive", "delete room"],
+      "aka": ["state", "open", "active", "standby", "closed", "delete room"],
       "wiki": "War-Rooms#membership-roles-statuses",
+      "guest": true
+    },
+    "room.category": {
+      "title": "Room categories",
+      "text": "One shared list of categories to file war rooms under, in the sidebar of the War Rooms page. Anyone can add a category (the + at the top) or rename one. Deleting a category is for the person who created it or an administrator: its rooms become uncategorised and nothing else changes.\n\nA room's leads file it: drag its card onto a category, or use the card's Move menu; a new room can be filed when it is created. All shows every room, Uncategorised the rooms in no category. The category you pick is remembered in this browser.",
+      "aka": ["category", "categories", "file a room", "uncategorised", "move to category"],
+      "wiki": "War-Rooms#categories-and-archive"
+    },
+    "room.archive": {
+      "title": "Archived room",
+      "text": "Archiving files a room away from the War Rooms list and changes nothing in it: it keeps its status (open, active, standby or closed), its members, guests and content, and it opens and works as before. Archived rooms wait in the Archived section at the bottom of the War Rooms page. A lead (or an administrator) archives a room from its card or its header, and restores it the same way.\n\nArchived is neither closed nor deleted: closing makes a room read-only, deleting removes it for good.",
+      "aka": ["archive", "archived", "restore", "unarchive", "file away"],
+      "wiki": "War-Rooms#categories-and-archive",
+      "guest": true
+    },
+    "room.datastore": {
+      "title": "Room datastore",
+      "text": "The room's own files, in folders, opened by the Datastore button in the room header. Deleting a folder moves what it held up one level, so no file goes with it. A closed room's datastore is read-only.\n\nStream attachments lists the files posted in the Stream (read-only); they can be downloaded, linked and copied to a case like the others.",
+      "items": [
+        {"name": "Observers", "text": "Browse and download."},
+        {"name": "Responders, leads and guests", "text": "Upload (up to 100 MB a file, 20 at once, or drop files on the list), rename, describe, tag, replace and move files, and create folders."},
+        {"name": "Deleting", "text": "A file or a folder is deleted by whoever created it, or by a lead."},
+        {"name": "Markdown link", "text": "Copies a link to the file, to paste in a room note, a SitRep or the chat."},
+        {"name": "Copy to a case", "text": "Puts a copy in the datastore of a case attached to the room (folder \"War rooms\"); the room keeps its own. Needs full access to that case; guests cannot."}
+      ],
+      "aka": ["datastore", "files", "folders", "upload", "documents", "copy to case", "markdown link"],
+      "wiki": "War-Rooms#datastore",
       "guest": true
     },
     "room.role": {

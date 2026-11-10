@@ -23,6 +23,7 @@ from app.blueprints.rest.v2.case_queue import case_queue_blueprint
 from app.blueprints.rest.v2.custom_dashboards import custom_dashboards_blueprint
 from app.blueprints.rest.v2.alert_queue import alert_queue_blueprint
 from app.blueprints.rest.v2.war_room_stream import war_room_stream_blueprint
+from app.blueprints.rest.v2.war_room_datastore import war_room_datastore_blueprint
 from app.blueprints.rest.v2.notifications import notifications_blueprint
 from app.blueprints.rest.v2.war_rooms import war_rooms_blueprint
 from app.blueprints.rest.v2.sponsor import sponsor_blueprint
@@ -60,6 +61,7 @@ rest_v2_blueprint.register_blueprint(case_queue_blueprint)
 rest_v2_blueprint.register_blueprint(custom_dashboards_blueprint)
 rest_v2_blueprint.register_blueprint(alert_queue_blueprint)
 rest_v2_blueprint.register_blueprint(war_room_stream_blueprint)
+rest_v2_blueprint.register_blueprint(war_room_datastore_blueprint)
 rest_v2_blueprint.register_blueprint(notifications_blueprint)
 rest_v2_blueprint.register_blueprint(war_rooms_blueprint)
 rest_v2_blueprint.register_blueprint(help_rest_blueprint)

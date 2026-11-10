@@ -1537,7 +1537,9 @@ class WarRoom(db.Model):
     summary = Column(Text, nullable=True)
     # v3 four-state model: open (fresh) / active (ongoing response) /
     # standby (dormant, still writable) / closed (read-only; frees a
-    # promoted cluster). archived_at records when the room was closed.
+    # promoted cluster). The archived_at COLUMN records when the room was
+    # CLOSED (its historic name; the API calls it closed_at). Archiving is a
+    # separate flag, archived_on (iris-ng 2026-11-10).
     status = Column(String(16), nullable=False, default='open',
                     server_default=text("'open'"))
     # v3 header severity chip; NULL = unset, renders nothing.
@@ -1547,8 +1549,15 @@ class WarRoom(db.Model):
     created_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     created_at = Column(DateTime, server_default=text('now()'), nullable=False)
     archived_at = Column(DateTime, nullable=True)
+    # iris-ng 2026-11-10: filed away from the list (the room keeps its state and stays usable); who did it.
+    archived_on = Column(DateTime, nullable=True)
+    archived_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    # iris-ng 2026-11-10: the shared category the room is filed under; NULL = uncategorised.
+    category_id = Column(ForeignKey('war_room_category.id', ondelete='SET NULL'), nullable=True, index=True)
 
     creator = relationship('User', foreign_keys=[created_by])
+    archiver = relationship('User', foreign_keys=[archived_by])
+    category = relationship('WarRoomCategory', foreign_keys=[category_id])
 
     __table_args__ = (
         UniqueConstraint('slug', name='uq_war_room_slug'),
@@ -1557,6 +1566,61 @@ class WarRoom(db.Model):
         CheckConstraint("severity IN ('low', 'medium', 'high', 'critical')",
                         name='ck_war_room_severity'),
     )
+
+
+class WarRoomCategory(db.Model):
+    """iris-ng 2026-11-10: one shared list of categories to file war rooms under (models.war_room_datastore_vocab).
+    Anyone adds or renames one; deleting one un-files its rooms (the FK sets NULL), it never touches a room."""
+    __tablename__ = 'war_room_category'
+
+    id = Column(BigInteger, primary_key=True)
+    name = Column(Text, nullable=False)
+    created_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, server_default=text('now()'), nullable=False)
+
+    creator = relationship('User', foreign_keys=[created_by])
+
+    __table_args__ = (
+        Index('uq_war_room_category_name_lower', text('lower(name)'), unique=True),
+    )
+
+
+class WarRoomDsFolder(db.Model):
+    """iris-ng 2026-11-10: a folder of a war room's datastore. parent_id NULL = the room's top level; deleting a
+    folder moves what it holds up one level (business.war_room_datastore), so SET NULL is only the backstop."""
+    __tablename__ = 'war_room_ds_folder'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False, index=True)
+    parent_id = Column(ForeignKey('war_room_ds_folder.id', ondelete='SET NULL'), nullable=True)
+    name = Column(Text, nullable=False)
+    created_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    created_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, server_default=text('now()'), nullable=False)
+
+
+class WarRoomDsFile(db.Model):
+    """iris-ng 2026-11-10: a file of a war room's datastore, stored under
+    DATASTORE_PATH/war-rooms/room-<id>/datastore/wrd-<file_uuid>. folder_id NULL = the room's top level."""
+    __tablename__ = 'war_room_ds_file'
+
+    id = Column(BigInteger, primary_key=True)
+    room_id = Column(ForeignKey('war_room.id', ondelete='CASCADE'), nullable=False, index=True)
+    folder_id = Column(ForeignKey('war_room_ds_folder.id', ondelete='SET NULL'), nullable=True, index=True)
+    file_uuid = Column(UUID(as_uuid=True), nullable=False, default=uuid.uuid4,
+                       server_default=text('gen_random_uuid()'))
+    filename = Column(Text, nullable=False)
+    mime_type = Column(String(128), nullable=False)
+    size = Column(BigInteger, nullable=False)
+    sha256 = Column(String(64), nullable=False)
+    description = Column(Text, nullable=True)
+    tags = Column(Text, nullable=True)
+    uploaded_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    uploaded_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, server_default=text('now()'), nullable=False)
+    updated_at = Column(DateTime, nullable=True)
+    updated_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    updated_by_guest_id = Column(ForeignKey('war_room_guest.id', ondelete='SET NULL'), nullable=True)
 
 
 class WarRoomMember(db.Model):

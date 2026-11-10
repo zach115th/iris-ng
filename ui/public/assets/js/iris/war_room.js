@@ -160,6 +160,21 @@ function iris_wroom_render_header() {
     }
 
     var lead = iris_wroom_can('lead');
+    /* iris-ng 2026-11-10: archived is a flag beside the state (neither closed nor deleted). */
+    var archived = r.archived === true;
+    var archIco = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>';
+    var archChip = document.getElementById('iris-wr-archived-chip');
+    archChip.innerHTML = archived ? '<span class="iris-wr-chip-archived">' + archIco + ' archived</span>' : '';
+    archChip.style.display = archived ? '' : 'none';
+    document.getElementById('iris-wr-archive-btn').style.display = (lead && !archived) ? '' : 'none';
+    var when = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(String(r.archived_at || ''));
+    document.getElementById('iris-wr-archived-text').textContent = archived
+        ? 'This room is archived' + (when ? ' (' + when[1] + ' ' + when[2] + ' UTC' +
+            (r.archived_by_name ? ', by ' + r.archived_by_name : '') + ')' : '') +
+          '. It keeps its state and works as usual; it is only off the War Rooms list.'
+        : '';
+    document.getElementById('iris-wr-archived-banner').style.display = archived ? '' : 'none';
+    document.getElementById('iris-wr-restore-btn').style.display = (lead && archived) ? '' : 'none';
     document.getElementById('iris-wr-edit-btn').style.display =
         (lead && iris_wroom_active()) ? '' : 'none';
     /* Delete is gated on lead ALONE — unlike Edit it stays available on a
@@ -3770,6 +3785,40 @@ document.addEventListener('DOMContentLoaded', function () {
         .addEventListener('change', function () {
             iris_wroom_api('POST', '/status', {status: this.value})
                 .then(function () { iris_wroom_load_room(); });
+        });
+
+    /* iris-ng 2026-11-10: archive / restore (a lead) and the datastore (everyone in the room). */
+    document.getElementById('iris-wr-archive-btn')
+        .addEventListener('click', function () {
+            var btn = this;
+            btn.disabled = true;
+            iris_wroom_api('POST', '/archive', {}).then(function (res) {
+                btn.disabled = false;
+                if (!res.ok) {
+                    notify_error((res.j && res.j.message) ? res.j.message : 'Could not archive the room');
+                    return;
+                }
+                notify_success('Room archived: it keeps its state and leaves the War Rooms list');
+                iris_wroom_load_room();
+            });
+        });
+    document.getElementById('iris-wr-restore-btn')
+        .addEventListener('click', function () {
+            var btn = this;
+            btn.disabled = true;
+            iris_wroom_api('DELETE', '/archive').then(function (res) {
+                btn.disabled = false;
+                if (!res.ok) {
+                    notify_error((res.j && res.j.message) ? res.j.message : 'Could not restore the room');
+                    return;
+                }
+                notify_success('Room restored to the War Rooms list');
+                iris_wroom_load_room();
+            });
+        });
+    document.getElementById('iris-wr-ds-btn')
+        .addEventListener('click', function () {
+            if (window.IrisRoomDs) { window.IrisRoomDs.open(); }
         });
 
     document.getElementById('iris-wr-delete-btn')

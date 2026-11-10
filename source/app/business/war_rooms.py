@@ -158,12 +158,18 @@ def rooms_for_user(user_id, all_rooms=False):
     return q.order_by(desc(WarRoom.id)).all()
 
 
-def create_room(name, description, creator_id):
+def create_room(name, description, creator_id, category_id=None):
     name = (name or '').strip()
     if not name:
         raise BusinessProcessingError('Room name is required')
+    if category_id not in (None, ''):
+        # iris-ng 2026-11-10: filed at creation (the New war room dialog's optional Category).
+        from app.business.war_room_categories import get_category
+        category_id = get_category(category_id).id
+    else:
+        category_id = None
     room = WarRoom(name=name, description=description or None,
-                   created_by=creator_id)
+                   created_by=creator_id, category_id=category_id)
     db.session.add(room)
     db.session.flush()
     assign_slug(room)
@@ -218,9 +224,30 @@ def set_room_status(room, status, actor_id=None):
     if status not in ROOM_STATUSES:
         raise BusinessProcessingError('Invalid status')
     room.status = status
+    # The archived_at column is the CLOSE time (closed_at in the API); archiving is archive_room().
     room.archived_at = datetime.utcnow() if status == 'closed' else None
     db.session.commit()
     _room_summary_refresh(room, actor_id, f'status:{status}')
+    return room
+
+
+def archive_room(room, actor_id=None):
+    """iris-ng 2026-11-10 (maintainer: archived is neither closed nor deleted): file the room away from the list.
+    It keeps its state, open or closed, and everything in it; restore_room() brings it back unchanged."""
+    if room.archived_on is not None:
+        raise BusinessProcessingError('The room is already archived')
+    room.archived_on = datetime.utcnow()
+    room.archived_by = actor_id
+    db.session.commit()
+    return room
+
+
+def restore_room(room):
+    if room.archived_on is None:
+        raise BusinessProcessingError('The room is not archived')
+    room.archived_on = None
+    room.archived_by = None
+    db.session.commit()
     return room
 
 

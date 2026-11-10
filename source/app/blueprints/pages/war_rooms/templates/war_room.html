@@ -569,6 +569,77 @@
         border-color: rgba(139, 92, 246, 0.35); color: #d4c4ff;
     }
     #iris-wr-summary-view { white-space: pre-wrap; }
+
+    /* iris-ng 2026-11-10: archive + datastore. */
+    .iris-wr-hdr-btn svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+    .iris-wr-chip-archived {
+        display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; font-size: 0.75rem;
+        border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.22); color: #c8c8d0;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .iris-wr-chip-archived svg { width: 12px; height: 12px; }
+    .iris-wr-archived-banner {
+        display: flex; align-items: center; gap: 8px; margin: -6px 0 12px; padding: 8px 14px; font-size: 0.82rem;
+        border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.04);
+        color: #d4d4da;
+    }
+    .iris-wr-archived-banner svg { width: 16px; height: 16px; flex-shrink: 0; }
+    #iris-wr-ds-modal .modal-dialog { max-width: 1180px; }
+    #iris-wr-ds-modal .modal-body { padding: 0; }
+    .iris-wr-ds { display: flex; min-height: 520px; max-height: 72vh; }
+    .iris-wr-ds-tree {
+        width: 250px; flex-shrink: 0; overflow-y: auto; padding: 10px 6px;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .iris-wr-ds-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+    .iris-wr-ds-bar {
+        display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .iris-wr-ds-bar .form-control { height: 30px; font-size: 0.82rem; }
+    .iris-wr-ds-crumb { font-weight: 600; font-size: 0.9rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .iris-wr-ds-list { flex: 1 1 auto; overflow-y: auto; position: relative; }
+    .iris-wr-ds-list.iris-wr-ds-dragover { outline: 2px dashed rgba(139, 92, 246, 0.7); outline-offset: -8px; }
+    .iris-wr-ds-node {
+        display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 6px; font-size: 0.82rem;
+        color: #c8c8d0; cursor: pointer;
+    }
+    .iris-wr-ds-node:hover { background: rgba(255, 255, 255, 0.04); }
+    .iris-wr-ds-node.active { background: rgba(139, 92, 246, 0.16); color: #e2d8ff; }
+    .iris-wr-ds-node svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .iris-wr-ds-node-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .iris-wr-ds-node-count { font-size: 0.7rem; color: #8a8a95; font-variant-numeric: tabular-nums; }
+    .iris-wr-ds-node-tools { display: none; }
+    .iris-wr-ds-node:hover .iris-wr-ds-node-tools, .iris-wr-ds-node:focus-within .iris-wr-ds-node-tools { display: inline-flex; }
+    .iris-wr-ds-node:hover .iris-wr-ds-node-count, .iris-wr-ds-node:focus-within .iris-wr-ds-node-count { display: none; }
+    .iris-wr-ds-sep { border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 8px 4px; }
+    .iris-wr-ds-ibtn {
+        background: none; border: 0; padding: 2px 4px; border-radius: 4px; color: #9a9aa5; line-height: 1; cursor: pointer;
+    }
+    .iris-wr-ds-ibtn:hover, .iris-wr-ds-ibtn:focus { background: rgba(255, 255, 255, 0.08); color: #e4e4ea; }
+    .iris-wr-ds-ibtn svg { width: 14px; height: 14px; vertical-align: -2px; }
+    .iris-wr-ds-table { width: 100%; font-size: 0.8rem; }
+    .iris-wr-ds-table th {
+        position: sticky; top: 0; background: #1a1a22; color: #8a8a95; font-weight: 600; font-size: 0.7rem;
+        text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 10px; z-index: 1;
+    }
+    .iris-wr-ds-table td { padding: 7px 10px; border-top: 1px solid rgba(255, 255, 255, 0.05); vertical-align: top; }
+    .iris-wr-ds-table tr:hover td { background: rgba(255, 255, 255, 0.025); }
+    .iris-wr-ds-fname { font-weight: 600; word-break: break-word; }
+    .iris-wr-ds-sub { font-size: 0.72rem; color: #8a8a95; margin-top: 2px; word-break: break-word; }
+    .iris-wr-ds-tag {
+        display: inline-block; font-size: 0.68rem; padding: 0 6px; margin: 2px 4px 0 0; border-radius: 6px;
+        background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.3); color: #d4c4ff;
+    }
+    .iris-wr-ds-actions { white-space: nowrap; text-align: right; }
+    .iris-wr-ds-empty { padding: 40px 20px; text-align: center; color: #8a8a95; font-size: 0.85rem; }
+    .iris-wr-ds-form {
+        margin: 10px 14px 0; padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.35);
+        background: rgba(139, 92, 246, 0.06); font-size: 0.82rem;
+    }
+    .iris-wr-ds-form label { font-size: 0.75rem; color: #a5a5b0; margin-bottom: 2px; }
+    .iris-wr-ds-form .form-control { font-size: 0.82rem; }
+    .iris-wr-ds-status { padding: 6px 14px; font-size: 0.75rem; color: #8a8a95; border-top: 1px solid rgba(255, 255, 255, 0.08); }
 </style>
 {% endblock stylesheets %}
 
@@ -594,6 +665,7 @@
             </div>
             <div style="flex-shrink: 0;" class="d-flex align-items-center" >
                 <span id="iris-wr-status" class="mr-1"></span>{{ help_tip('room.status', cls='mr-2') }}
+                <span id="iris-wr-archived-chip" class="mr-2" style="display:none;"></span>
                 <span id="iris-wr-severity" class="mr-2"></span>
                 <span id="iris-wr-myrole" class="mr-1"></span>{{ help_tip('room.role', cls='mr-2') }}
                 <select class="form-control form-control-sm mr-1" id="iris-wr-status-select"
@@ -604,10 +676,27 @@
                     <option value="closed">closed</option>
                 </select>
                 <button class="btn btn-sm btn-secondary" id="iris-wr-edit-btn" style="display:none;">Edit</button>
+                {# iris-ng 2026-11-10: Archive files the room away (its state is kept; neither closed nor deleted);
+                   Datastore opens the room's own folders and files. #}
+                <button class="btn btn-sm btn-outline-secondary ml-1 iris-wr-hdr-btn" id="iris-wr-archive-btn" style="display:none;"
+                        title="File this room away from the War Rooms list. It keeps its state and everything in it.">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                    <span id="iris-wr-archive-label">Archive</span></button>
+                <button class="btn btn-sm btn-outline-secondary ml-1 iris-wr-hdr-btn" id="iris-wr-ds-btn"
+                        title="The room's datastore: its folders and files, and the files posted in the Stream">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                    Datastore</button>
                 <button class="btn btn-sm btn-outline-danger ml-1" id="iris-wr-delete-btn" style="display:none;"
                         title="Permanently delete this war room">Delete</button>
             </div>
         </div>
+    </div>
+
+    {# iris-ng 2026-11-10: an archived room works as usual; this says so and offers the restore. #}
+    <div class="iris-wr-archived-banner" id="iris-wr-archived-banner" role="status" style="display:none;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+        <span id="iris-wr-archived-text"></span>{{ help_tip('room.archive', cls='ml-1') }}
+        <button type="button" class="btn btn-sm btn-outline-light ml-auto" id="iris-wr-restore-btn" style="display:none;">Restore</button>
     </div>
 
     {# ---- v3 tab bar (icons scraped verbatim from the preview SSR) ---- #}
@@ -1542,6 +1631,37 @@
         </div>
     </div>
 </div>
+
+{# iris-ng 2026-11-10: the room's datastore (war_room_datastore.js). Forms open inside it (never a second modal). #}
+<div class="modal fade" id="iris-wr-ds-modal" tabindex="-1" role="dialog" aria-labelledby="iris-wr-ds-title">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="iris-wr-ds-title">Datastore {{ help_tip('room.datastore') }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="iris-wr-ds">
+                    <nav class="iris-wr-ds-tree" id="iris-wr-ds-tree" aria-label="Datastore folders"></nav>
+                    <div class="iris-wr-ds-main">
+                        <div class="iris-wr-ds-bar">
+                            <span class="iris-wr-ds-crumb" id="iris-wr-ds-crumb"></span>
+                            <label class="sr-only" for="iris-wr-ds-q">Search the datastore</label>
+                            <input type="search" class="form-control ml-auto" id="iris-wr-ds-q" placeholder="Search names, descriptions, tags" style="width: 240px;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="iris-wr-ds-newfolder" style="display:none;">New folder</button>
+                            <button type="button" class="btn btn-sm btn-primary" id="iris-wr-ds-upload" style="display:none;">Upload</button>
+                            <label class="sr-only" for="iris-wr-ds-file">Files to upload</label>
+                            <input type="file" id="iris-wr-ds-file" multiple style="display:none;">
+                        </div>
+                        <div id="iris-wr-ds-form-slot"></div>
+                        <div class="iris-wr-ds-list" id="iris-wr-ds-list"></div>
+                        <div class="iris-wr-ds-status" id="iris-wr-ds-status" aria-live="polite"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}
 
 {% block javascripts %}
@@ -1551,5 +1671,6 @@
     <script src="/static/assets/js/iris/war_room_board.js"></script>
     {% if not guest_mode %}<script src="/static/assets/js/iris/war_room_scope.js"></script>{% endif %}
     <script src="/static/assets/js/iris/war_room_stream.js"></script>
+    <script src="/static/assets/js/iris/war_room_datastore.js"></script>
     <script src="/static/assets/js/iris/war_room.js"></script>
 {% endblock javascripts %}

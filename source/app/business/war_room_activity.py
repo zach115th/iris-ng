@@ -19,7 +19,8 @@
 
 Every change to a room's own objects - members, guests, teams, notes and folders, tasks, timelines and
 their events, SitReps, attached cases, tracked vulnerabilities, topics, pins, the room's state and
-priority, the Board layout - writes one `war_room_activity` row with who made it, in the transaction
+priority, the Board layout, archiving and the category, the datastore's files and folders - writes one
+`war_room_activity` row with who made it, in the transaction
 that made the change. A session listener does the writing, so no route can forget it: `before_flush`
 reads what the flush is about to do (new, changed and deleted rows of the models in HANDLERS) and
 `after_flush` inserts the lines with the ids the flush assigned.
@@ -43,6 +44,9 @@ from app.models.models import WarRoom
 from app.models.models import WarRoomActivity
 from app.models.models import WarRoomBoard
 from app.models.models import WarRoomCaseLink
+from app.models.models import WarRoomCategory
+from app.models.models import WarRoomDsFile
+from app.models.models import WarRoomDsFolder
 from app.models.models import WarRoomGuest
 from app.models.models import WarRoomMember
 from app.models.models import WarRoomMessage
@@ -171,6 +175,21 @@ def _room(session, obj, op, changed, deleting):
     if changed & {'description', 'summary', 'slug', 'campaign_tag'}:
         out.append(Line(obj, 'war_room_activity', 'room.updated', 'Updated the room details', 'room', obj,
                         coalesce=True))
+    # iris-ng 2026-11-10: archiving (a flag beside the state) and filing under a category.
+    if 'archived_on' in changed:
+        out.append(Line(obj, 'war_room_activity', 'room.archived' if obj.archived_on else 'room.restored',
+                        'Archived the room' if obj.archived_on else 'Restored the room from the archive',
+                        'room', obj))
+    if 'category_id' in changed:
+        if obj.category_id is not None:
+            category = _parent(session, WarRoomCategory, obj.category_id)
+            body = 'Filed the room under %s' % _clip(category.name if category is not None else 'a category', 80)
+        else:
+            hist = inspect(obj).attrs['category_id'].history
+            before = _parent(session, WarRoomCategory, hist.deleted[0]) if hist.deleted and hist.deleted[0] else None
+            body = ('Took the room out of %s' % _clip(before.name, 80)) if before is not None \
+                else 'Took the room out of its category'
+        out.append(Line(obj, 'war_room_activity', 'room.category', body, 'room', obj))
     return out
 
 
@@ -277,6 +296,48 @@ def _folder(session, obj, op, changed, deleting):
         return [Line(obj.room_id, 'war_room_activity', 'folder.renamed', 'Renamed note folder to %s' % name,
                      'folder', obj)]
     return []
+
+
+def _ds_folder(session, obj, op, changed, deleting):
+    name = _clip(obj.name, 120)
+    if op == 'insert':
+        return [Line(obj.room_id, 'war_room_activity', 'datastore.folder_created',
+                     'Created datastore folder %s' % name, 'datastore_folder', obj)]
+    if op == 'delete':
+        return [Line(obj.room_id, 'war_room_activity', 'datastore.folder_deleted',
+                     'Deleted datastore folder %s (what it held moved up)' % name, 'datastore_folder', obj)]
+    out = []
+    if 'name' in changed:
+        out.append(Line(obj.room_id, 'war_room_activity', 'datastore.folder_renamed',
+                        'Renamed datastore folder to %s' % name, 'datastore_folder', obj))
+    if 'parent_id' in changed:
+        out.append(Line(obj.room_id, 'war_room_activity', 'datastore.folder_moved',
+                        'Moved datastore folder %s' % name, 'datastore_folder', obj))
+    return out
+
+
+def _ds_file(session, obj, op, changed, deleting):
+    name = _clip(obj.filename, 120)
+    if op == 'insert':
+        return [Line(obj.room_id, 'war_room_activity', 'datastore.uploaded', 'Uploaded %s to the datastore' % name,
+                     'datastore_file', obj)]
+    if op == 'delete':
+        return [Line(obj.room_id, 'war_room_activity', 'datastore.deleted', 'Deleted %s from the datastore' % name,
+                     'datastore_file', obj)]
+    if 'file_uuid' in changed:
+        return [Line(obj.room_id, 'war_room_activity', 'datastore.replaced',
+                     'Replaced the contents of %s' % name, 'datastore_file', obj)]
+    out = []
+    if 'filename' in changed:
+        out.append(Line(obj.room_id, 'war_room_activity', 'datastore.renamed',
+                        'Renamed a datastore file to %s' % name, 'datastore_file', obj))
+    if 'folder_id' in changed:
+        out.append(Line(obj.room_id, 'war_room_activity', 'datastore.moved', 'Moved %s in the datastore' % name,
+                        'datastore_file', obj))
+    if changed & {'description', 'tags'}:
+        out.append(Line(obj.room_id, 'war_room_activity', 'datastore.updated',
+                        'Updated the details of %s' % name, 'datastore_file', obj, coalesce=True))
+    return out
 
 
 def _assignee(session, obj):
@@ -440,6 +501,8 @@ HANDLERS = {
     WarRoomBoard: _board,
     WarRoomTopic: _topic,
     WarRoomMessage: _message,
+    WarRoomDsFolder: _ds_folder,
+    WarRoomDsFile: _ds_file,
 }
 
 

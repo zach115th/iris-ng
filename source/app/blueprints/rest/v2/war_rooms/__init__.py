@@ -50,8 +50,11 @@ from app.blueprints.rest.endpoints import response
 from app.blueprints.rest.endpoints import response_api_error
 from app.blueprints.rest.endpoints import response_api_not_found
 from app.blueprints.rest.endpoints import response_api_success
+from app.business import war_room_categories as wcat
 from app.business.errors import BusinessProcessingError
 from app.business.war_rooms import ClusterAlreadyPromoted
+from app.business.war_rooms import archive_room
+from app.business.war_rooms import restore_room
 from app.business.war_rooms import add_member
 from app.business.war_rooms import actor_label
 from app.business.war_rooms import add_message
@@ -173,7 +176,14 @@ def _room_row(room, role=None):
         'created_by': room.created_by,
         'created_by_name': room.creator.name if room.creator else None,
         'created_at': _iso(room.created_at),
-        'archived_at': _iso(room.archived_at),
+        # iris-ng 2026-11-10: closed_at is when the room was closed (the column's historic name is archived_at);
+        # archived / archived_at describe the separate archive flag (the room keeps its state).
+        'closed_at': _iso(room.archived_at),
+        'archived': room.archived_on is not None,
+        'archived_at': _iso(room.archived_on),
+        'archived_by_name': room.archiver.name if room.archiver else None,
+        'category_id': room.category_id,
+        'category_name': room.category.name if room.category else None,
         'my_role': role,
         'member_count': WarRoomMember.query.filter_by(room_id=room.id).count(),
         'case_count': WarRoomCaseLink.query.filter_by(room_id=room.id).count(),
@@ -207,12 +217,22 @@ def _message_row(m):
 @ac_room_api_requires()
 def list_war_rooms():
     # Every status is returned; the page filters client-side via the v3
-    # chips (All / Open / Active / Standby / Closed).
+    # chips (All / Open / Active / Standby / Closed). iris-ng 2026-11-10:
+    # archived rooms too (`archived`), unless ?archived=0 or ?archived=1;
+    # `can_manage` = this viewer may archive, restore and file the room.
     all_rooms = ac_current_user_has_permission(Permissions.server_administrator)
     rows = rooms_for_user(current_user.id, all_rooms=all_rooms)
-    return response_api_success({
-        'rooms': [_room_row(room, role) for room, role in rows],
-    })
+    wanted = request.args.get('archived', 'any')
+    if wanted in ('0', 'false'):
+        rows = [(room, role) for room, role in rows if room.archived_on is None]
+    elif wanted in ('1', 'true'):
+        rows = [(room, role) for room, role in rows if room.archived_on is not None]
+    out = []
+    for room, role in rows:
+        r = _room_row(room, role)
+        r['can_manage'] = role == 'lead' or all_rooms
+        out.append(r)
+    return response_api_success({'rooms': out})
 
 
 @war_rooms_blueprint.route('/war-rooms', methods=['POST'])
@@ -221,7 +241,9 @@ def create_war_room():
     data = request.get_json(silent=True) or {}
     try:
         room = create_room(data.get('name'), data.get('description'),
-                           current_user.id)
+                           current_user.id, category_id=data.get('category_id'))
+    except wcat.CategoryError as e:
+        return response_error(str(e), status=e.status)
     except BusinessProcessingError as e:
         return response_api_error(str(e))
     return response_api_success(_room_row(room, 'lead'))
@@ -296,6 +318,106 @@ def delete_war_room(room_id):
     delete_room(room)
     track_activity(f"war room '{name}' (#{rid}) deleted", ctx_less=True)
     return response_api_success({'deleted': rid})
+
+
+# ------------------------------------------------ archive and categories
+# iris-ng 2026-11-10 (maintainer): archived is neither closed nor deleted -
+# the room keeps its state and everything in it, and leaves the main list.
+# A room's leads (and server administrators) archive, restore and file it;
+# the category list is shared and any signed-in user adds or renames one.
+# Guests reach none of this: lead routes refuse them, and a category route
+# has no room in its URL, so the room decorator admits no portal session
+# there (401); it also refuses a user session arriving through the portal.
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/archive', methods=['POST'])
+@ac_room_api_requires()
+def archive_war_room(room_id):
+    room, role, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    try:
+        archive_room(room, actor_id=current_user.id)
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    return response_api_success(_room_row(room, role))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/archive', methods=['DELETE'])
+@ac_room_api_requires()
+def restore_war_room(room_id):
+    room, role, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    try:
+        restore_room(room)
+    except BusinessProcessingError as e:
+        return response_api_error(str(e))
+    return response_api_success(_room_row(room, role))
+
+
+@war_rooms_blueprint.route('/war-rooms/<int:room_id>/category', methods=['PUT'])
+@ac_room_api_requires()
+def set_war_room_category(room_id):
+    room, role, err = _resolve(room_id, 'lead')
+    if err:
+        return err
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or 'category_id' not in data:
+        return response_api_error('category_id is required (null takes the room out of its category)')
+    try:
+        wcat.set_room_category(room, data.get('category_id'))
+    except wcat.CategoryError as e:
+        return response_error(str(e), status=e.status)
+    return response_api_success(_room_row(room, role))
+
+
+def _categories_payload():
+    return {
+        'categories': [wcat.row(c) for c in wcat.list_categories()],
+        'viewer_id': current_user.id,
+        'is_admin': bool(ac_current_user_has_permission(Permissions.server_administrator)),
+    }
+
+
+@war_rooms_blueprint.route('/war-rooms/categories', methods=['GET'])
+@ac_room_api_requires()
+def list_war_room_categories():
+    return response_api_success(_categories_payload())
+
+
+@war_rooms_blueprint.route('/war-rooms/categories', methods=['POST'])
+@ac_room_api_requires()
+def create_war_room_category():
+    data = request.get_json(silent=True)
+    data = data if isinstance(data, dict) else {}
+    try:
+        category = wcat.create_category(data.get('name'), current_user.id)
+    except wcat.CategoryError as e:
+        return response_error(str(e), status=e.status)
+    return response_api_success(wcat.row(category))
+
+
+@war_rooms_blueprint.route('/war-rooms/categories/<int:category_id>', methods=['PUT'])
+@ac_room_api_requires()
+def rename_war_room_category(category_id):
+    data = request.get_json(silent=True)
+    data = data if isinstance(data, dict) else {}
+    try:
+        category = wcat.rename_category(category_id, data.get('name'))
+    except wcat.CategoryError as e:
+        return response_error(str(e), status=e.status)
+    return response_api_success(wcat.row(category))
+
+
+@war_rooms_blueprint.route('/war-rooms/categories/<int:category_id>', methods=['DELETE'])
+@ac_room_api_requires()
+def delete_war_room_category(category_id):
+    try:
+        wcat.delete_category(category_id, current_user.id,
+                             bool(ac_current_user_has_permission(Permissions.server_administrator)))
+    except wcat.CategoryError as e:
+        return response_error(str(e), status=e.status)
+    return response_api_success({'deleted': category_id})
 
 
 # -------------------------------------------------- discovery promote
