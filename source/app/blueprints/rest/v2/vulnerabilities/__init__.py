@@ -167,6 +167,7 @@ def create_vulnerability():
     except VulnError as e:
         db.session.rollback()
         return _err(e)
+    vb.register_tags(v)
     track_activity(f"created vulnerability '{v.identifier}'", ctx_less=True)
     return response_api_created(vb.vuln_row(v, vb.counts_for([v.vulnerability_id], _viewer())[v.vulnerability_id]))
 
@@ -192,6 +193,7 @@ def update_vulnerability(vid):
     except VulnError as e:
         db.session.rollback()
         return _err(e)
+    vb.register_tags(v)
     track_activity(f"updated vulnerability '{v.identifier}'", ctx_less=True)
     return response_api_success(vb.vuln_row(v, vb.counts_for([vid], _viewer())[vid]))
 

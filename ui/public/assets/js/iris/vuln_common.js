@@ -231,6 +231,24 @@
         }).join('\n');
     }
     function pctIn(f) { return (f == null || f === '') ? '' : String(Math.round(Number(f) * 100000) / 1000); }
+    /* The Tags field is the product's own tag widget, as on every case object (amsifySuggestags through common.js's
+       set_suggest_tags): Enter adds a chip, suggestions come from /manage/tags/suggest, and the hidden #vu-tags keeps
+       the chips comma-joined. Without the widget (a page that lacks it) the plain input stays. */
+    function tagWidget($m) {
+        if (!$m.find('#vu-tags').length || typeof window.set_suggest_tags !== 'function' || !window.jQuery
+            || !window.jQuery.fn || !window.jQuery.fn.amsifySuggestags) { return; }
+        window.set_suggest_tags('vu-tags');
+    }
+    /* What the form saves: the chips plus a tag still being typed - a Save straight after typing must not drop it.
+       The server splits, trims and de-duplicates. */
+    function tagsValue($m) {
+        var el = $m.find('#vu-tags')[0];
+        if (!el) { return ''; }
+        var area = el.nextElementSibling;
+        var pending = (area && area.classList && area.classList.contains('amsify-suggestags-area'))
+            ? area.querySelector('.amsify-suggestags-input') : null;
+        return [el.value, pending ? pending.value : ''].filter(Boolean).join(',');
+    }
 
     V.openVulnForm = function (o) {
         o = o || {};
@@ -304,8 +322,8 @@
                 '<div class="form-group mb-2"><label for="vu-refs">References</label>' +
                 '<textarea class="form-control iris-vu-mono" id="vu-refs" rows="3" placeholder="One URL per line (http/https)">' +
                 V.esc(v ? (v.reference_urls || []).join('\n') : '') + '</textarea></div>' +
-                '<div class="form-group mb-1"><label for="vu-tags">Tags</label><input type="text" class="form-control" id="vu-tags" placeholder="Comma-separated" value="' +
-                V.esc(v ? (v.tags || []).join(', ') : '') + '"></div>';
+                '<div class="form-group mb-1"><label for="vu-tags">Tags</label>' + IrisHelp.icon('common.tags') +
+                '<input type="text" class="form-control" id="vu-tags" value="' + V.esc(v ? (v.tags || []).join(',') : '') + '"></div>';
             var $m = V.modal({
                 title: edit ? 'Edit ' + v.identifier : 'New vulnerability',
                 subtitle: 'A public entry is named by its CVE / GHSA / advisory identifier. A private entry gets an ' +
@@ -314,6 +332,7 @@
                 footer: '<button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>' +
                     '<button type="button" class="btn btn-primary" data-vu="save">' + (edit ? 'Save changes' : 'Create vulnerability') + '</button>'
             });
+            tagWidget($m);
             var origVector = v ? (v.cvss_vector || '') : '', origScore = v && v.cvss_score != null ? String(v.cvss_score) : '';
             function sync() {
                 var priv = $m.find('#vu-private').is(':checked');
@@ -394,7 +413,7 @@
                         modified_at: $m.find('#vu-mod').val() || null,
                         affected_products: $m.find('#vu-products').val(),
                         reference_urls: $m.find('#vu-refs').val(),
-                        tags: $m.find('#vu-tags').val()
+                        tags: tagsValue($m)
                     };
                 } catch (e) { V.setErr($m, e.message); return; }
                 if (!p.title) { V.setErr($m, 'A title is required.'); return; }

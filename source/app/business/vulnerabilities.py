@@ -51,6 +51,7 @@ from sqlalchemy import or_
 from sqlalchemy import text
 
 from app import db
+from app.datamgmt.manage.manage_tags_db import add_db_tag
 from app.iris_engine import vuln_cve_org
 from app.models import vulnerability_vocab as vv
 from app.models.models import Tlp
@@ -60,6 +61,8 @@ from app.models.models import VulnerabilityFindingChange
 from app.models.models import WarRoomVulnerability
 
 MAX_PER_PAGE = 100
+MAX_TAG_LEN = 512
+MAX_TAGS = 30
 _IDENT_RE = re.compile(r'^\S{1,128}$')
 _PRIVATE_RE = re.compile(r'^IRIS-VULN-(\d{4})-(\d+)$', re.IGNORECASE)
 _CWE_RE = re.compile(r'^(CWE-\d+|NVD-CWE-[A-Za-z]+)$')
@@ -276,15 +279,30 @@ def _cwes(value):
 
 
 def _tags(value):
+    """Tags as the shared tag widget sends them (comma-separated text; a list is accepted too). Commas and line breaks
+    separate - the column is comma-separated text, so no tag can hold either - while '|' belongs to the tag, as in
+    the other tag fields (MISP galaxy values hold it). A tag runs up to MAX_TAG_LEN: the widget offers the bundled
+    MISP catalogue, whose tags reach several hundred characters."""
     out = []
-    for t in _split(value, r'[,|\n]+'):
-        if len(t) > 64:
-            raise VulnError('A tag is longer than 64 characters.')
+    for t in _split(','.join(_split(value)), r'[,\n]+'):
+        if len(t) > MAX_TAG_LEN:
+            raise VulnError('A tag is longer than %d characters.' % MAX_TAG_LEN)
         if t not in out:
             out.append(t)
-    if len(out) > 30:
-        raise VulnError('At most 30 tags.')
+    if len(out) > MAX_TAGS:
+        raise VulnError('At most %d tags.' % MAX_TAGS)
     return ','.join(out) or None
+
+
+def register_tags(v):
+    """Each tag of the entry joins the server's shared tag list, as case-object tags do when saved, so it
+    autocompletes on every tag field. Call it after the entry's own commit: add_db_tag commits per tag. A tag that
+    cannot be registered (a race on the unique title) is skipped - the entry is already saved."""
+    for t in [x for x in (v.tags or '').split(',') if x]:
+        try:
+            add_db_tag(t)
+        except Exception:  # noqa: BLE001 - add_db_tag logs it; the shared list is a convenience, never the record
+            db.session.rollback()
 
 
 # ---------------------------------------------------------------- identity
