@@ -4,12 +4,13 @@
   "terms": {
     "graph.layers": {
       "title": "Graph layers",
-      "text": "Each layer is one kind of object on the map. Unticking a layer hides its nodes and every line touching them; this only filters what is already loaded, the choice is remembered in this browser, and all layers start ticked.\n\nAssets and IOCs come from the timeline: one is drawn only when it is attached to an event included in the graph (events with the False positive verdict are left out). An asset or IOC on no such event is missing from the map, whatever links it has.",
+      "text": "Each layer is one kind of object on the map. Unticking a layer hides its nodes and every line touching them; this only filters what is already loaded, the choice is remembered in this browser, and all layers start ticked.\n\nAssets and IOCs come from the timeline: one is drawn only when it is attached to an event included in the graph (events with the False positive verdict are left out). An asset or IOC on no such event is missing from the map, whatever links it has - except an asset with an open vulnerability while the Vulnerabilities layer is on.",
       "items": [
         {"name": "Assets", "text": "Case assets, drawn with their type's icon; a compromised asset uses the type's compromised icon."},
         {"name": "IOCs", "text": "Case indicators, drawn with the virus icon."},
         {"name": "Notes (violet boxes)", "text": "Notes recorded as a source of an IOC. A note with no such record is not drawn, and notes have no link to assets or evidence. A note box floats unconnected when its IOC is not on the map."},
-        {"name": "Evidence (amber boxes)", "text": "Evidence items linked to an asset. Evidence linked to no asset is not drawn; a box floats unconnected when its asset is not on the map."}
+        {"name": "Evidence (amber boxes)", "text": "Evidence items linked to an asset. Evidence linked to no asset is not drawn; a box floats unconnected when its asset is not on the map."},
+        {"name": "Vulnerabilities (ellipses)", "text": "Catalogue entries (CVEs and other kinds) with an open finding - under analysis, affected or mitigated - on a case asset: one ellipse each, coloured by its severity (critical red, high orange, medium yellow, low blue, otherwise grey), with a line to each asset it affects. Patched and dismissed findings are not drawn."}
       ],
       "aka": ["knowledge map", "graph", "nodes", "filter"],
       "wiki": "Knowledge-Map#layers"

@@ -103,6 +103,11 @@
                                 <input type="checkbox" id="iris-graph-layer-evidence" checked>
                                 <span class="iris-graph-swatch" style="background:#f4c430;"></span>Evidence
                             </label>
+                            {# iris-ng 2026-11-10: open vulnerability findings, ellipses coloured by severity. #}
+                            <label class="iris-graph-layer" for="iris-graph-layer-vulnerability">
+                                <input type="checkbox" id="iris-graph-layer-vulnerability" checked>
+                                <span class="iris-graph-swatch" style="background:#fb6340; border-radius:50%;"></span>Vulnerabilities
+                            </label>
                             <span class="iris-graph-counts" id="iris-graph-counts"></span>{{ help_tip('graph.edges', cls='ml-0') }}
                         </div>
                     </li>

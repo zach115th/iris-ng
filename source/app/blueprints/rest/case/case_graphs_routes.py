@@ -18,14 +18,18 @@
 
 import itertools
 from datetime import datetime
+from html import escape
 from flask_login import current_user
 from flask import Blueprint
 
 from app.datamgmt.case.case_events_db import get_case_events_assets_graph
 from app.datamgmt.case.case_events_db import get_case_events_ioc_graph
 from app.datamgmt.case.case_graph_db import get_case_evidence_asset_links
+from app.datamgmt.case.case_graph_db import get_case_graph_assets
 from app.datamgmt.case.case_graph_db import get_case_ioc_asset_links
 from app.datamgmt.case.case_graph_db import get_case_note_ioc_links
+from app.datamgmt.case.case_graph_db import get_case_open_vulnerability_findings
+from app.models import vulnerability_vocab as vv
 from app.models.authorization import CaseAccessLevel
 from app.blueprints.access_controls import ac_requires_case_identifier
 from app.blueprints.access_controls import ac_api_requires
@@ -223,6 +227,8 @@ def case_graph_get_data(caseid):
             'kind': 'direct'
         })
 
+    _add_vulnerability_layer(caseid, nodes, edges, existing_ids, _add_node)
+
     resp = {
         'nodes': nodes,
         'edges': edges,
@@ -230,3 +236,86 @@ def case_graph_get_data(caseid):
     }
 
     return response_success("", data=resp)
+
+
+# iris-ng 2026-11-10: the Vulnerabilities layer (maintainer: open findings only, every kind of catalogue entry,
+# coloured by the entry's severity; an affected asset on no graph event joins the map while the layer is on).
+# vis.js 4.21 puts a node's or an edge's `title` into the tooltip as HTML, so every title written here is escaped.
+VULN_COLOURS = {
+    'critical': ('#f5365c', '#3d1a22'),
+    'high': ('#fb6340', '#3d2418'),
+    'medium': ('#f4c430', '#3a2f1a'),
+    'low': ('#36a2eb', '#18283a'),
+    'none': ('#9a9aa5', '#26262e'),
+    'unknown': ('#9a9aa5', '#26262e'),
+}
+
+
+def _asset_tooltip(asset_ip, asset_description):
+    """The asset tooltip of the event-derived nodes, escaped."""
+    if asset_ip:
+        return escape("{} -{}".format(asset_ip, asset_description))
+    return escape("{}".format(asset_description))
+
+
+def _add_vulnerability_layer(caseid, nodes, edges, existing_ids, add_node):
+    findings = get_case_open_vulnerability_findings(caseid)
+    if not findings:
+        return
+    missing = {row.asset_id for row in findings if f'a{row.asset_id}' not in existing_ids}
+    for a in get_case_graph_assets(caseid, missing):
+        img = a.asset_icon_compromised if a.asset_compromise_status_id == 1 else a.asset_icon_not_compromised
+        add_node({
+            'id': f'a{a.asset_id}',
+            'label': a.asset_name,
+            'image': '/static/assets/img/graph/' + img,
+            'shape': 'image',
+            'title': _asset_tooltip(a.asset_ip, a.asset_description),
+            'value': 1,
+            'layer': 'asset',
+            # On no graph event: drawn only while the Vulnerabilities layer is on (case.graph.js).
+            'only_with': 'vulnerability',
+            'font': "12px verdana white",
+        })
+
+    by_vuln = {}
+    for row in findings:
+        by_vuln.setdefault(row.vulnerability_id, []).append(row)
+    for vid, rows in by_vuln.items():
+        first = rows[0]
+        severity = first.severity if first.severity in VULN_COLOURS else 'unknown'
+        border, background = VULN_COLOURS[severity]
+        per_asset = {}
+        for row in rows:
+            per_asset.setdefault(row.asset_id, (row.asset_name, []))[1].append(row.remediation_status)
+        score = ' %.1f' % first.cvss_score if first.cvss_score is not None else ''
+        node_id = f'v{vid}'
+        add_node({
+            'id': node_id,
+            'label': first.identifier,
+            'shape': 'ellipse',
+            'title': '%s<br>%s%s - %s<br>%s<br>Open on %d asset%s' % (
+                escape(first.identifier), escape(vv.SEVERITY_LABELS.get(severity, severity)), escape(score),
+                escape(vv.KIND_LABELS.get(first.kind, first.kind)), escape(first.title),
+                len(per_asset), '' if len(per_asset) == 1 else 's'),
+            'value': 1,
+            'layer': 'vulnerability',
+            'severity': severity,
+            'color': {'background': background, 'border': border,
+                      'highlight': {'background': background, 'border': '#ffffff'}},
+            'borderWidth': 2,
+            'font': {'color': 'white', 'size': 12},
+        })
+        for asset_id, (asset_name, statuses) in sorted(per_asset.items()):
+            asset_node = f'a{asset_id}'
+            if asset_node not in existing_ids:
+                continue
+            labels = sorted({vv.REMEDIATION_LABELS.get(s, s) for s in statuses})
+            edges.append({
+                'from': node_id,
+                'to': asset_node,
+                'title': escape('%s on %s: %s' % (first.identifier, asset_name, ', '.join(labels))),
+                'dashes': False,
+                'color': {'color': border},
+                'kind': 'direct',
+            })

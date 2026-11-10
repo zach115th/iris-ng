@@ -28,6 +28,8 @@ Each helper returns plain tuples/dicts (not ORM objects) so the caller can
 serialise them without worrying about detached instances.
 """
 
+from app.models import vulnerability_vocab as vv
+from app.models.models import AssetsType
 from app.models.models import CaseAssets
 from app.models.models import CaseReceivedFile
 from app.models.models import EvidenceAssetLink
@@ -35,6 +37,8 @@ from app.models.models import Ioc
 from app.models.models import IocAssetLink
 from app.models.models import IocNoteLink
 from app.models.models import Notes
+from app.models.models import Vulnerability
+from app.models.models import VulnerabilityFinding
 from app import db
 
 
@@ -97,3 +101,57 @@ def get_case_ioc_asset_links(caseid):
     ).filter(
         CaseAssets.case_id == caseid
     ).all()
+
+
+def get_case_open_vulnerability_findings(caseid):
+    """Open vulnerability findings on the case's assets (iris-ng 2026-11-10; maintainer: open only, every kind).
+
+    Returns rows of (vulnerability_id, identifier, title, kind, severity, cvss_score, asset_id, asset_name,
+    remediation_status), one per finding. Open = the 'open' remediation group (under analysis, affected,
+    mitigated); a registry finding has no case asset, and a finding is kept only when its asset belongs to
+    this case.
+    """
+    return db.session.query(
+        Vulnerability.vulnerability_id,
+        Vulnerability.identifier,
+        Vulnerability.title,
+        Vulnerability.kind,
+        Vulnerability.severity,
+        Vulnerability.cvss_score,
+        CaseAssets.asset_id,
+        CaseAssets.asset_name,
+        VulnerabilityFinding.remediation_status,
+    ).select_from(VulnerabilityFinding).join(
+        Vulnerability, Vulnerability.vulnerability_id == VulnerabilityFinding.vulnerability_id
+    ).join(
+        CaseAssets, CaseAssets.asset_id == VulnerabilityFinding.asset_id
+    ).filter(
+        VulnerabilityFinding.scope == 'case',
+        VulnerabilityFinding.case_id == caseid,
+        CaseAssets.case_id == caseid,
+        VulnerabilityFinding.remediation_status.in_(vv.REMEDIATION_GROUPS['open'])
+    ).order_by(
+        Vulnerability.vulnerability_id, CaseAssets.asset_id
+    ).all()
+
+
+def get_case_graph_assets(caseid, asset_ids):
+    """The display fields of these case assets, as the timeline query gives them for an asset on an event:
+    rows of (asset_id, asset_name, asset_description, asset_ip, asset_compromise_status_id,
+    asset_icon_compromised, asset_icon_not_compromised). For assets on no graph event (iris-ng 2026-11-10)."""
+    if not asset_ids:
+        return []
+    return db.session.query(
+        CaseAssets.asset_id,
+        CaseAssets.asset_name,
+        CaseAssets.asset_description,
+        CaseAssets.asset_ip,
+        CaseAssets.asset_compromise_status_id,
+        AssetsType.asset_icon_compromised,
+        AssetsType.asset_icon_not_compromised,
+    ).join(
+        AssetsType, AssetsType.asset_id == CaseAssets.asset_type_id
+    ).filter(
+        CaseAssets.case_id == caseid,
+        CaseAssets.asset_id.in_(sorted(asset_ids))
+    ).order_by(CaseAssets.asset_id).all()

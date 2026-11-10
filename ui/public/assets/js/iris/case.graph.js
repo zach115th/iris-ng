@@ -2,7 +2,7 @@
 /* Case knowledge map.
  *
  * The graph data carries a `layer` tag on every node ('asset' | 'ioc' |
- * 'note' | 'evidence') and a `kind` on every edge ('event' for timeline
+ * 'note' | 'evidence' | 'vulnerability') and a `kind` on every edge ('event' for timeline
  * co-occurrence, 'direct' for M2M link-table relationships). The layer
  * toggles filter client-side against the last fetched payload, so flipping a
  * layer never re-hits the API.
@@ -11,7 +11,8 @@
 var network;
 var _graphData = { nodes: [], edges: [] };
 
-const IRIS_GRAPH_LAYERS = ['asset', 'ioc', 'note', 'evidence'];
+/* iris-ng 2026-11-10: 'vulnerability' - open findings on the case's assets, one node per catalogue entry. */
+const IRIS_GRAPH_LAYERS = ['asset', 'ioc', 'note', 'evidence', 'vulnerability'];
 const IRIS_GRAPH_LAYER_KEY = 'irisGraphLayers';
 
 /* Layers default to all-on, so the graph looks exactly like it always did
@@ -47,6 +48,8 @@ function irisGraphActiveLayers() {
  * if BOTH endpoints survive -- otherwise vis.js would render a dangling edge. */
 function irisGraphFilter(data, state) {
     const nodes = (data.nodes || []).filter(n => {
+        /* An asset on no graph event is sent only for its vulnerabilities: it shows with that layer. */
+        if (n.only_with && state[n.only_with] === false) return false;
         const layer = n.layer;
         if (!layer) return true;            // untagged -> always show
         return state[layer] !== false;
