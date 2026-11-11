@@ -11,6 +11,30 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.13.1] — 2026-11-11
+
+A security hardening fix for the tutorial panel. **No schema change** — the database head stays at `e4b9c2a7f5d1`.
+Only the app image changes (one browser script); the nginx and database images, and the guest-portal tunnel agent,
+do not change.
+
+### Security
+- **The tutorial panel no longer uses its saved progress as stored** (code scanning alerts #54 and #55,
+  "Client-side cross-site scripting"). The panel keeps a copy of each completed step in the browser's session
+  storage, so a step finished just before a page change is not lost, and a step can pick up a value from the page
+  address; the copy's step number was written into the panel's markup (the "Title · 3/9" label and the progress
+  bar). The step had to be a number, so nothing could be injected. The copy is now rebuilt before it is used: the
+  step is read as a whole number, and each saved value must follow the rules of a captured value (text up to 200
+  characters, or a number). The step counts are also escaped wherever the panel draws them.
+
+### Fixed
+- A saved step that was a number but not a whole one stopped the tutorial panel from drawing on the next page; it is
+  ignored now, like a step of another tutorial.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.13.1`, or the 2.13.1 images / chart 1.13.1). No migration of its
+own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on 2.11.x 2.12.0's
+`b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does).
+
 ## [IRIS-NG-v2.13.0] — 2026-11-11
 
 Tutorials: step-by-step walkthroughs that run on the real pages, five built in and as many as your team writes.
