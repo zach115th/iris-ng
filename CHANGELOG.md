@@ -11,6 +11,43 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.13.0] — 2026-11-11
+
+Tutorials: step-by-step walkthroughs that run on the real pages, five built in and as many as your team writes.
+**One schema migration** (`e4b9c2a7f5d1`), additive: two new tables — take a database dump before upgrading
+(migrations are one-way; `scripts/update.sh` does the dump). Only the app image changes (application code, page
+templates, scripts and styles; no requirement changes); the nginx and database images, and the guest-portal tunnel
+agent, do not.
+
+### Added
+- **Tutorials**, under the user menu. A panel at the bottom right says what to do, outlines where on the page, offers
+  **Fill** buttons for the values to type and a **Take me there** link to the right page, and moves on by itself once
+  the step is done. The tutorial follows you from page to page; it can be minimized, or stopped and later picked up
+  where it was with **Continue**. Completed tutorials stay marked, and **Start again** runs one from the beginning.
+  Guests of the guest portal never see tutorials.
+- **Five built-in tutorials**: *Run your first investigation* (a case, several IOCs at once, a raw log date on the
+  timeline, a task for a colleague), *Triage alerts from the keyboard*, *Hand over: report and close a case*, *Track a
+  vulnerability across a crisis* (the catalogue, a finding on an asset, a war room and its Scope), and *Write a
+  tutorial for your team* (administrators). Those that create data use the IrisInitialClient test customer, and their
+  last step offers to delete what they created: the case, the war room and, for an administrator, the catalogue
+  entry - only what you created during that tutorial, and only with the right to delete it you already have.
+- **Settings → Tutorials** (server administrators; no new permission). Edit a built-in tutorial: your version replaces
+  it for everyone, unpublishing it hides it, and **Restore** brings back the version shipped with IRIS. Write your
+  own: steps with what to do, what to outline, the values to fill in, and when the step is done (the learner clicks
+  Next, something appears on the page, a page opens, or IRIS saves something - a value of its reply, such as the id of
+  the case just opened, can be used by the later steps). **Who sees it**: everyone, or administrators only. **Try it**
+  runs what the editor holds without counting as completed. **Export** and **Import** move a tutorial between IRIS-NG
+  servers as a file (format `iris-ng-tutorial/1`; an import arrives as a draft).
+- The controls the built-in tutorials point at carry a `data-tour` name a team's tutorials can use too: `case-new`,
+  `case-form`, `case-create`, `case-quick-add`, `case-menu`, `case-state`, `case-report`, `case-edit`,
+  `case-request-review`, the case tabs `case-tab-summary` … `case-tab-evidence`, `event-date-parse`.
+- REST: `/api/v2/tutorials…` (the list, start, continue and the running tutorial's progress) and
+  `/api/v2/manage/tutorials…` (server administrators: the tutorials, save, delete or restore, try, import, export).
+
+### Fixed
+- Alerts: switching to the Split view after an alert had been opened in the List view hid the queue, leaving only
+  the alert; Split shows both again.
+
 ## [IRIS-NG-v2.12.1] — 2026-11-10
 
 Vulnerability tags entered like every other tag field, and dashboards that leave out the test customer. **No schema
