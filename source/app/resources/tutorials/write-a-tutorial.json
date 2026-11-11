@@ -1,0 +1,66 @@
+{
+  "format": "iris-ng-tutorial/1",
+  "title": "Write a tutorial for your team",
+  "summary": "Turn a procedure of your team into a guided tutorial: write the steps, say when each one is done, and publish it.",
+  "duration": "~6 min",
+  "audience": "admins",
+  "steps": [
+    {
+      "title": "Welcome",
+      "body": "A tutorial is a list of steps. Each step says what to do, can **highlight** something on the page, offers **Fill** buttons for the values to type, and knows when it is **done**: a click on Next, something appearing, a page opening, or IRIS saving something.\n\nYou will write a short one and publish it."
+    },
+    {
+      "title": "Open Settings -> Tutorials",
+      "body": "Tutorials are managed under **Settings -> Tutorials**. The built-in ones can be edited too: your version replaces the shipped one for everyone.",
+      "anchor": ["settings-tutorials"],
+      "goTo": "/manage/tutorials",
+      "waitFor": {"kind": "page", "path": "/manage/tutorials"}
+    },
+    {
+      "title": "Start a new tutorial",
+      "body": "Click **+ New tutorial**.",
+      "anchor": ["tut-new"],
+      "waitFor": {"kind": "page", "path": "/manage/tutorials/new"}
+    },
+    {
+      "title": "Name it",
+      "body": "Give it a title and a one-line summary: they are what your team sees in the list.",
+      "anchor": ["tut-title"],
+      "fills": [
+        {"label": "Title", "anchor": "tut-title", "value": "Log a phishing report"},
+        {"label": "Summary", "anchor": "tut-summary", "value": "Open a case for a reported phishing mail and add the sender as an IOC."}
+      ]
+    },
+    {
+      "title": "Add a step",
+      "body": "Click **+ Add a step**.",
+      "anchor": ["tut-step-add"],
+      "waitFor": {"kind": "element", "anchor": ["tut-step-title"]}
+    },
+    {
+      "title": "Write the step",
+      "body": "Give the step a title and say what to do: **bold** and `code` work. Under **Highlight**, name what to point at: a `data-tour` name such as `case-new`, or a CSS selector such as `#case_name`.",
+      "anchor": ["tut-step-title"],
+      "fills": [
+        {"label": "Step title", "anchor": "tut-step-title", "value": "Open a case"},
+        {"label": "What to do", "anchor": "tut-step-body", "value": "On the case queue, click **Open a case**."},
+        {"label": "Highlight", "anchor": "tut-step-anchor", "value": "case-new"}
+      ]
+    },
+    {
+      "title": "Say when it is done",
+      "body": "**Done when** decides when the panel moves on. **Something appears on the page** waits for an element (here `case-form`, the new-case form). **IRIS saves something** waits for a request and can capture a value from its reply, for example `case_id` as `caseId`, for the later steps.",
+      "anchor": ["tut-step-done"]
+    },
+    {
+      "title": "Publish and save",
+      "body": "Tick **Published** so your team sees it under Tutorials, then click **Save**.",
+      "anchor": ["tut-save", "tut-published"],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/api/v2/manage/tutorials"}
+    },
+    {
+      "title": "Try it, then share it",
+      "body": "**Try it** runs the tutorial as you see it in the editor, saved or not, without counting as completed. It replaces this tutorial in the panel, so click it after **Finish**. **Export** saves the tutorial as a file another IRIS-NG server can **Import**."
+    }
+  ]
+}

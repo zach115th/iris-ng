@@ -268,6 +268,9 @@
         Q.view = Q.vocab.views[Q.vocab.views.indexOf(view)];
         saveLayout({view: Q.view});
         if (Q.view === 'board') { Q.selected = null; closeDetailPane(); }
+        // iris-ng 2026-11-10: the List view's open detail hides the queue (aq--detail-open); Split always shows both, so
+        // the flag must not follow it there - the queue vanished when an alert opened in List was then split.
+        if (Q.view === 'split') { Q.detailOpen = false; }
         if ((Q.view === 'board' && !Q.board) || (Q.view !== 'board' && !Q.result)) { load(); return; }
         drawHead();
         drawMain();

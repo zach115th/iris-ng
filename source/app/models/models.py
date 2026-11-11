@@ -3219,3 +3219,63 @@ class CustomDashboard(db.Model):
     updated_at = Column(DateTime, nullable=False, server_default=text('now()'))
 
     owner = relationship('User', foreign_keys=[owner_id])
+
+
+def _tutorial_audience_check():
+    from app.models.tutorial_vocab import AUDIENCES
+    return "audience IN (%s)" % ', '.join("'%s'" % a for a in AUDIENCES)
+
+
+class Tutorial(db.Model):
+    """iris-ng 2026-11-10: a tutorial written on this server (models.tutorial_vocab, validated by business.tutorials).
+    A row with `builtin_key` is this server's version of a built-in tutorial: it replaces the built-in for everyone
+    while published and hides it while not; deleting the row brings the built-in back. A row without one is a team
+    tutorial. Server administrators edit them; every signed-in user runs the published ones meant for them."""
+    __tablename__ = 'tutorial'
+
+    id = Column(BigInteger, primary_key=True)
+    builtin_key = Column(String(64), nullable=True)
+    title = Column(Text, nullable=False)
+    summary = Column(Text, nullable=True)
+    duration = Column(String(24), nullable=True)
+    audience = Column(String(16), nullable=False, default='everyone', server_default=text("'everyone'"))
+    steps = Column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    published = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    created_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    updated_by = Column(ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    updated_at = Column(DateTime, nullable=False, server_default=text('now()'))
+
+    creator = relationship('User', foreign_keys=[created_by])
+    updater = relationship('User', foreign_keys=[updated_by])
+
+    __table_args__ = (
+        UniqueConstraint('builtin_key', name='uq_tutorial_builtin_key'),
+        CheckConstraint(_tutorial_audience_check(), name='ck_tutorial_audience'),
+    )
+
+
+class TutorialProgress(db.Model):
+    """iris-ng 2026-11-10: one row per user and tutorial (`tutorial_ref`: builtin-<key>, team-<id>, or 'preview' for
+    the editor's Try it): whether they completed it and, while it runs, where they are. At most one row per user runs
+    (the partial unique index). `snapshot` is the tutorial as it was when the run started, so an edit never moves a
+    learner mid-run; `vars` holds the values the run captured ({caseId}...). Personal state: it goes with the user."""
+    __tablename__ = 'tutorial_progress'
+
+    id = Column(BigInteger, primary_key=True)
+    user_id = Column(ForeignKey('user.id', ondelete='CASCADE'), nullable=False, index=True)
+    tutorial_ref = Column(String(80), nullable=False)
+    running = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    minimized = Column(Boolean, nullable=False, default=False, server_default=text('false'))
+    run_seq = Column(Integer, nullable=False, default=0, server_default=text('0'))
+    step = Column(Integer, nullable=False, default=0, server_default=text('0'))
+    vars = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    snapshot = Column(JSONB, nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, nullable=False, server_default=text('now()'))
+    completed_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'tutorial_ref', name='uq_tutorial_progress_user_ref'),
+        Index('uq_tutorial_progress_running', 'user_id', unique=True, postgresql_where=text('running')),
+    )

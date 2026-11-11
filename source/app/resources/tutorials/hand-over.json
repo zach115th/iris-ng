@@ -1,0 +1,70 @@
+{
+  "format": "iris-ng-tutorial/1",
+  "title": "Hand over: report and close a case",
+  "summary": "Generate the case report from a template, ask for a review, then close the case with its outcome recorded.",
+  "duration": "~5 min",
+  "audience": "everyone",
+  "steps": [
+    {
+      "title": "Welcome",
+      "body": "Handing a case over means a report for its reader and a closed case with its outcome recorded. A case closes only once it has a **reviewer**.\n\nYou will practise on a new case for the **IrisInitialClient** test customer; the last step offers to delete it."
+    },
+    {
+      "title": "Open a practice case",
+      "body": "On the case queue, click **Open a case**.",
+      "anchor": ["case-new"],
+      "goTo": "/overview",
+      "waitFor": {"kind": "element", "anchor": ["case-form"]}
+    },
+    {
+      "title": "Fill in the case",
+      "body": "Fill in the case and click **Create**.",
+      "anchor": ["case-create"],
+      "fills": [
+        {"label": "Case name", "anchor": "#case_name", "value": "Tutorial - hand-over practice"},
+        {"label": "Short description", "anchor": "#case_description", "value": "A case to practise the hand-over on."},
+        {"label": "Customer", "anchor": "#case_customer", "value": "IrisInitialClient"},
+        {"label": "Sector", "anchor": "#iris-newcase-ciip", "value": "Information Technology"}
+      ],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/api/v2/cases", "capture": {"caseId": "case_id"}}
+    },
+    {
+      "title": "Open its summary",
+      "body": "Open case #{caseId}: choose **Switch to newly created case**.",
+      "goTo": "/case?cid={caseId}",
+      "waitFor": {"kind": "page", "path": "/case?cid={caseId}"}
+    },
+    {
+      "title": "Generate the report",
+      "body": "Open the **...** menu at the top right of the case and click **Generate report**.",
+      "anchor": ["case-report", "case-menu"],
+      "waitFor": {"kind": "element", "anchor": ["#modal_select_report .modal-dialog"]}
+    },
+    {
+      "title": "Pick a template",
+      "body": "Pick a report template and click **Generate**: the report opens in a new tab. No template in the list? An administrator uploads one under **Settings -> Report Templates**; close the dialog and click Next.",
+      "anchor": ["#select_report"]
+    },
+    {
+      "title": "Ask for a review",
+      "body": "In the **...** menu, click **Request review** and pick the reviewer. For practice, pick yourself.",
+      "anchor": ["#submit_set_reviewer", "case-request-review", "case-menu"],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/case/review/update"}
+    },
+    {
+      "title": "Record the outcome and close",
+      "body": "In the **...** menu, open **Edit Case Details** and click **Edit**. Set the **Outcome** and set the **State** to **Closed**, then click **Save**.",
+      "anchor": ["#save_case_info", "case-edit", "case-menu"],
+      "fills": [
+        {"label": "Outcome", "anchor": "#case_quick_status", "value": "Not applicable"},
+        {"label": "State", "anchor": "#case_state", "value": "Closed"}
+      ],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/manage/cases/update/{caseId}"}
+    },
+    {
+      "title": "Clean up",
+      "body": "Case #{caseId} is closed with its outcome and reviewer recorded. It was for practice: delete it now, or keep it to look around.",
+      "cleanup": [{"kind": "case", "var": "caseId"}]
+    }
+  ]
+}

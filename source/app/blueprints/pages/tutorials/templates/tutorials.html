@@ -1,0 +1,22 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Tutorials {% endblock title %}
+
+{% block content %}
+    {{ form.hidden_tag() }}
+    <div class="page-inner iris-tut-page" id="iris-tut-list">
+        <div class="iris-tut-head">
+            <h1 class="iris-tut-h1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+                Tutorials</h1>{{ help_tip('tutorials.page', cls='ml-2') }}
+            <p class="iris-tut-lead">Step-by-step walkthroughs that run on this server. You do every step yourself on
+                the real pages; a panel says what to do and moves on once it is done. They create real data:
+                the tutorials that open a case use the IrisInitialClient test customer and offer to delete what
+                they created at the end.</p>
+        </div>
+        <div id="iris-tut-cards" class="iris-tut-cards" aria-live="polite"></div>
+        <div class="iris-tut-toast" role="status" hidden></div>
+    </div>
+    <script src="/static/assets/js/iris/tutorials_pages.js"></script>
+    <script>window.IrisTutorialPages.mountList(document.getElementById('iris-tut-list'), {{ state|tojson }});</script>
+{% endblock content %}

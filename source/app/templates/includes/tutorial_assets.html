@@ -1,0 +1,10 @@
+{#- iris-ng tutorials (2026-11-10), in <head> of every layout with a nav (never the guest portal's). The running
+   tutorial is embedded here so its panel is on the page from the first frame - the pages are full page loads, and a
+   fetch would draw the panel late on every one. tutorial_runner.js loads early on purpose: it watches the page's
+   own requests for the steps that wait on one. -#}
+{%- set _tut = tutorial_assets() %}
+{%- if _tut.enabled %}
+	<link rel="stylesheet" href="/static/assets/css/tutorials.css">
+	<script>window.IrisTutorialState = {{ _tut.state|tojson }};</script>
+	<script src="/static/assets/js/iris/tutorial_runner.js"></script>
+{%- endif %}

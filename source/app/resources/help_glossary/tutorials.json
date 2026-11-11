@@ -1,0 +1,50 @@
+{
+  "group": "Tutorials",
+  "order": 120,
+  "terms": {
+    "tutorials.page": {
+      "title": "Tutorials",
+      "text": "Step-by-step walkthroughs that run on the real pages. A panel at the bottom right says what to do, highlights where, and moves on by itself once the step is done; Fill buttons type the example values for you.\n\nOne tutorial runs at a time. Closing the panel stops it, and Continue picks it up where you left it. Completed tutorials stay marked, and Start again runs one from the beginning.\n\nThey create real data: the ones that open a case use the IrisInitialClient test customer, which dashboards leave out, and offer at the end to delete what they created.",
+      "aka": ["walkthrough", "guided tour", "onboarding", "training"]
+    },
+    "tutorials.manage": {
+      "title": "Managing tutorials",
+      "text": "Server administrators write tutorials here and adapt the built-in ones. Your version of a built-in tutorial replaces it for everyone; Restore brings the shipped version back.\n\nA tutorial written by your team appears under Tutorials once published. Export saves one as a file another IRIS-NG server can Import (it arrives as a draft).",
+      "aka": ["tutorial editor", "import tutorial", "export tutorial"]
+    },
+    "tutorials.published": {
+      "title": "Published",
+      "text": "Only published tutorials appear under Tutorials. Unpublishing your version of a built-in tutorial hides that tutorial for everyone until you publish it again or restore the shipped version. A published tutorial needs at least one step."
+    },
+    "tutorials.audience": {
+      "title": "Who sees it",
+      "text": "Everyone: every signed-in user. Administrators: only users with the server administrator permission, for procedures that need it (writing tutorials, Settings pages). Guests of the guest portal never see tutorials."
+    },
+    "tutorials.highlight": {
+      "title": "Highlight",
+      "text": "What the step points at, one entry per line: a data-tour name (case-new, case-quick-add, case-tab-iocs, case-menu...) or a CSS selector (#case_name). The first entry visible on the page is outlined, so list the target inside a dialog first and the button that opens it after.\n\n{name} inserts a value captured by an earlier step, for example [data-alert='{alertId}']."
+    },
+    "tutorials.goto": {
+      "title": "\"Take me there\" link",
+      "text": "A page on this server, shown as a link while the learner is on another page: /case/ioc?cid={caseId} opens the IOC tab of the case the tutorial captured. It starts with one slash; other sites are not allowed."
+    },
+    "tutorials.done_when": {
+      "title": "Done when",
+      "text": "What moves the tutorial to the next step.",
+      "items": [
+        {"name": "The learner clicks Next", "text": "For explanations."},
+        {"name": "Something appears on the page", "text": "An element becomes visible, for example a form opening."},
+        {"name": "A page opens", "text": "The browser is on that path; * matches any segment or query value. It can capture a query parameter (cid as caseId)."},
+        {"name": "IRIS saves something", "text": "The page's own request with that method and path succeeds. It can capture fields of the reply (case_id, or data.alert_id for the older routes) as values for the later steps."}
+      ]
+    },
+    "tutorials.fills": {
+      "title": "Fill buttons",
+      "text": "A value the learner can type with one click: the label, the field (a data-tour name or a CSS selector) and the value. Text fields, lists (the option's text or value), check boxes (true / false) and editors are filled. Values may use {name} from earlier steps."
+    },
+    "tutorials.cleanup": {
+      "title": "Clean-up",
+      "text": "Offers to delete what the tutorial created: the case, war room or catalogue vulnerability whose id an earlier step captured. The offer only stands for one the learner created after the tutorial started, and with the normal right to delete it (full access to the case, lead of the room, server administrator for the catalogue)."
+    }
+  }
+}

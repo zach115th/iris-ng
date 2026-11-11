@@ -1,0 +1,49 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Tutorials {% endblock title %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'tutorials' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content iris-tut-page" id="iris-tut-manage">
+    {{ form.hidden_tag() }}
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex align-items-center justify-content-between w-100 flex-wrap">
+                <div>
+                    <div class="card-title">Tutorials {{ help_tip('tutorials.manage') }}</div>
+                    <div class="text-muted"><small>Guided walkthroughs of your own procedures. Published ones appear
+                        under Tutorials for every user they are meant for.</small></div>
+                </div>
+                <div class="iris-tut-actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-tut-act="refresh">Refresh</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-tut-act="import" data-tour="tut-import">Import</button>
+                    <input type="file" id="iris-tut-import-file" accept=".json,application/json" hidden>
+                    <a class="btn btn-sm btn-primary" href="/manage/tutorials/new" data-tour="tut-new">+ New tutorial</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <h2 class="iris-tut-kicker">Built into IRIS</h2>
+            <p class="text-muted iris-tut-note">Edit one to adapt it to your team: your version replaces it for
+                everyone. Unpublish your version to hide the tutorial; Restore brings the shipped version back.</p>
+            <div id="iris-tut-builtin"></div>
+            <h2 class="iris-tut-kicker mt-4">Written by your team</h2>
+            <div id="iris-tut-team"></div>
+            <div id="iris-tut-issues" class="iris-tut-issues" hidden></div>
+        </div>
+    </div>
+    <div class="iris-tut-toast" role="status" hidden></div>
+</div>
+</div>
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/js/iris/tutorials_pages.js"></script>
+<script>window.IrisTutorialPages.mountManage(document.getElementById('iris-tut-manage'), {{ state|tojson }});</script>
+{% endblock javascripts %}

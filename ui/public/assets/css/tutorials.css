@@ -1,0 +1,219 @@
+/* iris-ng tutorials (2026-11-10): the runner panel (tutorial_runner.js, every page), the Tutorials list and
+   Settings -> Tutorials with its editor (tutorials_pages.js). Above Bootstrap's modals (1050) and below the help
+   popovers (1070): a step often points into a dialog. */
+
+.iris-tut-runner { font-family: inherit; }
+
+.iris-tut-ring {
+    position: fixed;
+    display: none;
+    z-index: 1064;
+    border: 2px solid #8b5cf6;
+    border-radius: 8px;
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.25), 0 0 18px rgba(139, 92, 246, 0.45);
+    pointer-events: none;
+    transition: top 0.08s linear, left 0.08s linear, width 0.08s linear, height 0.08s linear;
+}
+
+.iris-tut-panel {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1065;
+    box-sizing: border-box;
+    width: 384px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 96px);
+    display: flex;
+    flex-direction: column;
+    background: #17171d;
+    color: #e4e4ec;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+.iris-tut-panel[hidden], .iris-tut-pill[hidden] { display: none; }
+/* tutorial_runner.js dodge(): the highlighted element is under the bottom-right corner. */
+.iris-tut-runner--left .iris-tut-panel, .iris-tut-runner--left .iris-tut-pill { right: auto; left: 16px; }
+
+.iris-tut-p-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 12px 8px 16px;
+    color: #b9b9c8;
+    font-size: 12.5px;
+}
+.iris-tut-p-head > svg { color: #a78bfa; flex: 0 0 auto; }
+.iris-tut-p-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.iris-tut-p-name em { color: #fbbf24; font-style: normal; }
+.iris-tut-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px;
+    background: transparent; color: #b9b9c8; cursor: pointer;
+}
+.iris-tut-icon:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.iris-tut-icon:focus-visible, .iris-tut-btn:focus-visible, .iris-tut-link:focus-visible, .iris-tut-pill:focus-visible {
+    outline: 2px solid #8b5cf6; outline-offset: 1px;
+}
+
+.iris-tut-p-bar { height: 3px; margin: 0 16px; background: rgba(255, 255, 255, 0.08); border-radius: 2px; overflow: hidden; }
+.iris-tut-p-bar > span { display: block; height: 100%; background: #7c6cf2; border-radius: 2px; }
+
+.iris-tut-p-main { padding: 12px 16px 4px 16px; overflow-y: auto; }
+.iris-tut-p-title { margin: 0 0 8px 0; font-size: 14.5px; font-weight: 700; color: #fff; }
+.iris-tut-p-body p { margin: 0 0 8px 0; }
+.iris-tut-p-body strong { color: #fff; }
+.iris-tut-p-body code, .iris-tut-fill-value {
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 12px;
+    color: #e4e4ec;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 4px;
+    padding: 1px 4px;
+}
+
+.iris-tut-fill {
+    display: flex; align-items: center; gap: 10px;
+    margin: 8px 0; padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+}
+.iris-tut-fill-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.iris-tut-fill-label { font-size: 11.5px; color: #a3a3b5; }
+.iris-tut-fill-value { background: none; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.iris-tut-cleanup { display: flex; flex-direction: column; gap: 6px; margin: 4px 0; }
+.iris-tut-cleanup:empty { display: none; }
+.iris-tut-muted { margin: 0; color: #a3a3b5; font-size: 12.5px; }
+.iris-tut-msg { margin: 6px 0; color: #fca5a5; font-size: 12.5px; }
+.iris-tut-msg[hidden] { display: none; }
+
+.iris-tut-p-foot {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 10px 16px 14px 16px;
+}
+.iris-tut-spacer { flex: 1 1 auto; }
+.iris-tut-goto { color: #93b4ff; font-size: 12.5px; text-decoration: underline; }
+.iris-tut-goto:hover { color: #c3d4ff; }
+.iris-tut-wait { display: inline-flex; align-items: center; gap: 6px; color: #a3a3b5; font-size: 12.5px; }
+.iris-tut-dot { width: 7px; height: 7px; border-radius: 50%; background: #7c9cff; animation: iris-tut-pulse 1.4s ease-in-out infinite; }
+@keyframes iris-tut-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .iris-tut-dot { animation: none; } .iris-tut-ring { transition: none; } }
+
+.iris-tut-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 14px; border: 1px solid #6d5ef0; border-radius: 7px;
+    background: #6d5ef0; color: #fff; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.iris-tut-btn:hover { background: #7d70f3; }
+.iris-tut-btn--ghost { background: transparent; border-color: rgba(255, 255, 255, 0.18); color: #e4e4ec; }
+.iris-tut-btn--ghost:hover { background: rgba(255, 255, 255, 0.08); }
+.iris-tut-btn--danger { background: transparent; border-color: #ef4444; color: #fca5a5; align-self: flex-start; }
+.iris-tut-btn--danger:hover { background: rgba(239, 68, 68, 0.14); }
+.iris-tut-link { padding: 0; border: 0; background: none; color: #a3a3b5; font-size: 12px; text-decoration: underline; cursor: pointer; }
+.iris-tut-link:hover { color: #e4e4ec; }
+
+.iris-tut-pill {
+    position: fixed; right: 16px; bottom: 16px; z-index: 1065;
+    display: inline-flex; align-items: center; gap: 8px;
+    max-width: calc(100vw - 32px);
+    padding: 8px 14px; border: 1px solid rgba(139, 92, 246, 0.6); border-radius: 999px;
+    background: #17171d; color: #e4e4ec; font-size: 12.5px; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.iris-tut-pill > svg { color: #a78bfa; }
+.iris-tut-pill > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.iris-tut-toast-float, .iris-tut-toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 1066;
+    padding: 9px 16px; border-radius: 8px; background: #22223a; color: #fff;
+    border: 1px solid rgba(139, 92, 246, 0.5); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); font-size: 13px;
+}
+.iris-tut-toast[hidden] { display: none; }
+
+@media (max-width: 575px) {
+    .iris-tut-panel { right: 8px; left: 8px; bottom: 8px; width: auto; max-width: none; }
+    .iris-tut-pill { right: 8px; bottom: 8px; }
+}
+
+/* ------------------------------------------------------------ the Tutorials list */
+.iris-tut-page { color: #e4e4ec; }
+.iris-tut-head { max-width: 760px; margin: 0 auto 18px auto; }
+.iris-tut-h1 { display: inline-flex; align-items: center; gap: 10px; margin: 0; font-size: 22px; font-weight: 700; color: #fff; }
+.iris-tut-h1 > svg { color: #a78bfa; }
+.iris-tut-lead { margin: 8px 0 0 0; color: #b9b9c8; }
+.iris-tut-cards { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.iris-tut-card {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px;
+    padding: 16px 18px; border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 10px; background: #17171d;
+}
+.iris-tut-card-title { margin: 0; font-size: 15px; font-weight: 700; color: #fff; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.iris-tut-card-sum { grid-column: 1; margin: 0; color: #c4c4d2; }
+.iris-tut-card-meta { grid-column: 1; margin: 0; color: #9b9bb0; font-size: 12.5px; }
+.iris-tut-card-act { grid-column: 2; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.iris-tut-chip {
+    display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.16); color: #c4c4d2;
+}
+.iris-tut-chip--done { border-color: rgba(52, 211, 153, 0.45); color: #6ee7b7; }
+.iris-tut-chip--run { border-color: rgba(124, 156, 255, 0.55); color: #a5b8ff; }
+.iris-tut-chip--admin { border-color: rgba(251, 191, 36, 0.4); color: #fcd34d; }
+.iris-tut-empty { max-width: 760px; margin: 0 auto; color: #a3a3b5; }
+@media (max-width: 575px) {
+    .iris-tut-card { grid-template-columns: minmax(0, 1fr); }
+    .iris-tut-card-act { grid-column: 1; grid-row: auto; flex-direction: row; align-items: center; }
+}
+
+/* ------------------------------------------------------------ Settings -> Tutorials */
+.iris-tut-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.iris-tut-kicker { margin: 0 0 4px 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: #e4e4ec; }
+.iris-tut-note { margin: 0 0 10px 0; font-size: 12.5px; }
+.iris-tut-table { width: 100%; border-collapse: collapse; }
+.iris-tut-table th { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #9b9bb0; font-weight: 700; padding: 8px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); text-align: left; }
+.iris-tut-table td { padding: 9px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); vertical-align: middle; }
+.iris-tut-table td.iris-tut-num { white-space: nowrap; }
+.iris-tut-row-title { font-weight: 600; color: #fff; }
+.iris-tut-row-sum { color: #a3a3b5; font-size: 12.5px; }
+.iris-tut-row-acts { display: flex; justify-content: flex-end; gap: 4px; white-space: nowrap; }
+.iris-tut-status--edited { color: #93b4ff; }
+.iris-tut-status--hidden { color: #fbbf24; }
+.iris-tut-status--draft { color: #a3a3b5; }
+.iris-tut-status--published, .iris-tut-status--shipped { color: #c4c4d2; }
+.iris-tut-issues {
+    margin-top: 14px; padding: 10px 14px; border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 8px;
+    background: rgba(239, 68, 68, 0.08); color: #fecaca; font-size: 13px;
+}
+.iris-tut-issues[hidden] { display: none; }
+.iris-tut-issues ul { margin: 6px 0 0 18px; padding: 0; }
+
+.iris-tut-ed-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.iris-tut-ed-title { flex: 1 1 auto; margin: 0; }
+.iris-tut-back { color: #c4c4d2; display: inline-flex; }
+.iris-tut-back:hover { color: #fff; }
+.iris-tut-switch { display: inline-flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; color: #e4e4ec; font-size: 13px; }
+.iris-tut-banner {
+    margin-bottom: 14px; padding: 9px 12px; border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 8px;
+    color: #c4c4d2; font-size: 12.5px; background: rgba(255, 255, 255, 0.03);
+}
+.iris-tut-banner[hidden] { display: none; }
+.iris-tut-step { margin: 0 0 14px 0; border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 10px; background: #15151a; }
+.iris-tut-step-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.iris-tut-step-n {
+    flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(139, 92, 246, 0.18); color: #c4b5fd; font-size: 12px; font-weight: 700;
+}
+.iris-tut-step-head input { flex: 1 1 auto; }
+.iris-tut-step-body { padding: 12px; }
+.iris-tut-step-body label { font-size: 12.5px; font-weight: 600; color: #d4d4de; margin-bottom: 4px; }
+.iris-tut-hint { margin: 3px 0 0 0; color: #9b9bb0; font-size: 11.5px; }
+.iris-tut-sub { margin: 8px 0 0 0; padding: 8px 10px; border: 1px dashed rgba(255, 255, 255, 0.12); border-radius: 8px; }
+.iris-tut-sub-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; }
+.iris-tut-sub-row > * { flex: 1 1 140px; }
+.iris-tut-sub-row > .iris-tut-icon { flex: 0 0 auto; }
+.iris-tut-linkbtn { padding: 0; border: 0; background: none; color: #93b4ff; font-size: 12.5px; cursor: pointer; }
+.iris-tut-linkbtn:hover { text-decoration: underline; }
+.iris-tut-icon--danger { color: #f87171; }

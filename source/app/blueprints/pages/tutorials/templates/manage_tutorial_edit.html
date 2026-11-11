@@ -1,0 +1,68 @@
+{% extends "layouts/default.html" %}
+
+{% block title %} Tutorial {% endblock title %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="page-inner">
+{% set settings_active = 'tutorials' %}
+<div class="iris-msr-wrap">
+{% include 'includes/manage_settings_rail.html' %}
+<div class="iris-msr-content iris-tut-page" id="iris-tut-editor">
+    {{ form.hidden_tag() }}
+    <div class="card">
+        <div class="card-header iris-tut-ed-head">
+            <a class="iris-tut-back" href="/manage/tutorials" title="Back to Tutorials" aria-label="Back to Tutorials">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></a>
+            <div class="card-title iris-tut-ed-title" id="iris-tut-ed-name">Tutorial</div>
+            <div class="iris-tut-actions">
+                <label class="iris-tut-switch" data-tour="tut-published">
+                    <input type="checkbox" id="iris-tut-published"> <span>Published</span>
+                </label>{{ help_tip('tutorials.published') }}
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-tut-act="restore" hidden>Restore</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-tut-act="try" data-tour="tut-try">Try it</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-tut-act="export">Export</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-tut-act="delete" hidden>Delete</button>
+                <button type="button" class="btn btn-sm btn-primary" data-tut-act="save" data-tour="tut-save">Save</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="iris-tut-banner" id="iris-tut-ed-note" hidden></div>
+            <div class="form-row">
+                <div class="form-group col-md-9">
+                    <label for="iris-tut-f-title">Title</label>
+                    <input type="text" class="form-control" id="iris-tut-f-title" data-tour="tut-title" maxlength="{{ vocab.limits.title }}">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="iris-tut-f-duration">Duration</label>
+                    <input type="text" class="form-control" id="iris-tut-f-duration" placeholder="~5 min" maxlength="{{ vocab.limits.duration }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-9">
+                    <label for="iris-tut-f-summary">Summary</label>
+                    <textarea class="form-control" id="iris-tut-f-summary" rows="2" data-tour="tut-summary" maxlength="{{ vocab.limits.summary }}"></textarea>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="iris-tut-f-audience">Who sees it</label>{{ help_tip('tutorials.audience') }}
+                    <select class="form-control" id="iris-tut-f-audience">
+                        {% for a in vocab.audiences %}<option value="{{ a.value }}">{{ a.label }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div id="iris-tut-steps"></div>
+            <button type="button" class="btn btn-sm btn-outline-primary" data-tut-act="add-step" data-tour="tut-step-add">+ Add a step</button>
+            <div id="iris-tut-issues" class="iris-tut-issues" hidden></div>
+        </div>
+    </div>
+    <div class="iris-tut-toast" role="status" hidden></div>
+</div>
+</div>
+</div>
+{% endif %}
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/js/iris/tutorials_pages.js"></script>
+<script>window.IrisTutorialPages.mountEditor(document.getElementById('iris-tut-editor'), {{ state|tojson }}, {{ vocab|tojson }});</script>
+{% endblock javascripts %}

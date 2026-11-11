@@ -119,7 +119,7 @@
           <div class="tab-content">
                 <div class="tab-pane active" id="details">
                     <div class="container col-md-12">
-                        <form method="post" action="" id="form_new_event">
+                        <form method="post" action="" id="form_new_event" data-tour="event-form">
                             <div class="col-md-12 col-lg-12 col-sm-12">
                                 {{ form.hidden_tag() }}
                                 {# ---------------------------------------------------------
@@ -161,7 +161,7 @@
                                         <label for="event_tz" class="placeholder">TZ *</label>{{ help_tip('event.tz') }}
                                         <div class="d-flex" style="gap: 6px;">
                                             <input class="form-control" type="text" id="event_tz" {% if event.event_tz %} value="{{ event.event_tz }}" {% else %} value="+00:00" {% endif %}>
-                                            <button class="btn btn-sm btn-outline-white" type="button" title="Parse a date in any format" onclick="show_time_converter();return false;"><i class="fas fa-magic"></i></button>
+                                            <button class="btn btn-sm btn-outline-white" type="button" title="Parse a date in any format" data-tour="event-date-parse" onclick="show_time_converter();return false;"><i class="fas fa-magic"></i></button>
                                         </div>
                                     </div>
                                 </div>

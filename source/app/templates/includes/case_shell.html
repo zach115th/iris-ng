@@ -34,7 +34,7 @@
            (reviewer required before close — UI-only by maintainer decision,
            same as the edit modal). #}
         <div class="iris-cshell-menuwrap">
-            <button type="button" class="iris-cshell-chip iris-cshell-chipbtn" id="iris-cshell-state" style="display:none;" title="Change case state"></button>
+            <button type="button" class="iris-cshell-chip iris-cshell-chipbtn" id="iris-cshell-state" data-tour="case-state" style="display:none;" title="Change case state"></button>
             <div class="iris-cshell-menu" id="iris-cshell-statemenu" style="display:none;">
                 <div class="iris-cshell-mh">Change case state {{ help_tip('common.case_state', target='#iris-cshell-state') }}</div>
                 <div id="iris-cshell-statemenu-items"></div>
@@ -65,7 +65,7 @@
            the product — the bug is the same one an asset row shows for its
            linked IOC count. #}
         {% if cshell_primary_label %}
-        <button type="button" class="iris-cshell-primary" onclick="{{ cshell_primary_onclick }}">
+        <button type="button" class="iris-cshell-primary" data-tour="case-quick-add" onclick="{{ cshell_primary_onclick }}">
             {% if cshell_primary_icon == 'bug' %}
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>
             {% elif cshell_primary_icon == 'clock' %}
@@ -103,7 +103,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
         </button>
         <div class="iris-cshell-menuwrap">
-            <button type="button" class="iris-cshell-iconbtn" id="iris-cshell-more" title="Case actions">
+            <button type="button" class="iris-cshell-iconbtn" id="iris-cshell-more" data-tour="case-menu" title="Case actions">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
             </button>
             <div class="iris-cshell-menu" id="iris-cshell-menu" style="display:none;">
@@ -123,10 +123,10 @@
                 {{ cshell_tab_menu }}
                 {% endif %}
                 <div class="iris-cshell-mh">Manage Case</div>
-                <a href="#" onclick="case_detail('{{ _cs_cid }}');return false;">Edit Case Details</a>
+                <a href="#" data-tour="case-edit" onclick="case_detail('{{ _cs_cid }}');return false;">Edit Case Details</a>
                 {% if cshell_summary %}
                 <div class="iris-cshell-mh">Reports {{ help_tip('case.reports') }}</div>
-                <a href="#" onclick="report_template_selector();return false;">Generate report</a>
+                <a href="#" data-tour="case-report" onclick="report_template_selector();return false;">Generate report</a>
                 <a href="#" onclick="act_report_template_selector();return false;">Activity report</a>
                 <div class="iris-cshell-mh">Workflow {{ help_tip('case.pipelines') }}</div>
                 <a href="#" id="case_pipeline" onclick="case_pipeline_popup();return false;">Pipelines</a>
@@ -134,7 +134,7 @@
                 <div id="case_modal_quick_actions" class="iris-cshell-qa"></div>
                 {% if case.review_status is none or case.review_status.status_name == "Not reviewed" %}
                 <div class="iris-cshell-mh">Review {{ help_tip('review.request') }}</div>
-                <a href="#" id="request_review">Request review</a>
+                <a href="#" id="request_review" data-tour="case-request-review">Request review</a>
                 {% endif %}
                 {% else %}
                 <div class="iris-cshell-mh">Reports &amp; workflow</div>

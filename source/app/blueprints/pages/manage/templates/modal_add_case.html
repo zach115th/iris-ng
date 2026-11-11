@@ -11,7 +11,7 @@
                 Fields with an asterix are required. <br/>
                 Access to the case can be granted to other users once the case is created. Users pertaining to the customer will be able to see the case by default. {{ help_tip('common.case_access') }}<br/>
 
-                <form method="post" action='' id="form_new_case" autocomplete="off">
+                <form method="post" action='' id="form_new_case" autocomplete="off" data-tour="case-form">
                     {{ form.hidden_tag() }}
 
                     {# (i) icons: inside the prepend label where a field has one, after the
@@ -182,7 +182,7 @@
                 {% endif %}
             </div>
             <div class="col-12">
-                <button class="btn btn-outline-success ml-4 mt-5 float-right" id="submit_new_case_btn" onclick="submit_new_case();">Create</button>
+                <button class="btn btn-outline-success ml-4 mt-5 float-right" id="submit_new_case_btn" data-tour="case-create" onclick="submit_new_case();">Create</button>
             </div>
         </div>
 

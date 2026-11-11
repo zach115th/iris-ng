@@ -1,0 +1,77 @@
+{
+  "format": "iris-ng-tutorial/1",
+  "title": "Triage alerts from the keyboard",
+  "summary": "Use the split view to walk the alert queue with j and k, select with x, and escalate an alert into a case with e.",
+  "duration": "~5 min",
+  "audience": "everyone",
+  "steps": [
+    {
+      "title": "Welcome",
+      "body": "The alert queue is built for the keyboard: **j** and **k** move, **x** selects, **e** escalates the alert you are on into a case.\n\nYou will create a practice alert for the **IrisInitialClient** test customer and escalate it. The last step offers to delete the case it becomes."
+    },
+    {
+      "title": "Open the queue",
+      "body": "Open **Alerts** in the menu on the left.",
+      "anchor": ["#l_nav_tab a[href^='/alerts?']", "#l_nav_tab a[href^='/alerts']"],
+      "goTo": "/alerts",
+      "waitFor": {"kind": "page", "path": "/alerts"}
+    },
+    {
+      "title": "Create a practice alert",
+      "body": "Click **New alert**.",
+      "anchor": ["#aq-new"],
+      "waitFor": {"kind": "element", "anchor": ["#aq-na-title"]}
+    },
+    {
+      "title": "Fill it in",
+      "body": "Give it a title and pick the **customer**, a severity, a status and a classification, then click **Create alert**.",
+      "anchor": ["#aq-dlg-ok"],
+      "fills": [
+        {"label": "Title", "anchor": "#aq-na-title", "value": "[Tutorial] Sign-in from an unusual country"},
+        {"label": "Customer", "anchor": "#aq-na-customer", "value": "IrisInitialClient"},
+        {"label": "Severity", "anchor": "#aq-na-severity", "value": "Medium"},
+        {"label": "Status", "anchor": "#aq-na-status", "value": "New"}
+      ],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/alerts/add", "capture": {"alertId": "data.alert_id"}}
+    },
+    {
+      "title": "The split view",
+      "body": "Switch to the **Split** view: the queue on the left, the alert you are on to the right.",
+      "anchor": [".aq-view[data-view='split']"],
+      "waitFor": {"kind": "element", "anchor": [".aq-view--on[data-view='split']"]}
+    },
+    {
+      "title": "Move with j and k",
+      "body": "Press **j** to move down the queue and **k** to move up. Stop on your practice alert, **[Tutorial] Sign-in from an unusual country**, then click Next.",
+      "anchor": [".aq-row[data-alert='{alertId}']", "[data-alert='{alertId}']"]
+    },
+    {
+      "title": "Select with x",
+      "body": "Press **x**: the alert is selected and the selection bar appears, with the actions for every selected alert (status, owner, merge, close).",
+      "waitFor": {"kind": "element", "anchor": ["#aq-selbar"]}
+    },
+    {
+      "title": "Escalate with e",
+      "body": "With your practice alert still the one you are on, press **e**: the escalation form opens.",
+      "anchor": ["#aq-selbar"],
+      "waitFor": {"kind": "element", "anchor": ["#modalEscalateCaseTitle"]}
+    },
+    {
+      "title": "Escalate it",
+      "body": "The case title comes from the alert, and its IOCs and assets are ticked to come along. Pick a case template if you have one, then click the button at the bottom of the form.",
+      "anchor": ["#escalateOrMergeButton"],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/alerts/escalate/{alertId}", "capture": {"caseId": "data.case_id"}}
+    },
+    {
+      "title": "Open the case",
+      "body": "The alert is now case #{caseId}, and the alert shows as escalated in the queue. Open the case.",
+      "goTo": "/case?cid={caseId}",
+      "waitFor": {"kind": "page", "path": "/case?cid={caseId}"}
+    },
+    {
+      "title": "Clean up",
+      "body": "Case #{caseId} was for practice. Delete it now, or keep it to look around: cases of IrisInitialClient count in no dashboard. The practice alert stays in the queue as escalated.",
+      "cleanup": [{"kind": "case", "var": "caseId"}]
+    }
+  ]
+}

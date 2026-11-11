@@ -1,0 +1,114 @@
+{
+  "format": "iris-ng-tutorial/1",
+  "title": "Run your first investigation",
+  "summary": "Open a case, add several IOCs at once, put a raw log date on the timeline, and hand a task to a colleague.",
+  "duration": "~8 min",
+  "audience": "everyone",
+  "steps": [
+    {
+      "title": "Welcome",
+      "body": "A **case** holds everything about one investigation: indicators, timeline, tasks, notes, evidence. You will open one and fill it the quick way.\n\nEverything you create is real data. The case goes to the **IrisInitialClient** test customer, which dashboards and statistics leave out, and the last step offers to delete it."
+    },
+    {
+      "title": "Open a case",
+      "body": "On the case queue, click **Open a case**.",
+      "anchor": ["case-new"],
+      "goTo": "/overview",
+      "waitFor": {"kind": "element", "anchor": ["case-form"]}
+    },
+    {
+      "title": "Fill in the case",
+      "body": "Give it a name and a short description, pick the **customer** and at least one **sector**, then click **Create**. The Fill buttons type the values for you.",
+      "anchor": ["case-create"],
+      "fills": [
+        {"label": "Case name", "anchor": "#case_name", "value": "Tutorial - phishing with a malicious link"},
+        {"label": "Short description", "anchor": "#case_description", "value": "A user clicked a link in a fake invoice email."},
+        {"label": "Customer", "anchor": "#case_customer", "value": "IrisInitialClient"},
+        {"label": "Sector", "anchor": "#iris-newcase-ciip", "value": "Information Technology"}
+      ],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/api/v2/cases", "capture": {"caseId": "case_id"}}
+    },
+    {
+      "title": "Go to the IOCs",
+      "body": "Case #{caseId} is open. **IOCs** are the indicators of compromise: domains, IPs, hashes, accounts. Open the case, then its **IOC** tab.",
+      "anchor": ["case-tab-iocs"],
+      "goTo": "/case/ioc?cid={caseId}",
+      "waitFor": {"kind": "page", "path": "/case/ioc?cid={caseId}"}
+    },
+    {
+      "title": "The section button",
+      "body": "The highlighted button always adds the kind of item of the tab you are on: an IOC here, an event on the Timeline, a task on Tasks. Click **Add IOC**.",
+      "anchor": ["case-quick-add"],
+      "waitFor": {"kind": "element", "anchor": ["#ioc_value"]}
+    },
+    {
+      "title": "Several IOCs at once",
+      "body": "With **One IOC per line** ticked, each line becomes its own IOC: paste a whole list from a report or a mail header. Pick the type **domain** and a TLP, then click **Add IOC**.",
+      "anchor": ["#ioc_value"],
+      "fills": [
+        {"label": "Type", "anchor": "#ioc_type_id", "value": "domain"},
+        {"label": "TLP", "anchor": "#ioc_tlp_id", "value": "amber"},
+        {"label": "Two domains", "anchor": "#ioc_value", "value": "invoice-portal.example.net\ncdn-update.example.org"}
+      ],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/api/v2/cases/{caseId}/iocs"}
+    },
+    {
+      "title": "Go to the timeline",
+      "body": "The **timeline** tells what happened, in order. Open it.",
+      "anchor": ["case-tab-timeline"],
+      "goTo": "/case/timeline?cid={caseId}",
+      "waitFor": {"kind": "page", "path": "/case/timeline?cid={caseId}"}
+    },
+    {
+      "title": "Add an event",
+      "body": "Same button, same place: click **Add event**.",
+      "anchor": ["case-quick-add"],
+      "waitFor": {"kind": "element", "anchor": ["#event_title"]}
+    },
+    {
+      "title": "Paste the date as it is",
+      "body": "No need to retype dates from logs. Click the **wand** next to the time, paste the date exactly as the log prints it, and click **Submit**: the date, time and time zone are filled in.",
+      "anchor": ["#event_date_convert_input", "event-date-parse"],
+      "fills": [
+        {"label": "Log date", "anchor": "#event_date_convert_input", "value": "Oct 19 08:42:17 2026"}
+      ],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/case/timeline/events/convert-date"}
+    },
+    {
+      "title": "Save the event",
+      "body": "Give the event a title. You can also link it to the IOCs you just added, so it shows on their page. Then click **Add event** at the bottom of the form.",
+      "anchor": ["#submit_new_event"],
+      "fills": [
+        {"label": "Title", "anchor": "#event_title", "value": "User opens the fake invoice link"}
+      ],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/case/timeline/events/add"}
+    },
+    {
+      "title": "Go to the tasks",
+      "body": "An investigation is shared work. Open **Tasks**.",
+      "anchor": ["case-tab-tasks"],
+      "goTo": "/case/tasks?cid={caseId}",
+      "waitFor": {"kind": "page", "path": "/case/tasks?cid={caseId}"}
+    },
+    {
+      "title": "Hand out a task",
+      "body": "Click **Add task**, give it a title and a status, and pick who it is **assigned** to. Then click **Add task** at the bottom of the form.",
+      "anchor": ["#task_assignees_id", "case-quick-add"],
+      "fills": [
+        {"label": "Title", "anchor": "#task_title", "value": "Block both domains on the proxy"},
+        {"label": "Status", "anchor": "#task_status_id", "value": "To do"}
+      ],
+      "waitFor": {"kind": "request", "method": "POST", "path": "/api/v2/cases/{caseId}/tasks"}
+    },
+    {
+      "title": "Notes, and what comes next",
+      "body": "**Notes** hold the write-up of the investigation. The **Summary** tab gathers the case, and its **...** menu turns it into a report. Close the case once the work is done: the tutorial **Hand over: report and close a case** walks through that.",
+      "anchor": ["case-tab-notes"]
+    },
+    {
+      "title": "Clean up",
+      "body": "Case #{caseId} was for practice. Delete it now, or keep it to look around: cases of IrisInitialClient count in no dashboard.",
+      "cleanup": [{"kind": "case", "var": "caseId"}]
+    }
+  ]
+}

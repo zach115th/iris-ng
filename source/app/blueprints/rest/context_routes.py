@@ -228,6 +228,34 @@ def help_tips():
     return dict(help_tip=_help_tip, help_assets=_help_assets)
 
 
+def _tutorial_assets():
+    """templates/includes/tutorial_assets.html's data (iris-ng 2026-11-10): the signed-in user's running tutorial,
+    embedded so the panel is there from the first frame on every page. {'enabled': False} for nobody signed in and
+    for the guest portal. run None = no tutorial running; looked False = the read failed (the runner fetches)."""
+    if _help_viewer() not in ('user', 'off'):
+        return {'enabled': False}
+    from app.blueprints.rest.v2.tutorials import viewer
+    from app.business import tutorials as tb
+    state = {'looked': True, 'run': None, 'csrf': ''}
+    try:
+        state['run'] = tb.run_state(viewer())
+    except Exception as exc:  # noqa: BLE001 - a tutorial must not break a page
+        db.session.rollback()
+        app.logger.warning('Tutorial state not embedded: %s', exc)
+        state['looked'] = False
+    try:
+        from flask_wtf.csrf import generate_csrf
+        state['csrf'] = generate_csrf()
+    except Exception:  # noqa: BLE001
+        state['csrf'] = ''
+    return {'enabled': True, 'state': state}
+
+
+@app.context_processor
+def tutorial_assets():
+    return dict(tutorial_assets=_tutorial_assets)
+
+
 def _update_user_case_ctx():
     """
     Retrieve a list of cases for the case selector
