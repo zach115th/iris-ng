@@ -237,8 +237,24 @@
         return (d && d.message) || ('The server answered ' + (res ? res.status : 'nothing'));
     }
 
+    // The copy is page text, and it carries values captured from the address: it is rebuilt before use, the run and
+    // the step as whole numbers (parsed, never the stored value) and each value under the rules of a capture
+    // (code scanning #54).
     function readPending() {
-        try { return JSON.parse(window.sessionStorage.getItem(PENDING) || 'null'); } catch (e) { return null; }
+        var raw;
+        try { raw = JSON.parse(window.sessionStorage.getItem(PENDING) || 'null'); } catch (e) { return null; }
+        if (!raw) { return null; }
+        var stored = raw.vars || {};
+        var vars = {};
+        Object.keys(stored).forEach(function (k) {
+            var v = capturedValue(stored[k]);
+            if (v !== undefined) { vars[k] = v; }
+        });
+        return {run: wholeNumber(raw.run), step: wholeNumber(raw.step), vars: vars};
+    }
+    function wholeNumber(v) {
+        var n = parseInt(v, 10);
+        return n === v ? n : null;
     }
     function writePending(v) {
         try {
@@ -504,7 +520,8 @@
         if (!R || !R.steps || !R.total) { teardown(); return; }
         ensureUi();
         var st = cur();
-        var label = esc(R.title) + ' · ' + (R.step + 1) + '/' + R.total;
+        // The counts are escaped too: numbers from the server, but markup is only ever built from escaped values (#54).
+        var label = esc(R.title) + ' · ' + esc(R.step + 1) + '/' + esc(R.total);
         if (R.minimized) {
             ui.panel.hidden = true;
             ui.pill.hidden = false;
@@ -532,7 +549,7 @@
             '<button type="button" class="iris-tut-icon" data-tut="close" title="Stop the tutorial" aria-label="Stop the tutorial">' +
             '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>' +
             '</header>' +
-            '<div class="iris-tut-p-bar" role="progressbar" aria-valuemin="1" aria-valuemax="' + R.total + '" aria-valuenow="' + (R.step + 1) + '"><span style="width:' + pct + '%"></span></div>' +
+            '<div class="iris-tut-p-bar" role="progressbar" aria-valuemin="1" aria-valuemax="' + esc(R.total) + '" aria-valuenow="' + esc(R.step + 1) + '"><span style="width:' + pct + '%"></span></div>' +
             '<div class="iris-tut-p-main" aria-live="polite">' +
             '<h3 class="iris-tut-p-title">' + esc(subst(st.title, plain)) + '</h3>' +
             '<div class="iris-tut-p-body">' + md(st.body) + '</div>';
