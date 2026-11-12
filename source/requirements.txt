@@ -31,7 +31,7 @@ python-dateutil==2.9.0.post0
 python-gnupg==0.5.7
 pyminizip~=0.2.6
 # ICS form export: fills the bundled FEMA PDFs (business/war_room_ics_pdf.py)
-pypdf==6.21.4
+pypdf==7.0.0
 # Vulnerability catalogue: CVSS 2.0 / 3.x / 4.0 base scores from a vector (business/vulnerabilities.py)
 cvss==3.6
 PyJWT==2.15.1
