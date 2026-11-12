@@ -92,6 +92,16 @@ updates:
       # uses only dateutil.parser; 3.0 mainly rewrites dateutil.tz.
       - dependency-name: "python-dateutil"
         versions: [">=3.0.0"]
+      # celery 5.7's database result backend encodes results with
+      # result_serializer (json here) instead of pickling them, and the module
+      # hooks, the import pipelines and the AI job runner return an
+      # IrisInterfaceStatus, which JSON cannot encode: each of those tasks would
+      # be stored as FAILURE (EncodeError) and the DIM Tasks modal would lose the
+      # module's verdict and logs, although the work itself still runs
+      # (reproduced on Dependabot #182). 5.6.x patches still come through. Lift
+      # this together with a JSON-safe status for those tasks.
+      - dependency-name: "celery"
+        versions: [">=5.7.0"]
     groups:
       python-minor-patch:
         patterns:
