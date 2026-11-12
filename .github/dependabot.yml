@@ -102,6 +102,15 @@ updates:
       # this together with a JSON-safe status for those tasks.
       - dependency-name: "celery"
         versions: [">=5.7.0"]
+      # pymisp 3.0 requires python-dateutil>=3.0.0, so it is UNINSTALLABLE here
+      # (Dependabot #184's app image build failed on it): this project pins
+      # python-dateutil 2.9.0.post0 because graphene 3.4.3 (the newest, behind
+      # /graphql) requires python-dateutil<3 - the python-dateutil ignore above.
+      # celery 5.7 pins python-dateutil==2.9.0.post0, so pymisp 3 and celery 5.7
+      # exclude each other as well. 2.5.x updates still come through. Lift this
+      # together with the python-dateutil one.
+      - dependency-name: "pymisp"
+        versions: [">=3.0.0"]
     groups:
       python-minor-patch:
         patterns:
