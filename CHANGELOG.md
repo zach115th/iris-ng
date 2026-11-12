@@ -11,6 +11,53 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.13.2] — 2026-11-12
+
+A dependency release. **No schema change** — the database head stays at `e4b9c2a7f5d1`. Only the app image changes
+(three Python packages, and of the built browser files only the Markdown renderer); the nginx and database images, and
+the guest-portal tunnel agent, do not change.
+
+### Security
+- **pypdf 6.21.4 → 7.0.1** fixes GHSA-fhff-j4m8-439h, GHSA-rfv5-695j-j993, GHSA-59jv-x5x2-gg4c and GHSA-cmpx-464x-82c3
+  (memory use while reading crafted PDFs) and GHSA-mwj3-fpmc-hjcv (low). IRIS uses pypdf only to fill its own bundled
+  FEMA ICS forms, so none of these was reachable; the exported forms are unchanged.
+- **The UI build tool Vite moves to 8.3.7** (GHSA-p4f5-76q4-ffq7, critical). Only a Vite development server exposed to
+  the network was affected; IRIS images build the UI with `vite build` and never run a development server, so
+  installations were not exposed. Running `npm run dev` in `ui/` was the only way to start one.
+
+### Fixed
+- **Notes with many unmatched `*`, `_` or `~` characters rendered slowly** (Markdown renderer marked 18.1.2 → 18.1.3).
+  The unmatched markers were scanned quadratically: a note of a few thousand of them could keep the browser busy for
+  several seconds while it rendered; it now takes milliseconds.
+
+### Changed
+- **Markdown rendering** (marked 18.1.3) follows the CommonMark / GFM rules more closely in a few corner cases: a
+  `www.` link starts only at a word boundary (`xwww.example.org` is no longer a link), a setext heading underline or a
+  task-list checkbox followed by a tab is recognised, an escaped `)` no longer closes a link, and a lazy line after a
+  table in a quote or after an HTML block in a list item ends that block.
+- **SQLAlchemy 2.0.55 → 2.0.57.** 2.0.56 fixes the parameters generated for an `IN` list taking the name of another
+  parameter of the same query and silently replacing its value; no IRIS query is known to have been affected.
+- **Flask-SocketIO 5.7.1 → 5.7.2** (only the routing of an event named `*` to a catch-all handler changes; IRIS has
+  none).
+- UI build tooling: Vite 8.3.7 (rolldown 1.2.19), eslint-plugin-svelte 3.24.1, postcss 8.5.32. End-to-end harness:
+  dotenv 18.0.10, @playwright/test 1.65.0. The built UI files are byte-identical apart from the Markdown renderer.
+
+### Removed
+- **The unused Tailwind CSS / shadcn-svelte scaffolding in `ui/`** (Tailwind, autoprefixer, their configuration, an
+  unused `App.svelte` and component folder). No shipped page used it: the built UI is byte-identical without it.
+  Tailwind 4, which Dependabot proposed, would have stopped the UI from building.
+
+### Held back
+- **celery stays on 5.6.x.** celery 5.7 stores task results as JSON, and the module hooks, import pipelines and AI
+  jobs return a status JSON cannot encode: DIM Tasks would show each of them as failed. Lifted once that status is
+  JSON-safe.
+- **pymisp stays on 2.5.x.** pymisp 3 needs python-dateutil 3, which graphene (behind `/graphql`) does not accept yet.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.13.2`, or the 2.13.2 images / chart 1.13.2). No migration of its
+own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on 2.11.x 2.12.0's
+`b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does).
+
 ## [IRIS-NG-v2.13.1] — 2026-11-11
 
 A security hardening fix for the tutorial panel. **No schema change** — the database head stays at `e4b9c2a7f5d1`.
