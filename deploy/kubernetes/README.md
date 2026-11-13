@@ -1,125 +1,84 @@
-# Prerequisites    
-- Kubernetes cluster must be on the running stage (Kubernetes 1.26+)     
-- Helm 3.1.0      
+# IRIS-NG on Kubernetes (Helm)
 
-# Installing the Charts    
+The chart in `charts/` deploys the IRIS-NG app, its worker and its AI worker, PostgreSQL, RabbitMQ, and an
+Ingress in front of the app. It pulls the published images (`ghcr.io/zach115th/iriswebapp_app` and
+`ghcr.io/zach115th/iriswebapp_db`) at the chart's `appVersion`, so nothing needs to be built. There is no nginx
+pod: your Ingress controller terminates TLS and talks to the app directly.
 
-## Installing Nginx Ingress Controller 
+## Prerequisites
 
-The Ingress is a Kubernetes resource that lets you configure an HTTP load balancer for applications running on Kubernetes, represented by one or more Services. Such a load balancer is necessary to deliver those applications to clients outside of the Kubernetes cluster
+- **A Kubernetes version your provider still supports.** The chart needs 1.19 or later (`kubeVersion:
+  ">=1.19.0-0"`, for the `networking.k8s.io/v1` Ingress); it was tested on kind v0.33.0 (Kubernetes
+  v1.37.0) with Traefik.
+- **Helm 4.** Helm 3 still works, but its security fixes end on 2027-02-10.
+- **An Ingress controller, and its IngressClass** (`kubectl get ingressclass`). ingress-nginx, which earlier
+  versions of this guide installed, was retired in March 2026 and receives no more fixes; use a maintained
+  controller, for example Traefik, HAProxy Ingress, the F5 NGINX Ingress Controller, Contour, or your cloud
+  provider's.
+- **A default StorageClass** for the database volume (20 GiB, ReadWriteOnce), or set
+  `postgres.persistence.storageClass`.
 
-The Ingress resource supports the following features:
+`make check-dependencies` installs Helm 4 and kubectl when they are missing.
 
-⦿  Content-based routing:
+## Configure
 
-- `Host-based routing:` For example, routing requests with the host header foo.example.com to one group of services and the host header bar.example.com to another group.
+Copy `charts/values.yaml` and change at least:
 
-- `Path-based routing:` For example, routing requests with the URI that starts with /serviceA to service A and requests with the URI that starts with /serviceB to service B.
+- **The passwords and keys.** `POSTGRES_PASSWORD` and `POSTGRES_ADMIN_PASSWORD` appear under `postgres`,
+  `irisapp`, `irisworker` and `irisaiworker` - give each the same value in all four. `IRIS_SECRET_KEY` and
+  `IRIS_SECURITY_PASSWORD_SALT` appear under the three app sections, also the same in each. `IRIS_ADM_PASSWORD`
+  (under `irisapp`) is the first administrator's password.
+- **`ingress.hosts[0].host`** and **`ingress.tls[0].hosts`**: your hostname.
+- **`ingress.className`**: your controller's IngressClass. Leave it empty to use the cluster's default class
+  (Kubernetes fills it in when the Ingress is created).
+- **`ingress.tls[0].secretName`**: a TLS Secret for that hostname in the release's namespace (`kubectl create
+  secret tls ...`). Remove `tls` if your controller provides the certificate itself.
 
-⦿ **TLS/SSL** termination for each hostname, such as foo.example.com.
+### Settings that depend on your controller
 
-Before installing Iris-web install the Nginx ingress controller
+The chart sets nothing controller-specific; put such settings in `ingress.annotations` (values are quoted for
+you).
+
+- **Uploads.** Timeline imports and datastore files can be hundreds of megabytes. A controller that limits the
+  request body needs that limit raised for this Ingress - the F5 NGINX Ingress Controller, for example, with
+  `nginx.org/client-max-body-size: "0"` (no limit). Traefik sets no limit by default.
+- **Long requests.** A synchronous AI request can take up to ten minutes; raise the controller's read timeout for
+  the app's responses where it has one (F5 NGINX: `nginx.org/proxy-read-timeout: "600s"`).
+- **HTTP to HTTPS.** Redirecting plain HTTP is a controller setting (an entry-point or annotation option), not
+  part of the chart.
+
+## Install
+
+From a clone of [zach115th/iris-ng](https://github.com/zach115th/iris-ng):
+
+```bash
+helm install iris deploy/kubernetes/charts -n iris --create-namespace -f my-values.yaml
 ```
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm install my-release ingress-nginx/ingress-nginx -n <Name_Space>
-```
-> **Info**: `my-release` is the name that you choose
 
-## Installing Iris Web
+or from the chart attached to a release (`iris-web-<chart version>.tgz` on the release page):
 
-Clone this Repository       
-```bash     
-$ git clone https://github.com/dfir-iris/iris-web.git      
-```      
-
-
-To install the chart with the release name `my-release`:      
-```bash    
-$ helm install my-release charts/ --values charts/values.yaml  -n <Name_Space>  
-```      
-The command deploys **iris-web** on the Kubernetes cluster in the default configuration.  
-
-## Checking Dependencies
-
-To check if Helm and kubectl are installed, run the following command:
-
-```
-make check-dependencies
-```
-If any of the dependencies are missing, the corresponding installation command will be executed automatically.
-
-## Installing Iris
-To install Iris, run the following command:
-```
-make install-iris
+```bash
+helm install iris iris-web-1.13.3.tgz -n iris --create-namespace -f my-values.yaml
 ```
 
-This will upgrade or install the Iris application using Helm. The installation uses the provided charts/values.yaml file and installs it in the specified namespace.
+The app applies its database migrations when it starts; the first start takes a few minutes. Then point your
+hostname at the controller's address (`kubectl get ingress -n iris`) and sign in as the administrator.
 
-Replace `<name_space>` with the desired namespace for the Iris application.
+## Upgrade
 
-## Deleting Iris
-To delete the Iris application, run the following command:
+```bash
+helm upgrade iris deploy/kubernetes/charts -n iris -f my-values.yaml
 ```
-make delete-iris
+
+Back the database up first (`kubectl exec -n iris deploy/postgres -- pg_dump -U postgres -Fc iris_db >
+iris.dump`): a migration is one-way. RabbitMQ keeps no volume, so an upgrade that changes its image restarts it with empty queues - run the
+upgrade when no background task is waiting.
+
+## Uninstall
+
+```bash
+helm uninstall iris -n iris
 ```
-This will delete the Iris application using Helm. The application will be removed from the specified namespace.
 
-Replace `<name_space>` with the namespace where the Iris application is installed.
-
-> **Tip**: List all releases using `helm list`  
-
-# Uninstalling the Charts    
-
-To uninstall/delete the `my-release` deployment:      
-
-The command removes all the Kubernetes components associated with the chart and deletes the release.      
-
-```bash     
-$ helm delete my-release -n <Name_Space>   
-``` 
-# Parameters    
-The [Parameters](#parameters) section lists the parameters that can be configured during installation.
-
-### Common parameters       
-| Name | Description | Value |     
-| --| -- | -- |     
-| `replicaCount` | Number of Iris replicas to deploy | `1` |     
-
-
-### Lable parameters
-| Name | Description | Value |     
-| --| -- | -- |     
-| `app` | Define metadata app name	 | `string` |  
-| `name` | Define lables name		 | `string` | 
-
-
-### Image parameters     
-Using Dockerfile or Docker compose create images for Iris and apply image to their respective yaml file.
-> **Note**: For kubernetes  use modified Dockerfile.k8s file to create an images
-
-| Name | Description | Value |      
-| --| -- | -- |      
-| `image.repository` | Iris image repository | `string` |       
-| `image.tag` | Iris image tag  | `latest` |        
-| `image.pullPolicy` | Iris image pull policy | `string` |       
-   
-
-### Service parameters
-| Name | Description | Value |     
-| --| -- | -- |     
-| `service.type` | Iris service type | `LoadBalancer`|     
-| `service.port` | Iris service port | `80` |       
-
-## Ingress parameters
-| Name | Description | Value |     
-| --| -- | -- |     
-| `host_name` | Hostname for Iris app | `string`|     
-  
-## How to expose the application?
-
-List the Ingress resource on the Kubernetes cluster
-```
-kubectl get ingress -n <Name_Space>
-```
-Expose the application with your Hostname
+This deletes the database volume's claim with the release (and, with the usual `Delete` reclaim policy, the data);
+back up first.

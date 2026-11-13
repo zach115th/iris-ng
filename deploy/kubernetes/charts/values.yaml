@@ -301,23 +301,27 @@ irisaiworker:
 certificates:
   enabled: false
 
-## @section Nginx Ingress Configuration
+## @section Ingress Configuration
 ##
+## Works with any Ingress controller: an empty className uses the cluster's
+## default IngressClass, and nothing controller-specific is set. Large uploads
+## (timeline imports, datastore files) need the controller's request-body limit
+## raised where it has one - see deploy/kubernetes/README.md.
 ingress:
   enabled: true
   name: iris-ingress
-  className: nginx
-  annotations:
-    # Add any annotations specific to your Ingress controller
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  ## Your controller's IngressClass (`kubectl get ingressclass`); empty = the
+  ## cluster's default class.
+  className: ""
+  ## Controller-specific settings (request-body limit, HTTPS redirect, ...).
+  annotations: {}
   hosts:
     ## CHANGE THIS - the hostname you will point at the ingress load balancer.
     - host: iris.example.com
       paths:
-        - path: /(.*)
-          pathType: ImplementationSpecific
+        ## Every path under / goes to the app.
+        - path: /
+          pathType: Prefix
           serviceName: iriswebapp-app
           servicePort: 8000
   tls:

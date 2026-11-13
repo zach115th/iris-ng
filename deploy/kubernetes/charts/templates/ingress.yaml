@@ -1,19 +1,27 @@
+{{- if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Values.ingress.name }}
+  {{- with .Values.ingress.annotations }}
   annotations:
-    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    {{- /* annotation values must be strings: quote them (a `--set ...=0` is a number) */}}
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
 spec:
-  ingressClassName: {{ .Values.ingress.className }}
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
   rules:
     {{- range $host := .Values.ingress.hosts }}
     - host: {{ $host.host }}
       http:
         paths:
         {{- range $path := $host.paths }}
-        - path: {{ $path.path }}
-          pathType: Prefix
+        - path: {{ $path.path | default "/" }}
+          pathType: {{ $path.pathType | default "Prefix" }}
           backend:
             service:
               name: {{ $path.serviceName }}
@@ -31,3 +39,4 @@ spec:
     secretName: {{ .secretName }}
   {{- end }}
   {{- end }}
+{{- end }}
