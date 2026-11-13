@@ -14,7 +14,7 @@
     },
     "settings.prevent_post_mod_repush": {
       "title": "Prevent re-registering default modules at boot",
-      "text": "At every boot IRIS-NG registers each bundled module that is not registered yet (VirusTotal, MISP, MISP sync, MISP cluster, IntelOwl, webhooks and the check module), disabled and with its default configuration. So removing a bundled module only sticks while this is ticked.\n\nEither way, the configuration schema of every module already registered is refreshed from its code at each boot, keeping the values you set.",
+      "text": "At every boot IRIS-NG registers each bundled module that is not registered yet (VirusTotal, MISP, MISP sync, MISP cluster, webhooks and the check module), disabled and with its default configuration. So removing a bundled module only sticks while this is ticked.\n\nEither way, the configuration schema of every module already registered is refreshed from its code at each boot, keeping the values you set.",
       "aka": ["post-init", "default modules", "repush", "boot"]
     },
     "settings.prevent_post_objects_repush": {
@@ -248,7 +248,7 @@
     },
     "module.add": {
       "title": "Add a module",
-      "text": "Enter the name of a Python package already installed in the server's image (for example iris_evtx); nothing is downloaded. IRIS-NG imports it, runs a health check (its interface version must be in the range shown under Settings -> System, and its type and pipelines must be valid), registers it with its default configuration and subscribes its hooks. It starts enabled, but is switched off while any mandatory parameter is empty.",
+      "text": "Enter the name of a Python package already installed in the server's image (for example iris_check_module); nothing is downloaded. IRIS-NG imports it, runs a health check (its interface version must be in the range shown under Settings -> System, and its type and pipelines must be valid), registers it with its default configuration and subscribes its hooks. It starts enabled, but is switched off while any mandatory parameter is empty.",
       "aka": ["install module", "register module", "pip package"]
     },
     "module.status": {

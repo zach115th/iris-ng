@@ -5,7 +5,6 @@ test.beforeEach(async({ page }) => {
 });
 
 test('should present the default modules', async ({ page }) => {
-    await expect(page.getByRole('link', { name: 'Iris IntelOwl' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'IrisCheck' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'IrisMISP' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'IrisVT' })).toBeVisible();

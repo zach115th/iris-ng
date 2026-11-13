@@ -18,7 +18,7 @@ psycopg2-binary==2.9.13
 pyunpack==0.3
 packaging==26.3
 requests==2.34.2
-# Pinned here so it is tracked; the vendored evtx2splunk wheel used to pin idna==3.3
+# Pinned here so it is tracked (requests depends on it)
 idna==3.20
 SQLAlchemy==2.0.57
 SQLAlchemy-ImageAttach==1.1.0
@@ -39,7 +39,6 @@ cvss==3.6
 PyJWT==2.15.1
 cryptography>=50.0.2
 ldap3==2.9.1
-pyintelowl>=5.1.0
 pyotp==2.10.0
 graphene==3.4.3
 qrcode[pil]==8.2
@@ -51,11 +50,8 @@ graphene-sqlalchemy==3.0.0rc1
 
 dependencies/docx_generator-0.8.0-py3-none-any.whl
 dependencies/iris_interface-1.2.0-py3-none-any.whl
-dependencies/evtx2splunk-2.0.1-py3-none-any.whl
-dependencies/iris_evtx-1.2.0-py3-none-any.whl
 dependencies/iris_check_module-1.0.1-py3-none-any.whl
 pymisp==2.5.34.4
 pyunpack==0.3
 dependencies/iris_webhooks_module-1.0.8-py3-none-any.whl
-dependencies/iris_intelowl_module-0.1.0-py3-none-any.whl
 dependencies/iris_seika_module-1.0.0-py3-none-any.whl

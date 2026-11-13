@@ -292,6 +292,7 @@ def run_post_init(development=False):
             # was first registered with, forever.
             log.info("Reconciling module configurations")
             reconcile_module_configurations()
+            disable_removed_modules()
 
             log.info("Creating initial customer")
             client = create_safe_client()
@@ -2054,7 +2055,7 @@ def register_modules_pipelines():
 
 def register_default_modules():
     modules = ['iris_vt_module', 'iris_misp_module', 'iris_check_module',
-               'iris_webhooks_module', 'iris_intelowl_module',
+               'iris_webhooks_module',
                'iris_misp_sync_module', 'iris_misp_cluster_module']
 
     for module_name in modules:
@@ -2072,6 +2073,23 @@ def register_default_modules():
         else:
             iris_module_disable_by_id(module.id)
             log.info('Successfully registered {mod}'.format(mod=module_name))
+
+
+# Modules no longer shipped in the image. A registered one that stayed active
+# would fail every asynchronous hook it subscribed to (task_hook_wrapper cannot
+# import it), so boot switches it off; the row and its settings are kept.
+REMOVED_MODULES = ('iris_intelowl_module', 'iris_evtx')
+
+
+def disable_removed_modules():
+    rows = IrisModule.query.filter(
+        IrisModule.module_name.in_(REMOVED_MODULES),
+        IrisModule.is_active == True  # noqa: E712 - SQL comparison
+    ).all()
+    for row in rows:
+        iris_module_disable_by_id(row.id)
+        log.warning(f'Module {row.module_name} is no longer included in this image and was switched off')
+    return [row.module_name for row in rows]
 
 
 def reconcile_module_configurations():
@@ -2097,6 +2115,10 @@ def reconcile_module_configurations():
     Values are never logged — several are API keys.
     """
     for module in IrisModule.query.all():
+        if module.module_name in REMOVED_MODULES:
+            # Not in the image any more: importing it would only log an error
+            # on every boot. disable_removed_modules() keeps it switched off.
+            continue
         try:
             mod_inst, _ = instantiate_module_from_name(module.module_name)
             if not mod_inst:
