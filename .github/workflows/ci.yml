@@ -26,7 +26,7 @@ jobs:
 
   static-checks:
     name: Static analyis checks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     # iris-ng: disabled. ~70 inherited ruff violations from upstream IRIS
     # (mostly == True / == False SQLAlchemy idioms ruff dislikes but are
     # idiomatic in SQL queries). Re-enable after a tree-wide ruff cleanup
@@ -36,14 +36,14 @@ jobs:
       - name: Check out iris
         uses: actions/checkout@v7
       - name: Check code with ruff
-        uses: astral-sh/ruff-action@v2
+        uses: astral-sh/ruff-action@v4.1.0
         with:
           args: check --output-format=github
           src: ./source
 
   build-docker-db:
     name: Build docker db
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out iris
         uses: actions/checkout@v7
@@ -58,14 +58,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: iriswebapp_db
           path: ${{ runner.temp }}/iriswebapp_db.tar
 
   build-docker-nginx:
     name: Build docker nginx
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out iris
         uses: actions/checkout@v7
@@ -83,14 +83,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: iriswebapp_nginx
           path: ${{ runner.temp }}/iriswebapp_nginx.tar
 
   build-docker-app:
     name: Build docker app
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out iris
         uses: actions/checkout@v7
@@ -106,14 +106,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: iriswebapp_app
           path: ${{ runner.temp }}/iriswebapp_app.tar
 
   build-graphql-documentation:
     name: Generate graphQL documentation
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     # iris-ng: disabled. Needs a running stack with secrets configured.
     # Re-enable when the fork has a CI environment with valid secrets.
     if: false
@@ -123,7 +123,7 @@ jobs:
       - build-docker-app
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: iriswebapp_*
           path: ${{ runner.temp }}
@@ -147,7 +147,7 @@ jobs:
       - name: Stop development server
         run: |
           docker compose down
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
             name: GraphQL DFIR-IRIS documentation
             path: public
@@ -155,7 +155,7 @@ jobs:
 
   test-api:
     name: Test API
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     # iris-ng: disabled. Needs a running stack with seeded test fixtures.
     # Re-enable when the fork has a CI environment that can boot the stack.
     if: false
@@ -165,7 +165,7 @@ jobs:
       - build-docker-app
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: iriswebapp_*
           path: ${{ runner.temp }}
@@ -196,7 +196,7 @@ jobs:
 
   test-e2e:
     name: End to end tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     # iris-ng: disabled. Needs a running stack + Playwright browsers + a
     # seeded DB. Re-enable when the fork has a configured CI environment.
     if: false
@@ -206,7 +206,7 @@ jobs:
       - build-docker-app
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: iriswebapp_*
           path: ${{ runner.temp }}
@@ -247,7 +247,7 @@ jobs:
       - name: Stop development server
         run: |
           docker compose down
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: ${{ always() }}
         with:
           name: playwright-report

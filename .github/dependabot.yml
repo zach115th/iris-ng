@@ -18,15 +18,14 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
-      # Held at node20 majors deliberately: download-artifact v8 stops
-      # unzipping (breaks the upload-tar -> docker load pattern in ci.yml),
-      # and ruff-action v3+ resolves its version from pyproject.toml.
-      - dependency-name: "actions/upload-artifact"
-        update-types: ["version-update:semver-major"]
+      # GitHub removed Node 20 from its runners on 2026-09-23, so the artifact
+      # actions moved to their node24 majors (upload-artifact v6, download-artifact
+      # v7, ruff-action v4). download-artifact v8 stops unzipping artifacts by
+      # default and makes a digest mismatch an error; ci.yml's (disabled) test jobs
+      # download the image tarballs with `pattern:` + `merge-multiple`, so take v8
+      # deliberately, together with those jobs.
       - dependency-name: "actions/download-artifact"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "astral-sh/ruff-action"
-        update-types: ["version-update:semver-major"]
+        versions: [">=8"]
     groups:
       github-actions:
         patterns:
@@ -207,5 +206,35 @@ updates:
       # node binary) and major bumps produce byte-identical bundles, so tracking
       # Current buys nothing. Move deliberately to the next LTS, together with
       # node-version in ci.yml and @types/node in e2e.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+
+  # ------------------------------------------------------------- Compose images
+  # The message broker is named only in the compose files, which the docker
+  # ecosystem above never reads: rabbitmq sat on 3.13 for over a year after its
+  # community support ended (2024-09). Keep deploy/kubernetes/charts/values.yaml's
+  # rabbitmq.tag equal to it by hand - Dependabot's helm support reads
+  # repository/tag pairs, and the chart's rabbitmq.image/tag keys are not that.
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    rebase-strategy: "disabled"
+    assignees:
+      - "zach115th"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      # A RabbitMQ major removes deprecated features and changes feature flags;
+      # move it deliberately (Celery's use of each deprecated feature checked
+      # with `rabbitmq-diagnostics check_if_any_deprecated_features_are_used`).
+      - dependency-name: "rabbitmq"
+        update-types: ["version-update:semver-major"]
+      # Build-time only, as in the docker ecosystem above: move to the next LTS
+      # deliberately.
       - dependency-name: "node"
         update-types: ["version-update:semver-major"]
