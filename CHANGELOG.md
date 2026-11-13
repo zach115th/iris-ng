@@ -11,6 +11,53 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.13.3] — 2026-11-13
+
+A maintenance release: a login fix, and the removal of dependencies the application no longer uses or that no longer
+worked. **No schema change** — the database head stays at `e4b9c2a7f5d1`. Only the app image changes; the nginx and
+database images, and the guest-portal tunnel agent, do not change.
+
+### Fixed
+- **Passwords longer than 72 bytes could not be set, and a user with one could not log in** (since IRIS-NG-v2.0.0).
+  The password-hashing library, bcrypt 5, refuses a password over 72 bytes where earlier versions used only its first
+  72 bytes, and IRIS passed passwords to it unchanged. Creating or updating a user, or setting a war-room guest
+  password, with a longer one failed with an error, and a user whose long password had been set earlier could no
+  longer log in (the login page answered with a server error). IRIS now uses the first 72 bytes itself, which is what
+  bcrypt always did before, so every stored password keeps working and nobody needs to reset one. A character outside
+  plain ASCII takes more than one byte (an accented letter takes two).
+
+### Removed
+- **The EVTX import module** (`iris_evtx`, with the bundled `evtx2splunk`, its EVTX dump binaries and the Splunk HEC
+  client). It could not run in any released image: a library it needs was never installed. Importing Hayabusa and
+  EvtxECmd output into the working timeline is not affected.
+- **The IntelOwl module** (`iris_intelowl_module`, with `pyintelowl` and the libraries only it used). See Upgrading.
+- **What was left of installing an update from the web interface:** the update page, the "Update server" button and
+  the code behind them. Nothing could reach them any more, and the restart step needed a component that is not
+  installed. Updates go through `scripts/update.sh`; the update banner and the daily update check are unchanged.
+- **Unused packages:** SQLAlchemy-ImageAttach, flask-cors, python-gnupg, Flask-Bcrypt and pyunpack, and the `7z`,
+  `gpg` and `rsync` tools of the app image, which only the removed code used. pyunpack was called only by an unused
+  helper; the bundled Seika module declared it without ever importing it, so its wheel now leaves that requirement
+  out (nothing else in the wheel changes). With the two modules, the image carries 24 Python packages and 15.5 MB of
+  binaries fewer.
+
+### Changed
+- **bcrypt** is now a direct requirement (5.0.0, the version already installed).
+- **email-validator 2.3.0** (with dnspython 2.9.2) is installed: WTForms needs it to validate a form's e-mail field.
+  The forms that declare one only draw the user and contact dialogs, whose data the API validates, so nothing failed
+  in use.
+
+### Upgrading
+Update as usual (`scripts/update.sh --ref IRIS-NG-v2.13.3`, or the 2.13.3 images / chart 1.13.3). No migration of its
+own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on 2.11.x 2.12.0's
+`b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does).
+- **If the IntelOwl module was enabled,** it is switched off at the first start (the log says so) and its
+  configuration is kept; nothing in the image replaces it. A registered EVTX import module is switched off the same
+  way; it never ran.
+- **Going back to 2.13.2** is safe: every stored password works there too, except passwords over 72 bytes, which fail
+  there as before.
+- **The app image no longer contains `7z`, `gpg` or `rsync`.** This matters only if you ran them by hand inside the
+  container.
+
 ## [IRIS-NG-v2.13.2] — 2026-11-12
 
 A dependency release. **No schema change** — the database head stays at `e4b9c2a7f5d1`. Only the app image changes
