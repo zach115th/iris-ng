@@ -31,7 +31,6 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import hmac
 from flask_login import current_user
 from pathlib import Path
-from pyunpack import Archive
 from sqlalchemy.orm.attributes import flag_modified
 
 from app import app
@@ -49,24 +48,6 @@ class FileRemover(object):
     def _do_cleanup(self, wr):
         filepath = self.weak_references[wr]
         shutil.rmtree(filepath, ignore_errors=True)
-
-
-def decompress_7z(filename: Path, output_dir):
-    """
-    Decompress a 7z file in specified output directory
-    :param filename: Filename to decompress
-    :param output_dir: Target output dir
-    :return: True if uncompress
-    """
-    try:
-        a = Archive(filename=filename)
-        a.extractall(directory=output_dir, auto_create_dir=True)
-
-    except Exception as e:
-        log.warning(e)
-        return False
-
-    return True
 
 
 def add_obj_history_entry(obj, action, commit=False, user=None):
