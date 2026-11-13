@@ -45,6 +45,11 @@ database images, and the guest-portal tunnel agent, do not change.
 - **email-validator 2.3.0** (with dnspython 2.9.2) is installed: WTForms needs it to validate a form's e-mail field.
   The forms that declare one only draw the user and contact dialogs, whose data the API validates, so nothing failed
   in use.
+- **Markdown rendering** (marked 18.1.3 → 18.2.0) follows the CommonMark / GFM rules in four more cases. A line that
+  is not indented, after a code block or a heading inside a nested list item, now starts a paragraph after the list
+  instead of joining the outer item - the one change an existing note can show. An image's alternative text keeps its
+  line breaks; emphasis can open right after the other delimiter character (`*_text_`); and emphasis inside angle
+  brackets that are not HTML is rendered (`<3 *note*>`).
 
 ### Upgrading
 Update as usual (`scripts/update.sh --ref IRIS-NG-v2.13.3`, or the 2.13.3 images / chart 1.13.3). No migration of its
