@@ -16,13 +16,15 @@ gunicorn==26.2.0
 psycopg2-binary==2.9.13
 packaging==26.3
 requests==2.34.2
-# Pinned here so it is tracked (requests depends on it)
+# Pinned here so it is tracked (requests and email-validator depend on it)
 idna==3.20
 SQLAlchemy==2.0.57
 SQLAlchemy-Utils==0.43.0
 urllib3==2.8.0
 Werkzeug==3.1.9
 WTForms==3.3.2
+# WTForms' Email() validator imports it when a form is validated
+email-validator==2.3.0
 Flask-SocketIO==5.7.2
 alembic==1.20.1
 setuptools>=84.2.1
