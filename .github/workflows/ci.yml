@@ -58,7 +58,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: iriswebapp_db
           path: ${{ runner.temp }}/iriswebapp_db.tar
@@ -83,7 +83,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: iriswebapp_nginx
           path: ${{ runner.temp }}/iriswebapp_nginx.tar
@@ -106,7 +106,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: iriswebapp_app
           path: ${{ runner.temp }}/iriswebapp_app.tar
@@ -147,7 +147,7 @@ jobs:
       - name: Stop development server
         run: |
           docker compose down
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
             name: GraphQL DFIR-IRIS documentation
             path: public
@@ -247,7 +247,7 @@ jobs:
       - name: Stop development server
         run: |
           docker compose down
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: ${{ always() }}
         with:
           name: playwright-report
