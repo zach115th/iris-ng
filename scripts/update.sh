@@ -16,17 +16,24 @@
 #      one-way: this file is the only road back) unless --skip-backup;
 #   4. resets the checkout to the target;
 #   5. rebuilds and recreates app, worker, ai_worker and nginx (the nginx
-#      image is the one people forget), and db only when docker/db changed;
+#      image is the one people forget); db only when docker/db changed, and
+#      the message broker (rabbitmq) only when its image changed - after
+#      waiting for its task queues to empty, since a recreated broker starts
+#      empty. Otherwise db and the broker keep running untouched;
 #   6. brings up the guest-portal tunnel agent when PORTAL_TUNNEL_AGENT_KEY
 #      is set in .env (--enable-portal generates the key first);
 #   7. waits for the app's "IRIS IS READY" line and prints the result.
 #
 # Environment (optional, for installs that run compose with extra files):
-#   IRIS_COMPOSE_PROJECT   passed as `docker compose -p <name>`
-#   IRIS_COMPOSE_EXTRA     extra compose arguments, e.g. "-f my.override.yml"
+#   IRIS_COMPOSE_PROJECT        passed as `docker compose -p <name>`
+#   IRIS_COMPOSE_EXTRA          extra compose arguments, e.g. "-f my.override.yml"
+#   IRIS_BROKER_DRAIN_TIMEOUT   seconds to wait for the task queues to empty
+#                               before the broker is recreated (default 120)
 #
 # First time, on a checkout that predates this script (it lives on main since
-# IRIS-NG-v2.3.0 + 5): fetch just the file, then run it — it updates the rest.
+# IRIS-NG-v2.3.0 + 5), or to take a newer version of it: fetch just the file,
+# then run it — it updates the rest. The local-edits check below ignores this
+# file, which that line rewrites.
 #
 #   git fetch origin && git show origin/main:scripts/update.sh > scripts/update.sh
 #   bash scripts/update.sh
@@ -36,6 +43,15 @@
 
 set -euo pipefail
 
+# The reset below rewrites this very file, and bash reads a script while it
+# runs it: run from a private copy so the rewrite cannot change what executes.
+if [ -z "${IRIS_UPDATE_SH_COPY:-}" ]; then
+    _copy="$(mktemp "${TMPDIR:-/tmp}/iris-update.XXXXXX")" || { echo "ERROR: cannot create a temporary copy of $0" >&2; exit 1; }
+    cp "$0" "$_copy"
+    IRIS_UPDATE_SH_COPY="$_copy" exec bash "$_copy" "$@"
+fi
+trap 'rm -f "$IRIS_UPDATE_SH_COPY"' EXIT
+
 REF="origin/main"
 DRY_RUN=0
 SKIP_BACKUP=0
@@ -43,6 +59,7 @@ ENABLE_PORTAL=0
 ASSUME_YES=0
 DISCARD_LOCAL=0
 READY_TIMEOUT="${IRIS_READY_TIMEOUT:-600}"
+DRAIN_TIMEOUT="${IRIS_BROKER_DRAIN_TIMEOUT:-120}"
 
 usage() {
     sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'
@@ -96,17 +113,75 @@ EXTRA=(${IRIS_COMPOSE_EXTRA:-})
 dc()  { "${COMPOSE[@]}" "${EXTRA[@]}" "$@"; }
 dcp() { "${COMPOSE[@]}" -f docker-compose.portal.yml "${EXTRA[@]}" "$@"; }
 
+# ------------------------------------------------------- the message broker
+# The broker has no volume: a recreated rabbitmq starts with empty queues, so
+# it is recreated only when its image changes, and only after its task queues
+# have emptied (or the operator accepts the loss).
+broker_running_image() {  # the image the running broker container was created from (empty if none runs)
+    local cid
+    cid="$(dc ps -q rabbitmq 2>/dev/null | head -n 1 || true)"
+    [ -n "$cid" ] || return 0
+    docker inspect -f '{{.Config.Image}}' "$cid" 2>/dev/null || true
+}
+broker_image_at() {  # the rabbitmq image docker-compose.base.yml names at <rev> (empty if none)
+    { git show "$1:docker-compose.base.yml" 2>/dev/null || true; } \
+        | awk '/^  rabbitmq:/ {f = 1; next} f && /^  [^ ]/ {f = 0} f && $1 == "image:" {print $2; exit}'
+}
+queued_tasks() {  # messages waiting in the task queues (pidbox / celeryev control queues excluded); fails if the broker does not answer
+    local out
+    out="$(dc exec -T rabbitmq rabbitmqctl -s list_queues name messages 2>/dev/null)" || return 1
+    printf '%s\n' "$out" | awk -F'\t' '$1 !~ /\.pidbox$/ && $1 !~ /^celeryev\./ && $2 ~ /^[0-9]+$/ {s += $2} END {print s + 0}'
+}
+drain_broker() {
+    log "Waiting for the broker's task queues to empty (up to ${DRAIN_TIMEOUT}s)"
+    local deadline left answer
+    deadline=$(( $(date +%s) + DRAIN_TIMEOUT ))
+    while :; do
+        if ! left="$(queued_tasks)"; then
+            info "the broker did not answer; it is recreated anyway"
+            return 0
+        fi
+        if [ "$left" -eq 0 ]; then info "no task is waiting"; return 0; fi
+        [ "$(date +%s)" -lt "$deadline" ] || break
+        info "$left task(s) waiting; the workers are still running"
+        sleep 5
+    done
+    info "$left task(s) are still queued; recreating the broker discards them"
+    if [ "$ASSUME_YES" -eq 1 ]; then info "continuing (--yes)"; return 0; fi
+    if [ -t 0 ]; then
+        printf 'Continue and lose them? [y/N] '
+        read -r answer
+        case "$answer" in y|Y|yes|YES) return 0 ;; esac
+    fi
+    git reset --hard --quiet "$CURRENT"
+    die "stopped before anything was restarted, with $left task(s) queued; the checkout is back at $cur_short. Run the update again once the workers have caught up (IRIS_BROKER_DRAIN_TIMEOUT waits longer), or pass --yes to accept the loss"
+}
+wait_broker() {  # the new broker accepts connections before the workers are recreated
+    local deadline
+    deadline=$(( $(date +%s) + 120 ))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        if dc exec -T rabbitmq rabbitmq-diagnostics -q check_port_connectivity >/dev/null 2>&1; then
+            info "the new broker accepts connections"
+            return 0
+        fi
+        sleep 3
+    done
+    die "the new message broker did not accept connections within 120s — see: docker compose logs rabbitmq"
+}
+
 env_value() {  # env_value KEY -> value from .env (last assignment wins; empty when absent)
     { grep -E "^${1}=" .env 2>/dev/null || true; } | tail -n 1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//"
 }
 PG_USER="$(env_value POSTGRES_USER)"; PG_USER="${PG_USER:-postgres}"
 PG_DB="$(env_value POSTGRES_DB)";     PG_DB="${PG_DB:-iris_db}"
 
-if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+# scripts/update.sh itself is excluded: the bootstrap line above rewrites it.
+SELF_EXCLUDE=(-- . ':(exclude)scripts/update.sh')
+if [ -n "$(git status --porcelain --untracked-files=no "${SELF_EXCLUDE[@]}")" ]; then
     if [ "$DISCARD_LOCAL" -eq 1 ]; then
         info "local edits to tracked files will be discarded (--discard-local)"
     else
-        git status --short --untracked-files=no | sed 's/^/    /'
+        git status --short --untracked-files=no "${SELF_EXCLUDE[@]}" | sed 's/^/    /'
         die "the working tree has local edits to tracked files; the reset would destroy them. Commit or stash them, or pass --discard-local"
     fi
 fi
@@ -157,6 +232,18 @@ info "nginx image: $([ $nginx_changed -eq 1 ] && echo 'changed' || echo 'unchang
 SERVICES=(app worker ai_worker nginx)
 [ $db_changed -eq 1 ] && SERVICES=(db "${SERVICES[@]}")
 
+broker_now="$(broker_running_image)"
+broker_target="$(broker_image_at "$TARGET")"
+broker_changed=0
+if [ -n "$broker_now" ] && [ -n "$broker_target" ] && [ "$broker_now" != "$broker_target" ]; then broker_changed=1; fi
+if [ $broker_changed -eq 1 ]; then
+    info "message broker: $broker_now -> $broker_target — its task queues are drained first (up to ${DRAIN_TIMEOUT}s), then it is recreated"
+elif [ -z "$broker_now" ]; then
+    info "message broker: not running — it is started"
+else
+    info "message broker: $broker_now, unchanged — left running"
+fi
+
 portal_key="$(env_value PORTAL_TUNNEL_AGENT_KEY)"
 portal=0
 if [ "$ENABLE_PORTAL" -eq 1 ]; then
@@ -179,7 +266,7 @@ fi
 if [ $PORTAL_ONLY -eq 1 ]; then
     info "steps: $([ -z "$portal_key" ] && echo 'write the key to .env ; recreate app ; ' || echo '')tunnel agent"
 else
-    info "steps: $([ $SKIP_BACKUP -eq 1 ] && echo 'NO backup (--skip-backup)' || echo "pg_dump -> backups/") ; git reset --hard $tgt_short ; rebuild + recreate ${SERVICES[*]}$([ $portal -eq 1 ] && echo ' ; tunnel agent')"
+    info "steps: $([ $SKIP_BACKUP -eq 1 ] && echo 'NO backup (--skip-backup)' || echo "pg_dump -> backups/") ; git reset --hard $tgt_short ;$([ $broker_changed -eq 1 ] && echo ' build ; drain + recreate rabbitmq ;') rebuild + recreate ${SERVICES[*]}$([ $portal -eq 1 ] && echo ' ; tunnel agent')"
 fi
 
 if [ "$DRY_RUN" -eq 1 ]; then
@@ -214,6 +301,16 @@ if [ $PORTAL_ONLY -ne 1 ]; then
     log "Updating the checkout to $tgt_short"
     git reset --hard --quiet "$TARGET"
     info "now at $(git rev-parse --short HEAD) $(git log -1 --format=%s | cut -c1-70)"
+    # The broker image the target's compose files actually resolve to (an
+    # IRIS_COMPOSE_EXTRA override included) decides, not the plan's estimate.
+    if [ -n "$broker_now" ]; then
+        resolved="$(dc config --images rabbitmq 2>/dev/null | head -n 1 || true)"
+        if [ -n "$resolved" ] && [ "$resolved" != "$broker_target" ]; then
+            info "message broker: the target resolves to $resolved"
+            broker_target="$resolved"
+        fi
+        if [ -n "$broker_target" ] && [ "$broker_target" != "$broker_now" ]; then broker_changed=1; else broker_changed=0; fi
+    fi
 fi
 
 # ------------------------------------------------------------- portal key
@@ -244,8 +341,22 @@ if [ $PORTAL_ONLY -eq 1 ]; then
         RECREATED=1
     fi
 else
+    if [ $broker_changed -eq 1 ]; then
+        # Build first, so the window between the drain and the restart is short.
+        log "Building: ${SERVICES[*]}"
+        dc build "${SERVICES[@]}"
+        drain_broker
+        log "Recreating the message broker: $broker_now -> $broker_target"
+        dc up -d --force-recreate --no-deps rabbitmq
+        wait_broker
+    else
+        # Started if stopped, never recreated. (Without --no-deps below, compose
+        # would also recreate any dependency whose configuration changed - the
+        # broker included, with nothing drained.)
+        dc up -d --no-recreate --no-deps db rabbitmq
+    fi
     log "Rebuilding and recreating: ${SERVICES[*]}"
-    dc up -d --build --force-recreate "${SERVICES[@]}"
+    dc up -d --build --force-recreate --no-deps "${SERVICES[@]}"
     RECREATED=1
 fi
 
