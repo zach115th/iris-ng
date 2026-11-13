@@ -17,7 +17,7 @@
 
 services:
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:4.4-management-alpine
     container_name: iriswebapp_rabbitmq
     restart: always
     networks:

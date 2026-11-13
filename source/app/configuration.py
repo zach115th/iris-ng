@@ -287,6 +287,14 @@ class CeleryConfig:
     )
     task_default_queue = 'celery'
     task_default_priority = 5
+    # RabbitMQ 4 refuses transient queues that are not exclusive (deprecated
+    # feature `transient_nonexcl_queues`, denied by default): each worker's
+    # remote-control (pidbox) queue and the event queue its gossip declares are
+    # exactly that, and the workers stopped at startup (RestartFreqExceeded).
+    # Exclusive transient queues are still allowed, and these queues are only
+    # ever read by the connection that declared them.
+    control_queue_exclusive = True
+    event_queue_exclusive = True
 
 
 # --------- APP ---------

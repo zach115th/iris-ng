@@ -12,7 +12,8 @@ rabbitmq:
   image: rabbitmq
   ## @param rabbitmq.tag Tag for rabbitmq
   ##
-  tag: 3-management-alpine
+  ## Keep equal to the rabbitmq image in docker-compose.base.yml
+  tag: 4.4-management-alpine
   ## @param rabbitmq.imagePullPolicy Policy for rabbitmq
   ##
   imagePullPolicy: "IfNotPresent"
