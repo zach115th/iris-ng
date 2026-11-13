@@ -70,14 +70,13 @@ ENV PATH="/opt/venv/bin:$PATH"
 #ENV IRIS_ADM_PASSWORD="MySuperFirstPasswordIWant"
 
 RUN apt update
-RUN apt install -y p7zip-full pgp rsync postgresql-client curl
+RUN apt install -y p7zip-full postgresql-client curl
 
 RUN mkdir /iriswebapp/
 RUN mkdir -p /home/iris/certificates/{rootCA,web_certificates}
 RUN mkdir -p /home/iris/user_templates
 RUN mkdir -p /home/iris/server_data
 RUN mkdir -p /home/iris/server_data/backup
-RUN mkdir -p /home/iris/server_data/updates
 RUN mkdir -p /home/iris/server_data/custom_assets
 RUN mkdir -p /home/iris/server_data/datastore
 

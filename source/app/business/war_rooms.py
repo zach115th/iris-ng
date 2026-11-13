@@ -24,8 +24,8 @@ open/active/standby/closed); closed rooms reject writes, reads stay.
 
 Chat transport is REST + short polling by DESIGN, not omission: the upstream
 socket_io_event_handlers package is dead code — it is imported nowhere, and a
-runtime probe of the running app shows the ONLY registered socket.io
-namespace is /server-updates (updater.py). Client->server events (join/save/
+runtime probe of the running app showed the ONLY registered socket.io
+namespace was /server-updates (the retired updater's, since removed). Client->server events (join/save/
 change) have never worked in this tree, so there is no working precedent to
 extend; a live socket layer is a deliberate later step.
 """

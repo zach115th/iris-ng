@@ -104,7 +104,7 @@ def is_check_enabled() -> bool:
 
 def is_newer(candidate: str, current: str) -> bool:
     """True only when BOTH parse and candidate > current. Unparseable = False."""
-    # Lazy: the updater module pulls gnupg/celery/socket_io at import time and
+    # Lazy: the updater module pulls celery and the database at import time and
     # this module is imported by a context processor early in app wiring.
     from app.iris_engine.updater.updater import parse_iris_version
     try:

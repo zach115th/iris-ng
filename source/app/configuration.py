@@ -414,15 +414,12 @@ class Config:
     UPLOADED_PATH = config.load('IRIS', 'UPLOADED_PATH', fallback="/home/iris/downloads")
     TEMPLATES_PATH = config.load('IRIS', 'TEMPLATES_PATH', fallback="/home/iris/user_templates")
     BACKUP_PATH = config.load('IRIS', 'BACKUP_PATH', fallback="/home/iris/server_data/backup")
-    UPDATES_PATH = os.path.join(BACKUP_PATH, 'updates')
 
     # iris-ng: the release feed the update check reads (issue #111). Points at
     # this fork — the upstream default compared our version against another
     # project's releases.
     RELEASE_URL = config.load('IRIS', 'RELEASE_URL',
                               fallback="https://api.github.com/repos/zach115th/iris-ng/releases")
-
-    RELEASE_SIGNATURE_KEY = config.load('IRIS', 'RELEASE_SIGNATURE_KEY', fallback="dependencies/DFIR-IRIS_pkey.asc")
 
     PG_CLIENT_PATH = config.load('IRIS', 'PG_CLIENT_PATH', fallback="/usr/bin")
     ASSET_STORE_PATH = config.load('IRIS', 'ASSET_STORE_PATH', fallback="/home/iris/server_data/custom_assets")
