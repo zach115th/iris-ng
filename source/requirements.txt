@@ -2,7 +2,9 @@ azure-identity==1.27.0
 azure-keyvault-secrets==4.12.0
 celery==5.6.3
 Flask==3.1.3
-Flask-Bcrypt==1.0.1
+# Password hashing (app/iris_engine/access_control/password_hash.py); bcrypt
+# uses the first 72 bytes of a password, and the wrapper keeps it that way.
+bcrypt==5.0.0
 Flask-Login==0.6.3
 Flask-SQLAlchemy==3.1.1
 Flask-WTF==1.3.0

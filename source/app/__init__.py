@@ -24,7 +24,6 @@ import urllib.parse
 from flask import Flask
 from flask import request
 from flask import session
-from flask_bcrypt import Bcrypt
 from flask_caching import Cache
 
 from flask_login import LoginManager
@@ -38,6 +37,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from app.flask_dropzone import Dropzone
 from app.iris_engine.tasker.celery import make_celery
 from app.iris_engine.access_control.oidc_handler import get_oidc_client
+from app.iris_engine.access_control.password_hash import PasswordHasher
 
 
 class ReverseProxied(object):
@@ -140,7 +140,7 @@ if "worker" in sys.argv:
 
 db = SQLAlchemy(app, engine_options=SQLALCHEMY_ENGINE_OPTIONS)  # flask-sqlalchemy
 
-bc = Bcrypt(app)  # flask-bcrypt
+bc = PasswordHasher(app)  # bcrypt, first 72 bytes (iris_engine/access_control/password_hash.py)
 
 lm = LoginManager()  # flask-loginmanager
 lm.init_app(app)  # init the login manager
