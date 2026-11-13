@@ -58,7 +58,7 @@ helm install iris deploy/kubernetes/charts -n iris --create-namespace -f my-valu
 or from the chart attached to a release (`iris-web-<chart version>.tgz` on the release page):
 
 ```bash
-helm install iris iris-web-1.13.3.tgz -n iris --create-namespace -f my-values.yaml
+helm install iris iris-web-1.14.0.tgz -n iris --create-namespace -f my-values.yaml
 ```
 
 The app applies its database migrations when it starts; the first start takes a few minutes. Then point your

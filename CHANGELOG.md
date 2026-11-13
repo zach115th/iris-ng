@@ -11,6 +11,52 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.14.0] — 2026-11-13
+
+A platform release: the message broker moves to RabbitMQ 4.4, the Kubernetes chart works with any Ingress controller,
+and the update script protects queued work. **No schema change** — the database head stays at `e4b9c2a7f5d1`. The app
+image changes (its Celery settings); the nginx and database images, and the guest-portal tunnel agent, do not.
+
+### Changed
+- **RabbitMQ 3.13 → 4.4** (`rabbitmq:4.4-management-alpine`, in the compose files and the Helm chart). RabbitMQ 3.13's
+  community support ended in September 2024 and its image is no longer updated. RabbitMQ 4 refuses the kind of
+  temporary queue each Celery worker declared for remote control and for events, so the app now declares them
+  exclusive (`control_queue_exclusive`, `event_queue_exclusive` in its Celery settings). Without that the workers do not
+  start on 4.4, and no module hook, import, AI job or mail poll would run.
+- **`scripts/update.sh` protects queued tasks when the broker changes.** The broker keeps no data volume, so replacing
+  it empties its queues, and until now an update that changed the broker's image replaced it straight away. The script
+  now builds first, waits up to `IRIS_BROKER_DRAIN_TIMEOUT` seconds (default 120) for the task queues to empty, and
+  says how many tasks would be lost if some remain: it asks, `--yes` continues, and answering no restores the checkout
+  and stops before anything restarts. An update that changes neither the broker nor the database leaves both running,
+  as before.
+- **The Helm chart works with any Ingress controller** (ingress-nginx was retired in March 2026). The Ingress uses the
+  path `/` (`pathType: Prefix`), sets no controller-specific annotations, and leaves `ingress.className` empty by
+  default so the cluster's default IngressClass applies; `ingress.enabled: false` now removes it. The previous Ingress
+  used an ingress-nginx regex path that other controllers read literally - on Traefik it served nothing. `Chart.yaml`
+  declares Kubernetes 1.19 or later, and the chart's README is rewritten for Helm 4, maintained controllers and the
+  settings that depend on the controller (upload size, long requests).
+- CI: node24 versions of the artifact actions and ubuntu-24.04 runners; Dependabot also reads the compose files now.
+
+### Fixed
+- **`scripts/update.sh` could not take a newer copy of itself.** The documented first step (`git show
+  origin/main:scripts/update.sh > scripts/update.sh`) leaves a change to a tracked file, which the script's own check
+  refused - this never showed because the script had not changed until this release. It now ignores its own file, and
+  it runs from a temporary copy so the checkout's reset cannot change the script while it runs.
+
+### Upgrading
+- **Docker Compose:** take the new script first, then update: `git fetch origin && git show
+  origin/main:scripts/update.sh > scripts/update.sh && bash scripts/update.sh --ref IRIS-NG-v2.14.0`. The broker is
+  replaced during this update, so background tasks still queued when it is (after up to two minutes of waiting) are
+  lost: update while the instance is idle. The previous script replaces the broker too, without waiting.
+- **This release's app image is required** by its compose files and chart: older images' workers cannot start on
+  RabbitMQ 4.4. Do not pin an older `APP_IMAGE_TAG` or `irisapp.tag` with them. Going back to 2.13.3 also moves the
+  broker back to 3.13 (its compose files name it).
+- **Kubernetes:** set `ingress.className` to your controller's class, or leave it empty for the cluster's default, and
+  put any controller-specific setting (the request-body limit, timeouts) in `ingress.annotations` - the chart no longer
+  sets ingress-nginx's. `helm upgrade` replaces the broker pod; upgrade while no task is queued.
+- No migration of its own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on
+  2.11.x 2.12.0's `b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does).
+
 ## [IRIS-NG-v2.13.3] — 2026-11-13
 
 A maintenance release: a login fix, and the removal of dependencies the application no longer uses or that no longer
@@ -37,8 +83,8 @@ database images, and the guest-portal tunnel agent, do not change.
 - **Unused packages:** SQLAlchemy-ImageAttach, flask-cors, python-gnupg, Flask-Bcrypt and pyunpack, and the `7z`,
   `gpg` and `rsync` tools of the app image, which only the removed code used. pyunpack was called only by an unused
   helper; the bundled Seika module declared it without ever importing it, so its wheel now leaves that requirement
-  out (nothing else in the wheel changes). With the two modules, the image carries 24 Python packages and 15.5 MB of
-  binaries fewer.
+  out (nothing else in the wheel changes). With the two modules, 24 Python packages leave the image and two arrive
+  (below), and 15.5 MB of binaries go.
 
 ### Changed
 - **bcrypt** is now a direct requirement (5.0.0, the version already installed).

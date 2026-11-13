@@ -15,7 +15,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 1.13.3
+version: 1.14.0
 
 # The oldest Kubernetes serving every API these templates use (networking.k8s.io/v1
 # Ingress); run a version your provider still supports (see the README).
@@ -25,4 +25,4 @@ kubeVersion: ">=1.19.0-0"
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "IRIS-NG-v2.13.3"
+appVersion: "IRIS-NG-v2.14.0"
