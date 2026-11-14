@@ -11,6 +11,38 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.14.1] — 2026-11-14
+
+A maintenance release: the GraphQL endpoint and the report generator leave a pre-release and an old pin, and the image
+build no longer patches installed packages. Nothing changes for API clients or in the reports. **No schema change** —
+the database head stays at `e4b9c2a7f5d1`. Only the app image changes; the nginx and database images, and the
+guest-portal tunnel agent, do not.
+
+### Changed
+- **`/graphql` is served by IRIS's own view** instead of graphql-server 3.0.0b7, a pre-release. The final graphql-server
+  3.0.0 rewrote that view and changed what clients see (an invalid query answered 200 instead of 400, request errors
+  came back as plain text, and only JSON bodies were accepted), so IRIS now answers from a small view over graphql-core
+  that keeps the existing behaviour: the same status codes and error bodies, the same accepted bodies (JSON,
+  `application/graphql`, form posts), the query-string parameters and `?pretty`. Authentication and CSRF checks are
+  unchanged. graphql-server is no longer installed.
+- **graphene-sqlalchemy 3.0.0rc1 → 3.0.0rc2**, the newest release. rc2 would rename the input type of the `cases` date
+  filter (`DefaultDateTimeScalarFilter`) and add comparison operators to it; IRIS keeps the existing type, so the GraphQL
+  schema is unchanged.
+- **docxcompose 1.1.2 → 2.2.0**, used when a report template embeds another document. The bundled report generator
+  required exactly 1.1.2; that requirement is relaxed and 2.2.0 is installed, with Babel 2.18.0. Reports render the same:
+  the bundled templates, a customised one and templates that embed documents with their own styles, numbering, tables,
+  pictures and sections were compared part by part.
+- The image build no longer rewrites two installed packages: nothing in the image uses `pkg_resources` any more.
+- Dependabot proposes docxcompose updates again, and holds graphql-core below 3.3, which graphene 3.4.3 does not accept.
+
+### Upgrading
+- **Docker Compose:** `bash scripts/update.sh --ref IRIS-NG-v2.14.1`. From a release before 2.14.0, take the new script
+  first (`git fetch origin && git show origin/main:scripts/update.sh > scripts/update.sh && bash scripts/update.sh --ref
+  IRIS-NG-v2.14.1`) and update while the instance is idle: 2.14.0's move to RabbitMQ 4.4 replaces the broker.
+- **Kubernetes:** chart 1.14.1 changes only the image version.
+- No migration of its own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on
+  2.11.x 2.12.0's `b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does).
+
 ## [IRIS-NG-v2.14.0] — 2026-11-13
 
 A platform release: the message broker moves to RabbitMQ 4.4, the Kubernetes chart works with any Ingress controller,
