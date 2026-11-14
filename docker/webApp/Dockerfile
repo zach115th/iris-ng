@@ -45,16 +45,6 @@ COPY source/requirements.txt /
 
 RUN pip3 install -r requirements.txt
 
-# setuptools>=81 no longer ships pkg_resources; rewrite the two pinned deps
-# (docxcompose, graphene-sqlalchemy) that still import it at module load.
-# The floor in requirements.txt is higher than 81 for unrelated reasons, so do
-# not read it as the version where pkg_resources disappeared — lowering the pin
-# to 82 would still land in a world without it, and both imports would fail at
-# app boot rather than at build time.
-# Runs against the venv site-packages before it is copied to the final stage.
-COPY source/patches/depatch_pkg_resources.py /tmp/depatch_pkg_resources.py
-RUN python /tmp/depatch_pkg_resources.py
-
 ###############
 # BUILD IMAGE #
 ###############

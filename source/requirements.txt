@@ -39,13 +39,16 @@ cryptography>=50.0.2
 ldap3==2.9.1
 pyotp==2.10.0
 graphene==3.4.3
+# /graphql runs on it directly (app/blueprints/graphql/graphql_view.py); graphene 3.4.3 needs <3.3
+graphql-core==3.2.14
 qrcode[pil]==8.2
 dictdiffer==0.10.0
 oic==1.7.0
-# A pre-release: 3.0.0 is out, but it rewrites the Flask view (a slice of its own)
-graphql-server[flask]==3.0.0b7
-graphene-sqlalchemy==3.0.0rc1
+# The newest release; there is no 3.0.0 final yet
+graphene-sqlalchemy==3.0.0rc2
 
+# The docx_generator wheel's own pin is relaxed to docxcompose>=1.1.2; this is the version used
+docxcompose==2.2.0
 dependencies/docx_generator-0.8.0-py3-none-any.whl
 dependencies/iris_interface-1.2.0-py3-none-any.whl
 dependencies/iris_check_module-1.0.1-py3-none-any.whl

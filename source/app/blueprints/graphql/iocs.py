@@ -32,8 +32,11 @@ from app.business.iocs import iocs_create
 from app.business.iocs import iocs_get
 from app.business.iocs import iocs_update
 from app.business.iocs import iocs_delete
+from app.blueprints.graphql.scalar_filters import register_scalar_filters
 
 from graphene.relay import Connection
+
+register_scalar_filters()
 
 
 class IOCObject(SQLAlchemyObjectType):

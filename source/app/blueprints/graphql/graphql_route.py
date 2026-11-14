@@ -23,7 +23,6 @@ from flask_wtf import FlaskForm
 from flask import Blueprint
 from flask_login import current_user
 
-from graphql_server.flask import GraphQLView
 from graphene import ObjectType
 from graphene import Schema
 from graphene import Float
@@ -48,6 +47,7 @@ from app.blueprints.graphql.cases import CaseCreate
 from app.blueprints.graphql.cases import CaseDelete
 from app.blueprints.graphql.cases import CaseUpdate
 from app.blueprints.graphql.cases import CaseConnection
+from app.blueprints.graphql.graphql_view import GraphQLView
 
 from app.business.cases import cases_get_by_identifier
 from app.business.iocs import iocs_get
