@@ -13,8 +13,9 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ## [IRIS-NG-v2.14.1] — 2026-11-14
 
-A maintenance release: the GraphQL endpoint and the report generator leave a pre-release and an old pin, and the image
-build no longer patches installed packages. Nothing changes for API clients or in the reports. **No schema change** —
+A maintenance release: the GraphQL endpoint and the report generator leave a pre-release and an old pin, the app server
+moves to gunicorn 27, and the image build no longer patches installed packages. Nothing changes for API clients or in
+the reports; gunicorn answers some malformed requests differently. **No schema change** —
 the database head stays at `e4b9c2a7f5d1`. Only the app image changes; the nginx and database images, and the
 guest-portal tunnel agent, do not.
 
@@ -32,7 +33,15 @@ guest-portal tunnel agent, do not.
   required exactly 1.1.2; that requirement is relaxed and 2.2.0 is installed, with Babel 2.18.0. Reports render the same:
   the bundled templates, a customised one and templates that embed documents with their own styles, numbering, tables,
   pictures and sections were compared part by part.
+- **gunicorn 26.2.0 → 27.0.0** (Dependabot #188), the app server. It parses HTTP/1.1 more strictly, which changes two
+  answers to malformed requests: a request line over 4094 bytes now answers `414 URI Too Long` instead of `400`, and a
+  path with raw (not percent-encoded) non-ASCII bytes answers `400` instead of `404`. Browsers always percent-encode, and
+  valid requests are answered as before. Where gunicorn receives requests without nginx in front (the Helm chart, behind
+  an Ingress controller), it also refuses a `Transfer-Encoding` other than `chunked` with `400`, answers a request
+  whose lines end in a bare LF at once instead of waiting for the timeout, and now answers a request sent on the same
+  connection behind one whose body the application did not read.
 - The image build no longer rewrites two installed packages: nothing in the image uses `pkg_resources` any more.
+- The UI is built with vite 8.3.8 (Dependabot #187); the built files are identical.
 - Dependabot proposes docxcompose updates again, and holds graphql-core below 3.3, which graphene 3.4.3 does not accept.
 
 ### Upgrading
