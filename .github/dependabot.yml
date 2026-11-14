@@ -79,16 +79,6 @@ updates:
         versions: [">=1.6.0"]
       - dependency-name: "marshmallow"
         update-types: ["version-update:semver-major"]
-      # SQLAlchemy 2.1 was UNBOOTABLE here: SQLAlchemy-Utils 0.42.1 subclassed
-      # orm.attributes.ScalarAttributeImpl, which 2.1 made private, so
-      # `import sqlalchemy_utils` died with AttributeError at boot. 0.43.0 (now
-      # pinned) supports 2.1. What remains: 2.1 stops installing greenlet by
-      # default while graphene-sqlalchemy 3.0.0rc2 imports sqlalchemy.ext.asyncio
-      # unconditionally, so the move needs the SQLAlchemy[asyncio] extra, and
-      # Flask-SQLAlchemy 3.1.1 has to be checked under 2.1. Lift this with that
-      # slice.
-      - dependency-name: "sqlalchemy"
-        versions: [">=2.1.0"]
       # python-dateutil 3.x is UNINSTALLABLE here: graphene 3.4.3 (the newest,
       # behind graphene-sqlalchemy and /graphql) requires python-dateutil<3, so
       # pip reports ResolutionImpossible (Dependabot #155's app image build

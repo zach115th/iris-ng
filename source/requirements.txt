@@ -18,7 +18,9 @@ packaging==26.3
 requests==2.34.2
 # Pinned here so it is tracked (requests and email-validator depend on it)
 idna==3.20
-SQLAlchemy==2.0.57
+# The asyncio extra keeps greenlet, which 2.1 no longer installs by default:
+# graphene-sqlalchemy imports sqlalchemy.ext.asyncio
+SQLAlchemy[asyncio]==2.1.8
 SQLAlchemy-Utils==0.43.0
 urllib3==2.8.0
 Werkzeug==3.1.9
