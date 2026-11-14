@@ -15,6 +15,10 @@
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+# Runs the published images instead of building them (docker-compose.dev.yml
+# builds). Each image defaults to this checkout's release, so the compose files
+# and the images always match; set *_IMAGE_NAME / *_IMAGE_TAG in .env only to
+# run other images. The default tag moves with every version bump.
 services:
   rabbitmq:
     extends:
@@ -25,25 +29,41 @@ services:
     extends:
       file: docker-compose.base.yml
       service: db
-    image: ${DB_IMAGE_NAME:-iris-next/db}:${DB_IMAGE_TAG:-latest}
+    image: ${DB_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_db}:${DB_IMAGE_TAG:-IRIS-NG-v2.14.1}
 
   app:
     extends:
       file: docker-compose.base.yml
       service: app
-    image: ${APP_IMAGE_NAME:-iris-next/app}:${APP_IMAGE_TAG:-latest}
+    image: ${APP_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_app}:${APP_IMAGE_TAG:-IRIS-NG-v2.14.1}
 
   worker:
     extends:
       file: docker-compose.base.yml
       service: worker
-    image: ${APP_IMAGE_NAME:-iris-next/app}:${APP_IMAGE_TAG:-latest}
+    image: ${APP_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_app}:${APP_IMAGE_TAG:-IRIS-NG-v2.14.1}
+
+  # Async AI jobs (ai_queue), one at a time; the worker above takes only the
+  # default queue, so without this service AI jobs would never run.
+  ai_worker:
+    extends:
+      file: docker-compose.base.yml
+      service: worker
+    image: ${APP_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_app}:${APP_IMAGE_TAG:-IRIS-NG-v2.14.1}
+    container_name: iriswebapp_ai_worker
+    command:
+      [
+        "./wait-for-iriswebapp.sh",
+        "app:8000",
+        "./iris-entrypoint.sh",
+        "iris-ai-worker",
+      ]
 
   nginx:
     extends:
       file: docker-compose.base.yml
       service: nginx
-    image: ${NGINX_IMAGE_NAME:-iris-next/nginx}:${NGINX_IMAGE_TAG:-latest}
+    image: ${NGINX_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_nginx}:${NGINX_IMAGE_TAG:-IRIS-NG-v2.14.1}
 
 
 volumes:

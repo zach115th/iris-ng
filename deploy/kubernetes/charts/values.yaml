@@ -234,9 +234,9 @@ irisworker:
 ## @section Iris AI Worker Configuration
 ##
 ## Consumes the dedicated `ai_queue` at concurrency 1 (one model call in flight at
-## a time). WITHOUT this deployment the executive case summary and case chat enqueue
-## jobs that are never consumed - the UI shows them queued forever rather than
-## reporting an error, while every non-AI feature works normally.
+## a time); the main worker takes only the default queue. With `enabled: false`
+## the main worker takes the AI jobs too (IRIS_WORKER_QUEUES=celery,ai_queue), so
+## long AI calls share its slots with module hooks, imports and MISP sync.
 irisaiworker:
   ## @param irisaiworker.enabled Deploy the AI worker
   ##

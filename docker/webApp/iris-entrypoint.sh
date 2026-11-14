@@ -30,10 +30,16 @@ fi
 printf "Running ${target} ...\n"
 
 if [[ "${target}" == iris-worker ]] ; then
+    # The default 'celery' queue only: AI jobs (ai_queue) belong to iris-ai-worker,
+    # one at a time. Without -Q this worker consumed ai_queue too, so long AI
+    # jobs took the slots module hooks, imports and MISP sync need. Where no AI
+    # worker runs, set IRIS_WORKER_QUEUES=celery,ai_queue (the Helm chart does
+    # when irisaiworker.enabled is false).
+    WORKER_QUEUES="${IRIS_WORKER_QUEUES:-celery}"
     if [[ -z $NUMBER_OF_CHILD ]]; then
-        celery -A app.celery worker -E -B -l $LOG_LEVEL &
+        celery -A app.celery worker -E -B -Q "$WORKER_QUEUES" -l $LOG_LEVEL &
     else
-        celery -A app.celery worker -c $NUMBER_OF_CHILD -E -B -l $LOG_LEVEL &
+        celery -A app.celery worker -c $NUMBER_OF_CHILD -E -B -Q "$WORKER_QUEUES" -l $LOG_LEVEL &
     fi
 elif [[ "${target}" == iris-ai-worker ]] ; then
     # iris-next: dedicated async-AI worker (docs/19 §5b.3). Consumes ONLY the

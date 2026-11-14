@@ -98,6 +98,12 @@ spec:
 
           - name: NUMBER_OF_CHILD
             value: {{ .Values.irisworker.NUMBER_OF_CHILD | quote }}
+          {{- if not .Values.irisaiworker.enabled }}
+
+          # No AI worker deployed: this worker takes the AI jobs (ai_queue) too.
+          - name: IRIS_WORKER_QUEUES
+            value: "celery,ai_queue"
+          {{- end }}
 
 
           volumeMounts:
