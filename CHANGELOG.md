@@ -11,6 +11,42 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.14.2] — 2026-11-14
+
+A fix release: AI jobs run on the AI worker only, and the image-based compose file runs one. **No schema change** —
+the database head stays at `e4b9c2a7f5d1`. The app image changes only in its start script; the nginx and database
+images, and the guest-portal tunnel agent, do not. The Helm chart changes the worker's queue setting.
+
+### Fixed
+- **AI jobs could run on the main background worker.** The main worker also took jobs from the AI queue, so about half
+  of them - the executive case summary, case chat, SitRep and ICS drafts, the war-room summary, alert-cluster triage,
+  the IOC deduplication pass and the task suggester - ran there instead of on the AI worker. A model call can take up
+  to ten minutes, and there it held the worker slots that module hooks, imports, MISP sync and the mail poller need;
+  AI jobs also did not run one at a time as the AI worker intends. The main worker now takes only the default queue.
+  `IRIS_WORKER_QUEUES=celery,ai_queue` lets it take AI jobs as well, for an installation without an AI worker.
+- **The image-based `docker-compose.yml` had no AI worker**, and its images defaulted to `iris-next/*:latest`, which
+  names no published image. It now runs an `ai_worker` as `docker-compose.dev.yml` does, and each image defaults to
+  this release on `ghcr.io/zach115th`, so the compose files and the images always match.
+
+### Changed
+- `.env.model` no longer sets the image names and tags (`NGINX_IMAGE_*`, `DB_IMAGE_*`, `APP_IMAGE_*`; they are
+  commented examples), so a `.env` made from it follows the checkout instead of pinning images.
+- Helm: with `irisaiworker.enabled: false` the main worker now takes the AI jobs too (the chart sets
+  `IRIS_WORKER_QUEUES`); the values file's comment, which said they would never run, is corrected.
+
+### Upgrading
+- **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
+  IRIS-NG-v2.14.2`. The AI worker was already running; only the main worker stops taking AI jobs. From a release before
+  2.14.0, take the new script first, as the 2.14.0 notes describe.
+- **The image-based `docker-compose.yml`:** remove the `NGINX_IMAGE_*`, `DB_IMAGE_*` and `APP_IMAGE_*` lines from your
+  `.env` unless you mean to run other images - an old `.env` names `iris-next/*:latest`, and a tag pinned there stays
+  behind when the checkout moves on - then `docker compose pull && docker compose up -d`.
+- **A deployment of your own** that runs the worker without an AI worker: set `IRIS_WORKER_QUEUES=celery,ai_queue` on
+  the worker, or AI jobs stay queued.
+- **Kubernetes:** chart 1.14.2; `helm upgrade` needs nothing else.
+- No migration of its own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on
+  2.11.x 2.12.0's `b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does).
+
 ## [IRIS-NG-v2.14.1] — 2026-11-14
 
 A maintenance release: the GraphQL endpoint and the report generator leave a pre-release and an old pin, the app server
