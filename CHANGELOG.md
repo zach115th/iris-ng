@@ -11,6 +11,30 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.15.0] — 2026-11-14
+
+A dependency release: the database toolkit moves to the SQLAlchemy 2.1 series. Nothing changes for users or API
+clients. **No schema change** — the database head stays at `e4b9c2a7f5d1`. Only the app image changes; the nginx and
+database images, and the guest-portal tunnel agent, do not.
+
+### Changed
+- **SQLAlchemy 2.0.57 → 2.1.8**, the database toolkit under every page, API and background task. The parts of 2.1 that
+  could affect IRIS were checked against its code: the database driver is named explicitly, so 2.1's new default
+  PostgreSQL driver does not apply; and raw SQL now writes pending changes to the database first, which the places that
+  take locks already allow for. A 1.4.1 database upgraded through every migration ends with the same schema and data as
+  on SQLAlchemy 2.0, and the GraphQL API, the reports and every test suite answer as before. The pin takes the `asyncio`
+  extra so that `greenlet`, which 2.1 no longer installs by default and the GraphQL layer needs, stays installed.
+- Dependabot now proposes SQLAlchemy 2.1 updates; the hold on the 2.1 series is lifted.
+
+### Upgrading
+- **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
+  IRIS-NG-v2.15.0`. From a release before 2.14.0, take the new script first, as the 2.14.0 notes describe.
+- **The image-based `docker-compose.yml`:** take a database dump, then `git checkout IRIS-NG-v2.15.0 && docker compose
+  pull && docker compose up -d`.
+- **Kubernetes:** chart 1.15.0; `helm upgrade` needs nothing else.
+- No migration of its own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on
+  2.11.x 2.12.0's `b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does).
+
 ## [IRIS-NG-v2.14.2] — 2026-11-14
 
 A fix release: AI jobs run on the AI worker only, and the image-based compose file runs one. **No schema change** —
