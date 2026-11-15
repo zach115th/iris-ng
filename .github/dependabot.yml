@@ -151,6 +151,16 @@ updates:
       # 2.9.4 has no open advisory. Migrate deliberately, porting each chart.
       - dependency-name: "chart.js"
         update-types: ["version-update:semver-major"]
+      # Bootstrap 5 is a migration, not a bump: vite.config.js copies its
+      # bootstrap.min.js into every page, and 5 reads only data-bs-* attributes
+      # (the templates carry ~119 data-toggle, ~140 data-dismiss, ~51
+      # data-backdrop), needs @popperjs/core 2 where the pages load popper.js 1,
+      # and pairs with Bootstrap 5 CSS where the pages load 4's. The build stays
+      # green and every modal close button, toggle and dropdown stops working.
+      # It moves with its own migration (the BS4-coupled plugins first, then a
+      # codemod and a theme). 4.6.x has no open advisory.
+      - dependency-name: "bootstrap"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor-patch:
         patterns:
