@@ -11,6 +11,38 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.15.1] — 2026-11-14
+
+A fix release: deleting a case no longer deletes the links between the IOCs and assets of every other case. **No schema
+change** — the database head stays at `e4b9c2a7f5d1`. Only the app image changes, in one file; the nginx and database
+images, and the guest-portal tunnel agent, do not.
+
+### Fixed
+- **Deleting a case deleted every IOC-asset link in the database.** When a case with at least one asset was deleted -
+  from the web interface or through `DELETE /api/v2/cases/<id>` or the legacy `POST /manage/cases/delete/<id>` - the
+  step meant to remove the links of that case's assets removed every link between an IOC and an asset, in every case:
+  its filter compared each asset's id with itself, which is always true. The other cases kept their IOCs and assets,
+  but each IOC lost its linked assets and each asset its linked IOCs. A deletion now removes only the links of the
+  deleted case's own IOCs and assets, including their links to IOCs and assets of other cases. The defect was
+  inherited and is present in every earlier release.
+
+### Changed
+- Dependabot no longer proposes Bootstrap 5 (Dependabot #189). Bootstrap 5 reads only `data-bs-*` attributes and needs
+  Popper 2 and its own stylesheet, so the update would leave every dialog, toggle and dropdown without its behaviour
+  while the build still passes; it moves with a migration of its own. 4.6.x updates still come through.
+
+### Upgrading
+- **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
+  IRIS-NG-v2.15.1`. From a release before 2.14.0, take the new script first, as the 2.14.0 notes describe.
+- **The image-based `docker-compose.yml`:** take a database dump, then `git checkout IRIS-NG-v2.15.1 && docker compose
+  pull && docker compose up -d`.
+- **Kubernetes:** chart 1.15.1; `helm upgrade` needs nothing else.
+- **Links lost to an earlier case deletion are not restored by updating:** they were deleted from the database at the
+  time. A database dump taken before that deletion still holds them (`scripts/update.sh` keeps its dumps in
+  `backups/`).
+- No migration of its own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on
+  2.11.x 2.12.0's `b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does).
+
 ## [IRIS-NG-v2.15.0] — 2026-11-14
 
 A dependency release: the database toolkit moves to the SQLAlchemy 2.1 series. Nothing changes for users or API
