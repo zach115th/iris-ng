@@ -81,6 +81,9 @@ case_timeline_rest_blueprint = Blueprint('case_timeline_rest', __name__)
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comments_get(cur_id, caseid):
+    # get_case_event_comments ignores caseid: bind the event to the request's case first.
+    if not get_case_event(cur_id, caseid):
+        return response_error('Invalid event ID')
     event_comments = get_case_event_comments(cur_id, caseid=caseid)
     if event_comments is None:
         return response_error('Invalid event ID')
@@ -92,6 +95,8 @@ def case_comments_get(cur_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_delete(cur_id, com_id, caseid):
+    if not get_case_event(cur_id, caseid):
+        return response_error('Invalid event ID')
     success, msg = delete_event_comment(cur_id, com_id)
     if not success:
         return response_error(msg)
@@ -106,6 +111,8 @@ def case_comment_delete(cur_id, com_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_get(cur_id, com_id, caseid):
+    if not get_case_event(cur_id, caseid):
+        return response_error("Invalid comment ID")
     comment = get_case_event_comment(cur_id, com_id, caseid=caseid)
     if not comment:
         return response_error("Invalid comment ID")

@@ -196,6 +196,8 @@ def case_delete_rfile(cur_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_evidence_list(cur_id, caseid):
+    if not get_rfile(cur_id, caseid):
+        return response_error('Invalid evidence ID')
     evidence_comments = get_case_evidence_comments(cur_id)
     if evidence_comments is None:
         return response_error('Invalid evidence ID')
@@ -253,6 +255,8 @@ def case_comment_evidence_add(cur_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_evidence_get(cur_id, com_id, caseid):
+    if not get_rfile(cur_id, caseid):
+        return response_error("Invalid comment ID")
     comment = get_case_evidence_comment(cur_id, com_id)
     if not comment:
         return response_error("Invalid comment ID")
@@ -271,6 +275,8 @@ def case_comment_evidence_edit(cur_id, com_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_evidence_delete(cur_id, com_id, caseid):
+    if not get_rfile(cur_id, caseid):
+        return response_error('Invalid evidence ID')
     success, msg = delete_evidence_comment(cur_id, com_id)
     if not success:
         return response_error(msg)

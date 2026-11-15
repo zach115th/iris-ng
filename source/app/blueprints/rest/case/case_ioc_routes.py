@@ -63,6 +63,15 @@ from app.blueprints.responses import response_success
 case_ioc_rest_blueprint = Blueprint('case_ioc_rest', __name__)
 
 
+def _ioc_in_case(ioc_id, caseid):
+    # The comment routes named an IOC by id alone, so any case's IOC answered; bind it to the request's case.
+    try:
+        iocs_get(ioc_id, caseid)
+        return True
+    except ObjectNotFoundError:
+        return False
+
+
 @case_ioc_rest_blueprint.route('/case/ioc/list', methods=['GET'])
 @endpoint_deprecated('GET', '/api/v2/cases/<int:identifier>/iocs')
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
@@ -247,7 +256,7 @@ def deprecated_case_delete_ioc(cur_id: int, caseid: int):
 def deprecated_case_view_ioc(cur_id, caseid):
     ioc_schema = IocSchema()
     try:
-        ioc = iocs_get(cur_id)
+        ioc = iocs_get(cur_id, caseid)
 
         return response_success(data=ioc_schema.dump(ioc))
     except ObjectNotFoundError:
@@ -262,7 +271,7 @@ def case_update_ioc(cur_id, caseid):
     ioc_schema = IocSchema()
 
     try:
-        ioc = iocs_get(cur_id)
+        ioc = iocs_get(cur_id, caseid)
         ioc, msg = iocs_update(ioc, request.get_json())
         return response_success(msg, data=ioc_schema.dump(ioc))
     except BusinessProcessingError as e:
@@ -273,6 +282,8 @@ def case_update_ioc(cur_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_ioc_list(cur_id, caseid):
+    if not _ioc_in_case(cur_id, caseid):
+        return response_error('Invalid ioc ID')
     ioc_comments = get_case_ioc_comments(cur_id)
     if ioc_comments is None:
         return response_error('Invalid ioc ID')
@@ -285,7 +296,7 @@ def case_comment_ioc_list(cur_id, caseid):
 @ac_api_requires()
 def case_comment_ioc_add(cur_id, caseid):
     try:
-        ioc = iocs_get(cur_id)
+        ioc = iocs_get(cur_id, caseid)
 
         comment_schema = CommentSchema()
 
@@ -330,6 +341,8 @@ def case_comment_ioc_add(cur_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_ioc_get(cur_id, com_id, caseid):
+    if not _ioc_in_case(cur_id, caseid):
+        return response_error('Invalid comment ID')
     comment = get_case_ioc_comment(cur_id, com_id)
     if not comment:
         return response_error('Invalid comment ID')
@@ -348,6 +361,8 @@ def case_comment_ioc_edit(cur_id, com_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_ioc_delete(cur_id, com_id, caseid):
+    if not _ioc_in_case(cur_id, caseid):
+        return response_error('Invalid ioc ID')
     success, msg = delete_ioc_comment(cur_id, com_id)
     if not success:
         return response_error(msg)

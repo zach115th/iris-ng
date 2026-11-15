@@ -46,8 +46,10 @@ def _load(request_data):
         raise BusinessProcessingError('Data error', e.messages)
 
 
-def iocs_get(ioc_identifier) -> Ioc:
-    ioc = get_ioc(ioc_identifier)
+def iocs_get(ioc_identifier, case_identifier=None) -> Ioc:
+    # case_identifier binds the IOC to the case the request was authorised for; None = any case (the caller then
+    # checks access on the IOC's own case, as the v2 routes do).
+    ioc = get_ioc(ioc_identifier, caseid=case_identifier)
     if not ioc:
         raise ObjectNotFoundError()
     return ioc

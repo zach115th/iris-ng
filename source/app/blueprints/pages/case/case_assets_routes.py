@@ -98,6 +98,10 @@ def asset_view_modal(cur_id, caseid, url_redir):
     if url_redir:
         return redirect(url_for('case_assets.case_assets', cid=caseid, redirect=True))
 
+    asset = get_asset(cur_id, caseid)
+    if not asset:
+        return response_error('Invalid asset ID for this case')
+
     # Get IoCs from the case
     case_iocs = get_iocs(caseid)
 
@@ -113,7 +117,6 @@ def asset_view_modal(cur_id, caseid, url_redir):
 
     # Build the form
     form = AssetBasicForm()
-    asset = get_asset(cur_id)
 
     form.asset_name.render_kw = {'value': asset.asset_name}
     form.asset_description.data = asset.asset_description
@@ -138,7 +141,7 @@ def case_comment_asset_modal(cur_id, caseid, url_redir):
     if url_redir:
         return redirect(url_for('case_task.case_task', cid=caseid, redirect=True))
 
-    asset = get_asset(cur_id)
+    asset = get_asset(cur_id, caseid)
     if not asset:
         return response_error('Invalid asset ID')
 

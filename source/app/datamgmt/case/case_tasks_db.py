@@ -118,8 +118,13 @@ def get_tasks_with_assignees(caseid):
     return task_with_assignees
 
 
-def get_task(task_id: int) -> CaseTasks:
-    return CaseTasks.query.filter(CaseTasks.id == task_id).first()
+def get_task(task_id: int, caseid: int = None) -> CaseTasks:
+    # caseid binds the task to the case a request was authorised for (None = any case, for callers that check access
+    # on the task's own case themselves).
+    q = CaseTasks.query.filter(CaseTasks.id == task_id)
+    if caseid is not None:
+        q = q.filter(CaseTasks.task_case_id == caseid)
+    return q.first()
 
 
 def get_task_assignees(task_identifier: int):

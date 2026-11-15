@@ -148,12 +148,13 @@ def get_assets_name(caseid):
     return assets_names
 
 
-def get_asset(asset_id) -> CaseAssets:
-    asset = CaseAssets.query.filter(
-        CaseAssets.asset_id == asset_id,
-    ).first()
-
-    return asset
+def get_asset(asset_id, caseid=None) -> CaseAssets:
+    # caseid binds the asset to the case a request was authorised for (None = any case, for callers that check access
+    # on the asset's own case themselves).
+    q = CaseAssets.query.filter(CaseAssets.asset_id == asset_id)
+    if caseid is not None:
+        q = q.filter(CaseAssets.case_id == caseid)
+    return q.first()
 
 
 def update_asset(asset_name, asset_description, asset_ip, asset_info, asset_domain,

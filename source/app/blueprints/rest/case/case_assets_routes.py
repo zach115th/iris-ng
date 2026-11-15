@@ -295,7 +295,7 @@ def case_upload_ioc(caseid):
 def deprecated_asset_view(cur_id, caseid):
     try:
 
-        asset = assets_get_detailed(cur_id)
+        asset = assets_get_detailed(cur_id, caseid)
         return response_success(msg='Asset added', data=asset)
 
     except BusinessProcessingError as e:
@@ -308,7 +308,7 @@ def deprecated_asset_view(cur_id, caseid):
 @ac_api_requires()
 def asset_update(cur_id, caseid):
     try:
-        asset = get_asset(cur_id)
+        asset = get_asset(cur_id, caseid)
         if not asset:
             return response_error("Invalid asset ID for this case")
 
@@ -341,6 +341,8 @@ def deprecated_asset_delete(cur_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_asset_list(cur_id, caseid):
+    if not get_asset(cur_id, caseid):
+        return response_error('Invalid asset ID')
     asset_comments = get_case_asset_comments(cur_id)
     if asset_comments is None:
         return response_error('Invalid asset ID')
@@ -353,7 +355,7 @@ def case_comment_asset_list(cur_id, caseid):
 @ac_api_requires()
 def case_comment_asset_add(cur_id, caseid):
     try:
-        asset = get_asset(cur_id)
+        asset = get_asset(cur_id, caseid)
         if not asset:
             return response_error('Invalid asset ID')
 
@@ -400,6 +402,8 @@ def case_comment_asset_add(cur_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_asset_get(cur_id, com_id, caseid):
+    if not get_asset(cur_id, caseid):
+        return response_error("Invalid comment ID")
     comment = get_case_asset_comment(cur_id, com_id)
     if not comment:
         return response_error("Invalid comment ID")
@@ -418,6 +422,8 @@ def case_comment_asset_edit(cur_id, com_id, caseid):
 @ac_requires_case_identifier(CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_asset_delete(cur_id, com_id, caseid):
+    if not get_asset(cur_id, caseid):
+        return response_error('Invalid asset ID')
     success, msg = delete_asset_comment(cur_id, com_id, caseid)
     if not success:
         return response_error(msg)

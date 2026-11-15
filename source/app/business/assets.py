@@ -88,16 +88,18 @@ def assets_delete(asset: CaseAssets):
     track_activity(f'removed asset ID {asset.asset_name}', caseid=asset.case_id)
 
 
-def assets_get(identifier) -> CaseAssets:
-    asset = get_asset(identifier)
+def assets_get(identifier, case_identifier=None) -> CaseAssets:
+    # case_identifier binds the asset to the case the request was authorised for; None = any case (the caller then
+    # checks access on the asset's own case).
+    asset = get_asset(identifier, caseid=case_identifier)
     if not asset:
         raise ObjectNotFoundError()
 
     return asset
 
 
-def assets_get_detailed(identifier):
-    asset = assets_get(identifier)
+def assets_get_detailed(identifier, case_identifier=None):
+    asset = assets_get(identifier, case_identifier=case_identifier)
 
     # TODO this is a code smell: shouldn't have schemas in the business layer + the CaseAssetsSchema is instantiated twice
     case_assets_schema = CaseAssetsSchema()
@@ -163,6 +165,9 @@ def assets_update(asset: CaseAssets, request_json):
     request_data = call_modules_hook('on_preload_asset_update', data=request_json, caseid=caseid)
 
     request_data['asset_id'] = asset.asset_id
+    # The schema loads foreign keys (include_fk): without this a body carrying another case_id moved the asset into that
+    # case. Pinned as iocs_update does.
+    request_data['case_id'] = asset.case_id
 
     asset_schema = _load(request_data, instance=asset)
 

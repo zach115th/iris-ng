@@ -127,6 +127,9 @@ class IOCUpdate(Mutation):
         if modification_history:
             request['modification_history'] = modification_history
         ioc = iocs_get(ioc_id)
+        # The check above covers the request's ?cid= case only; the IOC can belong to any case. Check its own, as
+        # IOCDelete does.
+        permissions_check_current_user_has_some_case_access(ioc.case_id, [CaseAccessLevel.full_access])
         ioc, _ = iocs_update(ioc, request)
         return IOCCreate(ioc=ioc)
 

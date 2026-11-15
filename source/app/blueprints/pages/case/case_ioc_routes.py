@@ -82,7 +82,7 @@ def case_view_ioc_modal(cur_id, caseid, url_redir):
 
     form = ModalAddCaseIOCForm()
     try:
-        ioc = iocs_get(cur_id)
+        ioc = iocs_get(cur_id, caseid)
 
         form.ioc_type_id.choices = [(row['type_id'], row['type_name']) for row in get_ioc_types_list()]
         form.ioc_tlp_id.choices = get_tlps()
@@ -121,7 +121,7 @@ def case_comment_ioc_modal(cur_id, caseid, url_redir):
         return redirect(url_for('case_ioc.case_ioc', cid=caseid, redirect=True))
 
     try:
-        ioc = iocs_get(cur_id)
+        ioc = iocs_get(cur_id, caseid)
 
         return render_template('modal_conversation.html', element_id=cur_id, element_type='ioc', title=ioc.ioc_value)
     except ObjectNotFoundError:

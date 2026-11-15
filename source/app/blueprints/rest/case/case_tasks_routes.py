@@ -88,7 +88,7 @@ def case_get_tasks_state(caseid: int):
 @ac_requires_case_identifier(CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_task_status_update(cur_id: int, caseid: int):
-    task = get_task(task_id=cur_id)
+    task = get_task(task_id=cur_id, caseid=caseid)
     if not task:
         return response_error("Invalid task ID for this case")
 
@@ -122,7 +122,7 @@ def deprecated_case_add_task(caseid: int):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def deprecated_case_task_view(cur_id: int, caseid: int):
-    task = get_task(task_id=cur_id)
+    task = get_task(task_id=cur_id, caseid=caseid)
     if not task:
         return response_error('Invalid task ID for this case')
 
@@ -137,7 +137,7 @@ def deprecated_case_task_view(cur_id: int, caseid: int):
 @ac_api_requires()
 def deprecated_case_edit_task(cur_id: int, caseid: int):
     try:
-        task = get_task(task_id=cur_id)
+        task = get_task(task_id=cur_id, caseid=caseid)
         if not task:
             return response_error(msg='Invalid task ID for this case')
 
@@ -156,7 +156,7 @@ def deprecated_case_edit_task(cur_id: int, caseid: int):
 @ac_api_requires()
 def deprecated_case_delete_task(cur_id: int, caseid: int):
     try:
-        task = tasks_get(identifier=cur_id)
+        task = tasks_get(identifier=cur_id, case_identifier=caseid)
         tasks_delete(task)
         return response_success('Task deleted')
     except BusinessProcessingError as e:
@@ -167,6 +167,8 @@ def deprecated_case_delete_task(cur_id: int, caseid: int):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_task_list(cur_id: int, caseid: int):
+    if not get_task(task_id=cur_id, caseid=caseid):
+        return response_error('Invalid task ID')
 
     task_comments = get_case_task_comments(task_id=cur_id)
     if task_comments is None:
@@ -181,7 +183,7 @@ def case_comment_task_list(cur_id: int, caseid: int):
 def case_comment_task_add(cur_id: int, caseid: int):
 
     try:
-        task = get_task(task_id=cur_id)
+        task = get_task(task_id=cur_id, caseid=caseid)
         if not task:
             return response_error('Invalid task ID')
 
@@ -226,6 +228,8 @@ def case_comment_task_add(cur_id: int, caseid: int):
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_task_get(cur_id: int, com_id: int, caseid: int):
+    if not get_task(task_id=cur_id, caseid=caseid):
+        return response_error("Invalid comment ID")
 
     comment = get_case_task_comment(task_id=cur_id,
                                     comment_id=com_id)
@@ -247,6 +251,8 @@ def case_comment_task_edit(cur_id: int, com_id: int, caseid: int):
 @ac_requires_case_identifier(CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_comment_task_delete(cur_id: int, com_id: int, caseid: int):
+    if not get_task(task_id=cur_id, caseid=caseid):
+        return response_error('Invalid task ID')
 
     success, msg = delete_task_comment(task_id=cur_id, comment_id=com_id)
     if not success:

@@ -95,8 +95,10 @@ def tasks_create(case_identifier: int, request_json: dict) -> (str, CaseTasks):
     raise BusinessProcessingError("Unable to create task for internal reasons")
 
 
-def tasks_get(identifier) -> CaseTasks:
-    task = get_task(identifier)
+def tasks_get(identifier, case_identifier=None) -> CaseTasks:
+    # case_identifier binds the task to the case the request was authorised for; None = any case (the caller then
+    # checks access on the task's own case).
+    task = get_task(identifier, caseid=case_identifier)
     if not task:
         raise ObjectNotFoundError()
     return task
@@ -117,6 +119,9 @@ def tasks_update(task: CaseTasks, request_json):
     del request_data['task_assignees_id']
 
     request_data['id'] = task.id
+    # The schema loads foreign keys (include_fk): without this a body carrying another task_case_id moved the task into
+    # that case. Pinned as iocs_update does.
+    request_data['task_case_id'] = task.task_case_id
     task = _load(request_data, instance=task)
 
     task.task_userid_update = current_user.id
