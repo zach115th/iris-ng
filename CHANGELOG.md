@@ -11,6 +11,45 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.15.2] — 2026-11-15
+
+A security fix release: the case pages and the legacy case API no longer reach the IOCs, assets, tasks, evidence, notes
+and timeline events of a case the user cannot open, and an update no longer moves an asset or a task into another case.
+**No schema change** — the database head stays at `e4b9c2a7f5d1`. Only the app image changes; the nginx and database
+images, and the guest-portal tunnel agent, do not.
+
+### Security
+- **A user with access to one case could reach the objects of other cases.** The legacy case routes check the user's
+  access to the case named in `?cid=`, but then took the IOC, asset, task, evidence item, note or timeline event by its
+  id alone. With their own case in `?cid=` and another case's object id in the path, a user could read another case's
+  IOCs, assets and tasks (the view routes and dialogs) and the comments of all six kinds of object, comment on an IOC,
+  asset or task, delete comments they had written on any of them, update an IOC, asset or task, change a task's status
+  (`POST /case/tasks/status/update/<id>`) and delete a task (`POST /case/tasks/delete/<id>`). Each route now looks the
+  object up in the `?cid=` case only, and another case's object answers as an unknown id does. The defect was inherited
+  and is present in every earlier release.
+- **An asset or task update could move it into another case.** `POST /case/assets/update/<id>`, `POST
+  /case/tasks/update/<id>`, `PUT /api/v2/cases/<cid>/assets/<id>` and `PUT /api/v2/cases/<cid>/tasks/<id>` read
+  `case_id` / `task_case_id` from the request body, so an update could move the asset or task into any case, one the
+  user cannot open included. An update now keeps the object's own case, as an IOC update already did. Inherited, like
+  the item above.
+- **The GraphQL `iocUpdate` mutation** checked full access to the `?cid=` case only, then updated the IOC of any case.
+  It now also requires full access to the IOC's own case, as `iocDelete` does.
+
+### Compatibility
+- A request that names an object of its own `?cid=` case is answered as before. One that names another case's object
+  gets the reply an unknown id gets, and a `case_id` / `task_case_id` in an update's body is ignored. An API client that
+  relied on either was reaching across cases.
+
+### Upgrading
+- **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
+  IRIS-NG-v2.15.2`. From a release before 2.14.0, take the new script first, as the 2.14.0 notes describe.
+- **The image-based `docker-compose.yml`:** take a database dump, then `git checkout IRIS-NG-v2.15.2 && docker compose
+  pull && docker compose up -d`.
+- **Kubernetes:** chart 1.15.2; `helm upgrade` needs nothing else.
+- No migration of its own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on
+  2.11.x 2.12.0's `b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does). An install on a
+  release before 2.15.1 also takes 2.15.1's fix of case deletion, which deleted every IOC-asset link (see its notes).
+
 ## [IRIS-NG-v2.15.1] — 2026-11-14
 
 A fix release: deleting a case no longer deletes the links between the IOCs and assets of every other case. **No schema
