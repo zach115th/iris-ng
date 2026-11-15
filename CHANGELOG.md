@@ -11,6 +11,38 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.15.3] — 2026-11-15
+
+A security fix release: a cluster narrative in the correlation workspace is reachable only by a user who can open every
+case of the cluster. **No schema change** — the database head stays at `e4b9c2a7f5d1`. Only the app image changes, in
+one file; the nginx and database images, and the guest-portal tunnel agent, do not.
+
+### Security
+- **Any signed-in user could read, overwrite or revert the narrative of any correlation cluster.** `POST
+  /api/v2/correlation/cluster-narrative` and `PUT` / `DELETE /api/v2/correlation/cluster-narrative/edit` took the
+  cluster's id and case ids from the request body and checked neither, and a cluster id is derived from its case ids
+  alone. A user with access to no case at all could read a cluster's stored narrative (the cached reply, the edit and
+  revert replies, and the editor named by the manual-edit conflict), replace it with their own text or discard an
+  analyst's correction - and the STIX export and the MISP push publish the newest narrative of a cluster. Every case a
+  request lists must now be one the user can open (read-only access is enough, as for the correlation report itself),
+  and the cluster id must be the one those exact cases give. Present in every earlier IRIS-NG release, 1.x included.
+
+### Compatibility
+- The correlation page's requests are answered as before. A request that lists a case the user cannot open, or a
+  cluster id that does not match its case ids, gets a 404 with the message `Cluster not found among the cases you can
+  access`, whether or not the cases or a narrative exist; a malformed body keeps its 400 reply.
+
+### Upgrading
+- **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
+  IRIS-NG-v2.15.3`. From a release before 2.14.0, take the new script first, as the 2.14.0 notes describe.
+- **The image-based `docker-compose.yml`:** take a database dump, then `git checkout IRIS-NG-v2.15.3 && docker compose
+  pull && docker compose up -d`.
+- **Kubernetes:** chart 1.15.3; `helm upgrade` needs nothing else.
+- No migration of its own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on
+  2.11.x 2.12.0's `b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does). An install on a
+  release before 2.15.2 also takes 2.15.2's case-route fix, and one before 2.15.1 the fix of case deletion, which
+  deleted every IOC-asset link (see their notes).
+
 ## [IRIS-NG-v2.15.2] — 2026-11-15
 
 A security fix release: the case pages and the legacy case API no longer reach the IOCs, assets, tasks, evidence, notes
