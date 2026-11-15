@@ -401,9 +401,12 @@ def delete_case(case_id):
 
     DataStorePath.query.filter(DataStorePath.path_case_id == case_id).delete()
 
+    # Links of this case's assets, including links to IOCs of other cases (the IOC-side links went above).
+    # This filter once compared the asset's id with itself, which is always true: deleting any case that
+    # had an asset deleted every IOC-asset link of every case.
     da = CaseAssets.query.with_entities(CaseAssets.asset_id).filter(CaseAssets.case_id == case_id).all()
     for asset in da:
-        IocAssetLink.query.filter(asset.asset_id == asset.asset_id).delete()
+        IocAssetLink.query.filter(IocAssetLink.asset_id == asset.asset_id).delete()
 
     CaseEventsAssets.query.filter(CaseEventsAssets.case_id == case_id).delete()
 
