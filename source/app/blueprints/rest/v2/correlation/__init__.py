@@ -35,6 +35,7 @@ Routes:
        Returns 404 when the cluster_id is not found under the current filter params.
 """
 
+import hashlib
 import json
 from datetime import datetime
 
@@ -69,6 +70,41 @@ def _parse_date(s: str | None) -> datetime | None:
         return datetime.strptime(s, "%Y-%m-%d")
     except ValueError:
         return None
+
+
+_CLUSTER_NOT_FOUND = "Cluster not found among the cases you can access"
+
+
+def _narrative_cluster(cluster_id, case_ids):
+    """Check the cluster a narrative request names: ((cluster_id, sorted case ids), None) or (None, the reply).
+
+    The narrative routes take the cluster's id and case ids from the request body, and a narrative is stored on the
+    lowest of those cases. Every listed case must be one the user can open - the rule the report uses to show a
+    cluster (any access but deny_all) - and the id must be the one the report derives from exactly those cases (the
+    `cluster_hash` of business/ioc_correlation.py); otherwise a user who can open the lowest case could name it with
+    another cluster's id and reach that cluster's narrative. A refused request gets the same reply whether or not the
+    cases or a narrative exist.
+    """
+    cluster_id = str(cluster_id or '').strip()
+    if not cluster_id:
+        return None, response_api_error("'cluster_id' is required")
+    if not isinstance(case_ids, list) or not case_ids:
+        return None, response_api_error("'case_ids' must be a non-empty list")
+    ids = set()
+    for c in case_ids:
+        if isinstance(c, bool) or not isinstance(c, (int, str)):
+            return None, response_api_error("'case_ids' must be integers")
+        try:
+            ids.add(int(c))
+        except ValueError:
+            return None, response_api_error("'case_ids' must be integers")
+    ids = sorted(ids)
+
+    accessible = set(ac_get_fast_user_cases_access(current_user.id) or [])
+    derived = hashlib.md5(",".join(str(c) for c in ids).encode()).hexdigest()[:8]
+    if derived != cluster_id or not accessible.issuperset(ids):
+        return None, response(404, data={'message': _CLUSTER_NOT_FOUND})
+    return (cluster_id, ids), None
 
 
 @correlation_blueprint.route('/report', methods=['GET'])
@@ -216,6 +252,11 @@ def cluster_narrative():
         return response_api_error("'case_meta' dict is required", 400)
     if not cluster.get('case_ids'):
         return response_api_error("cluster.case_ids must be non-empty", 400)
+    checked, refusal = _narrative_cluster(cluster.get('cluster_id'), cluster.get('case_ids'))
+    if refusal is not None:
+        return refusal
+    cluster_id, case_ids = checked
+    cluster = dict(cluster, cluster_id=cluster_id, case_ids=case_ids)
 
     force = str(data.get('force', '')).lower() in ('1', 'true', 'yes')
     discard_edit = str(data.get('discard_edit', '')).lower() in ('1', 'true', 'yes')
@@ -225,8 +266,7 @@ def cluster_narrative():
     # analyst's corrections. Server-side so API clients are covered too.
     if not discard_edit:
         from app.iris_engine.ai.cluster_narrative import get_latest_cluster_narrative
-        anchor = min(cluster['case_ids'])
-        existing = get_latest_cluster_narrative(anchor, str(cluster.get('cluster_id') or ''))
+        existing = get_latest_cluster_narrative(case_ids[0], cluster_id)
         if existing is not None and existing.is_edited:
             # Real 409 Conflict. NB: response_api_error()'s second positional is
             # `data`, not a status code, and it always emits 400 — the existing
@@ -259,22 +299,17 @@ def cluster_narrative():
 
 
 def _anchor_from_body(data: dict):
-    """Resolve (anchor_case_id, cluster_id) from an edit request body.
+    """Resolve (anchor_case_id, cluster_id, None) from an edit request body, or (None, None, the reply).
 
     The anchor is min(case_ids) — the same convention generate_cluster_narrative
-    uses to pick which case row the artifact hangs off.
+    uses to pick which case row the artifact hangs off. `_narrative_cluster`
+    refuses a cluster the user cannot open.
     """
-    cluster_id = str(data.get('cluster_id') or '').strip()
-    case_ids = data.get('case_ids')
-    if not cluster_id:
-        return None, None, "'cluster_id' is required"
-    if not isinstance(case_ids, list) or not case_ids:
-        return None, None, "'case_ids' must be a non-empty list"
-    try:
-        anchor = min(int(c) for c in case_ids)
-    except (TypeError, ValueError):
-        return None, None, "'case_ids' must be integers"
-    return anchor, cluster_id, None
+    checked, refusal = _narrative_cluster(data.get('cluster_id'), data.get('case_ids'))
+    if refusal is not None:
+        return None, None, refusal
+    cluster_id, case_ids = checked
+    return case_ids[0], cluster_id, None
 
 
 @correlation_blueprint.route('/cluster-narrative/edit', methods=['PUT'])
@@ -288,9 +323,9 @@ def cluster_narrative_edit():
     narrative is read, including the STIX bundle export.
     """
     data = request.get_json(silent=True) or {}
-    anchor, cluster_id, err = _anchor_from_body(data)
-    if err:
-        return response_api_error(err)
+    anchor, cluster_id, refusal = _anchor_from_body(data)
+    if refusal is not None:
+        return refusal
 
     from app.iris_engine.ai.cluster_narrative import (
         ClusterNarrativeEditError,
@@ -316,9 +351,9 @@ def cluster_narrative_edit():
 def cluster_narrative_revert():
     """Discard the analyst correction, restoring the original AI narrative."""
     data = request.get_json(silent=True) or {}
-    anchor, cluster_id, err = _anchor_from_body(data)
-    if err:
-        return response_api_error(err)
+    anchor, cluster_id, refusal = _anchor_from_body(data)
+    if refusal is not None:
+        return refusal
 
     from app.iris_engine.ai.cluster_narrative import (
         ClusterNarrativeEditError,
