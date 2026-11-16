@@ -11,6 +11,49 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.15.4] — 2026-11-16
+
+A security fix release: links in the case pages' AI replies and in server-rendered Markdown keep their address only
+when it is a safe one. **No schema change** — the database head stays at `e4b9c2a7f5d1`. Only the app image changes:
+the fix's five files and the version number; the nginx and database images, and the guest-portal tunnel agent, do not.
+
+### Security
+- **A link in an AI reply could carry markup or run script.** The case pages' AI panels (the case summary panel, case
+  chat and the timeline's per-event analysis) wrote a Markdown link's address into the link with only `&`, `<` and `>`
+  escaped, and kept any scheme: a `"` in the address ended the attribute, so the rest of it became attributes of the
+  link (an event handler such as `onmouseover` among them), and a `javascript:` or `data:` link was kept. The text
+  is the model's reply, and the model reads the case's content (alerts and notes included), so text that reached a
+  case could steer such a link into a reply. A link now keeps its address only for an `http` or `https` URL or a path
+  on the same site (one leading `/`), escaped for the attribute; any other link shows as its text.
+- **Server-rendered Markdown let a script link through when its scheme was spelled with HTML entities.** The renderer
+  behind alert descriptions and notes in the Alerts queue, case descriptions, executive summaries and closing notes in
+  the Overview queue and the case preview, war-room notes and the linked case notes a room shows, SitReps and their
+  preview, decision rationales, Board notes, the room's operational summary, the note excerpts in the correlation
+  workspace and the update banner's release notes refused only `javascript:`, `data:` and `vbscript:` links, judged on
+  the text as typed - while the renderer decodes HTML entities when it writes the link. `&#106;avascript:` passed the
+  check and reached the page as a working `javascript:` link, and a link with any other scheme (`file:` among them)
+  was kept. The address is now decoded first, and only `http`, `https` and `mailto` links, or links with no scheme (a
+  relative path, a query or a fragment), keep their link.
+- Both are present in every IRIS-NG-v2 release and in 1.4.x.
+
+### Compatibility
+- In the AI panels, a link to anything other than an `http` / `https` URL or a same-site path - a `mailto:` address, a
+  relative path without a leading `/`, a `//host` address - now shows as its text. A bare URL in an AI reply was never
+  a link and is still not one.
+- In server-rendered Markdown, a link with a scheme other than `http`, `https` or `mailto` (`ftp:`, `file:`, `tel:`,
+  an application's own scheme) now shows as its text; links with no scheme are unchanged.
+
+### Upgrading
+- **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
+  IRIS-NG-v2.15.4`. From a release before 2.14.0, take the new script first, as the 2.14.0 notes describe.
+- **The image-based `docker-compose.yml`:** take a database dump, then `git checkout IRIS-NG-v2.15.4 && docker compose
+  pull && docker compose up -d`.
+- **Kubernetes:** chart 1.15.4; `helm upgrade` needs nothing else.
+- No migration of its own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on
+  2.11.x 2.12.0's `b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does). An install on a
+  release before 2.15.3 also takes 2.15.3's cluster-narrative fix, one before 2.15.2 2.15.2's case-route fix, and one
+  before 2.15.1 the fix of case deletion, which deleted every IOC-asset link (see their notes).
+
 ## [IRIS-NG-v2.15.3] — 2026-11-15
 
 A security fix release: a cluster narrative in the correlation workspace is reachable only by a user who can open every
