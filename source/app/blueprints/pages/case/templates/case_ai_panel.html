@@ -638,6 +638,19 @@
     function isTableRow(line) { return /^\s*\|.*\|\s*$/.test(line); }
     function isBQ(line) { return /^\s*>\s?/.test(line); }
 
+    // iris-ng (2026-11-15): a link keeps its URL only when it is an http(s) URL or a same-site path
+    // (help_tips.js safeHref's rule), and the URL is escaped for the attribute - inline() escapes
+    // & < > only, so a " in a link once ended the href. `url` is inline()'s escaped text: undo that
+    // to see what the browser reads, and drop what a URL parser ignores (C0 controls and spaces at
+    // either end, tab / CR / LF anywhere). Anything else renders as the link text alone.
+    function linkHref(url) {
+      var raw = url.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+      var s = raw.replace(/^[\u0000-\u0020]+|[\u0000-\u0020]+$/g, '').replace(/[\t\n\r]/g, '');
+      var ok = /^https?:\/\/[^\s]/i.test(s) ||
+        (s.charAt(0) === '/' && s.charAt(1) !== '/' && s.charAt(1) !== '\\');
+      return ok ? url.replace(/"/g, '&quot;').replace(/'/g, '&#39;') : null;
+    }
+
     function inline(s) {
       // 1) escape HTML
       s = s.replace(/[&<>]/g, function(c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]; });
@@ -649,7 +662,11 @@
       s = s.replace(/(^|[\s(])\*([^\*\n]+)\*/g, '$1<em>$2</em>');
       s = s.replace(/(^|[\s(])_([^_\n]+)_/g, '$1<em>$2</em>');
       // 4) links [text](url)
-      s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(_, text, url) {
+        var href = linkHref(url);
+        return href === null ? text
+          : '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + text + '</a>';
+      });
       return s;
     }
 

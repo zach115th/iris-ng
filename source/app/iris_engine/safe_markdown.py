@@ -13,17 +13,28 @@ at render time needs neither, and keeps tables/lists/code intact.
 """
 
 import html
+import re
 
 from mistletoe import Document
 from mistletoe.html_renderer import HTMLRenderer
 
-# Schemes that execute script when placed in an href. Compared after all
-# whitespace is stripped, because browsers tolerate `java\tscript:`.
-_DANGEROUS_SCHEMES = ('javascript:', 'data:', 'vbscript:')
+# The schemes a link may carry; a link with no scheme (a relative path, a query or a fragment) is kept too.
+_ALLOWED_SCHEMES = ('http', 'https', 'mailto')
+_SCHEME = re.compile(r'^([a-z][a-z0-9+.\-]*):')
 
 
 def _is_dangerous_target(target: str) -> bool:
-    return ''.join((target or '').split()).lower().startswith(_DANGEROUS_SCHEMES)
+    """Whether a link target has a scheme outside _ALLOWED_SCHEMES.
+
+    Judged on the value the browser receives: mistletoe's escape_url() decodes HTML entities in the target
+    before writing the href, so `&#106;avascript:` reaches the page as `javascript:` - decode first. Every
+    control character, space and other whitespace is then dropped (browsers ignore them around a URL and tab /
+    CR / LF inside one), which can only make the check stricter.
+    """
+    s = html.unescape(target or '')
+    s = ''.join(ch for ch in s if ord(ch) > 0x20 and not ch.isspace()).lower()
+    m = _SCHEME.match(s)
+    return bool(m) and m.group(1) not in _ALLOWED_SCHEMES
 
 
 class SafeHTMLRenderer(HTMLRenderer):
