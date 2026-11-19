@@ -11,6 +11,56 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.15.5] — 2026-11-19
+
+A security fix release: a request is checked for sign-in before its body is read, request bodies have a size limit,
+and a page opened with a case id shows that case only to a user who can open it. **No schema change** — the database
+head stays at `e4b9c2a7f5d1`. Only the app image changes, in four source files (the version number is in one of
+them); the nginx and database images, and the guest-portal tunnel agent, do not.
+
+### Security
+- **A request that was not signed in could make the server read and parse its body.** The API routes checked the
+  CSRF token before sign-in, and that check parses the body (a form or JSON) whenever a POST carries a session cookie
+  of any value; the war-room routes did the same; and on most case routes the check that finds the case, which runs
+  first, read a JSON body for its case id before anything looked at sign-in. A caller with no account and a made-up
+  cookie could so make the server read and parse up to 100 MB per request (nginx's limit) - and bodies of any size on
+  the template, case-file, datastore and working-timeline upload paths, where nginx sets no limit. All three now check
+  sign-in first: a request that is not signed in gets `401 Authentication required` before its body is touched, and a
+  war-room guest's CSRF token is checked once the guest is known.
+- **The application set no limit on a request body.** A body larger than **32 MB** is now refused with a `413` whose
+  message names the limit; `IRIS_MAX_REQUEST_MB` in `.env` changes it (nginx's own 100 MB limit still applies in front
+  of it). The routes that take files or whole imports keep nginx's limits: templates, case files, asset-type icons,
+  the datastore, war-room datastore and stream files, case and customer-asset imports, the working-timeline imports
+  and the IOC, asset and timeline CSV imports.
+- **A page opened with `?cid=<id>` showed that case's name and customer to any signed-in user.** Home and the other
+  pages outside the case tabs made the case in their URL the session's current case without checking access to it:
+  its name went into the page title and header, and its name and customer into the session cookie, which the browser
+  can read. A user without access to the case now sees `Access denied to #<id>`, as on the case pages.
+- The first and the last are present in every earlier IRIS-NG release, 1.x included; the war-room routes had the
+  first since they were added.
+
+### Compatibility
+- A request that is not signed in gets `401` before anything else is checked: an anonymous POST carrying a session
+  cookie, which used to get `400 Invalid CSRF token`, and two asset list routes that used to answer `403`, now get
+  `401`. Signed-in requests and
+  API keys are answered as before (a signed-in browser POST without its CSRF token still gets `400 Invalid CSRF token`).
+- An API client sending more than 32 MB to an ordinary route - an alert with very large content, say - gets a `413`;
+  raise `IRIS_MAX_REQUEST_MB` for it. The Helm chart does not set the variable, so the 32 MB default applies there.
+- A user without access to a case who opens a page with that case's id sees `Access denied to #<id>` in the header
+  instead of the case. Users with access, and an id that does not exist, are unchanged.
+
+### Upgrading
+- **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
+  IRIS-NG-v2.15.5`. From a release before 2.14.0, take the new script first, as the 2.14.0 notes describe.
+- **The image-based `docker-compose.yml`:** take a database dump, then `git checkout IRIS-NG-v2.15.5 && docker compose
+  pull && docker compose up -d`.
+- **Kubernetes:** chart 1.15.5; `helm upgrade` needs nothing else.
+- No migration of its own; an install still on 2.12.x applies 2.13.0's `e4b9c2a7f5d1` at the first start, and one on
+  2.11.x 2.12.0's `b7e2c9f4a1d6` before it, so take a database dump first (`scripts/update.sh` does). An install on a
+  release before 2.15.4 also takes 2.15.4's link fixes, one before 2.15.3 2.15.3's cluster-narrative fix, one before
+  2.15.2 2.15.2's case-route fix, and one before 2.15.1 the fix of case deletion, which deleted every IOC-asset link
+  (see their notes).
+
 ## [IRIS-NG-v2.15.4] — 2026-11-16
 
 A security fix release: links in the case pages' AI replies and in server-rendered Markdown keep their address only
