@@ -16,7 +16,9 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 A security fix release: a request is checked for sign-in before its body is read, request bodies have a size limit,
 and a page opened with a case id shows that case only to a user who can open it. **No schema change** — the database
 head stays at `e4b9c2a7f5d1`. Only the app image changes, in four source files (the version number is in one of
-them); the nginx and database images, and the guest-portal tunnel agent, do not.
+them); the nginx and database images, and the guest-portal tunnel agent, do not. The release build also resolved two
+newer unpinned transitive packages: pydantic 2.14.3 → 2.14.4 and pydantic-core 2.50.4 → 2.50.5 (under `oic`'s
+pydantic-settings, unchanged at 2.16.3); the released image imports them, boots, and passes the fix's checks.
 
 ### Security
 - **A request that was not signed in could make the server read and parse its body.** The API routes checked the
@@ -40,10 +42,10 @@ them); the nginx and database images, and the guest-portal tunnel agent, do not.
   first since they were added.
 
 ### Compatibility
-- A request that is not signed in gets `401` before anything else is checked: an anonymous POST carrying a session
-  cookie, which used to get `400 Invalid CSRF token`, and two asset list routes that used to answer `403`, now get
-  `401`. Signed-in requests and
-  API keys are answered as before (a signed-in browser POST without its CSRF token still gets `400 Invalid CSRF token`).
+- A request that is not signed in gets `401` before anything else is checked. An anonymous POST carrying a session
+  cookie used to get `400 Invalid CSRF token`, and an anonymous request to most legacy `/case/...` and `/datastore/...`
+  routes `403 Permission denied`; both now get `401`. Signed-in requests and API keys are answered as before (a
+  signed-in browser POST without its CSRF token still gets `400 Invalid CSRF token`).
 - An API client sending more than 32 MB to an ordinary route - an alert with very large content, say - gets a `413`;
   raise `IRIS_MAX_REQUEST_MB` for it. The Helm chart does not set the variable, so the 32 MB default applies there.
 - A user without access to a case who opens a page with that case's id sees `Access denied to #<id>` in the header
