@@ -265,7 +265,9 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         model = User
         load_instance = True
         include_fk = True
+        # iris-ng: the MFA fields never leave or enter through a schema (the setup page and Reset MFA own them)
         exclude = ['api_key', 'password', 'ctx_case', 'ctx_human_case', 'user', 'name', 'email', 'is_service_account',
+                   'mfa_secrets', 'webauthn_credentials',
                    'mfa_failed_attempts', 'mfa_locked_until', 'mfa_last_timestep']
         unknown = EXCLUDE
 
@@ -1196,7 +1198,8 @@ class UserFullSchema(ma.SQLAlchemyAutoSchema):
         model = User
         load_instance = True
         include_fk = True
-        exclude = ['password', 'ctx_case', 'ctx_human_case', 'mfa_failed_attempts', 'mfa_locked_until', 'mfa_last_timestep']
+        exclude = ['password', 'ctx_case', 'ctx_human_case', 'mfa_secrets', 'webauthn_credentials',
+                   'mfa_failed_attempts', 'mfa_locked_until', 'mfa_last_timestep']
         unknown = EXCLUDE
 
 
@@ -2434,7 +2437,8 @@ class BasicUserSchema(ma.SQLAlchemyAutoSchema):
         model = User
         load_instance = True
         exclude = ['password', 'api_key', 'ctx_case', 'ctx_human_case', 'active', 'external_id', 'in_dark_mode',
-                   'id', 'name', 'email', 'user', 'uuid', 'mfa_failed_attempts', 'mfa_locked_until', 'mfa_last_timestep']
+                   'id', 'name', 'email', 'user', 'uuid', 'mfa_secrets', 'webauthn_credentials',
+                   'mfa_failed_attempts', 'mfa_locked_until', 'mfa_last_timestep']
         unknown = EXCLUDE
 
 
