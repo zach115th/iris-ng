@@ -40,6 +40,23 @@ def _minutes_left(until: datetime | None, now: datetime) -> int:
     return max(1, int((until - now).total_seconds() // 60) + 1)
 
 
+def secret_usable(secret: str | None) -> bool:
+    """Can a code ever be checked against this stored secret?
+
+    pyotp (2.12+) refuses a secret that is not Base32 or decodes to fewer than 112 bits. IRIS has
+    always generated 160-bit secrets, but an account holding a shorter or damaged one can never
+    pass the second factor: its MFA has to be reset by an administrator (Reset MFA), and the
+    verification page says so instead of counting wrong codes.
+    """
+    if not secret:
+        return False
+    try:
+        pyotp.TOTP(secret).byte_secret()
+    except (binascii.Error, ValueError, TypeError):
+        return False
+    return True
+
+
 def code_step(secret: str | None, token) -> int | None:
     """The TOTP time-step `token` is valid for under `secret` right now, else None.
 

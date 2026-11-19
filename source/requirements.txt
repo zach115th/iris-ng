@@ -39,7 +39,7 @@ cvss==3.6
 PyJWT==2.15.1
 cryptography>=50.0.2
 ldap3==2.9.1
-pyotp==2.10.0
+pyotp==2.12.1
 graphene==3.4.3
 # /graphql runs on it directly (app/blueprints/graphql/graphql_view.py); graphene 3.4.3 needs <3.3
 graphql-core==3.2.14

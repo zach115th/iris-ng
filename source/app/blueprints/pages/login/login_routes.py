@@ -39,7 +39,8 @@ from app import oidc_client
 from app.blueprints.access_controls import is_authentication_oidc, is_authentication_ldap
 from app.blueprints.responses import response_error
 from app.business.auth import validate_ldap_login, _retrieve_user_by_username, wrap_login_user, is_mfa_exempt
-from app.business.mfa_attempts import accept_code, attempt_failed, begin_attempt, clear_attempts, code_step
+from app.business.mfa_attempts import accept_code, attempt_failed, begin_attempt, clear_attempts, code_step, \
+    secret_usable
 from app.datamgmt.manage.manage_users_db import create_user
 from app.datamgmt.manage.manage_users_db import get_user
 from app.forms import LoginForm, MFASetupForm
@@ -308,7 +309,7 @@ def mfa_setup():
                 flash(_locked_message(minutes) if minutes else 'Invalid token or password. Please try again.', 'danger')
 
     temp_otp_secret = pyotp.random_base32()
-    otp_uri = pyotp.TOTP(temp_otp_secret).provisioning_uri(user.email, issuer_name="IRIS")
+    otp_uri = pyotp.TOTP(temp_otp_secret).provisioning_uri(name=user.email, issuer_name="IRIS")
     form.mfa_secret.data = temp_otp_secret
     img = qrcode.make(otp_uri)
     buf = io.BytesIO()
@@ -336,6 +337,15 @@ def mfa_verify():
 
     form = MFASetupForm()
     form.user_password.data = 'not required for verification'
+
+    # iris-ng: a stored secret no code can match (shorter than 112 bits, or damaged) is not a wrong
+    # code: say that an administrator must reset the account's MFA, and count no attempt.
+    if not secret_usable(user.mfa_secrets):
+        track_activity(f'MFA verification impossible for user {user.user}: the stored MFA secret is not accepted, '
+                       f'an administrator must reset MFA', ctx_less=True, display_in_ui=False)
+        flash('Your MFA setup can no longer be used. Ask an administrator to reset your MFA '
+              '(Settings - Users - Reset MFA), then sign in again to set it up.', 'danger')
+        return render_template('mfa_verify.html', form=form)
 
     if form.submit() and form.validate():
         token = form.token.data
