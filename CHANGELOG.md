@@ -11,6 +11,87 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.0] — 2026-11-19
+
+A security release: multi-factor sign-in can no longer be bypassed or guessed at, the user routes stop returning MFA
+secrets and password hashes, and a round of dependency updates. **One migration**, `b3f7d1a9c5e2`, adds three columns
+to `user` at the first start - take a database dump first (`scripts/update.sh` does). The app image changes; the
+guest-portal tunnel agent gets a newer cloudflared; the nginx and database images do not change.
+
+### Security
+- **A password alone could replace an account's authenticator.** The MFA setup page was reachable right after the
+  password step, before the second factor was checked. It asked for the password again but not for the current second
+  factor, so anyone with the password could enrol an authenticator of their own over the user's and finish signing in
+  with it. An account whose MFA is set up now replaces its secret only from a session that is fully signed in (Profile
+  → Reset MFA); a first setup is still offered right after the password, as before.
+- **Second-factor codes could be guessed without limit, and reused.** Every code entered on the setup and verification
+  pages now counts against the account: after 10 failures the second factor is locked for 15 minutes. A correct code
+  clears the count, signing in again does not, and an administrator's Reset MFA clears the count and the lock. A code
+  that has been accepted once - the setup code included - is refused afterwards.
+- **The user routes returned MFA secrets, and accepted them.** The administrator's user list and user details, the
+  API-key renewal, `/user/whoami` and the profile update all carried the account's TOTP secret (`mfa_secrets`) and
+  `webauthn_credentials`; an administrator's user update could also write another user's MFA secret, and a profile
+  update the caller's own, without the setup page's checks. Neither field is read or written through them any more.
+- **The user routes returned the password hash.** The replies to an administrator's user update, deactivate and
+  activate, and to a user's own profile update, carried the account's bcrypt hash as `user_password`. The field is now
+  write-only: a password is still set through it, and the hash is never returned.
+- All four are present in every earlier IRIS-NG release, 1.x included.
+- **pypdf 7.0.1 → 7.1.1** fixes GHSA-5chg-c4f3-fw2p, GHSA-7f8r-xhw3-553h, GHSA-cqpq-3wwr-f5p2, GHSA-j9r2-rv26-5qv2 and
+  GHSA-p3v2-r3fx-qpm6 (memory use, and an entry limit that was not applied, while reading crafted PDFs). Dependabot
+  proposed 7.1.0, which still has all five. IRIS uses pypdf only to fill its own bundled FEMA ICS forms, so none of them
+  was reachable; every form exports exactly as before.
+- **cloudflared 2026.10.7 → 2026.11.0 in the guest-portal tunnel agent.** A request whose path carried `;` parameters
+  could be matched to a tunnel rule other than the one Cloudflare Access protects. Only a named tunnel whose hostname
+  enforces Access token validation in Zero Trust has such a rule; the quick tunnel's single rule behaves as before. It
+  is built with Go 1.27.4 (security fixes to `net/http` among others), and 2026.10.2's distrust of the compromised
+  eMudhra intermediates stays in. The agent starts, connects, serves the portal and restarts cloudflared after a crash
+  as before.
+- **The UI's lint tooling** (eslint 10.14.0 → 10.15.0) moves minimatch to 11.0.8 and brace-expansion to 5.0.13, which
+  fix GHSA-cf2h-pxjq-68xw, GHSA-hqmv-qgp3-jx75, GHSA-c859-jr93-m5j4 and GHSA-6jwq-xf8q-xcwh. They run only when the UI
+  is linted, on the repository's own patterns, and are in no image. The override that forced minimatch 11 since 2.9.4
+  is removed: eslint now requires it itself.
+
+### Changed
+- **pyotp 2.10.0 → 2.12.1.** pyotp now refuses an MFA secret shorter than 112 bits, or one that is not valid Base32.
+  IRIS has always generated 160-bit secrets; an account holding a shorter one can no longer pass the second factor, and
+  its verification page now says that an administrator must reset its MFA (Settings → Users → Reset MFA) instead of
+  reporting wrong codes. The user then sets up a new authenticator at the next sign-in.
+- **email-validator 2.3.0 → 2.4.0** (the email check of the add-user, customer-contact and registration forms): an
+  address whose domain mixes a right-to-left label with a label that starts with a digit (`user@1.xn--4dbc.com`) is now
+  refused, as the IDNA rules require; every other address gets the same answer as before. Addresses already stored are
+  not re-checked.
+- **gunicorn 27.0.0 → 27.0.1**: a worker that is stopping keeps its kept-alive connections open for up to 2 seconds and
+  answers a request that arrives on one with `Connection: close`, instead of dropping it.
+- The MFA setup and verification pages show their messages (wrong code, lock, reset needed); before, no message
+  reached the page.
+- End-to-end harness: @playwright/test 1.65.1.
+
+### Compatibility
+- **API change:** the user routes (`/manage/users/...`, `/user/whoami`, `/user/update`) no longer return
+  `mfa_secrets`, `webauthn_credentials` or `user_password`, nor the three new columns, and ignore the MFA fields when
+  they are sent. A password is set through `user_password` as before; MFA is set up only through the setup page and
+  cleared with Reset MFA.
+- **MFA:** each code works once, so the verification right after a setup asks for the next code; a user who enters
+  ten wrong codes waits 15 minutes or asks an administrator for Reset MFA; replacing an authenticator needs a signed-in
+  session (Profile → Reset MFA). Accounts that do not sign in with MFA, and the exempt ones, are unaffected.
+
+### Upgrading
+- **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
+  IRIS-NG-v2.16.0` - it takes the database dump before migration `b3f7d1a9c5e2` runs. From a release before 2.14.0,
+  take the new script first, as the 2.14.0 notes describe. **With the guest portal enabled, `scripts/update.sh` rebuilds
+  the tunnel agent** and so picks up cloudflared 2026.11.0; Settings → Guest Portal shows the version it reports. To
+  rebuild the agent alone, from the clone: `docker compose -f docker-compose.dev.yml -f docker-compose.portal.yml build
+  --pull tunnel`, then the same with `up -d tunnel`. A quick tunnel gets a new hostname whenever it restarts; a named
+  tunnel keeps its own.
+- **The image-based `docker-compose.yml`:** take a database dump, then `git checkout IRIS-NG-v2.16.0 && docker compose
+  pull && docker compose up -d`.
+- **Kubernetes:** chart 1.16.0; `helm upgrade` needs nothing else (the migration runs when the app starts).
+- Migration `b3f7d1a9c5e2` chains from 2.13.0's `e4b9c2a7f5d1`; an install still on 2.12.x applies `e4b9c2a7f5d1` first,
+  and one on 2.11.x 2.12.0's `b7e2c9f4a1d6` before that. A downgrade to an earlier release afterwards fails at boot
+  (`Can't locate revision`) - restore the dump instead. An install on a release before 2.15.5 also takes 2.15.5's
+  sign-in check before a request body is read and its 32 MB body limit, and one before 2.15.4 the earlier fixes listed
+  in 2.15.5's notes.
+
 ## [IRIS-NG-v2.15.5] — 2026-11-19
 
 A security fix release: a request is checked for sign-in before its body is read, request bodies have a size limit,
