@@ -128,7 +128,7 @@ def add_user():
 
         udata = user_schema.dump(user)
         udata['user_api_key'] = user.api_key
-        del udata['user_password']
+        udata.pop('user_password', None)   # write-only in UserSchema: never dumped, popped in case that changes
 
         if cuser:
             track_activity("created user {}".format(user.user),  ctx_less=True)
