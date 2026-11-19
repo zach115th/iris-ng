@@ -265,7 +265,8 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         model = User
         load_instance = True
         include_fk = True
-        exclude = ['api_key', 'password', 'ctx_case', 'ctx_human_case', 'user', 'name', 'email', 'is_service_account']
+        exclude = ['api_key', 'password', 'ctx_case', 'ctx_human_case', 'user', 'name', 'email', 'is_service_account',
+                   'mfa_failed_attempts', 'mfa_locked_until', 'mfa_last_timestep']
         unknown = EXCLUDE
 
     @pre_load()
@@ -1195,7 +1196,7 @@ class UserFullSchema(ma.SQLAlchemyAutoSchema):
         model = User
         load_instance = True
         include_fk = True
-        exclude = ['password', 'ctx_case', 'ctx_human_case']
+        exclude = ['password', 'ctx_case', 'ctx_human_case', 'mfa_failed_attempts', 'mfa_locked_until', 'mfa_last_timestep']
         unknown = EXCLUDE
 
 
@@ -2433,7 +2434,7 @@ class BasicUserSchema(ma.SQLAlchemyAutoSchema):
         model = User
         load_instance = True
         exclude = ['password', 'api_key', 'ctx_case', 'ctx_human_case', 'active', 'external_id', 'in_dark_mode',
-                   'id', 'name', 'email', 'user', 'uuid']
+                   'id', 'name', 'email', 'user', 'uuid', 'mfa_failed_attempts', 'mfa_locked_until', 'mfa_last_timestep']
         unknown = EXCLUDE
 
 

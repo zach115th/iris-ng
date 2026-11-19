@@ -39,6 +39,7 @@ from app import oidc_client
 from app.blueprints.access_controls import is_authentication_oidc, is_authentication_ldap
 from app.blueprints.responses import response_error
 from app.business.auth import validate_ldap_login, _retrieve_user_by_username, wrap_login_user, is_mfa_exempt
+from app.business.mfa_attempts import accept_code, attempt_failed, begin_attempt, clear_attempts, code_step
 from app.datamgmt.manage.manage_users_db import create_user
 from app.datamgmt.manage.manage_users_db import get_user
 from app.forms import LoginForm, MFASetupForm
@@ -250,39 +251,61 @@ def mfa_setup():
         flash('This account is exempt from multi-factor authentication.', 'warning')
         return redirect(url_for('profile.user_settings', cid=user.ctx_case))
 
+    # iris-ng: an account that has MFA set up replaces its secret only from a session that is
+    # fully signed in. The password step puts the login in the session before the second factor is
+    # checked, and this page checks the password again but not the current second factor - so a
+    # password alone could enrol a new authenticator over the user's own and finish the sign-in
+    # with it. A first setup (no complete secret yet) stays open from the password step.
+    enrolled = bool(user.mfa_secrets) and bool(user.mfa_setup_complete)
+    signed_in = current_user.is_authenticated and current_user.id == user.id
+    if enrolled and not signed_in:
+        track_activity(f'MFA setup refused for user {user.user}: MFA is set up and the second factor is not '
+                       f'verified', ctx_less=True, display_in_ui=False)
+        return redirect(url_for('mfa_verify'))
+
     form = MFASetupForm()
 
     if form.submit() and form.validate():
+        locked = begin_attempt(user.id)
+        if locked:
+            track_activity(f'MFA setup refused for user {user.user}: too many failed attempts', ctx_less=True,
+                           display_in_ui=False)
+            flash(_locked_message(locked), 'danger')
+        else:
+            token = form.token.data
+            mfa_secret = form.mfa_secret.data
+            user_password = form.user_password.data
+            step = code_step(mfa_secret, token)
 
-        token = form.token.data
-        mfa_secret = form.mfa_secret.data
-        user_password = form.user_password.data
-        totp = pyotp.TOTP(mfa_secret)
+            if step is not None:
+                has_valid_password = False
+                if is_authentication_ldap() is True:
+                    if validate_ldap_login(user.user, user_password,
+                                           local_fallback=app.config.get('AUTHENTICATION_LOCAL_FALLBACK')):
+                        has_valid_password = True
 
-        if totp.verify(token):
-            has_valid_password = False
-            if is_authentication_ldap() is True:
-                if validate_ldap_login(user.user, user_password,
-                                       local_fallback=app.config.get('AUTHENTICATION_LOCAL_FALLBACK')):
+                elif bc.check_password_hash(user.password, user_password):
                     has_valid_password = True
 
-            elif bc.check_password_hash(user.password, user_password):
-                has_valid_password = True
+                if not has_valid_password:
+                    track_activity(f'Failed MFA setup for user {user.user}. Invalid password.', ctx_less=True, display_in_ui=False)
+                    minutes = attempt_failed(user.id)
+                    flash(_locked_message(minutes) if minutes else 'Invalid password. Please try again.', 'danger')
+                    return render_template('mfa_setup.html', form=form)
 
-            if not has_valid_password:
-                track_activity(f'Failed MFA setup for user {user.user}. Invalid password.', ctx_less=True, display_in_ui=False)
-                flash('Invalid password. Please try again.', 'danger')
-                return render_template('mfa_setup.html', form=form)
-
-            user.mfa_secrets = mfa_secret
-            user.mfa_setup_complete = True
-            db.session.commit()
-            session["mfa_verified"] = False
-            track_activity(f'MFA setup successful for user {user.user}', ctx_less=True, display_in_ui=False)
-            return wrap_login_user(user)
-        else:
-            track_activity(f'Failed MFA setup for user {user.user}. Invalid token.', ctx_less=True, display_in_ui=False)
-            flash('Invalid token or password. Please try again.', 'danger')
+                user.mfa_secrets = mfa_secret
+                user.mfa_setup_complete = True
+                clear_attempts(user)
+                # The setup code counts as used: the verification that follows needs the next one.
+                user.mfa_last_timestep = step
+                db.session.commit()
+                session["mfa_verified"] = False
+                track_activity(f'MFA setup successful for user {user.user}', ctx_less=True, display_in_ui=False)
+                return wrap_login_user(user)
+            else:
+                track_activity(f'Failed MFA setup for user {user.user}. Invalid token.', ctx_less=True, display_in_ui=False)
+                minutes = attempt_failed(user.id)
+                flash(_locked_message(minutes) if minutes else 'Invalid token or password. Please try again.', 'danger')
 
     temp_otp_secret = pyotp.random_base32()
     otp_uri = pyotp.TOTP(temp_otp_secret).provisioning_uri(user.email, issuer_name="IRIS")
@@ -302,6 +325,9 @@ def mfa_verify():
         return redirect(url_for('login.login'))
 
     user = _retrieve_user_by_username(username=session['username'])
+    if not user:
+        session.pop('username', None)
+        return redirect(url_for('login.login'))
 
     # Redirect user to MFA setup if MFA is not fully set up
     if not user.mfa_secrets or not user.mfa_setup_complete:
@@ -317,14 +343,29 @@ def mfa_verify():
             flash('Token is required.', 'danger')
             return render_template('mfa_verify.html', form=form)
 
-        totp = pyotp.TOTP(user.mfa_secrets)
-        if totp.verify(token):
+        # iris-ng: every code is an attempt against the account (business/mfa_attempts.py), and a
+        # code is accepted once.
+        locked = begin_attempt(user.id)
+        if locked:
+            track_activity(f'MFA verification refused for user {user.user}: too many failed attempts', ctx_less=True,
+                           display_in_ui=False)
+            flash(_locked_message(locked), 'danger')
+            return render_template('mfa_verify.html', form=form)
+
+        step = code_step(user.mfa_secrets, token)
+        if step is not None and accept_code(user.id, step):
             session.pop('username', None)
             session['mfa_verified'] = True
             track_activity(f'MFA verification successful for user {user.user}', ctx_less=True, display_in_ui=False)
             return wrap_login_user(user)
-        else:
-            track_activity(f'Failed MFA verification for user {user.user}. Invalid token.', ctx_less=True, display_in_ui=False)
-            flash('Invalid token. Please try again.', 'danger')
+
+        minutes = attempt_failed(user.id)
+        reason = 'Token already used' if step is not None else 'Invalid token'
+        track_activity(f'Failed MFA verification for user {user.user}. {reason}.', ctx_less=True, display_in_ui=False)
+        flash(_locked_message(minutes) if minutes else 'Invalid or already used token. Please try again.', 'danger')
 
     return render_template('mfa_verify.html', form=form)
+
+
+def _locked_message(minutes):
+    return f'Too many failed attempts. Try again in {minutes} minute{"" if minutes == 1 else "s"}.'

@@ -23,6 +23,7 @@ from flask_login import UserMixin
 from sqlalchemy import BigInteger, JSON
 from sqlalchemy import Boolean
 from sqlalchemy import Column
+from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import Numeric
@@ -219,6 +220,11 @@ class User(UserMixin, db.Model):
     mfa_secrets = Column(Text, nullable=True)
     webauthn_credentials = Column(JSON, nullable=True)
     mfa_setup_complete = Column(Boolean(), default=False)
+    # iris-ng (2026-11-15): the second-factor attempt limit and the TOTP replay guard
+    # (business/mfa_attempts.py). Kept on the account, so a new sign-in does not reset them.
+    mfa_failed_attempts = Column(Integer, nullable=False, default=0, server_default=text('0'))
+    mfa_locked_until = Column(DateTime, nullable=True)
+    mfa_last_timestep = Column(BigInteger, nullable=True)
     # iris-ng: analyst billing rate in currency-units per hour, used to estimate
     # case cost from logged time. Nullable — unset means "unpriced" (counts as $0
     # in totals but is flagged so the figure isn't silently understated).
