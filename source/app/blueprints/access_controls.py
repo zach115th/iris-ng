@@ -233,6 +233,10 @@ def ac_requires_case_identifier(*access_level):
     def decorate_with_requires_case_identifier(f):
         @wraps(f)
         def wrap(*args, **kwargs):
+            # iris-ng (H8): this decorator sits OUTSIDE ac_api_requires on most routes, and finding the case reads a
+            # JSON body (its `cid`): authenticate first, so an anonymous caller never makes the server read the body.
+            if not is_user_authenticated(request):
+                return response_error('Authentication required', status=401)
             try:
                 redir, caseid, has_access = get_case_access_from_api(request, access_level)
             except Exception as e:
@@ -326,11 +330,13 @@ def ac_api_requires(*permissions):
     def inner_wrap(f):
         @wraps(f)
         def wrap(*args, **kwargs):
-            if not _is_csrf_token_valid():
-                return response_error('Invalid CSRF token')
-
+            # iris-ng (H8): authenticate BEFORE the CSRF check - it parses the request body (a form or JSON), which
+            # an anonymous caller must never make the server read.
             if not is_user_authenticated(request):
                 return response_error('Authentication required', status=401)
+
+            if not _is_csrf_token_valid():
+                return response_error('Invalid CSRF token')
 
             if 'permissions' not in session:
                 session['permissions'] = ac_get_effective_permissions_of_user(current_user)
@@ -406,10 +412,11 @@ def ac_room_api_requires(*permissions):
     def inner_wrap(f):
         @wraps(f)
         def wrap(*args, **kwargs):
-            if not _is_csrf_token_valid():
-                return response_error('Invalid CSRF token')
-
+            # iris-ng (H8): resolve the principal (a user, else the portal session's guest) BEFORE the CSRF check,
+            # which parses the request body; neither resolution reads it.
             if is_user_authenticated(request):
+                if not _is_csrf_token_valid():
+                    return response_error('Invalid CSRF token')
                 if portal_request():
                     # The tunnel serves guests only: a user session or an
                     # API key arriving through it is refused outright.
@@ -425,6 +432,8 @@ def ac_room_api_requires(*permissions):
             guest = load_session_guest(room_id) if room_id is not None else None
             if guest is None:
                 return response_error('Authentication required', status=401)
+            if not _is_csrf_token_valid():
+                return response_error('Invalid CSRF token')
             g.room_principal = RoomPrincipal(guest_id=guest.id, guest=guest, name=guest.label)
             return f(*args, **kwargs)
         return wrap

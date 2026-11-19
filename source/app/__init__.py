@@ -208,6 +208,8 @@ from app.views import load_user_from_request
 
 register_blusprints(app)
 
+from app.blueprints import request_limits  # noqa: E402,F401 - iris-ng (H8): the body size limits and the 413 reply
+
 from app.post_init import run_post_init
 
 try:

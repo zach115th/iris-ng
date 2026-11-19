@@ -394,6 +394,14 @@ class Config:
         if origin.strip()
     ]
 
+    # iris-ng (H8): the largest request body an ordinary route reads (IRIS_MAX_REQUEST_MB, default 32 MB). The upload
+    # routes (blueprints/request_limits.py) lift it per request; nginx keeps its own caps in front of both.
+    try:
+        MAX_REQUEST_MB = max(1, int(config.load('IRIS', 'MAX_REQUEST_MB', fallback='32')))
+    except (TypeError, ValueError):
+        MAX_REQUEST_MB = 32
+    MAX_CONTENT_LENGTH = MAX_REQUEST_MB * 1024 * 1024
+
     DEMO_MODE_ENABLED = config.load('IRIS_DEMO', 'ENABLED', fallback=False)
     if DEMO_MODE_ENABLED == 'True':
         DEMO_DOMAIN = config.load('IRIS_DEMO', 'DOMAIN', fallback=None)
