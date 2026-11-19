@@ -105,6 +105,14 @@ updates:
       # together with the python-dateutil one.
       - dependency-name: "pymisp"
         versions: [">=3.0.0"]
+      # pyotp 2.11.2 made TOTP.provisioning_uri() keyword-only, so the MFA
+      # setup page's provisioning_uri(user.email, issuer_name=...) raises
+      # TypeError; 2.12.0 refuses a secret under 112 bits when a TOTP is built,
+      # so signing in to an account holding one fails (Dependabot #192). Lift
+      # this together with a change that passes name= and decides how shorter
+      # stored secrets are treated. 2.10.x patches still come through.
+      - dependency-name: "pyotp"
+        versions: [">=2.11.0"]
     groups:
       python-minor-patch:
         patterns:
