@@ -193,6 +193,16 @@ def _get_case_access(request_data, access_level, no_cid_required=False):
         _update_denied_case(caseid)
         return redir, caseid, False
 
+    if not access_level and caseid is not None:
+        # iris-ng (M2): a route that asks for no case level (ac_requires) still puts the case's name and customer in
+        # the page header - only for a user with real access. With an empty level list the check above answers None
+        # for everyone, so ask for read-only or full access here. An unknown id keeps its default-case path below.
+        has_any = ac_fast_check_user_has_case_access(current_user.id, caseid,
+                                                     [CaseAccessLevel.read_only, CaseAccessLevel.full_access])
+        if has_any is None and get_case(caseid):
+            _update_denied_case(caseid)
+            return redir, caseid, True
+
     _update_session(caseid, eaccess_level)
 
     if caseid is not None and not get_case(caseid):
