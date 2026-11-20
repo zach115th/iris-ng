@@ -54,8 +54,8 @@ guest-portal tunnel agent gets a newer cloudflared; the nginx and database image
 ### Changed
 - **pyotp 2.10.0 → 2.12.1.** pyotp now refuses an MFA secret shorter than 112 bits, or one that is not valid Base32.
   IRIS has always generated 160-bit secrets; an account holding a shorter one can no longer pass the second factor, and
-  its verification page now says that an administrator must reset its MFA (Settings → Users → Reset MFA) instead of
-  reporting wrong codes. The user then sets up a new authenticator at the next sign-in.
+  its verification page now says that an administrator must reset its MFA (Settings → Access Control → Users → the user →
+  Reset MFA) instead of reporting wrong codes. The user then sets up a new authenticator at the next sign-in.
 - **email-validator 2.3.0 → 2.4.0** (the email check of the add-user, customer-contact and registration forms): an
   address whose domain mixes a right-to-left label with a label that starts with a digit (`user@1.xn--4dbc.com`) is now
   refused, as the IDNA rules require; every other address gets the same answer as before. Addresses already stored are

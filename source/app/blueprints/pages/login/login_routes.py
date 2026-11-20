@@ -344,7 +344,8 @@ def mfa_verify():
         track_activity(f'MFA verification impossible for user {user.user}: the stored MFA secret is not accepted, '
                        f'an administrator must reset MFA', ctx_less=True, display_in_ui=False)
         flash('Your MFA setup can no longer be used. Ask an administrator to reset your MFA '
-              '(Settings - Users - Reset MFA), then sign in again to set it up.', 'danger')
+              '(Settings → Access Control → Users → your account → Reset MFA), then sign in again to set it up.',
+              'danger')
         return render_template('mfa_verify.html', form=form)
 
     if form.submit() and form.validate():
