@@ -8,7 +8,10 @@
 #  (e.g. /api/v2/cases/<id>/ai/summary) — see cases/ai.py — which call
 #  enqueue_ai_job() and hand back the task_id resolved here.
 
+from datetime import timedelta
+
 from flask import Blueprint
+from sqlalchemy import func
 
 from app.blueprints.access_controls import ac_api_requires
 from app.blueprints.rest.endpoints import response_api_error
@@ -47,6 +50,13 @@ def _serialize_job(job: AiJob) -> dict:
     }
 
 
+# iris-ng: a job ahead counts only when it was submitted within this many
+# hours. A row whose queue message is gone (a broker recreated with messages
+# on it, a worker down for a day) stays `queued` for ever and would push every
+# new job back a place - prod showed "position #12" with 5 messages queued.
+QUEUE_POSITION_WINDOW_HOURS = 24
+
+
 def _queue_position(job: AiJob) -> int | None:
     """Best-effort: how many queued jobs sit ahead of this one (higher
     priority first, then older). Only meaningful while state == 'queued'.
@@ -57,6 +67,7 @@ def _queue_position(job: AiJob) -> int | None:
     ahead = AiJob.query.filter(
         AiJob.state == 'queued',
         AiJob.id != job.id,
+        AiJob.submitted_at >= func.now() - timedelta(hours=QUEUE_POSITION_WINDOW_HOURS),
     ).filter(
         (AiJob.priority < job.priority) |
         ((AiJob.priority == job.priority) & (AiJob.id < job.id))

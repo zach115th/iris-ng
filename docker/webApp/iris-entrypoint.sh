@@ -29,6 +29,12 @@ fi
 
 printf "Running ${target} ...\n"
 
+# iris-ng: each process is exec'd - it becomes the container's main process.
+# Before, it ran in the background behind a `sleep` loop, so a worker that
+# exited (its database not reachable at start) left its container Up with
+# nothing running, and the restart policy never fired. Now the container stops
+# with it and Docker / Kubernetes start it again; SIGTERM from a stop reaches
+# the process itself instead of a shell that ignored it.
 if [[ "${target}" == iris-worker ]] ; then
     # The default 'celery' queue only: AI jobs (ai_queue) belong to iris-ai-worker,
     # one at a time. Without -Q this worker consumed ai_queue too, so long AI
@@ -37,9 +43,9 @@ if [[ "${target}" == iris-worker ]] ; then
     # when irisaiworker.enabled is false).
     WORKER_QUEUES="${IRIS_WORKER_QUEUES:-celery}"
     if [[ -z $NUMBER_OF_CHILD ]]; then
-        celery -A app.celery worker -E -B -Q "$WORKER_QUEUES" -l $LOG_LEVEL &
+        exec celery -A app.celery worker -E -B -Q "$WORKER_QUEUES" -l $LOG_LEVEL
     else
-        celery -A app.celery worker -c $NUMBER_OF_CHILD -E -B -Q "$WORKER_QUEUES" -l $LOG_LEVEL &
+        exec celery -A app.celery worker -c $NUMBER_OF_CHILD -E -B -Q "$WORKER_QUEUES" -l $LOG_LEVEL
     fi
 elif [[ "${target}" == iris-ai-worker ]] ; then
     # iris-next: dedicated async-AI worker (docs/19 §5b.3). Consumes ONLY the
@@ -48,10 +54,8 @@ elif [[ "${target}" == iris-ai-worker ]] ; then
     # is the load bound. Separate from the default worker so AI jobs never
     # compete with MISP-sync / module hooks. No beat (-B) here — that's the
     # default worker's job.
-    celery -A app.celery worker -E -Q ai_queue --concurrency=1 -n ai-worker@%h -l $LOG_LEVEL &
+    exec celery -A app.celery worker -E -Q ai_queue --concurrency=1 -n ai-worker@%h -l $LOG_LEVEL
 else
-    gunicorn app:app --bind 0.0.0.0:8000 --timeout 600 --worker-connections 1000 --threads 100 -w 1 --log-level=info &
+    exec gunicorn app:app --bind 0.0.0.0:8000 --timeout 600 --worker-connections 1000 --threads 100 -w 1 --log-level=info
 fi
-
-while true; do sleep 2; done
 

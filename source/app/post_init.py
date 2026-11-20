@@ -83,9 +83,14 @@ log = app.logger
 db_host = app.config.get('PG_SERVER')
 db_port = int(app.config.get('PG_PORT'))
 
-# Get the retry parameters from environment variables
+# Get the retry parameters from environment variables. The delay is a float:
+# int() turned the 0.5 s default into 0 and refused "0.5" set by hand.
 retry_count = int(app.config.get('DB_RETRY_COUNT'))
-retry_delay = int(app.config.get('DB_RETRY_DELAY'))
+retry_delay = float(app.config.get('DB_RETRY_DELAY'))
+
+# Seconds one connection try may take: an unanswered SYN would otherwise wait
+# for the kernel's own timeout (minutes) before the next try.
+DB_CONNECT_TIMEOUT = 5
 
 
 def connect_to_database(host: str, port: int) -> bool:
@@ -100,6 +105,7 @@ def connect_to_database(host: str, port: int) -> bool:
     """
     # Create a new socket object
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(DB_CONNECT_TIMEOUT)
     try:
         # Try to connect to the database
         s.connect((host, port))
@@ -110,6 +116,26 @@ def connect_to_database(host: str, port: int) -> bool:
         # If the connection failed, close the socket and return False
         s.close()
         return False
+
+
+def wait_for_database(host: str, port: int, attempts: int, delay: float, connect=None, sleep=None) -> bool:
+    """Try the database `attempts` times, `delay` seconds apart (no wait after
+    the last try); True at the first try that connects.
+
+    iris-ng: the app and both workers run this at start. A worker that starts
+    before the database (a host or Docker restart starts every container at
+    once) now waits for it instead of exiting at once.
+    """
+    connect = connect or connect_to_database
+    sleep = sleep or time.sleep
+    for i in range(attempts):
+        log.info(f"Connecting to database, attempt {i + 1}/{attempts}")
+        if connect(host, port):
+            return True
+        if i + 1 < attempts:
+            log.info(f"Retrying in {delay} seconds...")
+            sleep(delay)
+    return False
 
 
 def seed_ai_backend_from_env(env_ai_url: str, env_ai_key: str, env_ai_model: str) -> bool:
@@ -156,14 +182,10 @@ def run_post_init(development=False):
 
         # Attempt to connect to the database with retries
         log.info("Attempting to connect to the database...")
-        for i in range(retry_count):
-            log.info("Connecting to database, attempt " + str(i+1) + "/" + str(retry_count))
-            conn = connect_to_database(db_host, db_port)
-            if conn:
-                break
-            log.info("Retrying in " + str(retry_delay) + "seconds...")
-            time.sleep(retry_delay)
-        # If the connection is still not established, exit the script
+        conn = wait_for_database(db_host, db_port, retry_count, retry_delay)
+        # If the connection is still not established, exit the script (the
+        # entrypoint execs each process, so the container stops and its
+        # restart policy starts it again)
         if not conn:
             log.info("Failed to connect to database after " + str(retry_count) + " attempts.")
             exit(1)

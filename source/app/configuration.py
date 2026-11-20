@@ -338,8 +338,15 @@ class Config:
     PG_PORT = PG_PORT_
     PG_DB = PG_DB_
 
-    DB_RETRY_COUNT = config.load('DB', 'RETRY_COUNT', fallback=3)
-    DB_RETRY_DELAY = config.load('DB', 'RETRY_DELAY', fallback=0.5)
+    # iris-ng: how long the app and the workers wait for the database at start
+    # (app/post_init.py::wait_for_database). The old 3 tries, 0.5 s apart - read
+    # through int(), so 0 s - gave up within a second; on a host where the
+    # workers started before the database they exited, and nothing consumed a
+    # queue until someone restarted them. 30 tries 2 s apart wait at least a
+    # minute (about two while the database container is stopped: each try also
+    # waits for its name not to resolve).
+    DB_RETRY_COUNT = config.load('DB', 'RETRY_COUNT', fallback=30)
+    DB_RETRY_DELAY = config.load('DB', 'RETRY_DELAY', fallback=2)
 
     # OpenAI-compatible AI backend (used by Tier-1 AI features such as the
     # case-summary generator). Defaults to empty so features can detect

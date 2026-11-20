@@ -14,8 +14,9 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 ## [IRIS-NG-v2.16.1] — 2026-11-19
 
 A security release: values written into page attributes are escaped, quotes included, and a case import keeps only
-the event colours and time zones the event form accepts. **No migration.** The app image changes; the nginx and
-database images and the guest-portal tunnel agent do not.
+the event colours and time zones the event form accepts. With it, a fix for workers that stopped for good when they
+started before the database. **No migration.** The app image changes; the nginx and database images and the
+guest-portal tunnel agent do not.
 
 ### Security
 - **Stored values could break out of the attribute they were written into.** Several pages put stored text into an
@@ -41,6 +42,19 @@ database images and the guest-portal tunnel agent do not.
 - All of these are present in every earlier IRIS-NG release, 1.x included.
 
 ### Fixed
+- **A worker that started before the database stopped for good, and its container stayed Up.** At start each worker
+  tried the database three times within the same second (the 0.5 s `DB_RETRY_DELAY` default was read as a whole
+  number, 0) and exited; the start-up script ran each process in the background behind a `sleep` loop, so the
+  container stayed Up and its restart policy never fired. After a host or Docker restart that started the workers
+  first, nothing consumed the task queues - AI jobs, module hooks, MISP sync and the scheduled tasks - until someone
+  restarted the workers by hand. Now the workers and the app wait for the database for at least a minute (30 tries,
+  2 s apart; a connection that gets no answer gives up after 5 s; while the database container is stopped, each try
+  also waits for its name not to resolve, about two minutes in all), and each process is its container's main
+  process: one that exits stops the container, and Docker or Kubernetes start it again. The app's gunicorn runs the
+  same way.
+- The AI panel's "Queued — position #N" counted every job ever left queued, including ones whose queue message was
+  lost (a worker down, a broker recreated with messages on it); it now counts the jobs ahead submitted in the last 24
+  hours.
 - Escalating or merging an alert whose title holds `<` or `>` filled the new case's title with `&lt;` / `&gt;`; the
   dialog now takes the title as it is. Assignee names in the task dialog and the timeline's asset popover show their
   values as stored instead of filtered.
@@ -57,6 +71,13 @@ database images and the guest-portal tunnel agent do not.
 - A case file whose events carry a colour outside the timeline's palette and the verdict colours (which no IRIS export
   writes) imports those events without a colour, with a warning; one whose time zone does not parse imports them at
   `+00:00`. The import reply's `warnings` list names each such event. No route or API reply changes otherwise.
+- `DB_RETRY_COUNT` / `DB_RETRY_DELAY` default to 30 / 2 (were 3 / 0.5, in effect 0 s); a fraction set by hand works
+  (`DB_RETRY_DELAY=0.5` stopped the boot with a `ValueError` before). The chart still sets 5 / 5 for the app; its
+  workers now use the defaults.
+- A container whose process exits is started again by its restart policy instead of staying Up with nothing running,
+  so `docker ps` (or the pod's restart count) shows it. A stop now reaches celery and gunicorn themselves, which shut
+  down cleanly (celery's warm shutdown, gunicorn's graceful one) within the stop timeout; before, the shell in front
+  of them ignored it and Docker killed everything once the timeout ran out (compose's default: 10 seconds).
 
 ### Upgrading
 - **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
@@ -65,6 +86,12 @@ database images and the guest-portal tunnel agent do not.
 - **The image-based `docker-compose.yml`:** `git checkout IRIS-NG-v2.16.1 && docker compose pull && docker compose up
   -d`.
 - **Kubernetes:** chart 1.16.1; `helm upgrade` needs nothing else.
+- **AI jobs left at "Queued" by workers that were down:** once both workers consume again (`docker exec
+  iriswebapp_rabbitmq rabbitmqctl list_queues name messages_ready consumers` shows a consumer on `celery` and
+  `ai_queue`) and `ai_queue` holds no messages, a job still `queued` can never run; cancel such jobs with
+  `docker exec iriswebapp_db psql -U postgres -d iris_db -c "update ai_job set state='cancelled', finished_at=now()
+  where state='queued' and submitted_at < now() - interval '1 hour';"` (a cancelled job's message, if one turns up,
+  is skipped).
 
 ---
 
