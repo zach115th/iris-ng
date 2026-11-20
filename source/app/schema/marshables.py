@@ -110,6 +110,9 @@ from app.util import stream_sha256sum
 ALLOWED_EXTENSIONS = {'png', 'svg'}
 POSTGRES_INT_MAX = 2147483647
 POSTGRES_BIGINT_MAX = 9223372036854775807
+# The timeline event colour picker's values: the only colours an event form may save (EventSchema.verify_data). A case
+# import also keeps the verdict colours (iris_engine/case_event_verdict.py) - business/cases_portability.py.
+EVENT_COLOR_PALETTE = ('#fff', '#1572E899', '#6861CE99', '#48ABF799', '#31CE3699', '#F2596199', '#FFAD4699')
 
 log = app.logger
 
@@ -1325,8 +1328,7 @@ class EventSchema(ma.SQLAlchemyAutoSchema):
             if not ast:
                 raise marshmallow.exceptions.ValidationError("Invalid IOC ID", field_name="event_assets")
 
-        if data.get('event_color') and data.get('event_color') not in ['#fff', '#1572E899', '#6861CE99', '#48ABF799',
-                                                                       '#31CE3699', '#F2596199', '#FFAD4699']:
+        if data.get('event_color') and data.get('event_color') not in EVENT_COLOR_PALETTE:
             data['event_color'] = ''
 
         if data.get('event_tags'):

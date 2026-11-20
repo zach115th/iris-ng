@@ -18,6 +18,7 @@
 import datetime
 import logging as log
 
+import dateutil.parser
 from flask_login import current_user
 
 from app import db
@@ -26,6 +27,7 @@ from app.business.cases import cases_create
 from app.datamgmt.case.case_db import save_case_tags
 from app.datamgmt.case.case_notes_db import add_note
 from app.datamgmt.manage.manage_attribute_db import get_default_custom_attributes
+from app.iris_engine.case_event_verdict import VERDICTS
 from app.iris_engine.utils.tracker import track_activity
 from app.models.alerts import Severity
 from app.models.cases import Cases, CasesEvent
@@ -397,6 +399,38 @@ def _resolve_event_category(name, warnings, cache):
     return c.id
 
 
+# An imported event keeps only what the event form itself could have saved (backlog #25 F1): a crafted file can hold
+# any string, and the timeline writes the colour into a card's style attribute and the time zone into an icon's title.
+# Colours: the picker's (schema EVENT_COLOR_PALETTE) and the verdict colours apply_verdict() writes - every export
+# carries those (#8B5CF699 on each to-be-determined event), and the import applies no verdict of its own.
+def _importable_event_colors():
+    from app.schema.marshables import EVENT_COLOR_PALETTE
+    return frozenset(EVENT_COLOR_PALETTE) | frozenset(spec['color'] for spec in VERDICTS.values())
+
+
+def _import_event_color(value, title, warnings):
+    if not value:
+        return value
+    if isinstance(value, str) and value in _importable_event_colors():
+        return value
+    warnings.append(f"Event '{title}' has a colour the timeline does not use — imported without one")
+    return ''
+
+
+def _import_event_tz(value, title, warnings):
+    """A time zone the event form accepts: one that parses after a date, as EventSchema.validate_date does."""
+    if not value:
+        return '+00:00'
+    if isinstance(value, str):
+        try:
+            dateutil.parser.isoparse('2000-01-01T00:00:00' + value)
+            return value
+        except (ValueError, OverflowError):
+            pass
+    warnings.append(f"Event '{title}' has a time zone that does not parse — imported as +00:00")
+    return '+00:00'
+
+
 def _compromise_id_from_name(name):
     if not name:
         return CompromiseStatus.unknown.value
@@ -649,9 +683,9 @@ def import_case_from_portability_dict(payload: dict) -> dict:
             event_source=ev.get('source'),
             event_date=event_date,
             event_date_wtz=event_date_wtz,
-            event_tz=ev.get('tz') or '+00:00',
+            event_tz=_import_event_tz(ev.get('tz'), title, warnings),
             event_added=datetime.datetime.utcnow(),
-            event_color=ev.get('color'),
+            event_color=_import_event_color(ev.get('color'), title, warnings),
             event_tags=ev.get('tags'),
             event_is_flagged=bool(ev.get('is_flagged')),
             event_in_summary=bool(ev.get('in_summary')),
