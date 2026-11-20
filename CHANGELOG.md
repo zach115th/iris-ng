@@ -11,6 +11,63 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.1] — 2026-11-19
+
+A security release: values written into page attributes are escaped, quotes included, and a case import keeps only
+the event colours and time zones the event form accepts. **No migration.** The app image changes; the nginx and
+database images and the guest-portal tunnel agent do not.
+
+### Security
+- **Stored values could break out of the attribute they were written into.** Several pages put stored text into an
+  HTML attribute through `sanitizeHTML` / `filterXSS`, which escapes neither quote, so a value holding one could close
+  the attribute and add attributes of its own - an event handler included, which the content security policy lets
+  run. Every such value now goes through one escaper (`iris_escape`, which escapes `& < > " '`):
+  - the IOC table's link to another case sharing an IOC (that case's name and customer);
+  - the timeline: the "Added by" tooltip (the creator's display name, which every user sets for themselves), an IOC's
+    popover (its description), and a card's colour and local-time tooltip (both settable through a case import);
+  - the avatar beside a comment and in a note's viewer list, whose tooltip carried the display name with no escaping
+    at all.
+- **Hardening of the same kind**, where only seeded or system values reach the attribute today: the task-status and
+  TLP badge colours on the task, IOC and search pages, the module-task state tooltip, and the module-task feed, whose
+  task name, user and date were written into the page without escaping. Twenty page helpers that escaped `& < >` but
+  neither quote (the alert-cluster pages, Home, the Settings pages for attributes, case templates, clustering rules,
+  customer assets, customers, investigation flows, mail rules, modules, objects, report templates and server settings,
+  the condition builder, the flow checklist, the correlation workspace and its IOC cards, the metrics page and the
+  notifications bell) now use the same escaper.
+- **A case import wrote any event colour and time zone.** An imported `.iris-case` file's `color` and `tz` were stored
+  as they came, so a crafted file could put any text into a timeline card's style attribute or the local-time tooltip.
+  An import now keeps a colour of the timeline's palette or one of the verdict colours, and a time zone that parses the
+  way the event form's does; anything else imports as no colour or `+00:00`, with a warning naming the event.
+- All of these are present in every earlier IRIS-NG release, 1.x included.
+
+### Fixed
+- Escalating or merging an alert whose title holds `<` or `>` filled the new case's title with `&lt;` / `&gt;`; the
+  dialog now takes the title as it is. Assignee names in the task dialog and the timeline's asset popover show their
+  values as stored instead of filtered.
+- A note viewer whose name holds `<` or `>` was not removed from the note's viewer list on leaving: the list stored the
+  filtered name and the leave message carries the real one.
+- The message shown when a stored MFA secret can no longer be used names the real settings path (Settings → Access
+  Control → Users → your account → Reset MFA); 2.16.0's named one that does not exist.
+
+### Removed
+- The search page's "Seen on MISP" marker beside comment results: it read fields a comment result never carries, so
+  it was never shown.
+
+### Compatibility
+- A case file whose events carry a colour outside the timeline's palette and the verdict colours (which no IRIS export
+  writes) imports those events without a colour, with a warning; one whose time zone does not parse imports them at
+  `+00:00`. The import reply's `warnings` list names each such event. No route or API reply changes otherwise.
+
+### Upgrading
+- **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
+  IRIS-NG-v2.16.1`. From a release before 2.16.0 it also runs 2.16.0's migration `b3f7d1a9c5e2` (the script takes the
+  database dump first); from a release before 2.14.0, take the new script first, as the 2.14.0 notes describe.
+- **The image-based `docker-compose.yml`:** `git checkout IRIS-NG-v2.16.1 && docker compose pull && docker compose up
+  -d`.
+- **Kubernetes:** chart 1.16.1; `helm upgrade` needs nothing else.
+
+---
+
 ## [IRIS-NG-v2.16.0] — 2026-11-19
 
 A security release: multi-factor sign-in can no longer be bypassed or guessed at, the user routes stop returning MFA

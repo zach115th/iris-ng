@@ -300,7 +300,7 @@ class CeleryConfig:
 # --------- APP ---------
 class Config:
     # Handled by bumpversion
-    IRIS_VERSION = "IRIS-NG-v2.16.0" # DO NOT EDIT THIS LINE MANUALLY
+    IRIS_VERSION = "IRIS-NG-v2.16.1" # DO NOT EDIT THIS LINE MANUALLY
 
     if os.environ.get('IRIS_DEMO_VERSION') is not None and os.environ.get('IRIS_DEMO_VERSION') != 'None':
         IRIS_VERSION = os.environ.get('IRIS_DEMO_VERSION')
