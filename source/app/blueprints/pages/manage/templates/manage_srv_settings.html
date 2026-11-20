@@ -1136,9 +1136,7 @@ window.iris_upd_check_now = function () {
     var loaded = false;
 
     function esc(s) {
-        var d = document.createElement("div");
-        d.textContent = s == null ? "" : String(s);
-        return d.innerHTML;
+        return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
     }
 
     function render(data) {

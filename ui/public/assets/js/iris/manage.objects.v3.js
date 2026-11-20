@@ -128,7 +128,7 @@ var IRIS_CO_TYPES = {
 };
 
 function iris_co_esc(s) {
-    return $('<div>').text(s === null || s === undefined ? '' : String(s)).html();
+    return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
 }
 
 function iris_co_fetch(type, force) {

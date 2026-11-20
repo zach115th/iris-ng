@@ -50,7 +50,7 @@ var IRIS_AC = { _current: null, _pollTimer: null };
 function iris_ac_csrf() { return $('#csrf_token').val(); }
 
 function iris_ac_esc(s) {
-    return $('<div>').text(s == null ? '' : String(s)).html();
+    return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
 }
 
 function iris_ac_fetch(path, method, body) {

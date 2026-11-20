@@ -9,9 +9,7 @@ var IRIS_HOME_G = {statuses: [], tasks: [], showFinished: false};
 var IRIS_HOME_FINISHED = ['Done', 'Canceled'];
 
 function iris_home_esc(s) {
-    var d = document.createElement('div');
-    d.textContent = s == null ? '' : String(s);
-    return d.innerHTML;
+    return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
 }
 
 function iris_home_rel(iso) {

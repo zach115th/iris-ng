@@ -19,7 +19,7 @@ var IRIS_RT = {
 };
 
 function iris_rt_esc(s) {
-    return $('<div>').text(s === null || s === undefined ? '' : String(s)).html();
+    return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
 }
 
 /* date_created is the STORED value serialized by the server — label a

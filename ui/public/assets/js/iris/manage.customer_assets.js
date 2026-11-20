@@ -16,7 +16,7 @@ function iris_ca_csrf() {
 }
 
 function iris_ca_esc(s) {
-    return $('<div>').text(s == null ? '' : String(s)).html();
+    return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
 }
 
 /* Server ids are digits only — returns the id as a string, or null for

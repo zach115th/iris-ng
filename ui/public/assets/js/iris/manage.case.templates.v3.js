@@ -22,7 +22,7 @@ var IRIS_CT = {
 };
 
 function iris_ct_esc(s) {
-    return $('<div>').text(s === null || s === undefined ? '' : String(s)).html();
+    return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
 }
 
 function iris_ct_normalize(d) {

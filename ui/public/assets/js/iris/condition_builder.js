@@ -29,7 +29,7 @@
     var OPS = ['eq', 'not', 'in', 'not_in', 'like', 'regex', 'exists'];
 
     function esc(s) {
-        return $('<div>').text(s == null ? '' : String(s)).html();
+        return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
     }
 
     /* Is this tree representable in simple mode?

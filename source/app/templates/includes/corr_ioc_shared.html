@@ -306,9 +306,7 @@ window.iris_corr_ioc_card = function (pair, caseMeta, opts) {
  * cards from the same /api/v2/correlation/ioc-context payload. */
 window.iris_corr_render_ioc_context = function (bodyEl, ctx) {
     function esc(s) {
-        var d = document.createElement('div');
-        d.textContent = String(s == null ? '' : s);
-        return d.innerHTML;
+        return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
     }
     function chipHtml(text, violet) {
         return '<span class="iris-corr-ioc-chip' + (violet ? ' iris-corr-ioc-chip-violet' : '') + '">' + esc(text) + '</span> ';

@@ -15,7 +15,7 @@ function iris_clu_csrf() {
 }
 
 function iris_clu_esc(s) {
-    return $('<div>').text(s == null ? '' : String(s)).html();
+    return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
 }
 
 function iris_clu_fetch(path, method, body) {

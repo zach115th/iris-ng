@@ -397,7 +397,7 @@
         // Render
         // ----------------------------------------------------------------
         function iris_corr_esc(s) {
-            return $('<div>').text(String(s || '')).html();
+            return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
         }
 
         // ----------------------------------------------------------------
