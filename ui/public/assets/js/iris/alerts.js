@@ -59,7 +59,7 @@ function appendLabels(list, items, itemType) {
         const input = $('<input>').attr({
             type: 'checkbox',
             name: itemType,
-            value: filterXSS(item[itemType + '_name'] || item[itemType + '_value']),
+            value: item[itemType + '_name'] || item[itemType + '_value'],  // .attr() escapes it; filterXSS only garbled it
             id: item[itemType + '_uuid'],
             checked: true,
         });
@@ -254,7 +254,8 @@ function mergeAlertModal(alert_id, existing_case = false) {
                 notify_api_request_error(data);
             }
             alertDataReq = data;
-            let alert_title = filterXSS(alertDataReq.data.alert_title);
+            // .val() takes text: filterXSS turned `<x>` into `&lt;x&gt;`, which became the new case's title
+            let alert_title = alertDataReq.data.alert_title;
 
             $("#modalAlertTitle").val(alert_title);
 

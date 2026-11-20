@@ -478,7 +478,8 @@ function buildEvent(event_data, compact, comments_map, tree, tesk, tmb, idx, rea
        card. Truthy test rather than `!= null` because events default to an
        empty string, which used to emit `border-left: 2px groove ;`. */
     if (evt.event_color) {
-            style_s = `style='border-left: 4px solid ${sanitizeHTML(evt.event_color)} !important;'`;
+            /* iris-ng (backlog #25 F1): iris_escape - a case import could store a colour with a quote in it. */
+            style_s = `style='border-left: 4px solid ${iris_escape(evt.event_color)} !important;'`;
     }
 
     if (!tree) {
@@ -493,8 +494,8 @@ function buildEvent(event_data, compact, comments_map, tree, tesk, tmb, idx, rea
     /* For every assets linked to the event, build a link tag */
     if (evt.assets != null) {
         for (let ide in evt.assets) {
+            /* .attr() sets the value through the DOM and outerHTML escapes it: filtering it first only garbled the text. */
             let cpn =  evt.assets[ide]["ip"] + ' - ' + evt.assets[ide]["description"]
-            cpn = sanitizeHTML(cpn)
             let span_anchor = $('<span>');
             span_anchor.attr('data-toggle', 'popover');
             span_anchor.attr('data-trigger', 'hover');
@@ -515,7 +516,7 @@ function buildEvent(event_data, compact, comments_map, tree, tesk, tmb, idx, rea
 
     let ori_date = '<span class="ml-3"></span>';
     if (evt.event_date_wtz != evt.event_date) {
-        ori_date += `<i class="fas fa-info-circle mr-1" title="Locale date time ${evt.event_date_wtz}${evt.event_tz}"></i>`
+        ori_date += `<i class="fas fa-info-circle mr-1" title="Locale date time ${iris_escape(String(evt.event_date_wtz) + evt.event_tz)}"></i>`
     }
 
     if(evt.event_in_summary) {
@@ -539,8 +540,8 @@ function buildEvent(event_data, compact, comments_map, tree, tesk, tmb, idx, rea
     let added_by_plain = '';
     let creator = evt.creator_name || evt.user;
     if (creator) {
-        let added_on = evt.event_added ? ` on ${sanitizeHTML(String(evt.event_added).replace('T', ' ').slice(0, 16))} UTC` : '';
-        let inner = `<small class="bottom-hour-i" title="Added by ${sanitizeHTML(creator)}${added_on}"><i class="fas fa-user mr-1"></i>${sanitizeHTML(creator)}</small>`;
+        let added_on = evt.event_added ? ` on ${String(evt.event_added).replace('T', ' ').slice(0, 16)} UTC` : '';
+        let inner = `<small class="bottom-hour-i" title="${iris_escape('Added by ' + creator + added_on)}"><i class="fas fa-user mr-1"></i>${sanitizeHTML(creator)}</small>`;
         added_by = `<span class="text-muted text-sm align-self-end ml-auto mb--2">${inner}</span>`;
         /* Compact view's bottom-hour has no .row/.col, so ml-auto has nothing
            to push against - it gets a plain floated span instead. */
@@ -810,7 +811,10 @@ function build_timeline(data) {
                + escapeRegExp(sanitizeHTML(ioc_list[ioc]['ioc_value']))
                + avoid_inception_end
                ,"g");
-        let replacement = `$1<span class="text-warning-high ml-1 link_asset" data-toggle="popover" style="cursor: pointer;" data-trigger="hover" data-content="${sanitizeHTML(ioc_list[ioc]['ioc_description'])}" title="IOC">${sanitizeHTML(ioc_list[ioc]['ioc_value'])}</span>`;
+        /* iris-ng (backlog #25 F1): the description is an attribute value (iris_escape). This string is a
+           String.replace() replacement, where `$` starts a pattern ($&, $'): `$` is doubled so both stored values
+           stay literal (backlog #25 F7 replaces the string with a function). */
+        let replacement = `$1<span class="text-warning-high ml-1 link_asset" data-toggle="popover" style="cursor: pointer;" data-trigger="hover" data-content="${iris_escape(ioc_list[ioc]['ioc_description']).replace(/\$/g, '$$$$')}" title="IOC">${sanitizeHTML(ioc_list[ioc]['ioc_value']).replace(/\$/g, '$$$$')}</span>`;
         reap.push([re, replacement]);
     }
     let idx = 0;

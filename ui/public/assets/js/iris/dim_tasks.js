@@ -50,7 +50,7 @@ $(document).ready(function(){
                     } else if (data == 'failure') {
                         data = "<i class='fas fa-times text-danger' title='Task failed'></i>";
                     } else {
-                        data = "<i class='fas fa-clock text-muted' title='Task state: " + sanitizeHTML(data) + "'></i>";
+                        data = "<i class='fas fa-clock text-muted' title='Task state: " + iris_escape(data) + "'></i>";
                     }
                 }
                 return data;

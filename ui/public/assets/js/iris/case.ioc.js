@@ -402,8 +402,9 @@ $(document).ready(function(){
               if (type === 'display' && data != null) {
                   links = "";
                   for (link in data) {
-                    links += '<span data-toggle="popover" style="cursor: pointer;" data-trigger="hover" class="text-primary mr-3" href="#" title="Case info" data-content="' + sanitizeHTML(data[link]['case_name']) +
-                     ' (' + sanitizeHTML(data[link]['client_name']) + ')' + '">#' + data[link]['case_id'] + '</span>'
+                    /* iris-ng (backlog #25 F1): an attribute value - iris_escape, never sanitizeHTML (it keeps quotes). */
+                    links += '<span data-toggle="popover" style="cursor: pointer;" data-trigger="hover" class="text-primary mr-3" href="#" title="Case info" data-content="' + iris_escape(data[link]['case_name'] +
+                     ' (' + data[link]['client_name'] + ')') + '">#' + iris_escape(data[link]['case_id']) + '</span>'
                   }
                   return links;
               } else if (type === 'export' && data != null) {
@@ -423,7 +424,7 @@ $(document).ready(function(){
                   if (data) {
                       bscolor = data.tlp_bscolor;
                       data = sanitizeHTML(data.tlp_name);
-                      data = '<span class="badge badge-' + bscolor + ' ml-2">tlp:' + data + '</span>';
+                      data = '<span class="badge badge-' + iris_escape(bscolor) + ' ml-2">tlp:' + data + '</span>';
                   } else {
                       data = '<span class="badge badge-light ml-2">Unspecified</span>';
                   }

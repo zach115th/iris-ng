@@ -713,7 +713,7 @@ function load_case_activity(){
                 title = 'Activity issued from GUI';
             }
 
-            entry =	`<li class="feed-item ${api_flag}" title='${sanitizeHTML(title)}'>
+            entry =	`<li class="feed-item ${api_flag}" title='${iris_escape(title)}'>
                     <time class="date" datetime="${js_data[index].activity_date}">${formatTime(js_data[index].activity_date)}</time>
                     <span class="text">${sanitizeHTML(js_data[index].name)} - ${sanitizeHTML(js_data[index].activity_desc)}</span>
                     </li>`
@@ -737,9 +737,10 @@ function load_dim_limited_tasks(){
                 title = 'Task pending or failed';
             }
 
-            entry =	`<li class="feed-item ${api_flag}" title='${title}'>
-                    <time class="date" datetime="${js_data[index].activity_date}">${js_data[index].date_done}</time>
-                    <span class="text" title="${js_data[index].task_id}"><a href="#" onclick='dim_task_status("${js_data[index].task_id}");return false;'>${js_data[index].module}</a> - ${js_data[index].user}</span>
+            /* iris-ng (backlog #25 F1): every stored value escaped; the task id in onclick stays for F5. */
+            entry =	`<li class="feed-item ${api_flag}" title='${iris_escape(title)}'>
+                    <time class="date" datetime="${iris_escape(js_data[index].activity_date)}">${iris_escape(js_data[index].date_done)}</time>
+                    <span class="text" title="${iris_escape(js_data[index].task_id)}"><a href="#" onclick='dim_task_status("${js_data[index].task_id}");return false;'>${iris_escape(js_data[index].module)}</a> - ${iris_escape(js_data[index].user)}</span>
                     </li>`
             $('#dim_tasks_feed').append(entry);
         }
@@ -1070,8 +1071,9 @@ function get_avatar_initials(name, small, onClickFunction, xsmall) {
     av_size = xsmall ? 'avatar-xs' : av_size;
     const onClick = onClickFunction ? `onclick="${onClickFunction}"` : '';
 
+    /* iris-ng (backlog #25 F1): `name` is a user's display name - escaped wherever it lands in markup. */
     if (avatarCache[name] && avatarCache[name][small ? 'small' : 'large']) {
-        return `<div class="avatar ${av_size}" title="${name}" ${onClick}>
+        return `<div class="avatar ${av_size}" title="${iris_escape(name)}" ${onClick}>
             ${avatarCache[name][small ? 'small' : 'large']}
         </div>`;
     }
@@ -1091,8 +1093,8 @@ function get_avatar_initials(name, small, onClickFunction, xsmall) {
     const initials = initial.map(i => i[0] ? i[0].toUpperCase(): '').join('');
     const avatarColor = get_avatar_color(snum);
 
-    const avatarHTMLin = `<span class="avatar-title avatar-iris rounded-circle" style="background-color:${avatarColor}; cursor:pointer;">${initials}</span>`
-    const avatarHTMLout = `<div class="avatar ${av_size}" title="${name}" ${onClick}>
+    const avatarHTMLin = `<span class="avatar-title avatar-iris rounded-circle" style="background-color:${avatarColor}; cursor:pointer;">${iris_escape(initials)}</span>`
+    const avatarHTMLout = `<div class="avatar ${av_size}" title="${iris_escape(name)}" ${onClick}>
         ${avatarHTMLin}
     </div>`;
 

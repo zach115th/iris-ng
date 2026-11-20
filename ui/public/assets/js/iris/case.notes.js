@@ -74,7 +74,8 @@ function Collaborator( session_id, n_id ) {
     this.collaboration_socket.on('join-note', function (data) {
         if (parseInt(data.note_id) !== parseInt(note_id)) return;
         if ((data.user in ppl_viewing)) return;
-        ppl_viewing.set(filterXSS(data.user), 1);
+        /* the raw name: the leave handlers delete data.user, and get_avatar_initials escapes what it writes. */
+        ppl_viewing.set(data.user, 1);
         refresh_ppl_list(session_id, note_id);
         collaborator.collaboration_socket.emit('ping-note', {'channel': collaborator.channel, 'note_id': note_id});
     });

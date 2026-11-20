@@ -61,7 +61,7 @@ Table_1 = $("#file_search_table_1").DataTable({
         "render": function(data, type, row, meta) {
             if (type === 'display') {
                 data = sanitizeHTML(data);
-                data = '<span class="badge badge-'+ row['tlp_bscolor'] +' ml-2">tlp:' + data + '</span>';
+                data = '<span class="badge badge-'+ iris_escape(row['tlp_bscolor']) +' ml-2">tlp:' + data + '</span>';
             }
             return data;
         }
@@ -86,12 +86,10 @@ Table_comments = $("#comments_search_table").DataTable({
       { "data": "comment_id",
        "render": function (data, type, row, meta) {
             if (type === 'display') {
+                /* iris-ng (backlog #25 F1): a "Seen on MISP" popover used to be built here from row['ioc_misp'] and
+                   row['misp_link'], unescaped into an HTML popover. A comment row never carries either field (the
+                   /search comments query selects neither), so the branch never ran; it is gone rather than kept. */
                 data = sanitizeHTML(data);
-                if (row['ioc_misp'] != null) {
-                    jse = JSON.parse(row['ioc_misp']);
-                    data += `<i class="fas fa-exclamation-triangle ml-2 text-warning" style="cursor: pointer;" data-html="true"
-                       data-toggle="popover" data-trigger="hover" title="Seen on MISP" data-content="Has been seen on  <a href='` + row['misp_link'] + `/events/view/` + jse.misp_id +`'>this event</a><br/><br/><b>Description: </b>`+ jse.misp_desc +`"></i>`;
-                }
             }
             return data;
           }
@@ -224,7 +222,7 @@ Table_tasks = $("#tasks_search_table").DataTable({
         "render": function (data, type, row) {
             if (type === 'display') {
                 let color = row['status_bscolor'] || 'secondary';
-                return '<span class="badge badge-' + color + '">' + safeDisplay(data) + '</span>';
+                return '<span class="badge badge-' + iris_escape(color) + '">' + safeDisplay(data) + '</span>';
             }
             return data;
         }

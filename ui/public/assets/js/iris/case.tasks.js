@@ -941,7 +941,7 @@ function fetch_task_links(after) {
 /* Build a status badge identical to the flat table's. */
 function tree_status_badge(task) {
     if (!task || task.status_name === undefined) { return ''; }
-    return '<span class="badge badge-' + sanitizeHTML(task.status_bscolor || 'secondary') +
+    return '<span class="badge badge-' + iris_escape(task.status_bscolor || 'secondary') +
            '">' + sanitizeHTML(task.status_name) + '</span>';
 }
 
@@ -1356,7 +1356,8 @@ function do_list_users(list_users, cur_assignees_id_list) {
 
     for (let user in list_users) {
         if (list_users[user].user_access_level === 4) {
-            $('#task_assignees_id').append(new Option(`${filterXSS(list_users[user].user_login)} (${filterXSS(list_users[user].user_name)})`,
+            /* new Option() sets text through the DOM: filterXSS here only garbled the name. */
+            $('#task_assignees_id').append(new Option(`${list_users[user].user_login} (${list_users[user].user_name})`,
                 list_users[user].user_id));
         }
     }
@@ -1439,8 +1440,7 @@ $(document).ready(function(){
             "data": "task_status_id",
             "render": function(data, type, row) {
                if (type === 'display') {
-                  data = sanitizeHTML(data);
-                  data = '<span class="badge ml-2 badge-'+ row['status_bscolor'] +'">' + row['status_name'] + '</span>';
+                  data = '<span class="badge ml-2 badge-'+ iris_escape(row['status_bscolor']) +'">' + sanitizeHTML(row['status_name']) + '</span>';
                }
                else if (type === 'filter' || type === 'sort'){
                   data = row['status_name']
@@ -1514,7 +1514,7 @@ $(document).ready(function(){
           }
         ],
         rowCallback: function (nRow, data) {
-            nRow = '<span class="badge ml-2 badge-'+ sanitizeHTML(data['status_bscolor']) +'">' + sanitizeHTML(data['status_name']) + '</span>';
+            nRow = '<span class="badge ml-2 badge-'+ iris_escape(data['status_bscolor']) +'">' + sanitizeHTML(data['status_name']) + '</span>';
         },
         filter: true,
         info: true,
