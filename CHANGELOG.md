@@ -11,6 +11,56 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.2] — 2026-11-21
+
+A security release: stored text in the alert Relationships graph, the case Graph tab and the visual timeline is shown
+as text, and the Relationships graph shows only the cases the viewer can open. With it, the two helper scripts run
+Compose from the clone root, which keeps a Windows build from being refused. **No migration.** The app image changes;
+the nginx and database images and the guest-portal tunnel agent do not.
+
+### Security
+- **Stored text in the graphs and the visual timeline ran as HTML.** The library behind the alert Relationships
+  graph, the case Graph tab and the visual timeline (by category and by asset) puts a node's or an edge's tooltip, a
+  timeline item's text and tooltip, and a timeline group's name into the page as HTML. They were built from stored
+  text as it was, so markup in an alert's or a case's description, an asset's or an IOC's description, an event's
+  title or content, or an asset, note, evidence file or event category name ran in the page of whoever hovered it or
+  opened the view - an alert's description can arrive by mail or through the API, an event's title through an
+  import. That text is now escaped, its line breaks kept; node labels, which the graph draws on its canvas as text,
+  are unchanged. A timeline item's colour is written into its style only when it is a hex colour.
+- **The alert Relationships graph showed cases the viewer cannot open.** It drew every case of the alert's customer
+  that shared an asset or an IOC with the alert, each with the case's description in its tooltip, whatever the
+  viewer's access to that case. It now draws only the cases the viewer can open (read-only access is enough), by the
+  same check as opening the case.
+- Both are present in every earlier IRIS-NG release, 1.x included.
+
+### Fixed
+- **Pivot on an asset or an IOC in the alert Relationships graph** used the value up to its first `_` and put it into
+  the alerts link unencoded, so `srv_db01` opened the alerts of `srv`, and a value holding `&`, `#` or `+` broke the
+  link. It now takes the whole value and encodes it.
+- **`scripts/iris_helper.sh` and the import of `scripts/import_vanilla_db.sh` run Compose from the clone root,**
+  wherever they are started. On Windows a Compose build started from a folder whose drive letter is lower case
+  (`c:\...`) is refused by Docker Buildx Bake ("additional privileges requested: pass --allow=fs.read=..."; seen with
+  Docker Compose v5.6.1 and Buildx v0.38.1), and both scripts ran Compose from wherever they were started; the `cd`
+  hands Compose the letter in upper case, and the scripts now also run from any other folder. A relative path given
+  to `-e`, typed at the `.env` prompt or given to `--from` is read from the folder the script was started in; started
+  from the clone root, the scripts pass Compose the same arguments as before. The export mode of
+  `import_vanilla_db.sh` stays in the folder it is started in. `scripts/update.sh` already changed into the clone
+  root, and Linux is not affected. The scripts are not part of the images: a clone gets them at this tag.
+
+### Changed
+- A graph or timeline tooltip whose text holds several lines (an asset's or an IOC's description, an event's
+  content) shows them on several lines, and markup typed into a description is shown as typed.
+
+### Compatibility
+- `GET /alerts/similarities/<alert_id>` no longer lists the cases (nodes and their edges) the caller cannot open. Its
+  `title` fields, those of `GET /case/graph/getdata` and the `title`, `content` and `group` fields of
+  `GET /case/timeline/visualize/data/by-asset` and `/by-category` are escaped HTML with `<br>` for line breaks: a
+  client reading them gets `&lt;`, `&amp;` and so on where it got the characters. A timeline item whose colour is not
+  a hex colour comes without `style`. No other route or reply changes.
+- Chart 1.16.2.
+
+---
+
 ## [IRIS-NG-v2.16.1] — 2026-11-19
 
 A security release: values written into page attributes are escaped, quotes included, and a case import keeps only
