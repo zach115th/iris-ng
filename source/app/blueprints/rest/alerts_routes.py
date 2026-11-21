@@ -51,9 +51,11 @@ from app.datamgmt.case.case_db import get_case
 from app.datamgmt.manage.manage_access_control_db import check_ua_case_client
 from app.datamgmt.manage.manage_access_control_db import user_has_client_access
 from app.iris_engine.access_control.utils import ac_set_new_case_access
+from app.iris_engine.access_control.utils import ac_fast_check_user_has_case_access
 from app.iris_engine.module_handler.module_handler import call_modules_hook
 from app.iris_engine.utils.tracker import track_activity
 from app.models.alerts import AlertStatus
+from app.models.authorization import CaseAccessLevel
 from app.models.authorization import Permissions
 from app.schema.marshables import AlertSchema
 from app.schema.marshables import CaseSchema
@@ -295,11 +297,19 @@ def alerts_similarities_route(alert_id) -> Response:
     if days_back < 0:
         days_back = 180
 
-    # Get similar alerts
+    # Get similar alerts. iris-ng 2026-11-20: a case node shows the case's description, so only the cases the
+    # viewer can open are drawn - the check that opening the case makes.
+    user_id = current_user.id
+
+    def case_visible(case_id):
+        return ac_fast_check_user_has_case_access(
+            user_id, case_id, [CaseAccessLevel.read_only, CaseAccessLevel.full_access]) is not None
+
     similar_alerts = get_related_alerts_details(alert.alert_customer_id, alert.assets, alert.iocs,
                                                 open_alerts=open_alerts, open_cases=open_cases,
                                                 closed_cases=closed_cases, closed_alerts=closed_alerts,
-                                                days_back=days_back, number_of_results=number_of_results)
+                                                days_back=days_back, number_of_results=number_of_results,
+                                                case_visible=case_visible)
 
     return response_success(data=similar_alerts)
 

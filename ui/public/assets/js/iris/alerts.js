@@ -549,9 +549,12 @@ const network = new vis.Network(container, data, options);
 
       if (nodeId) {
 
-          selectedNodeId = nodeId;
-          node_type = selectedNodeId.split('_')[0];
-          node_id = selectedNodeId.split('_')[1];
+          selectedNodeId = String(nodeId);
+          /* iris-ng 2026-11-20: the id is "<type>_<value>" and an asset name or an IOC value can hold '_' - split at
+           * the first one only ('asset_srv_db01' pivots on 'srv_db01', not 'srv'). */
+          const sep = selectedNodeId.indexOf('_');
+          node_type = sep > 0 ? selectedNodeId.slice(0, sep) : selectedNodeId;
+          node_id = sep > 0 ? selectedNodeId.slice(sep + 1) : '';
 
           if (node_type === 'alert' || node_type === 'case' || node_type === 'asset' || node_type === 'ioc') {
               // Get the offset of the container element.
@@ -593,7 +596,8 @@ const network = new vis.Network(container, data, options);
 }
 
 function viewAlertGraph() {
-    const node_id = $("#view-alert").data('node-id');
+    /* iris-ng 2026-11-20: the value is URL-encoded - an asset name or IOC value with '&', '#' or '+' broke the link. */
+    const node_id = encodeURIComponent(String($("#view-alert").data('node-id')));
     const node_type = $("#view-alert").data('node-type');
 
     if (node_type === 'alert') {

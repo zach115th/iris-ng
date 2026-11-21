@@ -18,7 +18,6 @@
 
 import itertools
 from datetime import datetime
-from html import escape
 from flask_login import current_user
 from flask import Blueprint
 
@@ -29,6 +28,7 @@ from app.datamgmt.case.case_graph_db import get_case_graph_assets
 from app.datamgmt.case.case_graph_db import get_case_ioc_asset_links
 from app.datamgmt.case.case_graph_db import get_case_note_ioc_links
 from app.datamgmt.case.case_graph_db import get_case_open_vulnerability_findings
+from app.iris_engine.utils.vis_text import vis_text
 from app.models import vulnerability_vocab as vv
 from app.models.authorization import CaseAccessLevel
 from app.blueprints.access_controls import ac_requires_case_identifier
@@ -42,6 +42,8 @@ case_graph_rest_blueprint = Blueprint('case_graph_rest', __name__)
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
 def case_graph_get_data(caseid):
+    # iris-ng 2026-11-20: vis.js 4.21 shows a node's or an edge's `title` as HTML, so every title below is
+    # vis_text() (escaped, line breaks kept); a `label` is drawn on the canvas as text and stays raw.
     events = get_case_events_assets_graph(caseid)
     events.extend(get_case_events_ioc_graph(caseid))
 
@@ -61,10 +63,7 @@ def case_graph_get_data(caseid):
             else:
                 img = event.asset_icon_not_compromised
 
-            if event.asset_ip:
-                title = "{} -{}".format(event.asset_ip, event.asset_description)
-            else:
-                title = "{}".format(event.asset_description)
+            title = _asset_tooltip(event.asset_ip, event.asset_description)
             label = event.asset_name
             idx = f'a{event.asset_id}'
             node_type = 'asset'
@@ -72,7 +71,7 @@ def case_graph_get_data(caseid):
         else:
             img = 'virus-covid-solid.png'
             label = event.ioc_value
-            title = event.ioc_description
+            title = vis_text(event.ioc_description)
             idx = f'b{event.ioc_id}'
             node_type = 'ioc'
 
@@ -126,7 +125,7 @@ def case_graph_get_data(caseid):
             edge = {
                 'from': subset[0]['node_id'],
                 'to': subset[1]['node_id'],
-                'title': subset[0]['node_title'],
+                'title': vis_text(subset[0]['node_title']),
                 'dashes': subset[0]['node_type'] == 'ioc' or subset[1]['node_type'] == 'ioc',
                 # iris-next: 'event' edges come from timeline co-occurrence.
                 'kind': 'event'
@@ -165,7 +164,7 @@ def case_graph_get_data(caseid):
             'id': note_idx,
             'label': note_title or f'Note #{note_id}',
             'shape': 'box',
-            'title': f'Note: {note_title}',
+            'title': vis_text(f'Note: {note_title}'),
             'value': 1,
             'layer': 'note',
             'color': {'background': '#2a1f3d', 'border': '#8b5cf6'},
@@ -177,7 +176,7 @@ def case_graph_get_data(caseid):
             edges.append({
                 'from': note_idx,
                 'to': ioc_idx,
-                'title': f'{note_title} -> {ioc_value} (source note)',
+                'title': vis_text(f'{note_title} -> {ioc_value} (source note)'),
                 'dashes': True,
                 'color': {'color': '#8b5cf6'},
                 'kind': 'direct'
@@ -191,7 +190,7 @@ def case_graph_get_data(caseid):
             'id': ev_idx,
             'label': filename or f'Evidence #{evidence_id}',
             'shape': 'box',
-            'title': f'Evidence: {filename}',
+            'title': vis_text(f'Evidence: {filename}'),
             'value': 1,
             'layer': 'evidence',
             'color': {'background': '#3a2f1a', 'border': '#f4c430'},
@@ -201,7 +200,7 @@ def case_graph_get_data(caseid):
             edges.append({
                 'from': ev_idx,
                 'to': asset_idx,
-                'title': f'{filename} <- {asset_name} (evidence)',
+                'title': vis_text(f'{filename} <- {asset_name} (evidence)'),
                 'dashes': True,
                 'color': {'color': '#f4c430'},
                 'kind': 'direct'
@@ -221,7 +220,7 @@ def case_graph_get_data(caseid):
         edges.append({
             'from': ioc_idx,
             'to': asset_idx,
-            'title': f'{ioc_value} <-> {asset_name} (direct link)',
+            'title': vis_text(f'{ioc_value} <-> {asset_name} (direct link)'),
             'dashes': True,
             'color': {'color': '#64748b'},
             'kind': 'direct'
@@ -240,7 +239,7 @@ def case_graph_get_data(caseid):
 
 # iris-ng 2026-11-10: the Vulnerabilities layer (maintainer: open findings only, every kind of catalogue entry,
 # coloured by the entry's severity; an affected asset on no graph event joins the map while the layer is on).
-# vis.js 4.21 puts a node's or an edge's `title` into the tooltip as HTML, so every title written here is escaped.
+# vis.js 4.21 puts a node's or an edge's `title` into the tooltip as HTML, so every title written here is vis_text().
 VULN_COLOURS = {
     'critical': ('#f5365c', '#3d1a22'),
     'high': ('#fb6340', '#3d2418'),
@@ -252,10 +251,10 @@ VULN_COLOURS = {
 
 
 def _asset_tooltip(asset_ip, asset_description):
-    """The asset tooltip of the event-derived nodes, escaped."""
+    """An asset node's tooltip (event-derived and added for the layer), escaped with its line breaks."""
     if asset_ip:
-        return escape("{} -{}".format(asset_ip, asset_description))
-    return escape("{}".format(asset_description))
+        return vis_text("{} -{}".format(asset_ip, asset_description))
+    return vis_text("{}".format(asset_description))
 
 
 def _add_vulnerability_layer(caseid, nodes, edges, existing_ids, add_node):
@@ -295,8 +294,8 @@ def _add_vulnerability_layer(caseid, nodes, edges, existing_ids, add_node):
             'label': first.identifier,
             'shape': 'ellipse',
             'title': '%s<br>%s%s - %s<br>%s<br>Open on %d asset%s' % (
-                escape(first.identifier), escape(vv.SEVERITY_LABELS.get(severity, severity)), escape(score),
-                escape(vv.KIND_LABELS.get(first.kind, first.kind)), escape(first.title),
+                vis_text(first.identifier), vis_text(vv.SEVERITY_LABELS.get(severity, severity)), vis_text(score),
+                vis_text(vv.KIND_LABELS.get(first.kind, first.kind)), vis_text(first.title),
                 len(per_asset), '' if len(per_asset) == 1 else 's'),
             'value': 1,
             'layer': 'vulnerability',
@@ -314,7 +313,7 @@ def _add_vulnerability_layer(caseid, nodes, edges, existing_ids, add_node):
             edges.append({
                 'from': node_id,
                 'to': asset_node,
-                'title': escape('%s on %s: %s' % (first.identifier, asset_name, ', '.join(labels))),
+                'title': vis_text('%s on %s: %s' % (first.identifier, asset_name, ', '.join(labels))),
                 'dashes': False,
                 'color': {'color': border},
                 'kind': 'direct',

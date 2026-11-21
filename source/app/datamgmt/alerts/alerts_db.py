@@ -40,6 +40,7 @@ from app.datamgmt.manage.manage_case_templates_db import case_template_post_modi
 from app.datamgmt.states import update_timeline_state
 from app.iris_engine.access_control.utils import ac_current_user_has_permission
 from app.iris_engine.utils.common import parse_bf_date_format
+from app.iris_engine.utils.vis_text import vis_text
 from app.models.cases import Cases
 from app.models.models import EventCategory
 from app.models.models import Tags
@@ -1204,7 +1205,7 @@ def get_related_alerts(customer_id, assets, iocs, details=False):
 
 
 def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_alerts, open_cases, closed_cases,
-                               days_back=30, number_of_results=200):
+                               days_back=30, number_of_results=200, *, case_visible):
     """
     Get the details of the related alerts
 
@@ -1218,9 +1219,14 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
         closed_cases (bool): Include closed cases
         days_back (int): The number of days to look back
         number_of_results (int): The maximum number of alerts to return
+        case_visible (callable): case_id -> True when the viewer can open that case. iris-ng 2026-11-20: a case
+            node carries the case's description, so a case the viewer cannot open is left out with its edges.
 
     returns:
         dict: The details of the related alerts with matched assets and/or IOCs
+
+    iris-ng 2026-11-20: vis.js 4.21 shows a node's `title` as HTML, so every title is vis_text(); a `label` is
+    drawn on the canvas as text and stays raw.
     """
     if not assets and not iocs:
         return {
@@ -1298,7 +1304,7 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
         nodes.append({
             'id': f'alert_{alert_id}',
             'label': f'[Closed]{alert_resolution_title} {alert_info["alert"].alert_title}' if alert_color != '' else f'{alert_resolution_title}{alert_info["alert"].alert_title}',
-            'title': f'{alert_info["alert"].alert_description}',
+            'title': vis_text(f'{alert_info["alert"].alert_description}'),
             'group': 'alert',
             'shape': 'icon',
             'icon': {
@@ -1409,12 +1415,14 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
                                        'close_date': close_date, 'description': case_desc}
             cases_data[case_id]['matching_assets'].append(asset_name)
 
+        cases_data = {cid: info for cid, info in cases_data.items() if case_visible(cid)}
+
         for case_id in cases_data:
             if case_id not in added_cases:
                 nodes.append({
                     'id': f'case_{case_id}',
                     'label': f'[Closed] Case #{case_id}' if cases_data[case_id].get('close_date') else f'Case #{case_id}',
-                    'title': cases_data[case_id].get("description"),
+                    'title': vis_text(cases_data[case_id].get("description")),
                     'group': 'case',
                     'shape': 'icon',
                     'icon': {

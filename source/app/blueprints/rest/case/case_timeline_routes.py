@@ -18,6 +18,7 @@
 
 import csv
 import json
+import re
 import urllib.parse
 from datetime import datetime
 
@@ -54,6 +55,7 @@ from app.iris_engine.module_handler.module_handler import call_modules_hook
 from app.iris_engine.utils.collab import collab_notify
 from app.iris_engine.utils.common import parse_bf_date_format
 from app.iris_engine.utils.tracker import track_activity
+from app.iris_engine.utils.vis_text import vis_text
 from app.models.models import CompromiseStatus
 from app.models.authorization import CaseAccessLevel
 from app.models.authorization import User
@@ -185,6 +187,18 @@ def case_get_timeline_state(caseid):
     return response_error('No timeline state for this case. Add an event to begin')
 
 
+# iris-ng 2026-11-20: vis.js 4.21 puts a timeline item's `content` and `title` and a group's `content` into the page
+# as HTML, so the stored text in them is vis_text() (escaped, line breaks kept), and an item's `style` is written only
+# for a hex colour (it is CSS; every write path keeps the colour to the picker's palette or a verdict colour).
+_HEX_COLOUR = re.compile(r'#[0-9A-Fa-f]{3,8}')
+
+
+def _event_style(event_color):
+    if event_color and _HEX_COLOUR.fullmatch(event_color):
+        return f'background-color: {event_color};'
+    return None
+
+
 @case_timeline_rest_blueprint.route('/case/timeline/visualize/data/by-asset', methods=['GET'])
 @ac_requires_case_identifier(CaseAccessLevel.read_only, CaseAccessLevel.full_access)
 @ac_api_requires()
@@ -207,11 +221,13 @@ def case_getgraph_assets(caseid):
     for row in timeline:
         for asset in assets_cache:
             if asset.event_id == row.event_id:
-                tmp = {'date': row.event_date, 'group': asset.asset_name, 'content': row.event_title,
-                       'title': f"{row.event_date.strftime('%Y-%m-%dT%H:%M:%S')} - {row.event_content}"}
+                tmp = {'date': row.event_date, 'group': vis_text(asset.asset_name),
+                       'content': vis_text(row.event_title),
+                       'title': vis_text(f"{row.event_date.strftime('%Y-%m-%dT%H:%M:%S')} - {row.event_content}")}
 
-                if row.event_color:
-                    tmp['style'] = f'background-color: {row.event_color};'
+                style = _event_style(row.event_color)
+                if style:
+                    tmp['style'] = style
 
                 tmp['unique_id'] = row.event_id
                 tim.append(tmp)
@@ -237,17 +253,16 @@ def case_getgraph(caseid):
     tim = []
     for row in timeline:
 
-        tmp = {'date': row.event_date, 'group': row.category[0].name if row.category else 'Uncategorized', 'content': row.event_title}
+        tmp = {'date': row.event_date, 'group': vis_text(row.category[0].name if row.category else 'Uncategorized'),
+               'content': vis_text(row.event_title)}
 
-        if row.event_content:
-            content = row.event_content.replace('\n', '<br/>')
-        else:
-            content = ''
+        content = vis_text(row.event_content) if row.event_content else ''
 
         tmp['title'] = f"<small>{row.event_date.strftime('%Y-%m-%dT%H:%M:%S')}</small><br/>{content}"
 
-        if row.event_color:
-            tmp['style'] = f'background-color: {row.event_color};'
+        style = _event_style(row.event_color)
+        if style:
+            tmp['style'] = style
 
         tmp['unique_id'] = row.event_id
         tim.append(tmp)
