@@ -29,6 +29,22 @@
 
 set -e
 
+# iris-ng 2026-11-21: the script runs from the clone root, wherever it is started. Compose finds
+# docker-compose.dev.yml, .env and the build contexts there, and in Git Bash on Windows the cd also hands Compose
+# the drive letter as Windows spells it: started from a folder written with a lower-case letter (c:\...), Docker
+# Buildx Bake refuses every image build ("additional privileges requested: pass --allow=fs.read=..."). A relative
+# .env path given on the command line or at a prompt is read from the folder the script was started in.
+START_DIR="$(pwd)"
+CLONE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# A path the user gave, relative to the folder the script was started in (unchanged when that is the clone root).
+from_start_dir() {
+  case "$1" in
+    /*|[A-Za-z]:[\\/]*) printf '%s\n' "$1" ;;
+    *) if [[ "$START_DIR" == "$CLONE_ROOT" ]]; then printf '%s\n' "$1"; else printf '%s\n' "$START_DIR/$1"; fi ;;
+  esac
+}
+
 # ---------------------------
 # DEFAULTS & CONSTANTS
 # ---------------------------
@@ -84,11 +100,12 @@ select_env_file() {
   fi
 
   if [[ -f "$default" ]]; then
-    echo "Found .env in the current directory: $default"
+    echo "Found .env in the clone root: $CLONE_ROOT/.env"
     if ask "Do you want to use $default?" "Y"; then
       ENV_FILE="$default"
     else
       read -r -p "Please enter the path to your .env file: " user_env_path
+      user_env_path="$(from_start_dir "$user_env_path")"
       if [[ ! -f "$user_env_path" ]]; then
         echo "Error: specified .env file does not exist."
         exit 1
@@ -97,7 +114,8 @@ select_env_file() {
     fi
   else
     # If no default .env found, ask user
-    read -r -p "No .env found. Please provide path to your .env file: " user_env_path
+    read -r -p "No .env found in $CLONE_ROOT. Please provide path to your .env file: " user_env_path
+    user_env_path="$(from_start_dir "$user_env_path")"
     if [[ ! -f "$user_env_path" ]]; then
       echo "Error: specified .env file does not exist."
       exit 1
@@ -216,7 +234,7 @@ init_env() {
 
   # Ensure there's a .env.model to copy from
   if [[ ! -f ".env.model" ]]; then
-    echo "Error: .env.model not found in the current directory. Cannot proceed with --init."
+    echo "Error: .env.model not found in $CLONE_ROOT. Cannot proceed with --init."
     exit 1
   fi
 
@@ -353,6 +371,12 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Everything from here runs in the clone root (see the top of the file).
+if [[ -n "$ENV_FILE" ]]; then
+  ENV_FILE="$(from_start_dir "$ENV_FILE")"
+fi
+cd "$CLONE_ROOT"
 
 # ---------------------------
 # If --init is set, run init_env and skip the rest

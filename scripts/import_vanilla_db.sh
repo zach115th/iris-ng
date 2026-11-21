@@ -226,7 +226,8 @@ export_run() {
 }
 
 # ===========================================================================
-# IMPORT MODE — run on the iris-ng host, from the iris-ng working directory.
+# IMPORT MODE — run on the iris-ng host, with the copy of this script inside the iris-ng clone (it changes into
+# the clone root itself).
 # ===========================================================================
 import_run() {
     local from_dir=""
@@ -244,9 +245,24 @@ import_run() {
 
     require_command docker
     [[ -z "$from_dir" ]] && die "--from <dir> is required"
+
+    # iris-ng 2026-11-21: import runs from the clone root, wherever the script was started (export stays in the
+    # folder it is started in: it reads the old install's .env and project name there). Compose finds
+    # docker-compose.dev.yml and .env in the clone root, and in Git Bash on Windows the cd also hands Compose the
+    # drive letter as Windows spells it: from a folder written with a lower-case letter (c:\...), Docker Buildx Bake
+    # refuses to build any image the import needs. --from is read from the folder the script was started in.
+    local start_dir clone_root
+    start_dir="$(pwd)"
+    clone_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    case "$from_dir" in
+        /*|[A-Za-z]:[\\/]*) ;;
+        *) [[ "$start_dir" == "$clone_root" ]] || from_dir="$start_dir/$from_dir" ;;
+    esac
+    cd "$clone_root"
+
     [[ -d "$from_dir" ]] || die "migration directory not found: $from_dir"
     [[ -f "${from_dir}/iris.dump" ]] || die "${from_dir}/iris.dump not found — DB dump is required"
-    [[ -f "$IRIS_NG_COMPOSE" ]] || die "must run from iris-ng working directory ($IRIS_NG_COMPOSE not found here)"
+    [[ -f "$IRIS_NG_COMPOSE" ]] || die "$IRIS_NG_COMPOSE not found in $clone_root - run the copy of this script inside the iris-ng clone"
 
     local project_name
     project_name="$(compose_project_name)"
@@ -255,7 +271,7 @@ import_run() {
     log ""
     log "=== Migration plan ==="
     log "  Source dir:           $from_dir"
-    log "  Target iris-ng:       $project_name (this directory)"
+    log "  Target iris-ng:       $project_name ($clone_root)"
     log "  DB dump:              ${from_dir}/iris.dump ($(du -h "${from_dir}/iris.dump" | cut -f1))"
     for vol_base in "${NAMED_VOLUMES[@]}"; do
         local arc="${from_dir}/${vol_base}.tar.gz"
