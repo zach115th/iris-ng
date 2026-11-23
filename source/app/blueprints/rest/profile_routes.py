@@ -44,6 +44,9 @@ from app.blueprints.rest.endpoints import endpoint_removed
 
 profile_rest_blueprint = Blueprint('profile_rest', __name__)
 
+# What POST /user/update accepts: the new password (and the CSRF token a browser sends with it).
+SELF_UPDATE_FIELDS = ('user_password', 'csrf_token')
+
 
 @profile_rest_blueprint.route('/user/token/renew', methods=['GET'])
 @ac_api_requires()
@@ -90,7 +93,17 @@ def update_user_view():
 
         # validate before saving
         user_schema = UserSchema()
-        jsdata = request.get_json()
+        # iris-ng (backlog #25, with F6): this route changes the caller's own password and nothing else - the
+        # profile page sends only that. It loaded every field of the user schema, so any user could rename their
+        # display name and login, change their email and mark themselves a service account through the API; those
+        # stay with an administrator (Manage > Users).
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict):
+            return response_error("Invalid request")
+        if any(key not in SELF_UPDATE_FIELDS for key in body):
+            return response_error("Only your password can be changed here. Ask an administrator to change your "
+                                  "name, login or email.")
+        jsdata = {'user_password': body.get('user_password')}
         jsdata['user_id'] = current_user.id
         puo = get_user_primary_org(current_user.id)
 
