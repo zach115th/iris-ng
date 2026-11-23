@@ -11,6 +11,41 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.4] — 2026-11-23
+
+A security release: no stored or supplied value sits inside an inline click handler any more, and the alert owner list
+shows each user's display name as text. With it, Markdown tables keep their column alignment wherever the case pages
+draw Markdown. **No migration.** The app image changes; the nginx and database images and the guest-portal tunnel
+agent do not.
+
+### Security
+- **A user's display name ran in the alert owner list.** Opening *Assign to...* on an alert, or the queue's batch
+  *Assign...*, put every user's display name into the list as markup, and Chrome builds an element written inside a
+  list option: a name holding an `<img onerror=...>` ran in the page of whoever opened the list. Any user can change
+  their own display name from their profile. The names are text now.
+- **A quote in an asset name ran when the asset editor was minimized.** The editor's Minimize button carried the
+  asset name inside its inline click handler. The page escaped the quote, but the browser decodes it again before the
+  handler runs, so a name such as `x'); ...; //` ran its code for whoever minimized that asset's editor. An asset name
+  can also arrive from an alert, by mail or through the API.
+- **The same pattern in four more places:** the DIM task feed and the DIM tasks page carried the task id, a module's
+  manual-hook menu the hook and module names (and showed the hook name as markup), and the module page's parameter
+  link the parameter name. Only Celery or a module's own code writes those values.
+- Every such control now carries its value in a `data-` attribute that one shared listener reads, and the hook menu
+  shows the name as text. All of these are present in every earlier IRIS-NG release, 1.x included.
+
+### Changed
+- Markdown tables keep their column alignment (`:--`, `:-:`, `--:` under the header row) wherever the case pages draw
+  Markdown: the Notes page, the case summary, descriptions, comments, the IOC page's Notes tab and both timeline
+  views. A cell's alignment can only be left, center or right. 2.16.3 had removed it from the IOC Notes tab and the
+  timeline; the Notes page and the descriptions had never shown it.
+
+### Compatibility
+- No route or reply changes. The DIM task id is URL-encoded in `GET /dim/tasks/status/<task_id>` (a Celery task id
+  is unchanged by it).
+- Chart 1.16.4.
+
+---
+
 ## [IRIS-NG-v2.16.3] — 2026-11-23
 
 A security release: Markdown drawn in the browser is always filtered, so a note read on the IOC page's Notes tab and
