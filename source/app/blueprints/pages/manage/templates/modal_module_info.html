@@ -71,7 +71,7 @@
                     {% for id in config %}
                     <tr role="row">
                         <td>{{ id["section"] or "Main" }}</td>
-                        <td><a href="#" onclick="update_param({{ data.id }}, '{{ data.id }}##{{ id['param_name'] }}');">
+                        <td><a href="#" data-iris-module-id="{{ data.id }}" data-iris-module-param="{{ data.id }}##{{ id['param_name'] }}">
                             {% if (id['param_name'] in missing_params) %}
                               <i class="fa-solid fa-triangle-exclamation text-danger" title="Mandatory parameter not set"></i>
                             {% endif %}

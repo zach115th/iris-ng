@@ -31,8 +31,9 @@ $(document).ready(function(){
         { "data": "task_id",
         "render": function (data, type, row, meta) {
             if (type === 'display') {
-                data = sanitizeHTML(data);
-                data = "<a href='#' onclick=\"dim_task_status('"+ data +"');return false;\">"+ data +"</a>"
+                /* iris-ng (backlog #25 F5): the id is escaped (quotes too) into a data- attribute and the text; the
+                   shared listener in common.js opens it - inside an onclick a quote ended its string. */
+                data = '<a href="#" data-iris-dim-task="' + iris_escape(data) + '">' + iris_escape(data) + '</a>';
             }
             return data;
           } },

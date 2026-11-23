@@ -850,7 +850,8 @@ async function changeAlertOwner(alertId) {
   const userSelect = $('#changeOwnerAlertSelect');
   userSelect.empty();
   users.forEach((user) => {
-    userSelect.append(`<option value="${user.user_id}">${user.user_name}</option>`);
+    // iris-ng (backlog #25 F5): a display name is text - any user sets their own, and it was markup here
+    userSelect.append($('<option>').val(user.user_id).text(user.user_name));
   });
 
   $('#alertIDAssignModal').text(alertId);
@@ -894,7 +895,8 @@ async function changeBatchAlertOwner(alertId) {
       const userSelect = $('#changeOwnerAlertSelect');
       userSelect.empty();
       users.forEach((user) => {
-        userSelect.append(`<option value="${user.user_id}">${user.user_name}</option>`);
+        // iris-ng (backlog #25 F5): a display name is text (as above)
+        userSelect.append($('<option>').val(user.user_id).text(user.user_name));
       });
 
       $('#alertIDAssignModal').text(alertId);

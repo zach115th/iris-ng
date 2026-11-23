@@ -65,7 +65,7 @@
                     </button>
                 {% endif %}
 
-                    <button class="float-right btn bg-transparent" title="Minimize" onclick="modal_minimized('modal_add_event', '{% if event.event_id %} Event ID #{{ event.event_id }} {% else %} Add event {% endif %}');"> <i class='fa fa-minus'></i> </button>
+                    <button class="float-right btn bg-transparent" title="Minimize" data-iris-minimize="modal_add_event" data-iris-minimize-title="{% if event.event_id %} Event ID #{{ event.event_id }} {% else %} Add event {% endif %}"> <i class='fa fa-minus'></i> </button>
                     <button type="button" class="float-right btn bg-transparent" data-dismiss="modal" aria-label="Close"><span
                         aria-hidden="true"><i class="fa fa-times"></i></span></button>
                 </div>

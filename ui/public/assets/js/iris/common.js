@@ -737,10 +737,11 @@ function load_dim_limited_tasks(){
                 title = 'Task pending or failed';
             }
 
-            /* iris-ng (backlog #25 F1): every stored value escaped; the task id in onclick stays for F5. */
+            /* iris-ng (backlog #25 F1 + F5): every stored value escaped, the task id in a data- attribute that the
+               shared listener below reads (it sat inside an onclick, where a quote ended its string). */
             entry =	`<li class="feed-item ${api_flag}" title='${iris_escape(title)}'>
                     <time class="date" datetime="${iris_escape(js_data[index].activity_date)}">${iris_escape(js_data[index].date_done)}</time>
-                    <span class="text" title="${iris_escape(js_data[index].task_id)}"><a href="#" onclick='dim_task_status("${js_data[index].task_id}");return false;'>${iris_escape(js_data[index].module)}</a> - ${iris_escape(js_data[index].user)}</span>
+                    <span class="text" title="${iris_escape(js_data[index].task_id)}"><a href="#" data-iris-dim-task="${iris_escape(js_data[index].task_id)}">${iris_escape(js_data[index].module)}</a> - ${iris_escape(js_data[index].user)}</span>
                     </li>`
             $('#dim_tasks_feed').append(entry);
         }
@@ -748,7 +749,7 @@ function load_dim_limited_tasks(){
 }
 
 function dim_task_status(id) {
-    url = '/dim/tasks/status/'+id + case_param();
+    url = '/dim/tasks/status/' + encodeURIComponent(String(id)) + case_param();
     $('#info_dim_task_modal_body').load(url, function (response, status, xhr) {
         if (status !== "success") {
              ajax_notify_error(xhr, url);
@@ -822,8 +823,15 @@ function load_menu_mod_options_modal(element_id, data_type, anchor) {
 
             for (option in jsdata) {
                 let opt = jsdata[option];
-                let menu_opt = `<a class="dropdown-item" href="#" onclick='init_module_processing(["${element_id}"], "${opt.hook_name}",`+
-                            `"${opt.manual_hook_ui_name}","${opt.module_name}","${data_type}");return false;'><i class="fa fa-arrow-alt-circle-right mr-2"></i> ${opt.manual_hook_ui_name}</a>`
+                /* iris-ng (backlog #25 F5): a module's names went into an inline handler and the markup as they were;
+                   they stay in this closure now, and the menu shows the name as text. */
+                const menu_opt = $('<a class="dropdown-item" href="#"><i class="fa fa-arrow-alt-circle-right mr-2"></i></a>');
+                menu_opt.append(document.createTextNode(' ' + String(opt.manual_hook_ui_name)));
+                menu_opt.on('click', function (e) {
+                    e.preventDefault();
+                    init_module_processing([String(element_id)], String(opt.hook_name), String(opt.manual_hook_ui_name),
+                                           String(opt.module_name), String(data_type));
+                });
                 anchor.append(menu_opt);
             }
 
@@ -1052,10 +1060,17 @@ function do_md_filter_xss(html) {
                 code: [], pre: [], em: [], strong: [],
                 blockquote: [], del: [],
                 input: ['type', 'checked', 'disabled', 'class'],
-                table: ['class'], thead: [], tbody: [], tr: [], th: [], td: [], br: []
+                table: ['class'], thead: [], tbody: [], tr: [], th: ['align'], td: ['align'], br: []
             },
 
         onTagAttr: function (tag, name, value, isWhiteAttr) {
+            /* iris-ng (backlog #25 F5, the maintainer's call 2026-11-23): a table cell keeps Markdown's column
+               alignment - one of three words, written from this list, never the value as given. */
+            if ((tag === 'th' || tag === 'td') && name === 'align') {
+                const aligns = ['left', 'center', 'right'];
+                const i = aligns.indexOf(String(value).trim().toLowerCase());
+                return i === -1 ? '' : 'align="' + aligns[i] + '"';
+            }
             if (tag === "i" && name === "class") {
                 if (iClassWhiteList.indexOf(value) === -1) {
                     return false;
@@ -1413,23 +1428,48 @@ function toggle_focus_mode() {
     });
 }
 
+/* iris-ng (backlog #25 F5): the modal is found with getElementById - a selector is never built from the id, which
+   now comes from a data- attribute. */
 function modal_maximize() {
-    id = $('#minimized_modal_box').data('target-id');
-    $("#" + id).modal("show");
+    const el = document.getElementById(String($('#minimized_modal_box').data('target-id') || ''));
+    if (el) { $(el).modal("show"); }
     $("#minimized_modal_box").hide();
 }
 
 function modal_minimized(id, title) {
-    $("#minimized_modal_title").text(title);
-    $('#minimized_modal_box').data('target-id',id);
+    $("#minimized_modal_title").text(title == null ? '' : String(title));
+    $('#minimized_modal_box').data('target-id', String(id));
     $("#minimized_modal_box").show();
-    $("#" + id).modal("hide");
+    const el = document.getElementById(String(id));
+    if (el) { $(el).modal("hide"); }
 }
 
 function hide_minimized_modal_box() {
     $("#minimized_modal_box").hide();
     $("#minimized_modal_title").text('');
     $('#minimized_modal_box').data('target-id','');
+}
+
+/* iris-ng (backlog #25 F5): no value sits inside an inline handler. A control carries it in data- attributes
+   (escaped where the page is built: Jinja, iris_escape) and one delegated listener per kind reads it here; a quote
+   in an asset name, a task id or a module's parameter name ended the handler's string before. Bound once, even
+   if this file loads twice. */
+if (!window.__irisDataHandlers) {
+    window.__irisDataHandlers = true;
+    $(document).on('click', '[data-iris-minimize]', function (e) {
+        e.preventDefault();
+        modal_minimized(this.getAttribute('data-iris-minimize'), this.getAttribute('data-iris-minimize-title') || '');
+    });
+    $(document).on('click', '[data-iris-dim-task]', function (e) {
+        e.preventDefault();
+        dim_task_status(this.getAttribute('data-iris-dim-task'));
+    });
+    $(document).on('click', '[data-iris-module-param]', function (e) {
+        e.preventDefault();
+        if (typeof update_param === 'function') {
+            update_param(parseInt(this.getAttribute('data-iris-module-id'), 10), this.getAttribute('data-iris-module-param'));
+        }
+    });
 }
 
 function hide_table_search_input(columns) {
