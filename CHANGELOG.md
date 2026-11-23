@@ -11,6 +11,39 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.3] — 2026-11-23
+
+A security release: Markdown drawn in the browser is always filtered, so a note read on the IOC page's Notes tab and
+a link in an event's content in the timeline's compact view can no longer run script. **No migration.** The app image
+changes; the nginx and database images and the guest-portal tunnel agent do not.
+
+### Security
+- **A note read on the IOC page's Notes tab ran its markup.** The tab reads in place the notes an IOC is linked to,
+  and drew the note's Markdown as HTML without filtering it, so markup in the note - an element that runs script as
+  soon as it is shown, such as `<details open ontoggle=...>` or `<input autofocus onfocus=...>` - ran in the page of
+  whoever opened the note there, with nothing else to click. A note is written by anyone with write access to the
+  case, through the API or by a case import. Present since IRIS-NG-v2.0.0.
+- **A Markdown link to a `javascript:` URL in an event's content could be clicked in the timeline's compact view.**
+  The view filtered the event's Markdown before converting it, which removes raw markup but leaves a Markdown link's
+  address as written; clicking the link ran the script. Present in every earlier IRIS-NG release, 1.x included.
+- Both are closed in one place: the browser's shared Markdown converter now filters the HTML it returns with the
+  list of elements and attributes the Notes page uses, so no page can show its output unfiltered. Pages that already
+  filtered show the same as before, except for the table alignment below.
+
+### Changed
+- A Markdown link to a `javascript:` URL shows with an empty address on the IOC page's Notes tab and in the
+  timeline's compact view, as it already did on the Notes page.
+- Raw HTML in a note shows on the IOC page's Notes tab as it does on the Notes page: an element the list does not
+  allow is shown as text.
+- Tables in the timeline's expanded view no longer keep their columns' alignment (`:--`, `--:`): the Notes page's
+  list allows no `align` attribute.
+
+### Compatibility
+- No route or reply changes. A script calling the page's `get_showdown_convert().makeHtml()` gets filtered HTML.
+- Chart 1.16.3.
+
+---
+
 ## [IRIS-NG-v2.16.2] — 2026-11-21
 
 A security release: stored text in the alert Relationships graph, the case Graph tab and the visual timeline is shown
