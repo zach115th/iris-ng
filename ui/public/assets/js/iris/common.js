@@ -1029,7 +1029,10 @@ function get_showdown_convert() {
                 table.parentNode.insertBefore(div, table);
                 div.appendChild(table);
             }
-            return doc.getElementById('iris-md-root').innerHTML;
+            /* iris-ng (backlog #25 F4): the HTML is filtered here, with the Notes page's allowlist, so no caller can
+               put it into a page unfiltered (the IOC page's Notes tab and the timeline's compact view did). A caller's
+               own do_md_filter_xss() afterwards changes nothing. */
+            return do_md_filter_xss(doc.getElementById('iris-md-root').innerHTML);
         }
     };
 }
