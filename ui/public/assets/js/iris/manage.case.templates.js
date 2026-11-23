@@ -115,17 +115,22 @@ $('#case_templates_table').dataTable( {
                     return '<a href="#" onclick="case_template_detail(\'' + row['id'] + '\');">' + sanitizeHTML(data) +'</a>';
                 }
             },
+            // iris-ng (backlog #25 F6): these four were written with innerHTML as they were
             {
-                "data": "description"
+                "data": "description",
+                "render": iris_dt_text()
             },
             {
-                "data": "added_by"
+                "data": "added_by",
+                "render": iris_dt_text()
             },
             {
-                "data": "created_at"
+                "data": "created_at",
+                "render": iris_dt_text()
             },
             {
-                "data": "updated_at"
+                "data": "updated_at",
+                "render": iris_dt_text()
             }
 
         ]

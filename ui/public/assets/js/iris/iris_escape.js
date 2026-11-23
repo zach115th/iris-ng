@@ -18,3 +18,11 @@ function iris_escape(s) {
         return IRIS_ESCAPE_MAP[c];
     });
 }
+
+/* A DataTables column render with the shape of $.fn.dataTable.render.text(): the cell shows its value as text.
+   DataTables writes a cell's data with innerHTML unless a render escapes it, and 1.10.16's render.text() leaves '&'
+   alone (a stored "&amp;" showed as "&"), so this one escapes all five through iris_escape. Sorting and search
+   keep the raw value. Use it as `"render": iris_dt_text()` (backlog #25 F6, 2026-11-23). */
+function iris_dt_text() {
+    return {display: function (data) { return iris_escape(data); }};
+}

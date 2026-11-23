@@ -53,7 +53,8 @@ $('#attributes_table').dataTable( {
                 }
             },
             {
-                "data": "attribute_description"
+                "data": "attribute_description",
+                "render": iris_dt_text()  // iris-ng (backlog #25 F6): text, not markup
             }
         ]
     }

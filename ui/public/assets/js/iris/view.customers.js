@@ -128,28 +128,20 @@ $(document).ready(function() {
         "columns": [
             {
                 "data": "user_id",
-                "render": function(data, type, row) {
-                    return data;
-                }
+                "render": iris_dt_text()  // iris-ng (backlog #25 F6): text, not markup
             },
             {
                 "data": "user_name",
-                "render": function(data, type, row) {
-                    return data;
-                }
+                "render": iris_dt_text()  // iris-ng (backlog #25 F6): text, not markup
 
             },
             {
                 "data": "user_login",
-                "render": function(data, type, row) {
-                    return data;
-                }
+                "render": iris_dt_text()  // iris-ng (backlog #25 F6): text, not markup
             },
             {
                 "data": "is_service_account",
-                "render": function(data, type, row) {
-                    return data;
-                }
+                "render": iris_dt_text()  // iris-ng (backlog #25 F6): text, not markup
             }
         ]
     });
@@ -160,28 +152,24 @@ $(document).ready(function() {
         "columns": [
             {
                 "data": "asset_name",
-                "render": function(data, type, row) {
-                    return data;
-                }
+                "render": iris_dt_text()  // iris-ng (backlog #25 F6): text, not markup
             },
             {
                 "data": "asset_description",
-                "render": function(data, type, row) {
-                    return data;
-                }
+                "render": iris_dt_text()  // iris-ng (backlog #25 F6): text, not markup
 
             },
             {
                 "data": "asset_type",
                 "render": function(data, type, row) {
-                    return data.asset_name;
+                    // iris-ng (backlog #25 F6): the asset type's name is text
+                    const v = data ? data.asset_name : '';
+                    return type === 'display' ? iris_escape(v) : v;
                 }
             },
             {
                 "data": "asset_ip",
-                "render": function(data, type, row) {
-                    return data;
-                }
+                "render": iris_dt_text()  // iris-ng (backlog #25 F6): text, not markup
             },
             {
                 "data": "case_id",
@@ -246,24 +234,22 @@ $(document).ready(function() {
             },
             {
                 "data": "open_date",
-                "render": function(data, type, row) {
-                    return data;
-                }
+                "render": iris_dt_text()  // iris-ng (backlog #25 F6): text, not markup
             },
             {
                 "data": "state",
                 "render": function(data, type, row) {
-                    if (data !== null) {
-                        return data.state_name;
-                    } else {
-                        return 'Unknown';
-                    }
+                    // iris-ng (backlog #25 F6): the state's name is text
+                    const v = data !== null && data !== undefined ? data.state_name : 'Unknown';
+                    return type === 'display' ? iris_escape(v) : v;
                 }
             },
             {
                 "data": "owner",
                 "render": function(data, type, row) {
-                    return data.user_name;
+                    // iris-ng (backlog #25 F6): the owner's display name is text (any user set their own)
+                    const v = data ? data.user_name : '';
+                    return type === 'display' ? iris_escape(v) : v;
                 }
             }
         ],
