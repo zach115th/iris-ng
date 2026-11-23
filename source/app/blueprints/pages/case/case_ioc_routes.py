@@ -94,8 +94,8 @@ def case_view_ioc_modal(cur_id, caseid, url_redir):
         comments_map = get_case_iocs_comments_count([cur_id])
 
         # iris-next: surface IOC → Note provenance from ioc_note_link.
-        # Populated by the AI IOC extractor `+ add` flow (modal_note_edit.html
-        # and case_notes_v2.html) and any future surface that records sources.
+        # Populated by the AI IOC extractor `+ add` flow (case_notes_v2.html) and any
+        # future surface that records sources.
         from app import db as _db
         from app.models.models import IocNoteLink, Notes
         linked_notes = (
