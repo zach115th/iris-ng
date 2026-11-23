@@ -11,6 +11,38 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.5] — 2026-11-23
+
+A security release: table cells show stored text as text, and a user can change only their own password through
+`POST /user/update`. **No migration.** The app image changes; the nginx and database images and the guest-portal tunnel
+agent do not.
+
+### Security
+- **A display name, an asset's fields and other stored text ran in tables.** The tables write a cell's value into the
+  page as HTML unless the column escapes it, and several did not: on a customer's page the users list (display name,
+  login), the assets list (name, description, type, IP) and the cases list (open date, state, the owner's display
+  name); the case templates list (description, added by, created, updated); and the attributes list (description). A
+  display name holding an `<img onerror=...>` ran for whoever opened that customer's users or cases list, and an
+  asset's name or description - written by an analyst, an import or an alert - in its assets list. Each of these
+  cells shows its value as text now.
+- **Any user could change their own display name, login and email, and mark themselves a service account.**
+  `POST /user/update` loaded every field of the user schema, although the profile page sends only a new password and
+  shows the rest read-only. It now accepts only the password; an administrator changes the rest from Manage > Users.
+  Marking oneself a service account did not bypass MFA: a service account cannot sign in with a password.
+- Both are present in every earlier IRIS-NG release, 1.x included.
+
+### Removed
+- The modal note editor template (`modal_note_edit.html`), which no page has rendered since at least IRIS-NG-v1.2.2.
+
+### Compatibility
+- `POST /user/update` refuses a request naming any field other than `user_password` (and the `csrf_token` a browser
+  sends) with `400` "Only your password can be changed here...". A client that changed its own name, login, email or
+  service-account flag through it gets that error now; an administrator's `POST /manage/users/update/<id>` is
+  unchanged. No other route or reply changes.
+- Chart 1.16.5.
+
+---
+
 ## [IRIS-NG-v2.16.4] — 2026-11-23
 
 A security release: no stored or supplied value sits inside an inline click handler any more, and the alert owner list
