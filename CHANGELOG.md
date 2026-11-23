@@ -13,15 +13,12 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ## [IRIS-NG-v2.16.6] — 2026-11-23
 
-A small fix: the war room's guest invitation form shows a generic example in its Organisation field. **No
-migration.** The app image changes; the nginx and database images and the guest-portal tunnel agent do not.
+A small change to the war room's guest invitation form. **No migration.** The app image changes; the nginx and
+database images and the guest-portal tunnel agent do not.
 
-### Fixed
-- **The guest form's Organisation field showed a specific organisation's name as its example.** In a war room,
-  Members > Add member > Guest showed a real-looking organisation as the field's placeholder, which reads as a
-  customer of the instance. It is display text only - the form sends what is typed, and nothing was read from the
-  database - and it is now "Example Organisation", like the form's other examples ("Jane Doe", jane@example.org).
-  No other placeholder or shipped example names a specific organisation. Present since IRIS-NG-v2.4.0.
+### Changed
+- The guest invitation form (a war room's Members > Add member > Guest) shows "Example Organisation" as the
+  Organisation field's example text, in the style of the form's other examples ("Jane Doe", jane@example.org).
 
 ### Compatibility
 - No route, reply or setting changes.
