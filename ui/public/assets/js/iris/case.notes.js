@@ -884,7 +884,7 @@ function move_item(item_id, item_type) {
         let listItem = $('<li></li>');
         let link = $('<a></a>').attr('href', '#');
         link.append($('<i></i>').addClass('fa-regular fa-folder mr-2'));  // Add a folder icon
-        link.append(' ' + directory.name);
+        link.append(document.createTextNode(' ' + directory.name));  // iris-ng (backlog #25 leftovers): a name is text, not HTML
         listItem.append(link);
 
         link.on('click', function(e) {

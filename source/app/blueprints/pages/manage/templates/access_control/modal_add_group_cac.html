@@ -56,7 +56,7 @@ $('#group_case_access_select').multiselect({
 });
 
 $('#group_case_access_select').multiselect('dataprovider', [{% for ocs in outer_cases %}
- { label: "{{ ocs.case_name }}", value: {{ ocs.case_id  }} }, {% endfor %}]);
+ { label: {{ ocs.case_name|tojson }}, value: {{ ocs.case_id  }} }, {% endfor %}]);
 
 
 $('#group_case_access_select').multiselect('refresh')
@@ -72,7 +72,7 @@ $('#group_case_ac_select').multiselect({
 });
 
 $('#group_case_ac_select').multiselect('dataprovider', [{% for acc in access_levels %}
- { label: "{{ acc.name }}", value: {{ acc.value  }} }, {% endfor %}]);
+ { label: {{ acc.name|tojson }}, value: {{ acc.value  }} }, {% endfor %}]);
 
 $('#group_case_ac_select').multiselect('refresh');
 

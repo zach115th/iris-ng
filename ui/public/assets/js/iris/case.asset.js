@@ -143,7 +143,7 @@ function get_case_assets() {
                     action: function(rows) {
                         let row = rows[0];
                         let asset = get_row_value(row);
-                        window.open(`/alerts?alert_assets=${asset}`, '_blank');
+                        window.open(`/alerts?alert_assets=${encodeURIComponent(asset)}`, '_blank');
                     }
                 }]);
                 $('[data-toggle="popover"]').popover();
@@ -413,15 +413,20 @@ $(document).ready(function(){
                     }
 
                     if (row.alerts.length > 0) {
+                        /* iris-ng (backlog #25 leftovers): the popover's HTML is built from escaped parts - the alert's
+                           title escaped, the asset name encoded into the link - and the whole of it is escaped into a
+                           double-quoted attribute. The asset name used to sit raw inside data-content='...', where a
+                           quote ended the attribute and the rest of the name became attributes of this focusable icon. */
                         let alerts_content = "";
 
                         row.alerts.forEach(alert => {
-                            alerts_content += `<i tabindex="0" class="fas fa-bell text-warning mr-2"></i><a href=\"/alerts?alert_ids=${alert.alert_id}&page=1&per_page=1&sort=desc\" target="_blank" rel="noopener">#${alert.alert_id} - ${alert.alert_title.replace(/'/g, "&#39;").replace(/"/g, "&quot;")}</a><br/>`;
+                            const alert_id = parseInt(alert.alert_id, 10);
+                            alerts_content += `<i tabindex="0" class="fas fa-bell text-warning mr-2"></i><a href="/alerts?alert_ids=${alert_id}&page=1&per_page=1&sort=desc" target="_blank" rel="noopener">#${alert_id} - ${iris_escape(alert.alert_title)}</a><br/>`;
                         }  );
-                        alerts_content += `<i tabindex="0" class="fas fa-external-link-square mr-2"></i><a href=\"/alerts?alert_assets=${data}" target="_blank" rel="noopener">More..</a>`;
+                        alerts_content += `<i tabindex="0" class="fas fa-external-link-square mr-2"></i><a href="/alerts?alert_assets=${encodeURIComponent(data)}" target="_blank" rel="noopener">More..</a>`;
 
 
-                        compro += `<i tabindex="0" class="fas fa-bell text-warning ml-2" style="cursor: pointer;" data-html="true" data-toggle="popover" data-trigger="focus" title="Alerts" data-content='${alerts_content}'></i>`;
+                        compro += `<i tabindex="0" class="fas fa-bell text-warning ml-2" style="cursor: pointer;" data-html="true" data-toggle="popover" data-trigger="focus" title="Alerts" data-content="${iris_escape(alerts_content)}"></i>`;
                     }
 
                     let img = $('<img>')

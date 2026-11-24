@@ -272,9 +272,16 @@ function iris_acd_summary_save(collapse) {
 
 /* ------------------------------------------------------------- alerts */
 
+/* iris-ng (backlog #25 leftovers): the page's ?cid= goes into links - digits only, re-derived (as alert_clusters.js
+   does); anything else falls back to case 1. */
+function iris_acd_cid() {
+    var raw = (new URLSearchParams(window.location.search)).get('cid') || '';
+    return /^\d+$/.test(raw) ? String(parseInt(raw, 10)) : '1';
+}
+
 function iris_acd_render_alerts() {
     var rows = (IRIS_ACD.detail.alerts || []).map(function (a) {
-        var cid = (new URLSearchParams(window.location.search)).get('cid') || '1';
+        var cid = iris_acd_cid();
         var tags = String(a.tags || '').split(',').filter(Boolean).map(function (t) {
             return '<span class="iris-acd-tag">' + iris_ac_esc(t.trim()) + '</span>';
         }).join('');
@@ -633,7 +640,7 @@ function iris_acd_select_node(nodeId) {
         box.append(row);
     });
     if (pd.alertId != null) {
-        var cid = (new URLSearchParams(window.location.search)).get('cid') || '1';
+        var cid = iris_acd_cid();
         $('#iris-acd-np-open')
             .text('Open alert #' + pd.alertId + ' ↗')
             .attr('href', '/alerts?alert_ids=' + pd.alertId

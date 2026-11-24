@@ -145,7 +145,7 @@ var data = [
     {% for e in all_perms %}
         {
             value: {{ e.value }},
-            label: "{{ e.name }}"
+            label: {{ e.name|tojson }}
         }
         {% if not loop.last %},{% endif %}
     {% endfor %}

@@ -178,11 +178,24 @@ function iris_home_reviews() {
     }).catch(function () { iris_home_fill('iris-home-reviews', [], 'Failed to load.'); });
 }
 
+/* iris-ng (backlog #25 leftovers): a notification's or a followed object's url is server-built, but it rides a stored
+   column into an href - only a same-site http(s) address is kept, as a path; anything else links nowhere. */
+function iris_home_href(raw) {
+    if (!raw) { return '#'; }
+    try {
+        var u = new URL(String(raw), window.location.origin);
+        if ((u.protocol === 'http:' || u.protocol === 'https:') && u.origin === window.location.origin) {
+            return u.pathname + u.search + u.hash;
+        }
+    } catch (e) { /* malformed - links nowhere */ }
+    return '#';
+}
+
 function iris_home_notifs() {
     iris_home_get('/api/v2/notifications?per_page=6').then(function (j) {
         var rows = (j.notifications || []).map(function (n) {
             return '<div class="iris-home-item' + (n.is_read ? '" style="opacity:.55;' : '') + '">'
-                + '<a href="' + iris_home_esc(n.url || '#') + '">' + iris_home_esc(n.title) + '</a>'
+                + '<a href="' + iris_home_esc(iris_home_href(n.url)) + '">' + iris_home_esc(n.title) + '</a>'
                 + '<span class="meta">' + iris_home_rel(n.created_at) + '</span>'
                 + '</div>';
         });
@@ -202,7 +215,7 @@ function iris_home_feed() {
         var rows = items.slice(0, 10).map(function (f) {
             return '<div class="iris-home-item">'
                 + '<span><span class="iris-home-chip">' + iris_home_esc(f.object_type) + '</span> '
-                + '<a href="' + iris_home_esc(f.url || '#') + '">'
+                + '<a href="' + iris_home_esc(iris_home_href(f.url)) + '">'
                 + iris_home_esc(String(f.object_name || ('#' + f.object_id)).replace(/^#\d+ - /, '')) + '</a>'
                 + '<div class="text-muted iris-home-fw-act" data-key="'
                 + iris_home_esc(f.object_type + ':' + f.object_id)
