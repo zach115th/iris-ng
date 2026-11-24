@@ -38,8 +38,10 @@ from app.datamgmt.dashboard.dashboard_db import get_tasks_status
 from app.datamgmt.dashboard.dashboard_db import list_global_tasks
 from app.datamgmt.dashboard.dashboard_db import list_user_tasks
 from app.forms import CaseGlobalTaskForm
+from app.iris_engine.access_control.utils import ac_fast_check_current_user_has_case_access
 from app.iris_engine.module_handler.module_handler import call_modules_hook
 from app.iris_engine.utils.tracker import track_activity
+from app.models.authorization import CaseAccessLevel
 from app.models.authorization import User
 from app.models.cases import Cases
 from app.models.models import CaseTasks
@@ -178,6 +180,15 @@ def utask_statusupdate(caseid):
 
     case_id = jsdata.get('case_id') if jsdata.get('case_id') else caseid
     task_id = jsdata.get('task_id')
+    # iris-ng (backlog #25 M1): the case named in the body is checked at full access, as
+    # /case/tasks/status/update/<id> checks its own - the decorator above checks nothing at its level. A task in a case
+    # the caller cannot change gets the same answer as an unknown task.
+    try:
+        case_id = int(case_id)
+    except (TypeError, ValueError):
+        return response_error(f"Invalid case task ID {task_id} for case {case_id}")
+    if not ac_fast_check_current_user_has_case_access(case_id, [CaseAccessLevel.full_access]):
+        return response_error(f"Invalid case task ID {task_id} for case {case_id}")
     task = CaseTasks.query.filter(
         CaseTasks.id == task_id, CaseTasks.task_case_id == case_id).first()
     if not task:
