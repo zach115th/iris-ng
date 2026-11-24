@@ -11,6 +11,73 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.10] — 2026-11-24
+
+A security release: in war rooms, custom dashboards, asset flags and tutorials, a reply carries only what its caller
+may see and a request changes only what its caller may change. **No migration.** The app image changes; the nginx and
+database images and the guest-portal tunnel agent do not.
+
+### Security
+- **The war-room Scope's staging push told a responder whether a case they cannot open holds an IOC or asset.**
+  `POST /api/v2/war-rooms/<id>/scope/staging/<sid>/push` removed the staged row, and answered `removed: true`, once
+  every target case held the item, whether or not the caller could open those cases. Presence is now asked only of
+  cases the caller can read: a row with a target they cannot read stays, for a member who can push it there.
+- **Custom dashboards drew alerts for a user without the alerts-read permission.** A widget over the alerts source
+  showed alert rows and counts in the viewer's customers to any user. It now shows *Needs the alerts-read
+  permission.* (the other widgets still draw), and the editor no longer offers the alerts source to that user.
+- **A guest's war-room Board showed each attached case's customer, owner and task counts**, which the guest view of
+  the Cases tab never shows. A guest's case cards no longer carry them; the room's own tasks stay in the figures.
+- **A deleted Stream message could still be read.** Deleting hides a message and keeps it for the record, but
+  `GET /api/v2/war-rooms/<id>/messages` still returned it to every member and guest, a file that only deleted
+  messages carried was still served, a deleted `/decision` message was still offered for the register and promoted,
+  and the AI room summary and SitRep drafts still read it. None of them do now. An activity line quoting a deleted
+  message (a pin) shows *Pinned a message* without the message's first words, and a search no longer matches it; the
+  stored rows are left as they are.
+- **Asset-flag in-use counts counted every case**, those the caller cannot open included. `GET
+  /api/v2/manage/asset-flags?counts=true` gives them to administrators only, whose Settings page shows them.
+- **The tutorial clean-up deleted a case for a user without the `standard_user` permission** the case delete routes
+  require; it now requires it too.
+- Each is in every release since its feature: the Scope, the Board, the Stream and asset flags since 2.10.0, custom
+  dashboards since 2.11.0, tutorials since 2.13.0.
+
+### Fixed
+- An archived Stream topic refuses reactions and thread renames, as it refused new messages and edits; deleting a
+  message there is still allowed.
+- The Stream's *Show in activity* links (`#activity-...` in a message) are made from the message's text only: before,
+  `#activity-...` inside a resource chip's text got a link built inside the chip's link.
+
+### Hardening
+- The links of the help tips, the tutorial runner's *Take me there* link and the asset-type icons of the Case Objects
+  page accept a path only when the browser resolves it to this site: `/`, then a tab or a line break, then `/host`
+  passed the old check and led to another site. Each value comes from IRIS-NG's own glossary or from what an
+  administrator sets (a tutorial, an asset type's icon).
+
+### Compatibility
+- `GET /api/v2/war-rooms/<id>/messages` leaves out deleted messages.
+- `GET /api/v2/war-rooms/<id>/files/<file_id>`: a file that only deleted messages carry answers `404`, and a message
+  posted or edited with it answers `400` *An attachment is not a file of this room*. A file no message carries yet (an
+  upload waiting to be sent) is unchanged.
+- `GET /api/v2/war-rooms/<id>/decisions/chat-candidates` leaves out deleted messages; `POST
+  /api/v2/war-rooms/<id>/decisions` naming a deleted one as `chat_message_id` answers `400`.
+- `GET /api/v2/war-rooms/<id>/stream`: an activity line quoting a deleted message has *Pinned a message* or *Unpinned
+  a message* as its `content`, and a search leaves it out.
+- `POST /api/v2/war-rooms/<id>/messages/<message_id>/reactions` and `PUT
+  /api/v2/war-rooms/<id>/messages/<message_id>/thread-title` in an archived topic answer `400` *Topic #... is archived -
+  it is read-only*.
+- `POST /api/v2/war-rooms/<id>/scope/staging/<sid>/push`: `removed` is `false`, and the row stays, while a target
+  case is one the caller cannot read.
+- `GET /api/v2/war-rooms/<id>/board` for a guest: each case card's `customer_name`, `owner_name`, `tasks_open` and
+  `tasks_in_progress` are `null`.
+- `GET /api/v2/manage/asset-flags?counts=true`: a non-administrator's rows carry no `in_use_count`.
+- `GET /api/v2/custom-dashboards/<key>/data` and `POST /api/v2/custom-dashboards/preview`: for a user without
+  alerts-read an alerts widget answers `ok: false` with the error *Needs the alerts-read permission.*; `GET
+  /api/v2/custom-dashboards/schema` gains `unavailable_sources` (`["alerts"]` for that user, else `[]`).
+- `POST /api/v2/tutorials/run/cleanup` refuses a case for a user without `standard_user` (*You cannot delete case
+  #N.*).
+- No other route or reply changes. Chart 1.16.10.
+
+---
+
 ## [IRIS-NG-v2.16.9] — 2026-11-24
 
 A security release: an alert request sets only the alert's own fields, in customers the caller can access, and the
