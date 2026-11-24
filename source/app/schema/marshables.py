@@ -51,6 +51,9 @@ from werkzeug.datastructures import FileStorage
 from app import app
 from app import db
 from app import ma
+from app.schema.schema_base import IrisAutoSchema
+from app.schema.schema_base import IrisBoolean
+from app.schema.schema_base import IrisDateTime
 from app.datamgmt.datastore.datastore_db import datastore_get_standard_path
 from app.datamgmt.manage.manage_attribute_db import merge_custom_attributes
 from app.datamgmt.manage.manage_tags_db import add_db_tag
@@ -182,7 +185,7 @@ def store_icon(file):
     return filename, 'Saved'
 
 
-class CaseNoteDirectorySchema(ma.SQLAlchemyAutoSchema):
+class CaseNoteDirectorySchema(IrisAutoSchema):
     """Schema for serializing and deserializing CaseNoteDirectory objects.
 
     This schema defines the fields to include when serializing and deserializing CaseNoteDirectory objects.
@@ -246,7 +249,7 @@ class CaseNoteDirectorySchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class UserSchema(ma.SQLAlchemyAutoSchema):
+class UserSchema(IrisAutoSchema):
     """Schema for serializing and deserializing User objects.
 
     This schema defines the fields to include when serializing and deserializing User objects.
@@ -260,7 +263,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     user_email: str = auto_field('email', required=True, validate=Length(min=2))
     # iris-ng: write-only - a password is set through this field, the stored hash never leaves through it
     user_password: Optional[str] = auto_field('password', required=False, load_only=True)
-    user_isadmin: bool = fields.Boolean(required=True)
+    user_isadmin: bool = IrisBoolean(required=True)
     user_id: Optional[int] = fields.Integer(required=False)
     user_primary_organisation_id: Optional[int] = fields.Integer(required=False)
     user_is_service_account: Optional[bool] = auto_field('is_service_account', required=False)
@@ -413,7 +416,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class CommentSchema(ma.SQLAlchemyAutoSchema):
+class CommentSchema(IrisAutoSchema):
     """Schema for serializing and deserializing Comment objects.
 
     This schema defines the fields to include when serializing and deserializing Comment objects.
@@ -429,7 +432,7 @@ class CommentSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class CaseNoteRevisionSchema(ma.SQLAlchemyAutoSchema):
+class CaseNoteRevisionSchema(IrisAutoSchema):
     """Schema for serializing and deserializing CaseNoteVersion objects."""
     user_name = fields.String()
 
@@ -440,7 +443,7 @@ class CaseNoteRevisionSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class CaseNoteSchema(ma.SQLAlchemyAutoSchema):
+class CaseNoteSchema(IrisAutoSchema):
     """Schema for serializing and deserializing CaseNote objects.
 
     This schema defines the fields to include when serializing and deserializing CaseNote objects.
@@ -626,7 +629,7 @@ class CaseAddNoteSchema(ma.Schema):
         return data
 
 
-class CaseGroupNoteSchema(ma.SQLAlchemyAutoSchema):
+class CaseGroupNoteSchema(IrisAutoSchema):
     """Schema for serializing and deserializing NotesGroup objects.
 
     This schema defines the fields to include when serializing and deserializing NotesGroup objects.
@@ -640,7 +643,7 @@ class CaseGroupNoteSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class AssetTypeSchema(ma.SQLAlchemyAutoSchema):
+class AssetTypeSchema(IrisAutoSchema):
     """Schema for serializing and deserializing AssetsType objects.
 
     This schema defines the fields to include when serializing and deserializing AssetsType objects.
@@ -732,7 +735,7 @@ class AssetTypeSchema(ma.SQLAlchemyAutoSchema):
         return fpath
 
 
-class CaseAssetsSchema(ma.SQLAlchemyAutoSchema):
+class CaseAssetsSchema(IrisAutoSchema):
     """Schema for serializing and deserializing CaseAssets objects.
 
     This schema defines the fields to include when serializing and deserializing CaseAssets objects.
@@ -866,19 +869,19 @@ class CaseTemplateSchema(ma.Schema):
     """
     id: int = fields.Integer(dump_only=True)
     created_by_user_id: int = fields.Integer(required=True)
-    created_at: datetime = fields.DateTime(dump_only=True)
-    updated_at: datetime = fields.DateTime(dump_only=True)
+    created_at: datetime = IrisDateTime(dump_only=True)
+    updated_at: datetime = IrisDateTime(dump_only=True)
     name: str = fields.String(required=True)
-    display_name: Optional[str] = fields.String(allow_none=True, missing="")
-    description: Optional[str] = fields.String(allow_none=True, missing="")
-    author: Optional[str] = fields.String(allow_none=True, validate=Length(max=128), missing="")
-    title_prefix: Optional[str] = fields.String(allow_none=True, validate=Length(max=32), missing="")
-    summary: Optional[str] = fields.String(allow_none=True, missing="")
-    tags: Optional[List[str]] = fields.List(fields.String(), allow_none=True, missing=[])
-    classification: Optional[str] = fields.String(allow_none=True, missing="")
+    display_name: Optional[str] = fields.String(allow_none=True, load_default="")
+    description: Optional[str] = fields.String(allow_none=True, load_default="")
+    author: Optional[str] = fields.String(allow_none=True, validate=Length(max=128), load_default="")
+    title_prefix: Optional[str] = fields.String(allow_none=True, validate=Length(max=32), load_default="")
+    summary: Optional[str] = fields.String(allow_none=True, load_default="")
+    tags: Optional[List[str]] = fields.List(fields.String(), allow_none=True, load_default=[])
+    classification: Optional[str] = fields.String(allow_none=True, load_default="")
     note_directories: Optional[List[Dict[str, Union[str, List[Dict[str, str]]]]]] = fields.List(fields.Dict(),
                                                                                                 allow_none=True,
-                                                                                                missing=[])
+                                                                                                load_default=[])
 
     @staticmethod
     def validate_string_or_list(value: Union[str, List[str]]) -> Union[str, List[str]]:
@@ -936,11 +939,11 @@ class CaseTemplateSchema(ma.Schema):
     tasks: Optional[List[Dict[str, Union[str, List[str]]]]] = fields.List(
         fields.Dict(keys=fields.Str(), values=fields.Raw(validate=[validate_string_or_list])),
         allow_none=True,
-        missing=[]
+        load_default=[]
     )
 
 
-class IocTypeSchema(ma.SQLAlchemyAutoSchema):
+class IocTypeSchema(IrisAutoSchema):
     """Schema for serializing and deserializing IocType objects.
 
     This schema defines the fields to include when serializing and deserializing IocType objects.
@@ -989,7 +992,7 @@ class IocTypeSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class TlpSchema(ma.SQLAlchemyAutoSchema):
+class TlpSchema(IrisAutoSchema):
     class Meta:
         model = Tlp
         load_instance = True
@@ -998,7 +1001,7 @@ class TlpSchema(ma.SQLAlchemyAutoSchema):
 
 
 # TODO try to remove IocSchema and replace it by this new schema
-class IocSchemaForAPIV2(ma.SQLAlchemyAutoSchema):
+class IocSchemaForAPIV2(IrisAutoSchema):
     """Schema for serializing and deserializing IOC objects.
 
     This schema defines the fields to include when serializing and deserializing IOC objects.
@@ -1097,7 +1100,7 @@ class IocSchemaForAPIV2(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class IocSchema(ma.SQLAlchemyAutoSchema):
+class IocSchema(IrisAutoSchema):
     """Schema for serializing and deserializing IOC objects.
 
     This schema defines the fields to include when serializing and deserializing IOC objects.
@@ -1189,7 +1192,7 @@ class IocSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class UserFullSchema(ma.SQLAlchemyAutoSchema):
+class UserFullSchema(IrisAutoSchema):
     """
     Schema for serializing and deserializing User objects.
 
@@ -1207,7 +1210,7 @@ class UserFullSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class EventSchema(ma.SQLAlchemyAutoSchema):
+class EventSchema(IrisAutoSchema):
     """Schema for serializing and deserializing Event objects.
 
     This schema defines the fields to include when serializing and deserializing Event objects.
@@ -1219,13 +1222,15 @@ class EventSchema(ma.SQLAlchemyAutoSchema):
     event_title: str = auto_field('event_title', required=True, validate=Length(min=2), allow_none=False)
     event_assets: List[int] = fields.List(fields.Integer, required=True, allow_none=False)
     event_iocs: List[int] = fields.List(fields.Integer, required=True, allow_none=False)
-    event_date: datetime = fields.DateTime("%Y-%m-%dT%H:%M:%S.%f", required=True, allow_none=False)
+    event_date: datetime = IrisDateTime("%Y-%m-%dT%H:%M:%S.%f", required=True, allow_none=False)
     event_tz: str = fields.String(required=True, allow_none=False)
     event_category_id: int = fields.Integer(required=True, allow_none=False)
-    event_date_wtz: datetime = fields.DateTime("%Y-%m-%dT%H:%M:%S.%f", required=False, allow_none=False)
-    modification_history: str = auto_field('modification_history', required=False, readonly=True)
+    event_date_wtz: datetime = IrisDateTime("%Y-%m-%dT%H:%M:%S.%f", required=False, allow_none=False)
+    # marshmallow 3 kept an unknown keyword (`readonly=True`) as metadata nothing reads, so it never made the
+    # field read-only; marshmallow 4 refuses unknown keywords.
+    modification_history: str = auto_field('modification_history', required=False)
     event_comments_map: List[int] = fields.List(fields.Integer, required=False, allow_none=True)
-    event_sync_iocs_assets: bool = fields.Boolean(required=False)
+    event_sync_iocs_assets: bool = IrisBoolean(required=False)
     # Validated here so a bad value is a 400 rather than a CHECK-constraint
     # 500 from the database. Not required: API clients and n8n workflows
     # predate the field, and the write paths apply the default.
@@ -1367,7 +1372,7 @@ class EventSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class DSPathSchema(ma.SQLAlchemyAutoSchema):
+class DSPathSchema(IrisAutoSchema):
     """Schema for serializing and deserializing DataStorePath objects.
 
     This schema defines the fields to include when serializing and deserializing DataStorePath objects.
@@ -1382,7 +1387,7 @@ class DSPathSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class DSFileSchema(ma.SQLAlchemyAutoSchema):
+class DSFileSchema(IrisAutoSchema):
     """Schema for serializing and deserializing DataStoreFile objects.
 
     This schema defines the fields to include when serializing and deserializing DataStoreFile objects.
@@ -1568,7 +1573,7 @@ class AiBackendSchema(ma.Schema):
     api_key_set = fields.Method("get_api_key_set", dump_only=True)
     model_catalog = fields.Raw(dump_only=True)
     position = fields.Integer(dump_only=True)
-    is_active = fields.Boolean(dump_only=True)
+    is_active = IrisBoolean(dump_only=True)
 
     class Meta:
         unknown = EXCLUDE
@@ -1577,7 +1582,7 @@ class AiBackendSchema(ma.Schema):
         return bool(getattr(obj, 'api_key', None))
 
 
-class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
+class ServerSettingsSchema(IrisAutoSchema):
     """Schema for serializing and deserializing ServerSettings objects.
 
     This schema defines the fields to include when serializing and deserializing ServerSettings objects.
@@ -1586,7 +1591,7 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     """
     http_proxy: Optional[str] = fields.String(required=False, allow_none=False)
     https_proxy: Optional[str] = fields.String(required=False, allow_none=False)
-    prevent_post_mod_repush: Optional[bool] = fields.Boolean(required=False)
+    prevent_post_mod_repush: Optional[bool] = IrisBoolean(required=False)
 
     # iris-ng AI backend settings (Tier-1 features). Since b8e3f1a7c2d5
     # (2026-10-09) the backends themselves are `ai_backend` rows served by
@@ -1597,9 +1602,9 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     # ...) are RETIRED from this payload: the columns stay in the DB, unread,
     # and a submission naming them is ignored (Meta.unknown = EXCLUDE). The
     # update route checks that the ids exist.
-    ai_backend_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
+    ai_backend_enabled: Optional[bool] = IrisBoolean(required=False, allow_none=True)
     # Verify executive summaries with the second AI pass (NULL = on).
-    ai_summary_verify: Optional[bool] = fields.Boolean(required=False, allow_none=True)
+    ai_summary_verify: Optional[bool] = IrisBoolean(required=False, allow_none=True)
     ai_backend_active_id: Optional[int] = fields.Integer(required=False, allow_none=True)
     ai_backend_confidence_threshold: Optional[float] = fields.Float(required=False, allow_none=True)
     # Per-feature overrides. {"feature_key": <ai_backend.id>|null}.
@@ -1611,10 +1616,10 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     # app.config['SERVER_SETTINGS'] cache), and the paired *_password_set
     # booleans tell the UI whether a secret is stored without revealing it.
     # The update route treats empty/masked submissions as "keep stored value".
-    mail_ingest_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
+    mail_ingest_enabled: Optional[bool] = IrisBoolean(required=False, allow_none=True)
     mail_imap_host: Optional[str] = fields.String(required=False, allow_none=True)
     mail_imap_port: Optional[int] = fields.Integer(required=False, allow_none=True)
-    mail_imap_ssl: Optional[bool] = fields.Boolean(required=False, allow_none=True)
+    mail_imap_ssl: Optional[bool] = IrisBoolean(required=False, allow_none=True)
     mail_imap_username: Optional[str] = fields.String(required=False, allow_none=True)
     mail_imap_password: Optional[str] = fields.String(required=False, allow_none=True, load_only=True)
     mail_imap_folder: Optional[str] = fields.String(required=False, allow_none=True)
@@ -1628,8 +1633,8 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
     mail_smtp_username: Optional[str] = fields.String(required=False, allow_none=True)
     mail_smtp_password: Optional[str] = fields.String(required=False, allow_none=True, load_only=True)
     mail_smtp_from_addr: Optional[str] = fields.String(required=False, allow_none=True)
-    mail_ai_triage_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
-    email_notifications_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
+    mail_ai_triage_enabled: Optional[bool] = IrisBoolean(required=False, allow_none=True)
+    email_notifications_enabled: Optional[bool] = IrisBoolean(required=False, allow_none=True)
     # Phase 5: org-wide notification defaults, {event_type: {in_app, email}}.
     notification_defaults: Optional[dict] = fields.Dict(required=False, allow_none=True)
     mail_imap_password_set = fields.Method("get_imap_password_set", dump_only=True)
@@ -1650,7 +1655,7 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
 
     # iris-next Pinecone vector-DB settings (RAG grounding for sigma / ATT&CK /
     # atomic). Same allow-none policy as the AI backend block above.
-    pinecone_enabled: Optional[bool] = fields.Boolean(required=False, allow_none=True)
+    pinecone_enabled: Optional[bool] = IrisBoolean(required=False, allow_none=True)
     pinecone_api_key: Optional[str] = fields.String(required=False, allow_none=True)
     pinecone_embed_model: Optional[str] = fields.String(required=False, allow_none=True)
     pinecone_sigma_host: Optional[str] = fields.String(required=False, allow_none=True)
@@ -1675,7 +1680,7 @@ class ServerSettingsSchema(ma.SQLAlchemyAutoSchema):
         )
 
 
-class ContactSchema(ma.SQLAlchemyAutoSchema):
+class ContactSchema(IrisAutoSchema):
     """Schema for serializing and deserializing Contact objects.
 
     This schema defines the fields to include when serializing and deserializing Contact objects.
@@ -1696,7 +1701,7 @@ class ContactSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class CaseClassificationSchema(ma.SQLAlchemyAutoSchema):
+class CaseClassificationSchema(IrisAutoSchema):
     """Schema for serializing and deserializing CaseClassification objects.
 
     This schema defines the fields to include when serializing and deserializing CaseClassification objects.
@@ -1741,7 +1746,7 @@ class CaseClassificationSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class SectorCatalogSchema(ma.SQLAlchemyAutoSchema):
+class SectorCatalogSchema(IrisAutoSchema):
     """iris-ng: schema for the admin-editable sector catalog.
 
     `slug` is the stable key customers reference (Client.dhs_sectors stores
@@ -1785,7 +1790,7 @@ class SectorCatalogSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class EvidenceTypeSchema(ma.SQLAlchemyAutoSchema):
+class EvidenceTypeSchema(IrisAutoSchema):
     """Schema for serializing and deserializing EvidenceType objects.
 
     This schema defines the fields to include when serializing and deserializing EvidenceType objects.
@@ -1829,7 +1834,7 @@ class EvidenceTypeSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class CaseSchema(ma.SQLAlchemyAutoSchema):
+class CaseSchema(IrisAutoSchema):
     """Schema for serializing and deserializing Case objects.
 
     This schema defines the fields to include when serializing and deserializing Case objects.
@@ -1939,7 +1944,7 @@ class CaseSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class CaseStateSchema(ma.SQLAlchemyAutoSchema):
+class CaseStateSchema(IrisAutoSchema):
     """Schema for serializing and deserializing CaseState objects.
 
     This schema defines the fields to include when serializing and deserializing CaseState objects.
@@ -1957,7 +1962,7 @@ class CaseStateSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class GlobalTasksSchema(ma.SQLAlchemyAutoSchema):
+class GlobalTasksSchema(IrisAutoSchema):
     """Schema for serializing and deserializing GlobalTasks objects.
 
     This schema defines the fields to include when serializing and deserializing GlobalTasks objects.
@@ -2013,7 +2018,7 @@ class GlobalTasksSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class CustomerSchema(ma.SQLAlchemyAutoSchema):
+class CustomerSchema(IrisAutoSchema):
     """Schema for serializing and deserializing Customer objects.
 
     This schema defines the fields to include when serializing and deserializing Customer objects.
@@ -2118,7 +2123,7 @@ class TaskLogSchema(ma.Schema):
         unknown = EXCLUDE
 
 
-class AnalysisStatusSchema(ma.SQLAlchemyAutoSchema):
+class AnalysisStatusSchema(IrisAutoSchema):
     """Schema for serializing and deserializing AnalysisStatus objects.
 
     This schema defines the fields to include when serializing and deserializing AnalysisStatus objects.
@@ -2132,7 +2137,7 @@ class AnalysisStatusSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class TaskStatusSchema(ma.SQLAlchemyAutoSchema):
+class TaskStatusSchema(IrisAutoSchema):
     """Schema for serializing and deserializing TaskStatus objects.
 
     This schema defines the fields to include when serializing and deserializing TaskStatus objects.
@@ -2146,7 +2151,7 @@ class TaskStatusSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class CaseTaskSchema(ma.SQLAlchemyAutoSchema):
+class CaseTaskSchema(IrisAutoSchema):
     """Schema for serializing and deserializing CaseTask objects.
 
     This schema defines the fields to include when serializing and deserializing CaseTask objects.
@@ -2235,7 +2240,7 @@ class CaseTaskSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class CaseEvidenceSchema(ma.SQLAlchemyAutoSchema):
+class CaseEvidenceSchema(IrisAutoSchema):
     """Schema for serializing and deserializing CaseEvidence objects.
 
     This schema defines the fields to include when serializing and deserializing CaseEvidence objects.
@@ -2286,7 +2291,7 @@ class CaseEvidenceSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class AuthorizationGroupSchema(ma.SQLAlchemyAutoSchema):
+class AuthorizationGroupSchema(IrisAutoSchema):
     """Schema for serializing and deserializing AuthorizationGroup objects.
 
     This schema defines the fields to include when serializing and deserializing AuthorizationGroup objects.
@@ -2296,7 +2301,7 @@ class AuthorizationGroupSchema(ma.SQLAlchemyAutoSchema):
     group_name: str = auto_field('group_name', required=True, validate=Length(min=2), allow_none=False)
     group_description: str = auto_field('group_description', required=True, validate=Length(min=2))
     group_auto_follow_access_level: Optional[bool] = auto_field('group_auto_follow_access_level', required=False,
-                                                                default=False)
+                                                                dump_default=False)
     group_permissions: int = fields.Integer(required=False)
     group_members: Optional[List[Dict[str, Any]]] = fields.List(fields.Dict, required=False, allow_none=True)
     group_permissions_list: Optional[List[Dict[str, Any]]] = fields.List(fields.Dict, required=False, allow_none=True)
@@ -2371,7 +2376,7 @@ class AuthorizationGroupSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class AuthorizationOrganisationSchema(ma.SQLAlchemyAutoSchema):
+class AuthorizationOrganisationSchema(IrisAutoSchema):
     """Schema for serializing and deserializing AuthorizationOrganisation objects.
 
     This schema defines the fields to include when serializing and deserializing AuthorizationOrganisation objects.
@@ -2422,7 +2427,7 @@ class AuthorizationOrganisationSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class BasicUserSchema(ma.SQLAlchemyAutoSchema):
+class BasicUserSchema(IrisAutoSchema):
     """Schema for serializing and deserializing basic User objects.
 
     This schema defines the fields to include when serializing and deserializing basic User objects.
@@ -2434,7 +2439,7 @@ class BasicUserSchema(ma.SQLAlchemyAutoSchema):
     user_name: str = auto_field('name', required=True, validate=Length(min=2))
     user_login: str = auto_field('user', required=True, validate=Length(min=2))
     user_email: str = auto_field('email', required=True, validate=Length(min=2))
-    has_deletion_confirmation: Optional[bool] = auto_field('has_deletion_confirmation', required=False, default=False)
+    has_deletion_confirmation: Optional[bool] = auto_field('has_deletion_confirmation', required=False, dump_default=False)
 
     class Meta:
         model = User
@@ -2513,7 +2518,7 @@ def validate_asset_tlp(tlp_id: int) -> None:
         raise ValidationError("Invalid asset_tlp ID")
 
 
-class SeveritySchema(ma.SQLAlchemyAutoSchema):
+class SeveritySchema(IrisAutoSchema):
     """Schema for serializing and deserializing Severity objects.
 
     This schema defines the fields to include when serializing and deserializing Severity objects.
@@ -2527,7 +2532,7 @@ class SeveritySchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class AlertStatusSchema(ma.SQLAlchemyAutoSchema):
+class AlertStatusSchema(IrisAutoSchema):
     """Schema for serializing and deserializing AlertStatus objects.
 
     This schema defines the fields to include when serializing and deserializing AlertStatus objects.
@@ -2541,7 +2546,7 @@ class AlertStatusSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class AlertResolutionSchema(ma.SQLAlchemyAutoSchema):
+class AlertResolutionSchema(IrisAutoSchema):
     """Schema for serializing and deserializing AlertResolution objects.
 
     This schema defines the fields to include when serializing and deserializing AlertStatus objects.
@@ -2555,7 +2560,7 @@ class AlertResolutionSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class EventCategorySchema(ma.SQLAlchemyAutoSchema):
+class EventCategorySchema(IrisAutoSchema):
     """Schema for serializing and deserializing EventCategory objects.
 
     This schema defines the fields to include when serializing and deserializing EventCategory objects.
@@ -2569,7 +2574,7 @@ class EventCategorySchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class AlertSchema(ma.SQLAlchemyAutoSchema):
+class AlertSchema(IrisAutoSchema):
     """Schema for serializing and deserializing Alert objects.
 
     This schema defines the fields to include when serializing and deserializing Alert objects.
@@ -2607,7 +2612,7 @@ class AlertSchema(ma.SQLAlchemyAutoSchema):
         return data
 
 
-class SavedFilterSchema(ma.SQLAlchemyAutoSchema):
+class SavedFilterSchema(IrisAutoSchema):
     """Schema for serializing and deserializing SavedFilter objects.
 
     This schema defines the fields to include when serializing and deserializing SavedFilter objects.
@@ -2627,14 +2632,14 @@ class SavedFilterSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class IrisModuleSchema(ma.SQLAlchemyAutoSchema):
+class IrisModuleSchema(IrisAutoSchema):
     class Meta:
         model = IrisModule
         load_instance = True
         unknown = EXCLUDE
 
 
-class ModuleHooksSchema(ma.SQLAlchemyAutoSchema):
+class ModuleHooksSchema(IrisAutoSchema):
     """Schema for serializing and deserializing ModuleHooks objects.
 
     This schema defines the fields to include when serializing and deserializing ModuleHooks objects.
@@ -2649,7 +2654,7 @@ class ModuleHooksSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class TagsSchema(ma.SQLAlchemyAutoSchema):
+class TagsSchema(IrisAutoSchema):
     class Meta:
         model = Tags
         load_instance = True
@@ -2658,7 +2663,7 @@ class TagsSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class ReviewStatusSchema(ma.SQLAlchemyAutoSchema):
+class ReviewStatusSchema(IrisAutoSchema):
     class Meta:
         model = ReviewStatus
         load_instance = True
@@ -2667,7 +2672,7 @@ class ReviewStatusSchema(ma.SQLAlchemyAutoSchema):
         unknown = EXCLUDE
 
 
-class CaseProtagonistSchema(ma.SQLAlchemyAutoSchema):
+class CaseProtagonistSchema(IrisAutoSchema):
     """Schema for serializing and deserializing CaseProtagonist objects."""
 
     class Meta:
@@ -2683,7 +2688,7 @@ class CaseProtagonistSchema(ma.SQLAlchemyAutoSchema):
 # * POST /api/v2/cases
 # * GET /api/v2/cases/{identifier}
 # TODO The objective could then be to remove CaseSchema and CaseDetailsSchema
-class CaseSchemaForAPIV2(ma.SQLAlchemyAutoSchema):
+class CaseSchemaForAPIV2(IrisAutoSchema):
     """Schema for serializing and deserializing Case objects.
 
     This schema defines the fields to include when serializing and deserializing Case objects.
@@ -2786,7 +2791,7 @@ def executive_summaries_for(case_ids):
     return out
 
 
-class CaseDetailsSchema(ma.SQLAlchemyAutoSchema):
+class CaseDetailsSchema(IrisAutoSchema):
     """Schema for serializing and deserializing Case objects in details.
 
     iris-ng #138: carries ``executive_summary`` — the Executive Case Summary as
@@ -2918,7 +2923,7 @@ def _validate_mail_rule_conditions(value):
                 f'open-ended repeat)')
 
 
-class MailRuleSchema(ma.SQLAlchemyAutoSchema):
+class MailRuleSchema(IrisAutoSchema):
     """iris-ng v2 (Phase 1): mail-rule CRUD. FKs included as plain ids
     (customer_id/severity_id/classification_id resolve at runtime per the
     lookup-id project rule); rule_uuid and timestamps are server-owned."""
@@ -2938,7 +2943,7 @@ class MailRuleSchema(ma.SQLAlchemyAutoSchema):
         dump_only = ('id', 'rule_uuid', 'created_at', 'updated_at', 'created_by')
 
 
-class MailIngestLogSchema(ma.SQLAlchemyAutoSchema):
+class MailIngestLogSchema(IrisAutoSchema):
     """Dump-only audit rows for the Recent Ingest Activity panel."""
     rule_name = fields.Function(lambda obj: obj.rule.name if obj.rule else None)
 
@@ -2968,7 +2973,7 @@ def _validate_correlation_keys(value):
             raise ValidationError(f'correlation key #{i + 1} must be a non-empty string')
 
 
-class AlertClusteringRuleSchema(ma.SQLAlchemyAutoSchema):
+class AlertClusteringRuleSchema(IrisAutoSchema):
     """iris-ng v2 (Phase 2): clustering-rule CRUD. match_conditions and
     correlation_keys are validated at save time; window_minutes must be
     positive (mirrors the CHECK so a bad value is a 400, not a 500)."""
@@ -2989,7 +2994,7 @@ class AlertClusteringRuleSchema(ma.SQLAlchemyAutoSchema):
         dump_only = ('id', 'rule_uuid', 'created_at', 'updated_at', 'created_by')
 
 
-class InvestigationFlowSchema(ma.SQLAlchemyAutoSchema):
+class InvestigationFlowSchema(IrisAutoSchema):
     """iris-ng v2 (Phase 3): flow CRUD (scalar fields). Steps are NOT loaded
     here — the endpoint merges them by id (replace-on-PUT would cascade-drop
     analyst step states; merge preserves them, per the model docstring)."""

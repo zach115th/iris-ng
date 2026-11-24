@@ -64,19 +64,11 @@ updates:
       # accepts 3.3.
       - dependency-name: "graphql-core"
         versions: [">=3.3.0"]
-      # flask-marshmallow 1.5.0+ requires marshmallow>=4.0.0 while this project
-      # pins marshmallow 3.x, so the bump is UNINSTALLABLE, not merely risky --
-      # it fails resolution at image build. 1.4.0 is the last release that
-      # accepts marshmallow 3. Moving to marshmallow 4 is a schema-wide
-      # migration across datamgmt/, not a dependency bump.
-      - dependency-name: "flask-marshmallow"
-        versions: [">=1.5.0"]
-      # marshmallow-sqlalchemy 1.6.0 dropped marshmallow 3 (it requires
-      # marshmallow>=4.0.0): the same wall, uninstallable here (the app image
-      # build of Dependabot #153 failed on it). 1.5.0 is the last release that
-      # accepts marshmallow 3; move it together with the marshmallow 4 migration.
-      - dependency-name: "marshmallow-sqlalchemy"
-        versions: [">=1.6.0"]
+      # A marshmallow major is a migration of every schema, not a bump: 4.x
+      # removed arguments, changed how fields dump and parse, and came with
+      # flask-marshmallow 1.5 (which gives auto schemas the database session -
+      # IRIS keeps its placeholder, app/schema/schema_base.py). A 5.x moves the
+      # same way, as its own slice with a contract probe of every schema.
       - dependency-name: "marshmallow"
         update-types: ["version-update:semver-major"]
       # python-dateutil 3.x is UNINSTALLABLE here: graphene 3.4.3 (the newest,
