@@ -165,7 +165,16 @@ def add_tab_attribute_field(obj, tab_name, field_name, field_type, field_value, 
     return True
 
 
+# iris-ng (backlog #25 leftovers): these field types are written by modules only, server-side, through
+# add_tab_attribute_field(), and `html` is drawn as HTML (every object modal's attribute tabs, the IOC page's intel
+# panel - which drew `raw` as HTML too until this release). A request's value for one is ignored, on create as on update.
+MODULE_ONLY_FIELD_TYPES = ('html', 'raw')
+
+
 def merge_custom_attributes(data, obj_id, object_type, overwrite=False):
+    """The custom attributes to store for `object_type` from a request's `data` ({tab: {field: value}}): merged into the
+    object's own when `obj_id` names one, else into the defaults (also when `obj_id` names no object - the request's own
+    structure is never stored). A module-only field (MODULE_ONLY_FIELD_TYPES) keeps the value it has."""
 
     obj = None
     if obj_id:
@@ -186,9 +195,7 @@ def merge_custom_attributes(data, obj_id, object_type, overwrite=False):
         elif object_type == 'client':
             obj = Client.query.filter(Client.client_id == obj_id).first()
 
-        if not obj:
-            return data
-
+    if obj:
         if overwrite:
             log.warning(f'Overwriting all {object_type}')
             return get_default_custom_attributes(object_type)
@@ -203,7 +210,7 @@ def merge_custom_attributes(data, obj_id, object_type, overwrite=False):
                     log.error(f'Missing field {field} in {object_type}')
 
                 else:
-                    if obj.custom_attributes[tab][field]['type'] == 'html':
+                    if obj.custom_attributes[tab][field].get('type') in MODULE_ONLY_FIELD_TYPES:
                         continue
 
                     if obj.custom_attributes[tab][field]['value'] != data[tab][field]:
@@ -224,6 +231,9 @@ def merge_custom_attributes(data, obj_id, object_type, overwrite=False):
             for field in data[tab]:
                 if field not in default_attr[tab]:
                     app.logger.info(f'Missing field {field} in {object_type} default attribute')
+
+                elif default_attr[tab][field].get('type') in MODULE_ONLY_FIELD_TYPES:
+                    continue
 
                 else:
                     default_attr[tab][field]['value'] = data[tab][field]

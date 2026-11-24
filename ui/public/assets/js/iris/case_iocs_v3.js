@@ -1009,10 +1009,12 @@ function iris_ci_intel_tab_html(r) {
                 var v = f.value;
                 if (v === null || v === undefined || v === '') return '';
                 /* Module-authored HTML is rendered as-is, exactly as the IOC
-                   modal already does. Modules are admin-installed and run
-                   server-side, so they are inside the trust boundary; analyst
-                   and model text never reaches this path. */
-                if (f.type === 'html' || f.type === 'raw') {
+                   modal already does: modules write it server-side through
+                   add_tab_attribute_field(), and since backlog #25's leftovers
+                   the API refuses a client's html / raw value on create and
+                   update (merge_custom_attributes). A `raw` value is shown as
+                   text - the modal never drew it as HTML. */
+                if (f.type === 'html') {
                     return '<div class="iris-ci-intel-html">' + v + '</div>';
                 }
                 return '<div style="font-size:0.76rem; color:#c8c8d0; margin-bottom:3px;">' +
