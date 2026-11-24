@@ -131,6 +131,16 @@ function iris_co_esc(s) {
     return iris_escape(s);  /* backlog #25 F2: quotes too (iris_escape.js) */
 }
 
+/* A path on this site, judged by where the browser resolves it ("/\host" and
+   "/" + a tab + "/host" start with one "/" and lead to another site), or null. */
+function iris_co_same_site_path(raw) {
+    var s = String(raw == null ? '' : raw), u, base;
+    if (s.charAt(0) !== '/') { return null; }
+    try { base = new URL(document.baseURI); u = new URL(s, base); } catch (e) { return null; }
+    if ((u.protocol !== 'http:' && u.protocol !== 'https:') || u.origin !== base.origin) { return null; }
+    return u.pathname + u.search + u.hash;
+}
+
 function iris_co_fetch(type, force) {
     if (IRIS_CO.fetching[type]) { return; }
     if (!force && Array.isArray(IRIS_CO.rows[type])) { iris_co_render(); return; }
@@ -251,8 +261,9 @@ function iris_co_render_detail(row) {
             var path = mode.slice(5);
             // Icon paths come from the server catalog; render the image only
             // for a same-origin absolute path, else fall back to the name.
-            rendered = (path && path.indexOf('/') === 0 && path.indexOf('//') !== 0)
-                ? '<img src="' + iris_co_esc(path) + '" alt="">' + iris_co_esc(value)
+            var src = iris_co_same_site_path(path);
+            rendered = src
+                ? '<img src="' + iris_co_esc(src) + '" alt="">' + iris_co_esc(value)
                 : iris_co_esc(value);
         } else {
             rendered = iris_co_esc(value);

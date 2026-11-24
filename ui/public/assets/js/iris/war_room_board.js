@@ -974,7 +974,7 @@
             Number(c.assets_compromised) + ' compromised</span></div>' +
             '<div class="iris-rb-case-i">' +
             (c.assets_href ? '<a href="' + esc(c.assets_href) + '" title="Assets">' + ic('server', '', 12) + Number(c.assets_total) + '</a>' : '<span title="Assets">' + ic('server', '', 12) + Number(c.assets_total) + '</span>') +
-            '<span title="Open case tasks">' + ic('list-checks', '', 12) + Number(c.tasks_open) + ' open</span>' +
+            (c.tasks_open != null ? '<span title="Open case tasks">' + ic('list-checks', '', 12) + Number(c.tasks_open) + ' open</span>' : '') +
             (c.tasks_in_progress > 0 ? '<span class="iris-rb-t-blue" title="Tasks in progress">' + ic('activity', '', 12) + Number(c.tasks_in_progress) + ' in progress</span>' : '') +
             (c.exceptions > 0 ? '<span class="iris-rb-t-amber" title="Assets with an exception flag">' + ic('shield-off', '', 12) + Number(c.exceptions) + '</span>' : '') +
             (c.vulnerabilities_open > 0 ? '<span class="' + (c.vulnerabilities_exploited_open ? 'iris-rb-t-red' : '') + '" title="Open findings' +

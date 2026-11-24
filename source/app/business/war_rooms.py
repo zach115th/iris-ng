@@ -1130,7 +1130,9 @@ def room_topics(room):
 def list_messages(room, before_id=None, limit=50):
     """Keyset pagination on the (room_id, id) index, newest first."""
     limit = min(int(limit or 50), 100)
-    q = WarRoomMessage.query.filter_by(room_id=room.id)
+    # iris-ng (backlog #51): a deleted message is kept for the record but read by no one - this list returned its
+    # content to every member and guest after the Stream had hidden it.
+    q = WarRoomMessage.query.filter(WarRoomMessage.room_id == room.id, WarRoomMessage.deleted_at.is_(None))
     if before_id:
         q = q.filter(WarRoomMessage.id < int(before_id))
     return q.order_by(desc(WarRoomMessage.id)).limit(limit).all()

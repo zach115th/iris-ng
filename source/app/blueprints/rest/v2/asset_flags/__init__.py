@@ -80,7 +80,10 @@ def _admin_only():
 @asset_flags_blueprint.route('/manage/asset-flags', methods=['GET'])
 @ac_api_requires()
 def list_asset_flags():
-    return response_api_success(fl.list_flags(with_counts=(request.args.get('counts') or '').lower() == 'true'))
+    # iris-ng (backlog #51): the in-use counts span every case, those the caller cannot open included - the
+    # administrators' Settings page is the only reader, and only an administrator gets them (others: no in_use_count)
+    wanted = (request.args.get('counts') or '').lower() == 'true'
+    return response_api_success(fl.list_flags(with_counts=wanted and bool(_is_admin())))
 
 
 @asset_flags_blueprint.route('/manage/asset-flags/vocab', methods=['GET'])

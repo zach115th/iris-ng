@@ -60,6 +60,8 @@ from app.models.models import WarRoomTopic
 
 # Source order inside one timestamp (part of the cursor).
 _SRC = {'message': 1, 'poll': 2, 'activity': 3, 'case_activity': 4, 'decision': 5}
+# what an activity line quoting a since-deleted message shows instead of its stored text (war_room_activity._message)
+_DELETED_MESSAGE_LINE = {'pin.added': 'Pinned a message', 'room.unpinned': 'Unpinned a message'}
 
 
 class StreamError(BusinessProcessingError):
@@ -304,13 +306,25 @@ def stream_page(room, viewer_id, viewer_guest_id=None, kinds=None, before=None, 
     if act_kinds:
         aq = WarRoomActivity.query.filter(WarRoomActivity.room_id == room.id, WarRoomActivity.kind.in_(act_kinds))
         if pat:
-            aq = aq.filter(WarRoomActivity.body.ilike(pat, escape='\\'))
+            # a line quoting a since-deleted message never matches a search: its stored text holds the excerpt
+            dead = db.session.query(WarRoomMessage.id).filter(WarRoomMessage.room_id == room.id,
+                                                               WarRoomMessage.deleted_at.isnot(None))
+            aq = aq.filter(WarRoomActivity.body.ilike(pat, escape='\\'),
+                           or_(WarRoomActivity.ref_type.is_(None), WarRoomActivity.ref_type != 'message',
+                               WarRoomActivity.ref_id.is_(None), WarRoomActivity.ref_id.notin_(dead)))
         acts = _cut(aq, WarRoomActivity.created_at, WarRoomActivity.id, _SRC['activity'], cur, limit)
         users, guests = _names([a.actor_id for a in acts], [a.actor_guest_id for a in acts])
+        mids = [a.ref_id for a in acts if a.ref_type == 'message' and a.ref_id]
+        gone = {i for (i,) in db.session.query(WarRoomMessage.id).filter(
+            WarRoomMessage.id.in_(mids), WarRoomMessage.deleted_at.isnot(None))} if mids else set()
         for a in acts:
+            # iris-ng (backlog #51): the pin lines store the message's first words; once it is deleted the line stays
+            # and its excerpt goes (the stored row is left as it is)
+            body = (_DELETED_MESSAGE_LINE.get(a.activity_type, 'A message, since deleted')
+                    if a.ref_type == 'message' and a.ref_id in gone else a.body)
             entries.append((a.created_at, _SRC['activity'], a.id, {
                 'kind': a.kind, 'key': 'activity:%d' % a.id, 'id': a.id, 'created_at': a.created_at,
-                'activity_type': a.activity_type, 'family': sv.family_of(a.activity_type), 'content': a.body,
+                'activity_type': a.activity_type, 'family': sv.family_of(a.activity_type), 'content': body,
                 'actor_name': (users.get(a.actor_id) if a.actor_id else guests.get(a.actor_guest_id))
                 or ('IRIS' if not (a.actor_id or a.actor_guest_id) else 'someone'),
                 'actor_is_guest': a.actor_guest_id is not None, 'ref_type': a.ref_type, 'ref_id': a.ref_id,
@@ -466,7 +480,7 @@ def check_message_files(room, content):
     if len(ids) > sv.FILES_PER_MESSAGE:
         raise StreamError('At most %d attachments per message' % sv.FILES_PER_MESSAGE)
     found = {f.id for f in WarRoomFile.query.filter(WarRoomFile.room_id == room.id, WarRoomFile.id.in_(ids))}
-    if len(found) != len(ids):
+    if len(found) != len(ids) or any(carried_only_by_deleted(room, i) for i in ids):
         raise StreamError('An attachment is not a file of this room')
     return ids
 
@@ -505,6 +519,7 @@ def delete_message(room, message_id, user_id=None, guest_id=None, is_lead=False)
 def toggle_reaction(room, message_id, emoji, user_id=None, guest_id=None):
     _writable(room)
     msg = get_message(room, message_id)
+    assert_topic_open(room, msg.topic)  # backlog #51: an archived topic is read-only (a delete stays allowed)
     if not sv.is_emoji(emoji):
         raise StreamError('A reaction is one emoji')
     who = {'guest_id': guest_id} if guest_id else {'user_id': user_id}
@@ -566,6 +581,7 @@ def set_thread_title(room, message_id, title, user_id=None, guest_id=None, is_le
     root = get_root(room, message_id)
     if not (_is_author(root, user_id, guest_id) or is_lead):
         raise StreamError('Only the author or a lead can rename a thread', status=403)
+    assert_topic_open(room, root.topic)  # backlog #51: an archived topic is read-only (a delete stays allowed)
     title = ' '.join((title or '').split())[:sv.THREAD_TITLE_MAX]
     root.thread_title = title or None
     db.session.commit()
@@ -725,7 +741,19 @@ def get_file(room, file_id):
         f = None
     if f is None or f.room_id != room.id or not file_path(f).is_file():
         raise StreamError('File not found', status=404)
+    if carried_only_by_deleted(room, f.id):
+        raise StreamError('File not found', status=404)
     return f
+
+
+def carried_only_by_deleted(room, file_id):
+    """iris-ng (backlog #51): a file that only deleted messages carry is gone with them - as the datastore's Stream
+    folder and the copy-to-case route already treat it - so it is neither served nor attached again; one that no
+    message carries yet (an upload waiting in the composer) is not."""
+    carriers = (db.session.query(WarRoomMessage.deleted_at)
+                .filter(WarRoomMessage.room_id == room.id,
+                        WarRoomMessage.content.like('%%#[file:%d|%%' % int(file_id))).all())
+    return bool(carriers) and all(d is not None for (d,) in carriers)
 
 
 def delete_room_files(room_id):

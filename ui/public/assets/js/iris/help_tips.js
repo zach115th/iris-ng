@@ -80,11 +80,16 @@
     // Only an http(s) URL or a same-site path becomes a link; anything else
     // (a javascript: URL, a protocol-relative //host) is dropped. The parts
     // come from the glossary script and the page config, never from the DOM.
+    // A path is judged by where the browser resolves it (against the page's
+    // base) - "/" + a tab + "/host" passes a first-characters test and leads
+    // to another site.
     function safeHref(href) {
-        var s = String(href === undefined || href === null ? '' : href);
-        if (/^https?:\/\/[^\s]/i.test(s)) { return s; }
-        if (s.charAt(0) === '/' && s.charAt(1) !== '/' && s.charAt(1) !== '\\') { return s; }
-        return null;
+        var s = String(href === undefined || href === null ? '' : href), u, base;
+        if (!/^(https?:\/\/[^\s]|\/)/i.test(s)) { return null; }
+        try { base = new URL(document.baseURI); u = new URL(s, base); } catch (e) { return null; }
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') { return null; }
+        if (s.charAt(0) !== '/') { return u.href; }
+        return u.origin === base.origin ? u.pathname + u.search + u.hash : null;
     }
 
     function link(href, text, external) {

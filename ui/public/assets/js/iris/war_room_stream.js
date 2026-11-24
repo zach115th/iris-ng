@@ -516,14 +516,45 @@
     function bodyHtml(i) {
         var text = String(i.content || '').replace(FILE_RE, '').replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n').trim();
         var html = text ? window.iris_wroom_render_body(text) : '';
-        /* "> ..." lines (Discuss in chat) are quotes; #activity-<a|c|d><id> links back to the Activity line */
+        /* "> ..." lines (Discuss in chat) are quotes */
         html = html.split('\n').map(function (line) {
             return /^&gt; /.test(line) ? '<span class="iris-st-quote">' + line.slice(5) + '</span>' : line;
         }).join('\n');
-        html = html.replace(/#activity-([acd])(\d{1,18})/g, function (_, s, n) {
-            return '<a href="#" class="iris-st-actlink" data-act="' + s + n + '">Show in activity</a>';
+        return activityLinks(html);
+    }
+    /* #activity-<a|c|d><id> in the message's TEXT becomes a link back to the Activity line. The rendered HTML is
+       walked by text node, never matched as a string: a pattern over HTML also matches inside an attribute or a
+       resource chip's link. Text already inside a link is left as it is (no link inside a link). */
+    var ACT_RE = /#activity-([acd])(\d{1,18})/g;
+    function activityLinks(html) {
+        if (html.indexOf('#activity-') === -1) { return html; }
+        var tpl = document.createElement('template');
+        tpl.innerHTML = html;
+        var walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_TEXT), nodes = [];
+        while (walker.nextNode()) { nodes.push(walker.currentNode); }
+        var touched = false;
+        nodes.forEach(function (node) {
+            var text = node.nodeValue, parent = node.parentNode;
+            if (text.indexOf('#activity-') === -1) { return; }
+            if (parent && parent.nodeType === 1 && parent.closest('a')) { return; }
+            var frag = document.createDocumentFragment(), last = 0, m;
+            ACT_RE.lastIndex = 0;
+            while ((m = ACT_RE.exec(text)) !== null) {
+                if (m.index > last) { frag.appendChild(document.createTextNode(text.slice(last, m.index))); }
+                var a = document.createElement('a');
+                a.href = '#';
+                a.className = 'iris-st-actlink';
+                a.setAttribute('data-act', m[1] + m[2]);
+                a.textContent = 'Show in activity';
+                frag.appendChild(a);
+                last = m.index + m[0].length;
+            }
+            if (!last) { return; }
+            if (last < text.length) { frag.appendChild(document.createTextNode(text.slice(last))); }
+            parent.replaceChild(frag, node);
+            touched = true;
         });
-        return html;
+        return touched ? tpl.innerHTML : html;
     }
 
     /* --------------------------------------------------------------- message markup */

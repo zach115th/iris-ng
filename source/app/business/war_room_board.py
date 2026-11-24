@@ -460,11 +460,15 @@ def board_data(room, viewer_id, is_guest):
     for c in visible:
         name, customer, owner, state, severity, closed = meta.get(c, (None,) * 6)
         pc = per_case[c]
-        cards.append({'case_id': c, 'accessible': True, 'case_name': name, 'customer_name': customer,
-                      'owner_name': owner, 'state_name': state, 'severity_name': severity, 'closed': closed is not None,
+        # iris-ng (backlog #51): a guest's card carries no customer, owner or case task counts - the rule of the
+        # guest Cases tab (_guest_case_rows); the room's own tasks stay in the KPIs.
+        cards.append({'case_id': c, 'accessible': True, 'case_name': name,
+                      'customer_name': None if is_guest else customer, 'owner_name': None if is_guest else owner,
+                      'state_name': state, 'severity_name': severity, 'closed': closed is not None,
                       'assets_total': pc['assets'], 'done': pc['done'], 'exceptions': pc['exceptions'],
                       'assets_compromised': pc['compromised'], 'by_flag': pc['by_flag'],
-                      'tasks_open': ctasks[c]['open'], 'tasks_in_progress': ctasks[c]['in_progress'],
+                      'tasks_open': None if is_guest else ctasks[c]['open'],
+                      'tasks_in_progress': None if is_guest else ctasks[c]['in_progress'],
                       'vulnerabilities_open': vper[c]['open'],
                       'vulnerabilities_exploited_open': vper[c]['exploited_open'],
                       'href': None if is_guest else '/case?cid=%d' % c,

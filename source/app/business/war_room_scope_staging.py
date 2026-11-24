@@ -177,7 +177,12 @@ def push_staged(room, user, sid, body):
         status, oid, err = create_in_case(s.kind, cid, payload)
         results.append(case_result(cid, status, err, object_id=oid))
     wanted = set(s.target_case_ids or []) | set(targets)
-    removed = all(present_in(s.kind, c, payload) for c in wanted)
+    # iris-ng (backlog #51): presence is asked only of cases the caller can read. Asked of every target it told a
+    # responder whether a case they cannot open holds the IOC or asset; a row with such a target stays for a member
+    # who can push it there (staged_row shows that target's presence to nobody who cannot read it either).
+    from app.business.war_rooms import room_visible_case_ids
+    visible = set(room_visible_case_ids(room.id, user.id))
+    removed = wanted <= visible and all(present_in(s.kind, c, payload) for c in wanted)
     if removed:
         db.session.delete(s)
     else:

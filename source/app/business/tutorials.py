@@ -815,6 +815,13 @@ def _cleanup_allowed(row, kind, ident, admin):
             return False, 'Case #%d was not opened by you during this tutorial.' % ident
         if not ac_fast_check_user_has_case_access(row.user_id, ident, [CaseAccessLevel.full_access]):
             return False, 'You cannot delete case #%d.' % ident
+        # iris-ng (backlog #51): the case delete routes need standard_user too; a user without it could open a case
+        # by escalating an alert and delete it here. The run's user is the caller (a run is only its owner's).
+        from app.iris_engine.access_control.utils import ac_user_has_permission
+        from app.models.authorization import Permissions, User
+        owner = db.session.get(User, row.user_id)
+        if owner is None or not ac_user_has_permission(owner, Permissions.standard_user):
+            return False, 'You cannot delete case #%d.' % ident
         return True, None
     from app.models.models import WarRoom
     from app.models.models import WarRoomMember

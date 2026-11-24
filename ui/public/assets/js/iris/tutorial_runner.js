@@ -578,9 +578,14 @@
 
     function goToHref(st) {
         if (!st || !st.goTo) { return null; }
-        var href = subst(st.goTo, encodeURIComponent);
+        var href = subst(st.goTo, encodeURIComponent), u;
         if (!/^\/(?![\/\\])/.test(href) || /\{[A-Za-z]/.test(href)) { return null; }
-        return href;
+        /* judged by where the browser resolves it (against the page's base): "/" + a tab + "/host" passes the test
+           above and leaves the site */
+        var base;
+        try { base = new URL(document.baseURI); u = new URL(href, base); } catch (e) { return null; }
+        if ((u.protocol !== 'http:' && u.protocol !== 'https:') || u.origin !== base.origin) { return null; }
+        return u.pathname + u.search + u.hash;
     }
 
     function renderCleanup() {

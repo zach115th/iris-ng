@@ -1317,7 +1317,26 @@ def _rows_result(widget, ids, ctx):
             'rows': out_rows, 'total': total}
 
 
+ALERTS_DENIED = 'Needs the alerts-read permission.'
+
+
+def _can_read_alerts(user):
+    try:
+        return bool(ac_user_has_permission(user, Permissions.alerts_read))
+    except Exception:  # noqa: BLE001 - a viewer whose permissions cannot be read cannot read alerts either
+        return False
+
+
+def unavailable_sources(user):
+    """The sources this viewer may not draw: the alerts source needs alerts-read, as /alerts and the alert queue do."""
+    return [] if _can_read_alerts(user) else ['alerts']
+
+
 def render_widget(widget, ctx):
+    # iris-ng (backlog #51): an alerts widget drew alert rows and counts for any signed-in user of the customer,
+    # alerts-read or not; it answers the widget error state instead, and the other widgets still draw.
+    if widget.get('source') in ctx.get('unavailable', ()):
+        return {'ok': False, 'error': ALERTS_DENIED}
     ids, ignored = _ids(widget, ctx)
     if widget['measure']['type'] == 'rows':
         result = _rows_result(widget, ids, ctx)
@@ -1332,7 +1351,8 @@ def render_widget(widget, ctx):
 def _context(user, params):
     now = _now()
     return {'uid': user.id, 'admin': _is_admin(user), 'now': now, 'today': now.date(),
-            'start': params.get('start'), 'end': params.get('end'), 'bar': params.get('bar') or {}}
+            'start': params.get('start'), 'end': params.get('end'), 'bar': params.get('bar') or {},
+            'unavailable': unavailable_sources(user)}
 
 
 def render(user, definition, params):
@@ -1439,7 +1459,8 @@ def options(user):
 
 
 def schema(user):
-    return {'vocab': dv.client_vocab(), 'options': options(user), 'me': {'id': user.id, 'name': user.name or user.user}}
+    return {'vocab': dv.client_vocab(), 'options': options(user), 'me': {'id': user.id, 'name': user.name or user.user},
+            'unavailable_sources': unavailable_sources(user)}
 
 
 # ------------------------------------------------------------------ presets and the built-in dashboards

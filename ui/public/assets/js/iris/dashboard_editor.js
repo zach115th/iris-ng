@@ -362,7 +362,10 @@
         // -------------------------------------------------------------- the widget dialog
 
         function defaultWidget() {
-            return {id: rid('w'), name: 'New widget', source: 'alerts', measure: {type: 'count', field: null, filter: null},
+            // a new widget starts on alerts, or on the first source this viewer may draw when alerts is not one
+            var first = E.vocab.sources.filter(function (x) { return E.unavailable.indexOf(x.key) === -1; })[0];
+            var start = E.unavailable.indexOf('alerts') === -1 ? 'alerts' : (first ? first.key : 'alerts');
+            return {id: rid('w'), name: 'New widget', source: start, measure: {type: 'count', field: null, filter: null},
                     group_by: null, bucket: null, split_by: null, filter: {logic: 'and', items: []}, range: 'dashboard',
                     chart: 'number', width: 'quarter', order: null, limit: null, columns: null, sort: null, options: {}};
         }
@@ -471,7 +474,9 @@
                 var s = src(W.source);
                 var mt = W.measure.type;
                 var out = el('div', {cls: 'de-form'});
-                out.appendChild(field('Source', selectOf('dw-source', E.vocab.sources.map(function (x) { return {key: x.key, label: x.label}; }),
+                // a source this viewer may not draw (alerts without alerts-read) is not offered, unless the widget has it
+                var offered = E.vocab.sources.filter(function (x) { return E.unavailable.indexOf(x.key) === -1 || x.key === W.source; });
+                out.appendChild(field('Source', selectOf('dw-source', offered.map(function (x) { return {key: x.key, label: x.label}; }),
                     W.source, function (v) {
                         if (!v || v === W.source) { return; }
                         W.source = v;
@@ -1073,6 +1078,7 @@
         function start(st) {
             E.vocab = st.schema.vocab;
             E.options = st.schema.options || {};
+            E.unavailable = Array.isArray(st.schema.unavailable_sources) ? st.schema.unavailable_sources : [];
             E.presets = st.presets || [];
             var d = st.dashboard;
             E.key = D.keyOf(d.key) || null;

@@ -299,8 +299,8 @@ def build_room_summary_payload(room: WarRoom) -> dict[str, Any]:
                                 'content': (n.content or '')[:_ICS_CHAR_CAP]})
 
     case_ids = [c.case_id for c in cases]
-    msgs = (WarRoomMessage.query.filter_by(room_id=room.id)
-            .order_by(desc(WarRoomMessage.id)).limit(_ACTIVITY_CAP).all())
+    msgs = (WarRoomMessage.query.filter(WarRoomMessage.room_id == room.id, WarRoomMessage.deleted_at.is_(None))
+            .order_by(desc(WarRoomMessage.id)).limit(_ACTIVITY_CAP).all())  # backlog #51: no deleted message
     acts = ((UserActivity.query
              .filter(UserActivity.case_id.in_(case_ids),
                      UserActivity.display_in_ui.is_(True))

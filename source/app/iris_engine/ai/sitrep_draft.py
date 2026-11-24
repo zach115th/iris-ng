@@ -150,7 +150,8 @@ def build_sitrep_payload(room: WarRoom) -> dict[str, Any]:
                 .order_by(desc(SitRep.published_at))
                 .first())
 
-    msg_q = WarRoomMessage.query.filter_by(room_id=room.id)
+    msg_q = WarRoomMessage.query.filter(WarRoomMessage.room_id == room.id,
+                                        WarRoomMessage.deleted_at.is_(None))  # backlog #51: no deleted message
     act_q = (UserActivity.query
              .filter(UserActivity.case_id.in_(case_ids),
                      UserActivity.display_in_ui.is_(True))

@@ -271,7 +271,8 @@ def create_decision(room, payload, user_id, role):
     msg = None
     if p.get('chat_message_id') not in (None, ''):
         msg = db.session.get(WarRoomMessage, _ids([p.get('chat_message_id')], 'chat_message_id')[0])
-        if msg is None or msg.room_id != room.id or msg.kind != 'decision':
+        # a deleted /decision message is not promoted (backlog #51: it is read by no one)
+        if msg is None or msg.room_id != room.id or msg.kind != 'decision' or msg.deleted_at is not None:
             raise DecisionError('Only a /decision message of this room can be promoted.')
         if WarRoomDecision.query.filter_by(chat_message_id=msg.id).first() is not None:
             raise DecisionError('This /decision message is already in the register.', status=409)
@@ -601,7 +602,7 @@ def chat_candidates(room_id):
     from app.models.models import WarRoomMessage
     linked = db.session.query(WarRoomDecision.chat_message_id).filter(WarRoomDecision.chat_message_id.isnot(None))
     msgs = (WarRoomMessage.query.filter(WarRoomMessage.room_id == room_id, WarRoomMessage.kind == 'decision',
-                                        WarRoomMessage.id.notin_(linked))
+                                        WarRoomMessage.deleted_at.is_(None), WarRoomMessage.id.notin_(linked))
             .order_by(WarRoomMessage.id.desc()).limit(200).all())
     return [{'message_id': m.id, 'content': m.content, 'author': actor_label(m.user, m.guest),
              'created_at': _iso(m.created_at)} for m in msgs]
