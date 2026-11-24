@@ -11,6 +11,34 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.17.0] — 2026-11-24
+
+The schema layer moves to marshmallow 4 (marshmallow 3 is end of life), with flask-marshmallow 1.5 and
+marshmallow-sqlalchemy 1.6. **No migration.** The app image changes; the nginx and database images and the
+guest-portal tunnel agent do not.
+
+### Changed
+- **marshmallow 3.26.2 → 4.4.0, flask-marshmallow 1.4.0 → 1.5.0, marshmallow-sqlalchemy 1.5.0 → 1.6.0.** No other
+  package moves. Replies and refusals are unchanged: a contract probe compared every IRIS schema (53) between the two -
+  real records dumped, each field's output and parsing over inputs of its type, whole-request refusals - and the full
+  test suite answered the same.
+- **Kept as it was:** IRIS's schemas keep the placeholder database session they have always had. flask-marshmallow 1.5
+  hands auto schemas the real session, and with it a create request naming an existing record's id would load that
+  record and overwrite it; with the placeholder such a request still fails before any record is read. Boolean and
+  date-time fields write their values as before (marshmallow 4 would pass a non-boolean value through a Boolean field
+  and fail on a plain date in a date-time field).
+
+### Compatibility
+- **More date input is accepted.** marshmallow 4 reads dates with Python's own parser. A date-time field - an alert's
+  times, an evidence's acquisition, start and end dates, a task's or a note's dates, among 33 - now takes a date alone
+  (`2026-11-24`, read as midnight), a date and an hour (`2026-11-24T10`), the basic format (`20261124T100000`) and an
+  ISO week date (`2026-W48-2`); a case's open and close dates take `20261124` and `2026-W48-2`. Each was refused before
+  with "Not a valid datetime." / "Not a valid date.". Input accepted before is read as before, and a timeline event's
+  date (`event_date`, `event_date_wtz`), which has a format of its own, is unchanged.
+- No route or reply changes otherwise. Chart 1.17.0.
+
+---
+
 ## [IRIS-NG-v2.16.10] — 2026-11-24
 
 A security release: in war rooms, custom dashboards, asset flags and tutorials, a reply carries only what its caller
