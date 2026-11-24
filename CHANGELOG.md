@@ -11,6 +11,43 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.18.0] — 2026-11-24
+
+The background task library moves to celery 5.7 (from 5.6). **No migration of IRIS's own**: celery adds two empty
+columns to its own results table at the first start (see Upgrading). The app image changes; the nginx and database
+images and the guest-portal tunnel agent do not.
+
+### Security
+- **Stored task results are never unpickled.** Until now every task result was stored as a pickle, and opening a
+  task's details in DIM Tasks unpickled it in the web process; celery 5.7 still unpickles any stored result that looks
+  like one. IRIS's result backend no longer does, so write access to the results database no longer leads to code
+  running in the web process.
+
+### Changed
+- **celery 5.6.3 → 5.7.0.** No other package moves. Since 5.7 celery stores each task's result as JSON. Module hooks,
+  import pipelines, AI jobs and the update check return an IRIS status that JSON could not encode - on celery 5.7
+  alone each of them would have been recorded as failed although it ran. IRIS now stores that status as JSON: its
+  code, message and logs, and the data a module hands back only when it is plain JSON (modules return the records they
+  were given, and nothing reads them back). DIM Tasks shows the module's verdict and logs as before.
+
+### Compatibility
+- **DIM Tasks, for tasks that ran before the update:** their stored result is a pickle IRIS no longer opens. The task
+  list still shows their state; their details say the task ran before IRIS-NG-v2.18.0 instead of showing the module's
+  verdict and logs. celery's clean-up removes results more than a day old every day at 04:00 UTC, so these are gone
+  within two days.
+- No route or reply changes.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.18.0`, the 2.18.0 images, or chart 1.18.0. Take a database dump first as usual
+  (`scripts/update.sh` does).
+- At its first start celery 5.7 adds the columns `children` and `stamps` to its table `celery_taskmeta` (database
+  `iris_tasks`). As the app and both workers start together, a process may log `Failed to add missing column ...
+  already exists` for a column another one added first; that is harmless and happens only at that first start.
+- **Rolling back to 2.17.x** afterwards: the workers keep working and the DIM Tasks list still loads, but opening the
+  details of a task that ran on 2.18.0 shows an error until the daily clean-up has removed those results.
+
+---
+
 ## [IRIS-NG-v2.17.1] — 2026-11-24
 
 A dependency release. **No migration.** The app image changes (SQLAlchemy, and of the built browser files the bundled
