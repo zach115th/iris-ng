@@ -11,6 +11,47 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.9] — 2026-11-24
+
+A security release: an alert request sets only the alert's own fields, in customers the caller can access, and the
+alert list's custom conditions answer nothing about cases or users the caller cannot see. **No migration.** The app
+image changes; the nginx and database images and the guest-portal tunnel agent do not.
+
+### Security
+- **A user with `alerts_write` could move an alert into a customer they cannot access.** `POST /alerts/update/<id>`
+  and `POST /alerts/batch/update` checked the alert's current customer, then took `alert_customer_id` from the request.
+  The customer must now exist and be one the caller can access.
+- **An alert request could create customers, severities and alert statuses.** The alert routes load a request with
+  every relationship of the alert, so a nested object in an update or in `POST /alerts/add` created its row: a
+  `customer` object a new customer, with the alert placed in it (past the create's customer check), `severity` /
+  `status` new entries in those lists, `iocs` / `assets` new IOCs and assets. These keys are now refused on create and
+  update, and an update can no longer change the alert's id.
+- **The alert list's custom conditions answered questions about cases and users the caller cannot see.** A condition
+  on an alert's linked case (`cases.<column>`) told whether a case the caller cannot open matches - one guess per
+  request - and a condition on the alert's owner reached any user column outside a short list, such as the hourly
+  rate or the MFA counters. A case condition now matches only cases the caller can read, and an owner condition takes
+  only the owner's id, login, name and email, which the alert shows; any other owner field is skipped, as the listed
+  ones were.
+- Smaller: the alert queue's detail lists and counts only the cluster members the caller can see - an alert moved to
+  another customer stays in its cluster.
+- The update and create routes and the custom conditions are inherited and present in every earlier IRIS-NG release;
+  the user columns a condition reached grew with IRIS-NG (the MFA counters since 2.16.0). The alert queue's cluster
+  summary is in every release since 2.11.0.
+
+### Compatibility
+- `POST /alerts/update/<id>` and `POST /alerts/batch/update`: an `alert_customer_id` naming a customer that does not
+  exist answers `400` *Customer #N not found* (before: a database error, also `400`); one the caller cannot access
+  answers `403`, as the alert's own customer always did. A body naming a related record - `customer`, `owner`,
+  `severity`, `status`, `classification`, `resolution_status`, `iocs`, `assets`, `cases`, `comments` - answers `400`:
+  send the `*_id` fields. An `alert_id` other than the URL's answers `400`, and a batch's `updates` take none.
+- `POST /alerts/add` refuses the same related-record keys with `400`; IOCs and assets still come as `alert_iocs` /
+  `alert_assets`.
+- `custom_conditions` (`/alerts/filter`, `/api/v2/alerts`, the alert queue): a `cases.<column>` condition matches only
+  cases the caller can read; an `owner.<column>` condition other than `id`, `user`, `name` or `email` is skipped.
+- No other route or reply changes. Chart 1.16.9.
+
+---
+
 ## [IRIS-NG-v2.16.8] — 2026-11-24
 
 A security release: setting a task's status from Home needs full access to the task's case, custom attribute fields
