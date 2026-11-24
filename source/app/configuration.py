@@ -254,7 +254,11 @@ if authentication_type == 'oidc_proxy':
 
 # --------- CELERY ---------
 class CeleryConfig:
-    result_backend = "db+" + SQLALCHEMY_BASE_URI + "iris_tasks"  # use database as storage
+    # Results go to the iris_tasks database through celery's database backend, as JSON since celery 5.7
+    # (result_serializer below). IrisDatabaseBackend is that backend without its fallback to unpickling a stored
+    # result (app/iris_engine/tasker/result_backend.py); celery reads the class from the part before the first '+'.
+    result_backend = ("app.iris_engine.tasker.result_backend:IrisDatabaseBackend+" + SQLALCHEMY_BASE_URI
+                      + "iris_tasks")
     broker_url = CELERY_BROKER_
     result_extended = True
     result_serializer = "json"

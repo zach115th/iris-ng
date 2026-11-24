@@ -78,23 +78,13 @@ updates:
       # uses only dateutil.parser; 3.0 mainly rewrites dateutil.tz.
       - dependency-name: "python-dateutil"
         versions: [">=3.0.0"]
-      # celery 5.7's database result backend encodes results with
-      # result_serializer (json here) instead of pickling them, and the module
-      # hooks, the import pipelines and the AI job runner return an
-      # IrisInterfaceStatus, which JSON cannot encode: each of those tasks would
-      # be stored as FAILURE (EncodeError) and the DIM Tasks modal would lose the
-      # module's verdict and logs, although the work itself still runs
-      # (reproduced on Dependabot #182). 5.6.x patches still come through. Lift
-      # this together with a JSON-safe status for those tasks.
-      - dependency-name: "celery"
-        versions: [">=5.7.0"]
       # pymisp 3.0 requires python-dateutil>=3.0.0, so it is UNINSTALLABLE here
       # (Dependabot #184's app image build failed on it): this project pins
       # python-dateutil 2.9.0.post0 because graphene 3.4.3 (the newest, behind
       # /graphql) requires python-dateutil<3 - the python-dateutil ignore above.
-      # celery 5.7 pins python-dateutil==2.9.0.post0, so pymisp 3 and celery 5.7
-      # exclude each other as well. 2.5.x updates still come through. Lift this
-      # together with the python-dateutil one.
+      # celery 5.7.0 pins python-dateutil==2.9.0.post0 as well, so pymisp 3 also
+      # waits for a celery 5.7.x that relaxes that pin. 2.5.x updates still come
+      # through. Lift this together with the python-dateutil one.
       - dependency-name: "pymisp"
         versions: [">=3.0.0"]
     groups:

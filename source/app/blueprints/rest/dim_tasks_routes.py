@@ -216,20 +216,16 @@ def list_dim_tasks(count):
         # red failure icon regardless of outcome -- including tasks that had
         # plainly succeeded. Normalised to lowercase for that comparison.
         #
-        # Do NOT try to recover the module's own verdict here. It lives inside
-        # an IIStatus in `row.result`, and celery's DATABASE backend stores that
-        # column as a PICKLE -- `result_serializer='json'` does not apply to it,
-        # despite an earlier comment in this file claiming results are never
-        # pickles. Verified against the live result backend: rows begin with the
-        # pickle protocol marker and contain `IrisInterfaceStatus`. So
-        # `pickle.loads(row.result)` here would be a live deserialisation sink,
-        # turning write access to the result backend into RCE in the web
-        # process, not the inert one it was assumed to be.
-        #
-        # The per-task modal reads that verdict safely through celery's own
-        # AsyncResult; this list stays deliberately at task level. A task can be
-        # SUCCESS here while the module inside it reported a failure -- that
-        # distinction is what the modal's separate "Success" row is for.
+        # Do NOT try to recover the module's own verdict here: this list stays
+        # at task level, and never decodes `row.result` itself. Since
+        # IRIS-NG-v2.18.0 (celery 5.7) results are JSON - an IIStatus through
+        # the type in app/iris_engine/tasker/result_backend.py - while rows
+        # written before it are pickles, and unpickling one would turn write
+        # access to the result backend into code execution in the web process.
+        # The per-task modal reads a result through celery's AsyncResult and
+        # IrisDatabaseBackend, which never unpickles. A task can be SUCCESS here
+        # while the module inside it reported a failure -- that distinction is
+        # what the modal's separate "Success" row is for.
         tkp['state'] = (row.status or 'unknown').lower()
         tkp['user'] = user if user else "Shadow Iris"
         tkp['module'] = task_name

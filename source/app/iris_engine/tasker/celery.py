@@ -18,8 +18,13 @@
 
 from celery import Celery
 
+from app.iris_engine.tasker.result_backend import register_iistatus_json
+
 
 def make_celery(app):
+    # Task results are stored as JSON (celery 5.7): module hooks, import pipelines, AI jobs and the update check
+    # return an IIStatus, which needs its JSON type in every process that stores or reads one.
+    register_iistatus_json()
     celery = Celery(
         app.import_name,
         config_source=app.config.get('CELERY')

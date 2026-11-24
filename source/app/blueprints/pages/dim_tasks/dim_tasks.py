@@ -28,6 +28,7 @@ from app.models.authorization import CaseAccessLevel
 from app.models.authorization import Permissions
 from app.blueprints.access_controls import ac_case_requires, ac_requires
 from app.blueprints.responses import response_error
+from app.iris_engine.tasker.result_backend import StoredResultNotRead
 from iris_interface.IrisInterfaceStatus import IIStatus
 
 dim_tasks_blueprint = Blueprint(
@@ -67,6 +68,18 @@ def task_status(task_id, caseid, url_redir):
             'Note': 'All the data readable by the current IRIS version is displayed in the table.',
             'Additional information': 'The results of this tasks were stored in a pickled Class which does not exists '
                                       'anymore in current IRIS version.'
+        }
+        return render_template("modal_task_info.html", data=task_info, task_id=task.id)
+
+    if isinstance(tinfo, StoredResultNotRead):
+        # A result stored as a pickle - every task that ran before IRIS-NG-v2.18.0 - is never unpickled; celery's
+        # daily clean-up removes such rows a day after they were written.
+        task_info = {
+            'Task ID': task_id,
+            'Task finished on': task.date_done,
+            'Task state': (task.state or 'unknown').lower(),
+            'Note': 'This task ran before IRIS-NG-v2.18.0. Its result was saved in a format this version does not '
+                    'open, so the module verdict and logs are not shown; the task list keeps its state.'
         }
         return render_template("modal_task_info.html", data=task_info, task_id=task.id)
 
