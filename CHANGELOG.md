@@ -11,6 +11,45 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.17.1] — 2026-11-24
+
+A dependency release. **No migration.** The app image changes (SQLAlchemy, and of the built browser files the bundled
+jQuery, the Markdown renderer and the sign-in page's script); the guest-portal tunnel agent gets a newer cloudflared;
+the nginx and database images do not change.
+
+### Fixed
+- **A guest-portal quick tunnel could not connect where UDP to Cloudflare's edge is dropped** (cloudflared 2026.11.0 →
+  2026.11.1 in the guest-portal tunnel agent). Since 2.16.0 the agent's cloudflared used QUIC only for a quick tunnel,
+  so on such a network the portal stayed unreachable; it now falls back to HTTP/2 over TCP after about two and a half
+  minutes. cloudflared also updates its OpenTelemetry library and reconnects when the account's region changes. The
+  agent starts, and restarts cloudflared after a crash, as before.
+- **Notes with a long run of `**` rendered slowly** (Markdown renderer marked 18.2.0 → 18.2.1). A run of emphasis
+  delimiters was matched in quadratic time: 10 000 of them kept the browser busy for about 2 seconds; it now takes
+  milliseconds.
+
+### Changed
+- **Markdown rendering** (marked 18.2.1) fixes fifteen parsing corner cases. Notes render as before except where a fix
+  applies: trailing blank lines in a fenced code block are kept, backslashes in a code span inside link text are kept, a
+  tab in a code block inside a quote is kept, and a link whose `<...>` destination holds an unescaped `<` or `>` is no
+  longer a link (its text still goes through the HTML filter).
+- **jQuery 3.7.1 → 3.8.0**, the copy every page loads: a selector with a long crafted identifier no longer takes
+  excessive time to match, `.html()` runs a script that removes itself, `jQuery.cleanData` no longer skips elements,
+  and `<col>` dimensions are read correctly. 3.8.0 deprecates `push`, `sort`, `splice` and `jQuery.expr[":"]`, which
+  IRIS's own code does not use.
+- **SQLAlchemy 2.1.8 → 2.1.9**: fixes for relationships to an aliased class over a correlated LATERAL subquery, for
+  flushing mapped dataclasses with certain column defaults, and for SQL Server primary-key reflection. IRIS uses none of
+  these, and its replies are unchanged.
+- **Svelte 5.57.3 → 5.59.1** rebuilds the sign-in and demo pages' scripts (runtime fixes); sign-in works as before.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.17.1`, the 2.17.1 images, or chart 1.17.1; nothing else changes. **With the
+  guest portal enabled, `scripts/update.sh` rebuilds the tunnel agent** and so picks up cloudflared 2026.11.1 (Settings →
+  Guest Portal shows the version it reports). To rebuild the agent alone, from the clone: `docker compose -f
+  docker-compose.dev.yml -f docker-compose.portal.yml build --pull tunnel`, then the same with `up -d tunnel`. A quick
+  tunnel gets a new hostname whenever it restarts.
+
+---
+
 ## [IRIS-NG-v2.17.0] — 2026-11-24
 
 The schema layer moves to marshmallow 4 (marshmallow 3 is end of life), with flask-marshmallow 1.5 and
