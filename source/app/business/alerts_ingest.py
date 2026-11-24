@@ -43,6 +43,7 @@ import json
 from datetime import datetime
 
 from flask_login import current_user
+from sqlalchemy import inspect as sa_inspect
 
 import app
 from app import db
@@ -59,6 +60,18 @@ from app.schema.marshables import IocSchema
 from app.util import add_obj_history_entry
 
 CLIENT_ACCESS_MESSAGE = 'User not entitled to create alerts for the client'
+
+# iris-ng (backlog #51, 2026-11-24): AlertSchema loads every relationship (include_relationships), so a nested object
+# in a payload created its row - `customer` a new customer (and the alert landed in it, past the access check on
+# alert_customer_id), `severity` / `status` new lookup rows, `owner` a user. IOCs and assets come as alert_iocs /
+# alert_assets; everything else is an *_id column. The update routes refuse the same keys.
+ALERT_RELATIONSHIPS = frozenset(sa_inspect(Alert).relationships.keys())
+NESTED_FIELDS_MESSAGE = 'These fields name related records and cannot be set here: %s'
+
+
+def nested_alert_fields(data) -> list:
+    """The keys of `data` naming an Alert relationship (a nested object or a list of them), sorted."""
+    return sorted(k for k in data if k in ALERT_RELATIONSHIPS) if isinstance(data, dict) else []
 
 
 def create_alert_from_payload(data: dict, *, user_id: int,
@@ -79,6 +92,10 @@ def create_alert_from_payload(data: dict, *, user_id: int,
 
     iocs_list = data.pop('alert_iocs', [])
     assets_list = data.pop('alert_assets', [])
+
+    nested = nested_alert_fields(data)
+    if nested:
+        raise BusinessProcessingError(NESTED_FIELDS_MESSAGE % ', '.join(nested))
 
     iocs = ioc_schema.load(iocs_list, many=True, partial=True)
     assets = asset_schema.load(assets_list, many=True, partial=True)

@@ -58,8 +58,10 @@ from app.models.alerts import SimilarAlertsCache
 from app.models.alerts import AlertResolutionStatus
 from app.models.alerts import AlertSimilarity
 from app.models.alerts import Severity
+from app.models.authorization import CaseAccessLevel
 from app.models.authorization import Permissions
 from app.models.authorization import User
+from app.models.authorization import UserCaseEffectiveAccess
 from app.schema.marshables import EventSchema
 from app.util import add_obj_history_entry
 
@@ -86,6 +88,11 @@ RESTRICTED_USER_FIELDS = {
     'ctx_human_case',
     'is_service_account'
 }
+
+# iris-ng (backlog #51, 2026-11-24): a custom condition on the alert's owner takes only what the alert reply shows of
+# its owner (AlertSchema: id, name, login, email). The list above only names fields to refuse, so every user column
+# added since (hourly_rate, the MFA counters) could be asked about, one guess per request.
+OWNER_CONDITION_FIELDS = frozenset({'id', 'user', 'name', 'email'})
 
 
 def db_list_all_alerts():
@@ -306,7 +313,8 @@ def build_alert_filter(
                 if relationship_name not in relationship_model_map:
                     raise ValueError(f"Unknown relationship: {relationship_name}")
 
-                if related_field_name in RESTRICTED_USER_FIELDS:
+                if related_field_name in RESTRICTED_USER_FIELDS or (
+                        relationship_name == 'owner' and related_field_name not in OWNER_CONDITION_FIELDS):
                     app.logger.error(f"Access to the field '{related_field_name}' is restricted.")
                     app.logger.error(f"Suspicious behavior detected for user {current_user.id} - {current_user.user}.")
                     continue
@@ -317,6 +325,14 @@ def build_alert_filter(
                 if relationship_name not in joined_relationships:
                     query = query.join(getattr(Alert, relationship_name))
                     joined_relationships.add(relationship_name)
+                    if relationship_name == 'cases':
+                        # iris-ng (backlog #51): a condition on a linked case matches only a case the caller can
+                        # read - seeing an alert does not open the cases it was merged into, and a condition on
+                        # one answered yes / no about its columns.
+                        conditions.append(Cases.case_id.in_(
+                            db.session.query(UserCaseEffectiveAccess.case_id).filter(
+                                UserCaseEffectiveAccess.user_id == current_user.id,
+                                UserCaseEffectiveAccess.access_level != CaseAccessLevel.deny_all.value)))
 
                 related_field = getattr(related_model, related_field_name, None)
                 if related_field is None:

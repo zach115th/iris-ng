@@ -535,10 +535,15 @@ def _cluster_summary(alert, lookups):
     if member is None:
         return None
     cluster = db.session.get(AlertCluster, member.cluster_id)
-    count = AlertClusterMember.query.filter(AlertClusterMember.cluster_id == cluster.id).count()
+    members = select(Alert.alert_id).join(AlertClusterMember, AlertClusterMember.alert_id == Alert.alert_id).where(
+        AlertClusterMember.cluster_id == cluster.id)
+    if not _is_admin():
+        # iris-ng (backlog #51): a cluster is one customer's, but a member alert moved to another customer stays in
+        # it - list and count only the members the caller can see, as the queue does.
+        members = members.where(Alert.alert_customer_id.in_(get_user_clients_id(lookups.user_id) or [0]))
+    count = db.session.execute(select(func.count()).select_from(members.subquery())).scalar() or 0
     ids = [r[0] for r in db.session.execute(
-        select(Alert.alert_id).join(AlertClusterMember, AlertClusterMember.alert_id == Alert.alert_id).where(
-            AlertClusterMember.cluster_id == cluster.id).order_by(Alert.alert_source_event_time.desc(), Alert.alert_id.desc())
+        members.order_by(Alert.alert_source_event_time.desc(), Alert.alert_id.desc())
         .limit(av.CLUSTER_MEMBERS_IN_DETAIL)).all()]
     rows = _rows_by_id(ids, lookups)
     return {'id': cluster.id, 'title': cluster.title, 'status': cluster.status, 'count': count,

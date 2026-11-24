@@ -31,6 +31,8 @@ from app.blueprints.rest.endpoints import endpoint_deprecated
 from app.blueprints.rest.parsing import parse_comma_separated_identifiers
 from app.blueprints.rest.case_comments import case_comment_update
 from app.business.alerts_ingest import create_alert_from_payload
+from app.business.alerts_ingest import NESTED_FIELDS_MESSAGE
+from app.business.alerts_ingest import nested_alert_fields
 from app.business.errors import BusinessProcessingError
 from app.datamgmt.alerts.alerts_db import get_filtered_alerts
 from app.datamgmt.alerts.alerts_db import get_alert_by_id
@@ -55,6 +57,7 @@ from app.iris_engine.access_control.utils import ac_fast_check_user_has_case_acc
 from app.iris_engine.module_handler.module_handler import call_modules_hook
 from app.iris_engine.utils.tracker import track_activity
 from app.models.alerts import AlertStatus
+from app.models.models import Client
 from app.models.authorization import CaseAccessLevel
 from app.models.authorization import Permissions
 from app.schema.marshables import AlertSchema
@@ -68,6 +71,34 @@ from app.util import add_obj_history_entry
 from app.blueprints.responses import response_success
 
 alerts_rest_blueprint = Blueprint('alerts_rest', __name__)
+
+# iris-ng (backlog #51, 2026-11-24): what an alert update may change. AlertSchema loads every relationship
+# (include_relationships), so a nested object in an update body created its row - a customer, a severity, an alert
+# status, IOCs, assets - and alert_customer_id moved the alert into any customer: the update routes checked only
+# the alert's current customer. The pages send id and text columns only.
+
+
+def _alert_update_refusal(data, alert_id=None):
+    """None when `data` may be applied to an alert the caller may already update, else the error response: no
+    relationship (a nested object or a list of them), no other alert id, and a customer only one the caller can
+    access. `alert_id`: the URL's id (a single update); None for a batch, whose updates never carry one."""
+    if not isinstance(data, dict):
+        return response_error('An object of alert fields is expected')
+    nested = nested_alert_fields(data)
+    if nested:
+        return response_error(NESTED_FIELDS_MESSAGE % ', '.join(nested))
+    if 'alert_id' in data and (alert_id is None or str(data.get('alert_id')) != str(alert_id)):
+        return response_error('An alert update cannot change the alert id')
+    if 'alert_customer_id' in data:
+        try:
+            target = int(data.get('alert_customer_id'))
+        except (TypeError, ValueError):
+            return response_error('alert_customer_id: a customer id is expected')
+        if Client.query.filter(Client.client_id == target).first() is None:
+            return response_error(f'Customer #{target} not found')
+        if not user_has_client_access(current_user.id, target):
+            return response_error('User not entitled to update alerts for the client', status=403)
+    return None
 
 
 @alerts_rest_blueprint.route('/alerts/filter', methods=['GET'])
@@ -337,6 +368,10 @@ def alerts_update_route(alert_id) -> Response:
     if not user_has_client_access(current_user.id, alert.alert_customer_id):
         return response_error('User not entitled to update alerts for the client', status=403)
 
+    refused = _alert_update_refusal(request.get_json(), alert_id)
+    if refused is not None:
+        return refused
+
     alert_schema = AlertSchema()
 
     do_resolution_hook = False
@@ -443,6 +478,10 @@ def alerts_batch_update_route() -> Response:
 
     if not alert_ids:
         return response_error('No alert IDs provided')
+
+    refused = _alert_update_refusal(updates)
+    if refused is not None:
+        return refused
 
     alert_schema = AlertSchema()
 
