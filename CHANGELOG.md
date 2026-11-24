@@ -11,6 +11,34 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.7] — 2026-11-24
+
+The timeline highlights a case's IOCs in the text of each event, never inside its markup. **No migration.** The app
+image changes; the nginx and database images and the guest-portal tunnel agent do not.
+
+### Fixed
+- **IOC highlighting wrote into links, images and entities.** The timeline highlighted IOCs by running a pattern per
+  IOC over the rendered HTML of each event's title and content, so the highlight landed wherever the value appeared:
+  inside a link's address or an image's alt text and title (the link or image broke, and the rest of its tag showed
+  as text), inside an entity such as `&lt;`, and as an attribute's name - an IOC `href` took the address off every
+  link on the timeline. It could not run script: what it inserted was fixed markup with the value sanitized and the
+  description escaped, and the popovers show text. Highlighting now walks the rendered text and builds each highlight as an
+  element; links, images and entities stay as written.
+- **Matching.** The patterns' word boundaries matched anywhere, so `10.0.0.1` lit up inside `10.0.0.15` and
+  `evil.com` inside `notevil.com`. A match is now a whole token - no letter, digit or underscore on either side - so
+  `evil.com` still lights up in `sub.evil.com` and in `https://evil.com/x`. Matching ignores letter case (the text
+  keeps the case it was written in), and IOCs longer than 64 characters - long URLs, every SHA-512 - are highlighted
+  too. A value holding `&`, `<` or `>` is now highlighted where the text has it (it never was).
+- Of two overlapping IOCs the longer is the highlight; before, the one the database returned first won.
+- An IOC with no value no longer stops the timeline from drawing.
+
+### Compatibility
+- No route, reply or setting changes. Code and link text are highlighted as before; the compact view still highlights
+  titles only.
+- Chart 1.16.7.
+
+---
+
 ## [IRIS-NG-v2.16.6] — 2026-11-23
 
 A small change to the war room's guest invitation form. **No migration.** The app image changes; the nginx and
