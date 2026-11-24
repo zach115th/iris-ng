@@ -11,6 +11,42 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.16.8] — 2026-11-24
+
+A security release: setting a task's status from Home needs full access to the task's case, custom attribute fields
+drawn as HTML take no value from a request, and the last stored names and links of the 2026-10-23 review are shown as
+text or kept on this site. **No migration.** The app image changes; the nginx and database images and the guest-portal
+tunnel agent do not.
+
+### Security
+- **Any signed-in user could set the status of any case's task.** `POST /user/tasks/status/update` - the status menu
+  of Home's task list - checked no case access. It now checks the case named in the request at full access, as the
+  case page's own status route does.
+- **Custom attribute fields of type `html` and `raw` took their value from requests.** An `html` field is drawn as
+  HTML in every object's attribute tabs, and the IOC page's intel panel drew `raw` fields as HTML too; both are meant
+  for module output. The API copied a request's value for them on create, and for a `raw` field on update, so once an
+  administrator defined such a field, any user who could edit the object could store markup in it. A request's value
+  for these fields is now ignored; modules keep writing them. The intel panel shows a `raw` value as text.
+- **An asset's name could break out of the legacy assets table's alerts popover.** The name sat raw inside a
+  single-quoted attribute of a focusable icon, so a quote in it ended the attribute and the rest of the name became
+  attributes of the icon.
+- **The Notes page's *Move item* dialog drew folder names as HTML.**
+- Smaller: the alert cluster page puts its `?cid=` into links only as a number; Home's notification and following
+  links are kept only when they are an http(s) address on this site; the access-control modals write case, group and
+  access names into their scripts as JSON strings - a case name ending in a backslash broke the modal's script.
+- The task status route, the attribute API, the assets popover, the *Move item* dialog and the access-control modals are
+  inherited and present in every earlier IRIS-NG release; the IOC intel panel, the cluster page and Home's links in
+  every 2.x release.
+
+### Compatibility
+- `POST /user/tasks/status/update` refuses a task in a case the caller cannot change with the same `400` as an
+  unknown task; before, a user who could only read a case - or had no access to it - could set its tasks' status.
+- A request's value for an `html` or `raw` custom attribute field is ignored on create and update; modules are not
+  affected.
+- No other route or reply changes. Chart 1.16.8.
+
+---
+
 ## [IRIS-NG-v2.16.7] — 2026-11-24
 
 The timeline highlights a case's IOCs in the text of each event, never inside its markup. **No migration.** The app
