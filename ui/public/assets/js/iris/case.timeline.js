@@ -794,29 +794,8 @@ function build_timeline(data) {
     });
 
     let tesk = false;
-    let reap = [];
-    let ioc_list = data.data.iocs;
-    for (ioc in ioc_list) {
-        let ioc_len = ioc_list[ioc]['ioc_value'].length;
-        if (ioc_len === 0 || ioc_len > 64) {
-            console.log('Ignoring IOC with length 0 or > 64')
-            continue;
-        }
-        let capture_start = "(^|;|:|||>|<|[|]|(|)|\\s|\\>)(";
-        let capture_end = ")(;|:|||>|<|[|]|(|)|\\s|>|$|<br/>)";
-        // When an IOC contains another IOC in its description, we want to avoid to replace that particular pattern
-        var avoid_inception_start = "(?!<span[^>]*?>)" + capture_start;
-        var avoid_inception_end = "(?![^<]*?<\/span>)" + capture_end;
-        var re = new RegExp(avoid_inception_start
-               + escapeRegExp(sanitizeHTML(ioc_list[ioc]['ioc_value']))
-               + avoid_inception_end
-               ,"g");
-        /* iris-ng (backlog #25 F1): the description is an attribute value (iris_escape). This string is a
-           String.replace() replacement, where `$` starts a pattern ($&, $'): `$` is doubled so both stored values
-           stay literal (backlog #25 F7 replaces the string with a function). */
-        let replacement = `$1<span class="text-warning-high ml-1 link_asset" data-toggle="popover" style="cursor: pointer;" data-trigger="hover" data-content="${iris_escape(ioc_list[ioc]['ioc_description']).replace(/\$/g, '$$$$')}" title="IOC">${sanitizeHTML(ioc_list[ioc]['ioc_value']).replace(/\$/g, '$$$$')}</span>`;
-        reap.push([re, replacement]);
-    }
+    /* iris-ng (backlog #25 F7): one highlighter for every IOC of the case - see match_replace_ioc(). */
+    let reap = iris_tl_ioc_highlighter(data.data.iocs);
     let idx = 0;
 
     let converter = get_showdown_convert();
@@ -1004,16 +983,77 @@ function toggle_child_events_of_event(event_id) {
     }
 }
 
-function escapeRegExp(text) {
-    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+/* iris-ng (backlog #25 F7, 2026-11-23): IOC highlighting works on the TEXT of the rendered title and content, never on
+   the HTML string. The old patterns ran over sanitized markup and wrote their <span> into attribute values (a link's
+   href, an image's alt), tag names and entities, and their boundary groups held empty alternatives, so an IOC matched
+   anywhere (10.0.0.1 lit up inside 10.0.0.15). Now, on the maintainer's choices: one pattern for every IOC of the case,
+   longest first, so the longer of two IOCs starting at the same place wins; a match is a whole token - no letter, digit
+   or underscore on either side; letter case is ignored; any length; every text node, code and link text included (the
+   input is sanitized: no script / style text reaches here). The span is built through the DOM - the text as written is
+   its text, the IOC's description its popover content (shown as text) - so nothing is escaped by hand and no
+   replacement string reads `$`. */
+const IRIS_TL_IOC_WORD = '\\p{L}\\p{N}_';
+
+/* A value as a literal inside a `u` pattern: only the syntax characters take a backslash (a `u` pattern refuses any other). */
+function iris_tl_ioc_literal(s) {
+    return s.replace(/[\\^$.*+?()[\]{}|\/]/g, '\\$&');
 }
 
-function match_replace_ioc(entry, reap) {
-
-    for (rak in reap) {
-        entry = entry.replace(reap[rak][0], reap[rak][1]);
+/* The case's IOC list (the reply's `iocs`: ioc_value, ioc_description) -> {re, by_key}, or null when none. */
+function iris_tl_ioc_highlighter(ioc_list) {
+    const by_key = new Map();
+    for (const ioc of (Array.isArray(ioc_list) ? ioc_list : [])) {
+        const value = (ioc && ioc.ioc_value != null) ? String(ioc.ioc_value) : '';
+        if (value.trim() === '') { continue; }  // an empty alternative would match nothing forever
+        const key = value.toLowerCase();
+        if (!by_key.has(key)) {  // two IOCs that differ only in case: the first one's description is shown
+            by_key.set(key, {value: value, description: ioc.ioc_description == null ? '' : String(ioc.ioc_description)});
+        }
     }
-    return entry;
+    if (by_key.size === 0) { return null; }
+    const values = Array.from(by_key.values()).map(i => i.value).sort((a, b) => b.length - a.length);
+    const re = new RegExp('(^|[^' + IRIS_TL_IOC_WORD + '])(' + values.map(iris_tl_ioc_literal).join('|') + ')(?![' + IRIS_TL_IOC_WORD + '])', 'giu');
+    return {re: re, by_key: by_key};
+}
+
+function iris_tl_ioc_span(text, ioc) {
+    const span = document.createElement('span');
+    span.className = 'text-warning-high ml-1 link_asset';
+    span.setAttribute('data-toggle', 'popover');
+    span.setAttribute('style', 'cursor: pointer;');
+    span.setAttribute('data-trigger', 'hover');
+    span.setAttribute('data-content', ioc ? ioc.description : '');
+    span.setAttribute('title', 'IOC');
+    span.textContent = text;
+    return span;
+}
+
+/* Sanitized HTML -> the same HTML with every IOC in its text wrapped in a highlight span (unchanged when none is). */
+function match_replace_ioc(html, hl) {
+    if (!hl) { return html; }
+    const tpl = document.createElement('template');  // inert: nothing in it loads or runs
+    tpl.innerHTML = html;
+    const walker = document.createTreeWalker(tpl.content, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) { nodes.push(n); }  // collected first: the loop below replaces them
+    let touched = false;
+    for (const node of nodes) {
+        const text = node.nodeValue;
+        let frag = null, last = 0, m;
+        while ((m = hl.re.exec(text)) !== null) {  // each loop ends on a failed match, which puts lastIndex back to 0
+            const start = m.index + m[1].length;
+            frag = frag || document.createDocumentFragment();
+            frag.appendChild(document.createTextNode(text.slice(last, start)));
+            frag.appendChild(iris_tl_ioc_span(m[2], hl.by_key.get(m[2].toLowerCase())));
+            last = start + m[2].length;
+        }
+        if (frag) {
+            frag.appendChild(document.createTextNode(text.slice(last)));
+            node.parentNode.replaceChild(frag, node);
+            touched = true;
+        }
+    }
+    return touched ? tpl.innerHTML : html;
 }
 
 function to_page_up() {
