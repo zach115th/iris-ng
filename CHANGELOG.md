@@ -11,6 +11,61 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.21.0] — 2026-11-25
+
+The case graph, the alert graph and the visual timeline move from vis 4.21 (unmaintained, its npm package deprecated)
+to vis-network 10.1.5 and vis-timeline 8.5.6, and look as they did; graph tooltips are plain text again, and the
+Content-Security-Policy no longer allows `'unsafe-eval'`. **No migration.** The app image changes (three page
+templates, three Python files, the two vis scripts, 10 static files fewer) and so does the nginx image (its policy);
+the database image and the guest-portal tunnel agent do not.
+
+### Changed
+- **vis 4.21 → vis-network 10.1.5 + vis-timeline 8.5.6** on a case's Graph tab, an alert's Graph tab (its
+  relationships) and the visual timeline (the case Timeline's **Visualize**, **Visualize by asset** and **Visualize by
+  category**). The pages load the two libraries' standalone builds under the names they loaded before,
+  `js/plugin/vis/vis-network.min.js` and `js/plugin/vis/vis.graph.js`; these builds carry their own styles, the alert
+  graph's navigation-button images and, for the timeline, its own moment (2.30.1). Tooltips, labels, icons, colours,
+  the timeline's items, groups, axis and time window are drawn as before; a graph's layout (where each node settles)
+  can differ, as it is worked out by a newer version of the same physics.
+- **Graph tooltips are plain text.** vis-network 10 shows a node's or a link's tooltip as text, where vis 4.21 read it
+  as HTML, so the case graph and the alert graph now send each tooltip as the stored text, line breaks as `\n` - the
+  form they had before IRIS-NG-v2.16.2, which escaped them for vis 4.21. A vulnerability node's tooltip lines are
+  separated by `\n`. The visual timeline is unchanged: vis-timeline 8 still reads an item's text and tooltip and a
+  group's label as HTML (after its own XSS filter), and IRIS still escapes them.
+- **The alert graph's icon nodes** no longer set `icon.weight` (`"bold"`): vis 4.21 ignored it, vis-network 10 would
+  draw the icons bold.
+- **Content-Security-Policy:** `script-src` no longer allows `'unsafe-eval'`, so the browser refuses `eval` and
+  `new Function` on every page. Nothing IRIS serves needs them: the only such call any page made was a fallback in
+  vis 4.21, inside a `try`.
+
+### Removed
+- **Static paths no longer served** (under `/static/assets/`): `css/vis.min.css` and `css/vis.graph.css` (vis 4.21's
+  stylesheets), the seven navigation images in `css/img/network/` (`upArrow.png`, `downArrow.png`, `leftArrow.png`,
+  `rightArrow.png`, `plus.png`, `minus.png`, `zoomExtends.png`), and `js/core/moments.min.js` - the visual timeline
+  was the last page that loaded it, for vis 4.21.
+- The UI build drops the `vis` and `moment` packages and adds `vis-network` and `vis-timeline` (npm also records the
+  peer packages they name - moment among them - none of which is served).
+
+### Compatibility
+- **API change:** in `GET /case/graph/getdata` and `GET /alerts/similarities/<alert_id>`, a node's or a link's
+  `title` is the stored text with `\n` line breaks instead of escaped HTML with `<br>`, and an alert graph's icon
+  object has no `weight`. The visual timeline's `GET /case/timeline/visualize/data/by-asset` and `/by-category` are
+  unchanged.
+- A template or module of your own that loads one of the paths above gets a 404, and `window.moment` is no longer
+  defined on any page (on the visual timeline, vis-timeline's own is `vis.moment`). One that draws with `vis` gets the
+  new libraries: vis-network shows a string tooltip as text (pass an element for markup) and honours `icon.weight`;
+  vis-timeline uses its bundled moment rather than the page's. Code that calls `eval` or `new Function` is refused by
+  the browser.
+- The Kubernetes chart runs no nginx and sets no Content-Security-Policy, so the policy change does not reach it.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.21.0`, the 2.21.0 images, or chart 1.21.0. No migration. `update.sh` rebuilds
+  the nginx image with the app; with the published images, a deployment that sets `NGINX_IMAGE_TAG` moves it to
+  `IRIS-NG-v2.21.0` too. The app serves static files with `Cache-Control: no-cache`, so a browser picks up the changed
+  pages on its next load.
+
+---
+
 ## [IRIS-NG-v2.20.0] — 2026-11-24
 
 Static files and script loads nothing used are gone - webfontloader and the vendored `flask_dropzone` module with them -
