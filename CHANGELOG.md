@@ -11,6 +11,59 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.20.0] — 2026-11-24
+
+Static files and script loads nothing used are gone - webfontloader and the vendored `flask_dropzone` module with them -
+and the alert graph gets two fixes. **No migration.** The app image changes (page templates, `alerts.js`, the static
+files it serves: 46 fewer, 4.45 MiB); the nginx and database images and the guest-portal tunnel agent do not.
+
+### Removed
+- **Script loads nothing called:** webfontloader and its `WebFont.load()` on every page (`fonts.css` is linked in each
+  page's head, so this is one render-blocking script fewer; two of the font families it waited for were declared
+  nowhere), TimelineJS3 on the case timeline, the bootstrap datepicker on the files page (and its stylesheet on the two
+  timeline pages), SortableJS on the assets and notes pages, DataTables' print-button plugin (no table has a print
+  button), the full vis bundle on Alerts and the case graph (the network build loaded after it was the one in use, and
+  stays), and moment on the files page (it stays on the visual timeline, which uses it).
+- **CryptoJS** now loads only on the files page, where evidence hashing uses it, instead of on every page.
+- **Static paths no longer served** (under `/static/assets/`): `js/plugin/webfont/webfont.min.js`, `js/timeline.js`,
+  `css/timeline.css` and `css/icons/tl-icons.*`, `js/core/bootstrap-datetimepicker.min.js`,
+  `css/bootstrap-datetime.css`, `js/plugin/sortable/sortable.js`, `js/plugin/bootstrap-slider/bootstrap-slider.min.js`,
+  `css/bootstrap-slider.min.css`, `js/plugin/vis/vis.min.js` (`vis-network.min.js` and `vis.graph.js` stay),
+  `js/plugin/dropzone/dropzone.min.js` (`dropzone.js`, the same file, stays), `js/plugin/datatables/` -
+  `buttons.print.min.js`, `dataTables.dateTime.min.js`, `dataTables.searchBuilder.js`,
+  `dataTables.searchBuilder.bs4.js`, `pdfmake.min.js` and `pdfmake.vfs.fonts.min.js` - with
+  `css/dataTables.searchBuilder.css`,
+  `js/plugin/jquery.sparkline/jquery.sparkline.min.js`, `js/plugin/tagsinput/bootstrap-tagsinput.js` and
+  `typeahead.bundle.js` (`suggesttag.js` stays) with `css/bootstrap-tagsinput.css`, `css/atlantis.min.css`
+  (`atlantis.css`, the one the pages load, stays), `css/fa.css`, `css/latos.css`, `css/tags.css`,
+  `css/bootstrap-select.css.map`, `fonts/flaticon/flaticon.css`, `flaticon.html` and `_flaticon.scss` (the Flaticon
+  font stays), the Lato italic and Thin fonts (`fonts.css` uses Light, Regular, Bold and Black), `fonts/summernote/`,
+  and `img/iris_logo-black.png`, `logo-alone-2.png`, `logo-alone-2-black.png`, `logo-alone-2-blue.png` and
+  `logo-white-2.png`.
+- **`flask_dropzone`**, a vendored module no page used (its loaders were never called, and its blueprint has no static
+  folder to serve them from), with its two settings `DROPZONE_MAX_FILE_SIZE` and `DROPZONE_TIMEOUT`. The pipelines
+  upload form keeps Dropzone itself (`dropzone.js`).
+- The UI build drops the `bootstrap-slider`, `sortablejs` and `webfontloader` packages; no other package moves.
+
+### Fixed
+- **The alert graph's navigation buttons** (arrows, zoom, fit) show their icons: the seven images they use were never
+  served, and each answered 404.
+- **The alert graph's icons** (alerts, IOCs, cases) are drawn once their icon font has loaded. Before, the first icon
+  was drawn while the font was still loading, and came out right only when the font file was already cached.
+
+### Compatibility
+- A template or module of your own that loads one of the paths above gets a 404, and `window.WebFont`, `window.TL`,
+  `window.Sortable`, the bootstrap datepicker's `$.fn.datepicker` and DataTables' `print` button type are no longer
+  defined; `CryptoJS` is defined on the files page only. The `wf-*` classes webfontloader set on `<html>` are
+  gone.
+- No route or reply changes.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.20.0`, the 2.20.0 images, or chart 1.20.0. No migration. The app serves static
+  files with `Cache-Control: no-cache`, so a browser picks up the changed pages on its next load.
+
+---
+
 ## [IRIS-NG-v2.19.0] — 2026-11-24
 
 The charts move to Chart.js 4.6.2 (from 2.9.4, whose line has had no release since 2020) and look as they did. **No
