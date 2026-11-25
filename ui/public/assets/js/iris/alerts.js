@@ -462,7 +462,37 @@ function getAlertOffset(element) {
   };
 }
 
+/* iris-ng 2026-11-25: vis draws icon nodes on a canvas, and a canvas does not redraw when a font arrives - a face
+ * still loading at that moment leaves a fallback glyph. Load the faces the icon nodes name first, then draw (until
+ * webfontloader was removed, its early load of every icon stylesheet face usually got there first). A newer
+ * request for the same container wins: an older one that resolves later draws nothing. */
+const _alertNetworkSeq = {};
+
 function createNetwork(alert_id, relatedAlerts, nb_nodes, containerId, containerConfigureId) {
+  const byFace = {};
+  ((relatedAlerts && relatedAlerts.nodes) || []).forEach(function (n) {
+    if (n && n.shape === 'icon' && n.icon && typeof n.icon.face === 'string' && typeof n.icon.code === 'string') {
+      byFace[n.icon.face] = (byFace[n.icon.face] || '') + n.icon.code;
+    }
+  });
+  const faces = Object.keys(byFace);
+  const seq = (_alertNetworkSeq[containerId] || 0) + 1;
+  _alertNetworkSeq[containerId] = seq;
+  const draw = function () {
+    if (_alertNetworkSeq[containerId] === seq) {
+      drawAlertNetwork(alert_id, relatedAlerts, nb_nodes, containerId, containerConfigureId);
+    }
+  };
+  if (!faces.length || !(document.fonts && typeof document.fonts.load === 'function')) {
+    draw();
+    return;
+  }
+  Promise.all(faces.map(function (face) {
+    return document.fonts.load('50px "' + face.replace(/["\\]/g, '') + '"', byFace[face]).catch(function () { return null; });
+  })).then(draw, draw);
+}
+
+function drawAlertNetwork(alert_id, relatedAlerts, nb_nodes, containerId, containerConfigureId) {
   const { nodes, edges } = relatedAlerts;
 
   if (nodes.length === 0 || nodes.length === undefined) {

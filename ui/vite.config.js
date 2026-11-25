@@ -113,24 +113,17 @@ export default defineConfig(({ mode }) => {
                         rename: 'src-noconflict',
                     },
                     {
-                        src: 'node_modules/bootstrap-slider/dist/bootstrap-slider.min.js',
-                        dest: 'assets/js/plugin/bootstrap-slider/',
-                    },
-                    {
                         // dropzone 6 dropped dist/min/; its browser build is
                         // dist/dropzone-min.js. Shipped under the name the
                         // pipelines modal actually loads (dropzone.js) - the
                         // old dropzone.min.js copy was never referenced by any
-                        // template, so the modal's script tag 404'd since
-                        // upstream. Both names ship so nothing external breaks.
+                        // template, so the modal's script tag 404'd before
+                        // this copy. A second copy under the old name, kept
+                        // for anything external, went on 2026-11-25: nothing
+                        // loaded it.
                         src: 'node_modules/dropzone/dist/dropzone-min.js',
                         dest: 'assets/js/plugin/dropzone/',
                         rename: 'dropzone.js',
-                    },
-                    {
-                        src: 'node_modules/dropzone/dist/dropzone-min.js',
-                        dest: 'assets/js/plugin/dropzone/',
-                        rename: 'dropzone.min.js',
                     },
                     {
                         src: 'node_modules/html2canvas/dist/html2canvas.min.js',
@@ -150,15 +143,6 @@ export default defineConfig(({ mode }) => {
                         rename: 'marked.min.js',
                     },
                     {
-                        src: 'node_modules/sortablejs/Sortable.min.js',
-                        dest: 'assets/js/plugin/sortable/',
-                        rename: 'sortable.js',
-                    },
-                    {
-                        src: 'node_modules/vis/dist/vis.min.js',
-                        dest: 'assets/js/plugin/vis/',
-                    },
-                    {
                         src: 'node_modules/vis/dist/vis-network.min.js',
                         dest: 'assets/js/plugin/vis/',
                     },
@@ -166,11 +150,6 @@ export default defineConfig(({ mode }) => {
                         src: 'node_modules/vis/dist/vis-timeline-graph2d.min.js',
                         dest: 'assets/js/plugin/vis/',
                         rename: 'vis.graph.js'
-                    },
-                    {
-                        src: 'node_modules/webfontloader/webfontloader.js',
-                        dest: 'assets/js/plugin/webfont/',
-                        rename: 'webfont.min.js'
                     },
                     {
                         src: 'node_modules/xss/dist/xss.min.js',

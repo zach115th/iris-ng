@@ -34,7 +34,6 @@ from functools import partial
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from app.flask_dropzone import Dropzone
 from app.iris_engine.tasker.celery import make_celery
 from app.iris_engine.access_control.oidc_handler import get_oidc_client
 from app.iris_engine.access_control.password_hash import PasswordHasher
@@ -146,8 +145,6 @@ lm = LoginManager()  # flask-loginmanager
 lm.init_app(app)  # init the login manager
 
 ma = Marshmallow(app) # Init marshmallow
-
-dropzone = Dropzone(app)
 
 celery = make_celery(app)
 

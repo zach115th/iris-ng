@@ -24,7 +24,6 @@
   "dependencies": {
     "ace-builds": "^1.45.2",
     "bootstrap": "^4.0.0",
-    "bootstrap-slider": "^11.0.2",
     "chart.js": "^4.6.2",
     "dropzone": "^6.3.5",
     "html2canvas": "^1.4.0",
@@ -37,9 +36,7 @@
     "moment": "^2.31.0",
     "popper.js": "^1.16.1",
     "socket.io": "^4.8.4",
-    "sortablejs": "^1.15.7",
     "vis": "^4.21.0-EOL",
-    "webfontloader": "^1.6.16",
     "xss": "^1.0.17"
   },
   "overrides": {

@@ -16,24 +16,15 @@
 	{% endif %}
 	<!-- Fonts and icons -->
 	{# The text font is known and fetched before the first frame (iris-ng
-	   2026-10-30): fonts.css used to arrive only through WebFont.load below - a
-	   script-inserted stylesheet, which does not hold the first paint - so Lato
-	   replaced the fallback a frame later and rows sized by heading text moved
-	   (Lighthouse layout shift). WebFont.load stays for its wf-* classes. #}
+	   2026-10-30): a stylesheet a script inserts does not hold the first paint,
+	   so Lato replaced the fallback a frame later and rows sized by heading text
+	   moved (Lighthouse layout shift) - fonts.css is linked here and Lato is
+	   preloaded. webfontloader, which used to insert it, was removed on
+	   2026-11-25: nothing read its wf-* classes. #}
 	<link rel="preload" href="/static/assets/fonts/lato/Lato-Regular.ttf" as="font" type="font/ttf" crossorigin>
 	<link rel="preload" href="/static/assets/fonts/lato/Lato-Bold.ttf" as="font" type="font/ttf" crossorigin>
 	<link rel="preload" href="/static/assets/fonts/lato/Lato-Light.ttf" as="font" type="font/ttf" crossorigin>
 	<link rel="stylesheet" href="/static/assets/css/fonts.css">
-	<script src="/static/assets/js/plugin/webfont/webfont.min.js"></script>
-	<script>
-		WebFont.load({
-			custom: {"families":["Lato:300,400,700,900", "Flaticon", "Font Awesome 5 Solid", "Font Awesome 5 Regular", "Font Awesome 5 Brands", "simple-line-icons"],
-			urls: ['/static/assets/css/fonts.css']},
-			active: function() {
-				sessionStorage.fonts = true;
-			}
-		});
-	</script>
 
 	<!-- CSS Files -->
 	<link rel="stylesheet" href="/static/assets/css/bootstrap.min.css">
@@ -120,8 +111,6 @@
 	<script src="/static/assets/js/iris/common.js"></script>
 	<script src="/static/assets/js/iris/datastore.js"></script>
 
-	<script src="/static/assets/js/core/crypto.core.js"></script>
-	<script src="/static/assets/js/core/crypto.md5.js"></script>
 	<script src="/static/assets/js/plugin/xss/xss.js"></script>
 	<script src="/static/assets/js/plugin/marked/marked.min.js" type="text/javascript" charset="utf-8"></script>
 

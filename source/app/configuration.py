@@ -459,10 +459,6 @@ class Config:
 
     UPDATE_DIR_NAME = '_updates_'
 
-    DROPZONE_MAX_FILE_SIZE = 1024 * 1024 * 1024 * 10  # 10 GB
-
-    DROPZONE_TIMEOUT = 15 * 60 * 10000  # 15 Minutes of uploads per file
-
     """ Celery configuration
     Configure URL and backend
     """
