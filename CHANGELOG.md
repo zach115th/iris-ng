@@ -24,11 +24,15 @@ images and the guest-portal tunnel agent do not.
   running in the web process.
 
 ### Changed
-- **celery 5.6.3 → 5.7.0.** No other package moves. Since 5.7 celery stores each task's result as JSON. Module hooks,
-  import pipelines, AI jobs and the update check return an IRIS status that JSON could not encode - on celery 5.7
-  alone each of them would have been recorded as failed although it ran. IRIS now stores that status as JSON: its
-  code, message and logs, and the data a module hands back only when it is plain JSON (modules return the records they
-  were given, and nothing reads them back). DIM Tasks shows the module's verdict and logs as before.
+- **celery 5.6.3 → 5.7.0.** Since 5.7 celery stores each task's result as JSON. Module hooks, import pipelines, AI
+  jobs and the update check return an IRIS status that JSON could not encode - on celery 5.7 alone each of them would
+  have been recorded as failed although it ran. IRIS now stores that status as JSON: its code, message and logs, and
+  the data a module hands back only when it is plain JSON (modules return the records they were given, and nothing
+  reads them back). DIM Tasks shows the module's verdict and logs as before.
+- **Unpinned package in the released image:** babel 2.18.0 → 2.19.0, published hours before this release and resolved
+  by its build (no requirement of IRIS names it; docxcompose, the `.docx` report library, requires it). docxcompose
+  formats the date of a Word document-property field with it, which IRIS's reports never update; the bundled report
+  templates render identically with either version.
 
 ### Compatibility
 - **DIM Tasks, for tasks that ran before the update:** their stored result is a pickle IRIS no longer opens. The task
