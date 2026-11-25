@@ -5,8 +5,6 @@
 {% block stylesheets %}
     <link rel="stylesheet" href="/static/assets/css/suggestags.css">
     <link rel="stylesheet" href="/static/assets/css/alerts.css">
-    <link rel="stylesheet" href="/static/assets/css/vis.graph.css">
-    <link rel="stylesheet" href="/static/assets/css/vis.min.css">
 {% include 'alert_queue_styles.html' %}
 {% endblock stylesheets %}
 
@@ -117,6 +115,8 @@
 {% endblock content %}
 
 {% block javascripts %}
+    {# iris-ng 2026-11-25: vis-network 10's standalone build brings its own styles (vis 4.21's vis.min.css and
+       vis.graph.css are gone). #}
     <script src="/static/assets/js/plugin/vis/vis-network.min.js"></script>
     <script src="/static/assets/js/iris/alerts.js"></script>
     <script src="/static/assets/js/iris/flow_checklist.js"></script>

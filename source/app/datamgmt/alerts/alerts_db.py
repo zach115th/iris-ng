@@ -40,7 +40,7 @@ from app.datamgmt.manage.manage_case_templates_db import case_template_post_modi
 from app.datamgmt.states import update_timeline_state
 from app.iris_engine.access_control.utils import ac_current_user_has_permission
 from app.iris_engine.utils.common import parse_bf_date_format
-from app.iris_engine.utils.vis_text import vis_text
+from app.iris_engine.utils.vis_text import vis_plain
 from app.models.cases import Cases
 from app.models.models import EventCategory
 from app.models.models import Tags
@@ -1241,8 +1241,9 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
     returns:
         dict: The details of the related alerts with matched assets and/or IOCs
 
-    iris-ng 2026-11-20: vis.js 4.21 shows a node's `title` as HTML, so every title is vis_text(); a `label` is
-    drawn on the canvas as text and stays raw.
+    iris-ng 2026-11-25: vis-network 10 shows a node's `title` as text, so every title is vis_plain() (as typed,
+    line breaks as "\n"; until 2.20.0 vis 4.21 showed it as HTML and they were escaped); a `label` is drawn on the
+    canvas as text and stays raw.
     """
     if not assets and not iocs:
         return {
@@ -1320,14 +1321,15 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
         nodes.append({
             'id': f'alert_{alert_id}',
             'label': f'[Closed]{alert_resolution_title} {alert_info["alert"].alert_title}' if alert_color != '' else f'{alert_resolution_title}{alert_info["alert"].alert_title}',
-            'title': vis_text(f'{alert_info["alert"].alert_description}'),
+            'title': vis_plain(f'{alert_info["alert"].alert_description}'),
             'group': 'alert',
             'shape': 'icon',
             'icon': {
                 'face': 'FontAwesome',
                 'code': '\uf0f3',
                 'color': alert_color,
-                'weight': "bold"
+                # iris-ng 2026-11-25: no 'weight' - vis 4.21 ignored it, and vis-network 10 would draw the glyph
+                # bold, which fonts.css's FontAwesome faces (normal weight only) can only fake.
             },
             'font': "12px verdana white"  # iris-ng: dark is the only theme (issue #92)
         })
@@ -1361,8 +1363,7 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
                     'icon': {
                         'face': 'FontAwesome',
                         'code': '\ue4a8',
-                        'color': 'white',  # iris-ng: dark is the only theme (issue #92)
-                        'weight': "bold"
+                        'color': 'white',  # iris-ng: dark is the only theme (issue #92); no 'weight' (above)
                     },
                     'font': "12px verdana white"  # iris-ng: dark is the only theme (issue #92)
                 })
@@ -1438,7 +1439,7 @@ def get_related_alerts_details(customer_id, assets, iocs, open_alerts, closed_al
                 nodes.append({
                     'id': f'case_{case_id}',
                     'label': f'[Closed] Case #{case_id}' if cases_data[case_id].get('close_date') else f'Case #{case_id}',
-                    'title': vis_text(cases_data[case_id].get("description")),
+                    'title': vis_plain(cases_data[case_id].get("description")),
                     'group': 'case',
                     'shape': 'icon',
                     'icon': {

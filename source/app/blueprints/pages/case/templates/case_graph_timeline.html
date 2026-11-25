@@ -6,7 +6,6 @@
 <link rel="stylesheet" href="/static/assets/css/suggestags.css">
 <link rel="stylesheet" href="/static/assets/css/bootstrap-select.min.css">
 <link rel="stylesheet" href="/static/assets/css/select2.css">
-<link rel="stylesheet" href="/static/assets/css/vis.graph.css">
 
 {% endblock stylesheets %}
 
@@ -67,16 +66,14 @@
 
 {% block javascripts %}
 
-{# vis 4.21 uses the page's window.moment when there is one (2.31.0 here) and its own bundled 2.19.1 otherwise:
-   nothing on this page calls moment, but the timeline does. #}
-<script src="/static/assets/js/core/moments.min.js"></script>
-
 <script src="/static/assets/js/plugin/tagsinput/suggesttag.js"></script>
 <script src="/static/assets/js/plugin/select/select2.js"></script>
 <script src="/static/assets/js/plugin/select/bootstrap-select.min.js"></script>
 
 <script src="/static/assets/js/iris/case.common.js"></script>
 <script src="/static/assets/js/iris/case.timeline.visu.js"></script>
+{# iris-ng 2026-11-25: vis-timeline 8's standalone build carries its own moment and styles (vis 4.21 used the page's
+   moments.min.js; its vis.graph.css is gone). #}
 <script src="/static/assets/js/plugin/vis/vis.graph.js"></script>
 <script>
 $(document).ready(function(){

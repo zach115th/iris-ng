@@ -82,11 +82,6 @@ export default defineConfig(({ mode }) => {
                         rename: 'jquery.validate.js',
                     },
                     {
-                        src: 'node_modules/moment/min/moment.min.js',
-                        dest: 'assets/js/core',
-                        rename: 'moments.min.js',
-                    },
-                    {
                         src: 'node_modules/popper.js/dist/umd/popper.min.js',
                         dest: 'assets/js/core',
                     },
@@ -143,11 +138,11 @@ export default defineConfig(({ mode }) => {
                         rename: 'marked.min.js',
                     },
                     {
-                        src: 'node_modules/vis/dist/vis-network.min.js',
+                        src: 'node_modules/vis-network/standalone/umd/vis-network.min.js',
                         dest: 'assets/js/plugin/vis/',
                     },
                     {
-                        src: 'node_modules/vis/dist/vis-timeline-graph2d.min.js',
+                        src: 'node_modules/vis-timeline/standalone/umd/vis-timeline-graph2d.min.js',
                         dest: 'assets/js/plugin/vis/',
                         rename: 'vis.graph.js'
                     },
