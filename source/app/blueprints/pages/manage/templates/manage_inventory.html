@@ -288,7 +288,7 @@
 
 {% block javascripts %}
     <script src="/static/assets/js/core/charts.js"></script>
-    <script src="/static/assets/js/core/Chart.PieceLabel.min.js"></script>
+    <script src="/static/assets/js/iris/chart_defaults.js"></script>
 <script>
         var IRIS_INV = { loaded: false, casesLoaded: false, _chart: null, _drives: [], _sortCol: null, _sortDir: 1 };
 
@@ -628,15 +628,16 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutoutPercentage: 74,
-                    legend: { display: false },
-                    tooltips: {
-                        callbacks: {
-                            label: function (tooltipItem, data) {
-                                var val = data.datasets[0].data[tooltipItem.index];
-                                var label = data.labels[tooltipItem.index];
-                                var pct = total > 0 ? Math.round(val / total * 100) : 0;
-                                return ' ' + label + ': ' + val + '  (' + pct + '%)';
+                    cutout: '74%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (item) {
+                                    var val = item.raw;
+                                    var pct = total > 0 ? Math.round(val / total * 100) : 0;
+                                    return ' ' + item.label + ': ' + val + '  (' + pct + '%)';
+                                }
                             }
                         }
                     }

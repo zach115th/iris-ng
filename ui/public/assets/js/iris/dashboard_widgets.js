@@ -6,7 +6,9 @@
  *   IrisDashWidgets.destroy(body)
  *
  * Built with DOM calls only: labels and cells never pass through HTML parsing. Colours come from the widget's
- * validated options and are re-checked here (#rrggbb) before they reach a style. Charts are Chart.js 2.
+ * validated options and are re-checked here (#rrggbb) before they reach a style. Charts are Chart.js 4, drawn as
+ * Chart.js 2.9.4 drew them: chart_defaults.js (loaded after charts.js) restores 2.x's defaults, and what 2.x's
+ * horizontalBar and zeroLineColor did is written out below.
  */
 (function () {
     'use strict';
@@ -155,7 +157,7 @@
                 ds.borderColor = base;
                 ds.backgroundColor = alpha(base, split ? 0.0 : 0.15);
                 ds.fill = !split;
-                ds.lineTension = 0.25;
+                ds.tension = 0.25;
                 ds.pointRadius = ds.data.length > 60 ? 0 : 2;
                 ds.borderWidth = 2;
                 ds.spanGaps = true;
@@ -168,34 +170,46 @@
             return ds;
         });
         var fontColor = '#c4c4cf';
-        var grid = {color: 'rgba(255,255,255,0.07)', zeroLineColor: 'rgba(255,255,255,0.18)'};
+        var gridColor = 'rgba(255,255,255,0.07)';
+        var zeroColor = 'rgba(255,255,255,0.18)';
         var tickFmt = function (v) { return format(v, unit); };
-        var valueAxis = {stacked: stack, ticks: {beginAtZero: true, fontColor: fontColor, callback: tickFmt, maxTicksLimit: 7},
-                         gridLines: grid};
+        // 2.x drew the grid line at 0 in zeroLineColor and the axis line in the grid colour; 4.x has neither by
+        // itself. A hidden grid hid the axis line too in 2.x (4.x draws it unless the border is off).
+        var valueAxis = {stacked: stack, beginAtZero: true, border: {color: gridColor},
+                         grid: {color: function (c) { return c.tick && c.tick.value === 0 ? zeroColor : gridColor; }},
+                         ticks: {color: fontColor, callback: tickFmt, maxTicksLimit: 7}};
         if (unit === 'count') { valueAxis.ticks.precision = 0; }
-        var labelAxis = {stacked: stack, ticks: {fontColor: fontColor, autoSkip: true, maxRotation: 45, minRotation: 0,
-                                                 callback: function (l) { l = String(l); return l.length > 28 ? l.slice(0, 27) + '…' : l; }},
-                         gridLines: {display: false}};
-        var type = {donut: 'doughnut', pie: 'pie', bar: 'bar', hbar: 'horizontalBar', line: 'line'}[widget.chart];
+        // A category axis hands its tick callback the label's index (2.x handed the label): read the label first.
+        var labelAxis = {stacked: stack, grid: {display: false}, border: {display: false},
+                         ticks: {color: fontColor, autoSkip: true, maxRotation: 45, minRotation: 0,
+                                 callback: function (v) {
+                                     var l = String(this.getLabelForValue(v));
+                                     return l.length > 28 ? l.slice(0, 27) + '…' : l;
+                                 }}};
+        var type = {donut: 'doughnut', pie: 'pie', bar: 'bar', hbar: 'bar', line: 'line'}[widget.chart];
+        var callbacks = {label: function (item) {
+            var name = round ? item.label : (split ? item.dataset.label : item.label);
+            return ' ' + name + ': ' + format(item.raw, unit);
+        }};
         var options = {
             responsive: true,
             maintainAspectRatio: false,
             animation: {duration: 250},
-            legend: {display: round || split, position: round ? 'right' : 'bottom',
-                     labels: {fontColor: fontColor, boxWidth: 12, padding: 10}},
-            tooltips: {callbacks: {label: function (item, data) {
-                var ds = data.datasets[item.datasetIndex];
-                var v = ds.data[item.index];
-                var name = round ? data.labels[item.index] : (split ? ds.label : (data.labels[item.index]));
-                return ' ' + name + ': ' + format(v, unit);
-            }}}
+            plugins: {
+                legend: {display: round || split, position: round ? 'right' : 'bottom',
+                         labels: {color: fontColor, boxWidth: 12, padding: 10}},
+                tooltip: {callbacks: callbacks}
+            }
         };
         if (round) {
-            if (widget.chart === 'donut') { options.cutoutPercentage = 62; }
+            if (widget.chart === 'donut') { options.cutout = '62%'; }
         } else if (widget.chart === 'hbar') {
-            options.scales = {xAxes: [valueAxis], yAxes: [labelAxis]};
+            options.indexAxis = 'y';
+            // 2.x's horizontalBar hovered and listed every bar of the row under the pointer.
+            options.interaction = {mode: 'index', axis: 'y', intersect: true};
+            options.scales = {x: valueAxis, y: labelAxis};
         } else {
-            options.scales = {xAxes: [labelAxis], yAxes: [valueAxis]};
+            options.scales = {x: labelAxis, y: valueAxis};
         }
         var chart = new window.Chart(canvas.getContext('2d'), {type: type, data: {labels: result.labels, datasets: datasets},
                                                                options: options});

@@ -416,7 +416,7 @@
 
 {% block javascripts %}
     <script src="/static/assets/js/core/charts.js"></script>
-    <script src="/static/assets/js/core/Chart.PieceLabel.min.js"></script>
+    <script src="/static/assets/js/iris/chart_defaults.js"></script>
 <script>
         let _irisMtxLoaded = false;
         let _irisMtxState = {start: null, end: null};
@@ -513,10 +513,12 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    legend: {position: 'bottom', labels: {boxWidth: 12, fontColor: '#94a3b8'}},
+                    plugins: {legend: {position: 'bottom', labels: {boxWidth: 12, color: '#94a3b8'}}},
                     scales: {
-                        xAxes: [{ticks: {fontColor: '#cbd5e1', fontSize: 11}, gridLines: {display: false}}],
-                        yAxes: [{ticks: {beginAtZero: true, precision: 0, fontColor: '#94a3b8'}, gridLines: {color: 'rgba(148,163,184,0.12)'}}],
+                        x: {ticks: {color: '#cbd5e1', font: {size: 11}}, grid: {display: false}, border: {display: false}},
+                        y: {beginAtZero: true, ticks: {precision: 0, color: '#94a3b8'},
+                            grid: {color: IrisChartDefaults.grid('rgba(148,163,184,0.12)')},
+                            border: {color: 'rgba(148,163,184,0.12)'}},
                     },
                 },
             });
@@ -524,17 +526,17 @@
             if (captionEl) { captionEl.textContent = years.join(' vs ') + ' — cases by ' + (isTag ? 'tag' : 'sector'); }
         }
 
-        // Inline Chart.js v2 plugin that draws a total count in the center of a doughnut.
+        // Inline Chart.js plugin that draws a total count in the center of a doughnut.
         function _irisMtxDonutCenterPlugin(total, label) {
             return {
                 afterDraw: function(chart) {
                     if (chart.config.type !== 'doughnut') { return; }
                     var meta = chart.getDatasetMeta(0);
                     if (!meta || !meta.data || !meta.data[0]) { return; }
-                    // _model carries the resolved inner circle geometry (Chart.js v2).
-                    var model = meta.data[0]._model;
-                    var cx = model.x, cy = model.y;
-                    var innerR = model.innerRadius;
+                    // The first arc's final geometry (the end of any animation).
+                    var g = meta.data[0].getProps(['x', 'y', 'innerRadius'], true);
+                    var cx = g.x, cy = g.y;
+                    var innerR = g.innerRadius;
                     // Scale to fit inside the hole; cap so single-digit numbers aren't huge.
                     var numSize = Math.max(14, Math.min(28, Math.round(innerR * 0.50)));
                     var lblSize = Math.max(10, Math.min(13, Math.round(innerR * 0.20)));
@@ -1001,7 +1003,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    legend: {position: 'right', labels: {boxWidth: 12}},
+                    plugins: {legend: {position: 'right', labels: {boxWidth: 12}}},
                 },
                 plugins: [_irisMtxDonutCenterPlugin(tagTotal, 'cases')],
             });
@@ -1116,7 +1118,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    legend: {position: 'right', labels: {boxWidth: 12}},
+                    plugins: {legend: {position: 'right', labels: {boxWidth: 12}}},
                 },
                 plugins: [_irisMtxDonutCenterPlugin(ciTotal, 'cases')],
             });
@@ -1143,10 +1145,10 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    legend: {position: 'bottom'},
+                    plugins: {legend: {position: 'bottom'}},
                     scales: {
-                        yAxes: [{ticks: {beginAtZero: true, precision: 0}}],
-                        xAxes: [{ticks: {maxTicksLimit: 12, maxRotation: 0}}],
+                        y: {beginAtZero: true, ticks: {precision: 0}},
+                        x: {ticks: {maxTicksLimit: 12, maxRotation: 0}},
                     },
                 },
             });
@@ -1164,7 +1166,7 @@
                                 backgroundColor: rows.map((_, i) => palette[i % palette.length]),
                                 borderWidth: 0}],
                 },
-                options: {responsive: true, maintainAspectRatio: false, legend: {position: 'right'}},
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'right'}}},
             });
         }
     </script>

@@ -96,7 +96,8 @@ export default defineConfig(({ mode }) => {
                         rename: 'socket.io.js',
                     },
                     {
-                        src: 'node_modules/chart.js/dist/Chart.min.js',
+                        // Chart.js 4's UMD build (it sets window.Chart, as 2.x's Chart.min.js did)
+                        src: 'node_modules/chart.js/dist/chart.umd.min.js',
                         dest: 'assets/js/core',
                         rename: 'charts.js',
                     },
