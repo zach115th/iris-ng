@@ -133,6 +133,19 @@ updates:
       # moves with its own slice, each chart compared before / after.
       - dependency-name: "chart.js"
         update-types: ["version-update:semver-major"]
+      # A vis-network / vis-timeline major is a migration, not a bump: the case
+      # graph, the alert graph and the visual timeline depend on how each library
+      # writes a title or an item (vis-network 10 shows a string title as text,
+      # which is why the graph routes send plain text and the timeline routes
+      # escaped HTML), on the options it honours (10 started reading an icon's
+      # weight) and on the standalone build paths vite.config.js copies, which a
+      # release that moves them drops from dist without failing the build. Minors
+      # and patches update normally; a major moves with its own slice, each view
+      # compared before / after.
+      - dependency-name: "vis-network"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vis-timeline"
+        update-types: ["version-update:semver-major"]
       # Bootstrap 5 is a migration, not a bump: vite.config.js copies its
       # bootstrap.min.js into every page, and 5 reads only data-bs-* attributes
       # (the templates carry ~119 data-toggle, ~140 data-dismiss, ~51
