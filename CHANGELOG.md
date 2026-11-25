@@ -11,6 +11,42 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.19.0] — 2026-11-24
+
+The charts move to Chart.js 4.6.2 (from 2.9.4, whose line has had no release since 2020) and look as they did. **No
+migration.** The app image changes - four page templates, two chart scripts updated, one added and one removed; the
+nginx and database images and the guest-portal tunnel agent do not.
+
+### Changed
+- **Chart.js 2.9.4 → 4.6.2** on Metrics, Inventory and the custom dashboards (their view and their editor). Chart.js 4
+  changed most of its defaults, so a new script, `chart_defaults.js`, loaded right after `charts.js`, puts back what
+  2.9.4 did by default: the axis layout (slanted labels included), the darker grid line at zero, numbers without a
+  thousands separator in tooltips and axis labels, doughnut and pie tooltips without a title, a hover that highlights
+  every bar or point at that position, and the legend box of a line drawn without fill in its line colour. Each chart
+  was compared with 2.9.4 on the same data - what it draws, its legend, axes and plot area, and the tooltip a hover
+  shows - and they match; bar borders and the edges of doughnut slices differ by up to one pixel (Chart.js 4 draws a
+  bar's border inside the bar).
+- The UI build gains one package, `@kurkle/color` (Chart.js 4's colour library; the pages load Chart.js's own bundle,
+  which includes it), and loses Chart.js 2's `chartjs-color` packages.
+
+### Removed
+- `/static/assets/js/core/Chart.PieceLabel.min.js`, a Chart.js 2 plugin no chart used. Chart.js 4 has no
+  `Chart.pluginService`, so it would fail as soon as it loaded.
+
+### Compatibility
+- `/static/assets/js/core/charts.js` keeps its name and is now Chart.js 4; it still sets `window.Chart`. A template or
+  module of your own that draws with it needs Chart.js 4's options: `scales.x` / `scales.y` instead of `xAxes` /
+  `yAxes`, `plugins.legend` and `plugins.tooltip` instead of `legend` and `tooltips`, `cutout` instead of
+  `cutoutPercentage`, and `type: 'bar'` with `indexAxis: 'y'` instead of `horizontalBar` - Chart.js's 3.x and 4.x
+  migration guides list the rest.
+- No route or reply changes.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.19.0`, the 2.19.0 images, or chart 1.19.0. No migration. The app serves static
+  files with `Cache-Control: no-cache`, so a browser loads the new chart scripts on its next page load.
+
+---
+
 ## [IRIS-NG-v2.18.0] — 2026-11-24
 
 The background task library moves to celery 5.7 (from 5.6). **No migration of IRIS's own**: celery adds two empty
