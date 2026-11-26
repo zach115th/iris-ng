@@ -123,11 +123,29 @@
         var row = top ? rows[0] : rows[rows.length - 1];
         return row ? Array.prototype.slice.call(row.cells) : [];
     }
+    // How long a cell's display text is, counted as 1.10.16 counted it (_fnGetMaxLenString): without anything from a
+    // `<` to the next `>` on the same line, each `&nbsp;` then one character. Only the count is used, to pick the
+    // longest cell; the cell measured is the node DataTables drew, so this text never reaches the page.
+    function isLineEnd(c) { return c === '\n' || c === '\r' || c === '\u2028' || c === '\u2029'; }
+    function displayLength(s) {
+        var kept = [], i = 0, n = s.length;
+        while (i < n) {
+            if (s.charAt(i) === '<') {
+                var j = i + 1;
+                while (j < n && s.charAt(j) !== '>' && !isLineEnd(s.charAt(j))) { j++; }
+                if (j < n && s.charAt(j) === '>') { i = j + 1; continue; }
+            }
+            kept.push(s.charAt(i));
+            i++;
+        }
+        var text = kept.join('');
+        return text.length - 5 * (text.split('&nbsp;').length - 1);
+    }
     function longestCell(api, col) {
         var best = -1, at = null;
         api.rows({order: 'index'}).indexes().each(function (r) {
-            var s = String(api.cell(r, col).render('display')).replace(/<.*?>/g, '').replace(/&nbsp;/g, ' ');
-            if (s.length > best) { best = s.length; at = r; }
+            var len = displayLength(String(api.cell(r, col).render('display')));
+            if (len > best) { best = len; at = r; }
         });
         return at === null ? null : api.cell(at, col).node();
     }
