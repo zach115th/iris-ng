@@ -11,6 +11,63 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.24.0] — 2026-11-26
+
+Every table moves from DataTables 1.10.16 (2017) to DataTables 3.1.6, with its Buttons, Responsive, Select and RowGroup
+extensions, and looks and behaves as it did; the Tasks page's status editor no longer needs the CellEdit plug-in. **No
+migration.** The app image changes (the page layouts, the templates of the pages with tables, their scripts and
+stylesheets); the database and nginx images and the guest-portal tunnel agent do not.
+
+### Changed
+- **DataTables 1.10.16 → 3.1.6** with its Bootstrap 4 integration, **Buttons 1.6.1 → 4.1.4**, **Responsive 2.2.9 →
+  4.1.1**, **Select 1.3.4 → 4.1.1** and **RowGroup 1.1.4 → 2.1.1**, installed from npm (they were copied in by hand). A
+  compatibility layer, `js/iris/datatables_compat.js`, keeps every table as it was: the layout, the texts ("Show …
+  entries", "Showing 1 to 10 of 57 entries", Previous / Next), the paging, the striped rows, the ordering (a header
+  click toggles ascending and descending; DataTables 3 adds a third, unordered, step), the column widths, Responsive's
+  details row, RowGroup's group rows, and the copy and CSV output (no footer row, no trailing line break, one header
+  row where a table has a filter row). Select's, Responsive's and RowGroup's stylesheets of 1.10.16's time are served
+  as `css/datatables_compat.select.css`, `.responsive.css` and `.rowgroup.css`; Buttons uses its Bootstrap 4
+  stylesheet, as before.
+- **CellEdit 1.0.19 → `js/iris/dt_cell_edit.js`** for the Tasks page's status column, the only place it was used: the
+  same list with Confirm and Cancel, built without inline handlers, the statuses written as text.
+- **The CSV exports of Activities, DIM Tasks and Search** put a `'` before a value that is not a number and starts with
+  `=`, `+`, `-`, `@`, a tab or a carriage return, so a spreadsheet does not run it as a formula (Buttons 4's default).
+  The case pages' exports set their own options and are unchanged.
+- **Rows with equal values** keep the order they were loaded in when a table is sorted again; 1.10.16 kept the
+  previous sort's order between them.
+- On the Manage Cases page's legacy table (**Show legacy table**), when a narrow window hides a column, the other
+  columns fill the table instead of leaving the hidden column's space empty.
+- DataTables' own warning when a list cannot be loaded may read "Invalid JSON response" where it read "Ajax error".
+
+### Fixed
+- **The users list on the Access tab of a case's information dialog never sorted:** 1.10.16 put its sorting on the
+  list's per-column filter row, whose inputs take the click. A click on a column header now sorts it.
+
+### Removed
+- No longer served (under `/static/assets/`): `js/plugin/datatables/datatables.min.js` (DataTables 1.10.16 and its
+  Bootstrap 4 integration), `buttons.html5.min.js` and `buttons.colVis.min.js` (part of `dataTables.buttons.min.js`
+  now), `dataTables.group.min.js` (RowGroup, now `dataTables.rowGroup.min.js`) and `dataTables.cellEdit.js`;
+  `css/dataTables.buttons.min.css`, `css/dataTables.select.min.css`, `css/dataTables.responsive.css` and
+  `css/dataTables.group.min.css`. `dataTables.buttons.min.js`, `dataTables.responsive.min.js` and
+  `dataTables.select.min.js` keep their names; `dataTables.contextualActions.min.js` is unchanged.
+
+### Compatibility
+- A template or module of your own that loads one of the removed files gets a 404. Every page layout but the guest
+  portal's loads `js/plugin/datatables/dataTables.min.js`, `dataTables.bootstrap4.min.js` and `js/iris/datatables_compat.js`; a page
+  that uses an extension loads `dataTables.buttons.min.js` (copy, CSV and column visibility included),
+  `dataTables.responsive.min.js`, `dataTables.select.min.js` or `dataTables.rowGroup.min.js`, with
+  `css/buttons.bootstrap4.min.css` or the matching `css/datatables_compat.*.css`.
+- A table of your own runs on DataTables 3: `.DataTable({...})` and `.dataTable()` work as before, with 1.10.16's
+  defaults. The `error` event is now `dt-error` (`on('dt-error.dt', ...)`); for the rest, see DataTables' upgrade
+  notes for 2.0 and 3.0. CellEdit's `MakeCellsEditable()` no longer exists.
+- No API change.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.24.0`, the 2.24.0 images, or chart 1.24.0. No migration. Static files are
+  served with `no-cache`, so a browser picks up the new scripts on its next page load.
+
+---
+
 ## [IRIS-NG-v2.23.0] — 2026-11-25
 
 The Process button of the Add Evidence and Edit evidence dialogs hashes the selected file with spark-md5 instead of
