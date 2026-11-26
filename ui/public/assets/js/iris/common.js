@@ -618,13 +618,14 @@ function isWhiteSpace(s) {
 }
 
 function exportInnerPng() {
-    /* html2canvas is fetched ON FIRST CLICK — this is its only call site
-       (the quick-sidebar "Export page as PNG" link) and the library is
-       ~190K, so eager-loading it in every layout head bought nothing.
+    /* html2canvas (html2canvas-pro since slice 3.6, which sets the same
+       window.html2canvas function) is fetched ON FIRST CLICK — this is its
+       only call site (the quick-sidebar "Export page as PNG" link) and the
+       library is ~215K, so eager-loading it in every layout head bought nothing.
        Same-origin dynamic script, so the 'self' CSP covers it. */
     if (typeof html2canvas === 'function') { return _exportInnerPngRun(); }
     var s = document.createElement('script');
-    s.src = '/static/assets/js/plugin/html2canvas/html2canvas.min.js';
+    s.src = '/static/assets/js/plugin/html2canvas-pro/html2canvas-pro.min.js';
     s.onload = _exportInnerPngRun;
     s.onerror = function () {
         if (typeof notify_error === 'function') {
@@ -1618,7 +1619,7 @@ function load_context_switcher() {
         clearOnEmpty: false,
         emptyRequest: true,
         preprocessData: function (data) {
-            return context_data_parser(data);
+            return context_options(data);
         },
         preserveSelected: false
     };
@@ -1629,6 +1630,26 @@ function load_context_switcher() {
         context_data_parser(data);
         $('#user_context').ajaxSelectPicker(options);
     });
+}
+
+// The options a case picker's ajax search draws: its preprocessData returns them and the picker replaces the select's
+// options with them itself. No DOM change here (since slice 3.6): context_data_parser() rebuilt #user_context and
+// called selectpicker('refresh' / 'val') in the middle of the picker's own update, which bootstrap-select 1.13.18
+// rejects (setSelected() on an option it had just lost), and re-showed the switch-case modal from the alerts page's
+// merge dialog.
+function context_options(data) {
+    if (api_request_failed(data)) {
+        return;
+    }
+    var out = [];
+    for (var i = 0; i < data.data.length; i++) {
+        var c = data.data[i];
+        out.push({
+            'value': c.case_id,
+            'text': `${sanitizeHTML(c.name)} (${sanitizeHTML(c.customer_name)}) ${c.access}`
+        });
+    }
+    return out;
 }
 
 function context_data_parser(data, fire_modal = true) {

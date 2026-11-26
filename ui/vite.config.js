@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { jqueryUiJoinPlugin } from './build/jquery-ui-join.mjs';
 
 import fs from "node:fs";
 import path from "node:path";
@@ -64,6 +65,15 @@ export default defineConfig(({ mode }) => {
                 emitCss: false,
                 inspector: development,
             }),
+            // jQuery UI: only the modules draggable and resizable need, from the npm package `jquery-ui`, joined
+            // into one file (since slice 3.6; a hand-vendored 1.12.1 custom build before it). npm's full
+            // dist/jquery-ui.min.js would also replace Bootstrap's $.fn.tooltip / $.fn.button and wrap .show() /
+            // .hide() / .addClass() on every page - see build/jquery-ui-join.mjs.
+            jqueryUiJoinPlugin({
+                uiDir: 'node_modules/jquery-ui/ui',
+                entries: ['widgets/draggable', 'widgets/resizable'],
+                fileName: 'assets/js/plugin/jquery-ui/jquery-ui.js',
+            }),
             viteStaticCopy({
                 targets: [
                     // Core
@@ -72,9 +82,10 @@ export default defineConfig(({ mode }) => {
                         dest: 'assets/js/core',
                     },
                     {
+                        // served as jquery.min.js since slice 3.6 (it was named jquery.3.2.1.min.js whatever
+                        // version it held)
                         src: 'node_modules/jquery/dist/jquery.min.js',
                         dest: 'assets/js/core',
-                        rename: 'jquery.3.2.1.min.js',
                     },
                     {
                         src: 'node_modules/jquery-validation/dist/jquery.validate.min.js',
@@ -86,7 +97,9 @@ export default defineConfig(({ mode }) => {
                         dest: 'assets/js/core',
                     },
                     {
-                        src: 'node_modules/socket.io/client-dist/socket.io.min.js',
+                        // the browser client from its own package (since slice 3.6; copied out of the server
+                        // package `socket.io` before it - the same file)
+                        src: 'node_modules/socket.io-client/dist/socket.io.min.js',
                         dest: 'assets/js/core',
                         rename: 'socket.io.js',
                     },
@@ -158,8 +171,38 @@ export default defineConfig(({ mode }) => {
                         rename: 'dropzone.js',
                     },
                     {
-                        src: 'node_modules/html2canvas/dist/html2canvas.min.js',
-                        dest: 'assets/js/plugin/html2canvas/',
+                        // "Export page as PNG" (exportInnerPng() in iris/common.js loads it on first click); since
+                        // slice 3.6, html2canvas 1.4.1 (no release since 2022) before it. Its browser build sets
+                        // window.html2canvas to the same function.
+                        src: 'node_modules/html2canvas-pro/dist/html2canvas-pro.min.js',
+                        dest: 'assets/js/plugin/html2canvas-pro/',
+                    },
+                    // The select widgets, from npm since slice 3.6 (hand-vendored before it: select2 4.1.0-beta.1,
+                    // bootstrap-select 1.13.9, ajax-bootstrap-select 1.4.5), under the names the templates load.
+                    // select2's full build, as before (the case pages' select2 calls).
+                    {
+                        src: 'node_modules/select2/dist/js/select2.full.min.js',
+                        dest: 'assets/js/plugin/select/',
+                        rename: 'select2.js',
+                    },
+                    {
+                        src: 'node_modules/select2/dist/css/select2.min.css',
+                        dest: 'assets/css/',
+                        rename: 'select2.css',
+                    },
+                    {
+                        src: 'node_modules/bootstrap-select/dist/js/bootstrap-select.min.js',
+                        dest: 'assets/js/plugin/select/',
+                    },
+                    {
+                        src: 'node_modules/bootstrap-select/dist/css/bootstrap-select.min.css',
+                        dest: 'assets/css/',
+                    },
+                    {
+                        // the case switcher (#user_context) and the alerts page's merge-into-case picker
+                        src: 'node_modules/ajax-bootstrap-select/dist/js/ajax-bootstrap-select.min.js',
+                        dest: 'assets/js/plugin/select/',
+                        rename: 'ajax-bootstrap-picker.js',
                     },
                     {
                         src: 'node_modules/jquery.scrollbar/jquery.scrollbar.min.js',

@@ -10,12 +10,12 @@ function add_report_template() {
         $('#report_language').selectpicker({
             liveSearch: true,
             title: "Language",
-            style: "Bootstrap 4: 'btn-outline-primary'"
+            style: "btn-outline-white"
         });
         $('#report_type').selectpicker({
             liveSearch: true,
             title: "Report type",
-            style: "Bootstrap 4: 'btn-outline-primary'"
+            style: "btn-outline-white"
         });
         $('#form_new_report_template').submit("click", function (event) {
 

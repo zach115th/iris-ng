@@ -157,7 +157,7 @@ function mergeMultipleAlertsModal() {
                         statusInitialized: '',
                     },
                     preprocessData: function (data) {
-                        return context_data_parser(data);
+                        return context_options(data);
                     },
                     preserveSelected: false
                 };
@@ -294,7 +294,7 @@ function mergeAlertModal(alert_id, existing_case = false) {
                     statusInitialized: '',
                 },
                 preprocessData: function (data) {
-                    return context_data_parser(data, false);
+                    return context_options(data);
                 },
                 preserveSelected: false
             };
