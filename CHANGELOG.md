@@ -11,6 +11,52 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.22.0] — 2026-11-25
+
+Every confirmation, alert and "please wait" dialog moves from sweetalert 2.1.2 (unmaintained since 2018) to sweetalert2
+11.26.26, and looks and behaves as it did; 22 confirmations now name their action on the button, and the "please wait"
+dialogs and three notes prompts no longer close on a click outside. **No migration.** The app image changes (the five
+page layouts, the dialog scripts and stylesheets); the database and nginx images and the guest-portal tunnel agent do
+not.
+
+### Changed
+- **sweetalert 2.1.2 → sweetalert2 11.26.26** for every dialog on every page, the guest portal, the sign-in pages and
+  the error pages included. A compatibility layer, `js/iris/swal_compat.js`, keeps `swal()` as it was: the same
+  arguments and errors, the buttons in the same order, the same value from each button, from Escape, a click outside,
+  the timer and `swal.close()`, the same focus. The dialogs keep their look and motion (`css/swal_compat.css`: the
+  colours, sizes and spacing; the pop-in, the fades); titles, text and button labels are shown as text, as before. The
+  icons are sweetalert2's.
+- **Confirmations name their action:** the confirm button reads "Yes, delete it!", "Yes, delete them", "Yes, close
+  it!", "Yes, remove it!", "Yes, remove them!" or "Go for it" where it read OK - on deleting a case object type
+  (Case Objects), a user, a group, a customer, a report template, a case template, a datastore file or folder, selected
+  timeline events or a case; on closing a case; on removing a module, a group member or case access; and on renewing an
+  API key. These labels were in the calls all along; 2.1.2 ignored them. The destructive button stays red.
+- **No longer closed by a click outside:** the "please wait" dialogs (alerts being updated or deleted, a datastore
+  upload, custom attributes being updated, case templates being added or updated, access being updated) and the notes
+  page's conflict, folder rename and folder delete prompts - the calls asked for this, and 2.1.2 ignored it. Escape
+  closes what it closed before.
+
+### Removed
+- `js/plugin/sweetalert/sweetalert.min.js` is no longer served (under `/static/assets/`). The pages load
+  `js/plugin/sweetalert2/sweetalert2.min.js`, `css/sweetalert2.min.css`, `js/iris/swal_compat.js` and
+  `css/swal_compat.css` instead.
+
+### Compatibility
+- A template or module of your own that calls `swal()` keeps working (new code may call `Swal.fire()`); one that
+  loads `js/plugin/sweetalert/sweetalert.min.js` itself gets a 404 (`swal` is already on the page). Its dialogs keep
+  2.1.2's class names (`.swal-modal`, `.swal-title`, `.swal-text`, `.swal-footer`, `.swal-button`,
+  `.swal-button--confirm` / `--cancel` / `--danger`, `.swal-content__input`), but not `.swal-overlay` (the backdrop is
+  sweetalert2's `.swal2-container`) or 2.1.2's icon classes. A dialog shows at most three buttons (2.1.2 had no limit;
+  the first and the last two show, with a console warning), and a call's `confirmButtonText`, `cancelButtonText` and
+  `allowOutsideClick` now apply.
+- No API change.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.22.0`, the 2.22.0 images, or chart 1.22.0. No migration. The app serves static
+  files with `Cache-Control: no-cache`, so a browser picks up the new dialogs on its next page load.
+
+---
+
 ## [IRIS-NG-v2.21.0] — 2026-11-25
 
 The case graph, the alert graph and the visual timeline move from vis 4.21 (unmaintained, its npm package deprecated)
