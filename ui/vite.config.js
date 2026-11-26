@@ -138,6 +138,16 @@ export default defineConfig(({ mode }) => {
                         rename: 'marked.min.js',
                     },
                     {
+                        // sweetalert2 draws every dialog; iris/swal_compat.js gives it 2.1.2's swal() API and
+                        // css/swal_compat.css 2.1.2's look (since slice 3.3; 2.1.2 itself is gone)
+                        src: 'node_modules/sweetalert2/dist/sweetalert2.min.js',
+                        dest: 'assets/js/plugin/sweetalert2/',
+                    },
+                    {
+                        src: 'node_modules/sweetalert2/dist/sweetalert2.min.css',
+                        dest: 'assets/css/',
+                    },
+                    {
                         src: 'node_modules/vis-network/standalone/umd/vis-network.min.js',
                         dest: 'assets/js/plugin/vis/',
                     },

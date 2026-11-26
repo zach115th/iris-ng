@@ -24,6 +24,10 @@
 	<link rel="preload" href="/static/assets/fonts/lato/Lato-Regular.ttf" as="font" type="font/ttf" crossorigin>
 	<link rel="preload" href="/static/assets/fonts/lato/Lato-Bold.ttf" as="font" type="font/ttf" crossorigin>
 	<link rel="preload" href="/static/assets/fonts/lato/Lato-Light.ttf" as="font" type="font/ttf" crossorigin>
+	{# the dialogs' stylesheets first, where sweetalert 2.1.2 put its own (the first child of <head>):
+	   sweetalert2's, then 2.1.2's look for it, both overridden by the theme below as before (iris-ng slice 3.3) #}
+	<link rel="stylesheet" href="/static/assets/css/sweetalert2.min.css">
+	<link rel="stylesheet" href="/static/assets/css/swal_compat.css">
 	<link rel="stylesheet" href="/static/assets/css/fonts.css">
 
 	<!-- CSS Files -->
@@ -80,7 +84,10 @@
 
 	<!-- Bootstrap Notify -->
 	<script src="/static/assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js"></script>
-	<script src="/static/assets/js/plugin/sweetalert/sweetalert.min.js"></script>
+	{# sweetalert2 draws every dialog; swal_compat.js, right after it, gives it sweetalert 2.1.2's swal() API
+	   (iris-ng slice 3.3) #}
+	<script src="/static/assets/js/plugin/sweetalert2/sweetalert2.min.js"></script>
+	<script src="/static/assets/js/iris/swal_compat.js"></script>
 	<script src="/static/assets/js/plugin/select/bootstrap-select.min.js"></script>
 	<script src="/static/assets/js/plugin/select/ajax-bootstrap-picker.js"></script>
 

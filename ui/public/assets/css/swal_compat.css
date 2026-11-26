@@ -1,0 +1,101 @@
+/*
+ * sweetalert2 drawn as sweetalert 2.1.2 drew IRIS's dialogs (iris-ng, backlog #44 slice 3.3).
+ *
+ * swal_compat.js puts 2.1.2's class names on sweetalert2's popup (.swal-modal), title (.swal-title), text
+ * (.swal-text), button row (.swal-footer), buttons (.swal-button, .swal-button--<key>, .swal-button--danger) and
+ * input (.swal-content__input), so IRIS's theme rules for them in atlantis.css and dark-theme.css apply as before.
+ * This file is what 2.1.2's own stylesheet gave those classes, with its rules as 2.1.2 wrote them. 2.1.2 put that
+ * stylesheet first in <head> (its <style> was the head's first child, measured on 2.21.0), so IRIS's rules came
+ * after it and won every tie - atlantis.css's `.swal-text {display: block; text-align: center}` over 2.1.2's
+ * inline-block, left-aligned text, for one. Every layout links this file (after sweetalert2.min.css) before its
+ * first stylesheet, which keeps that cascade. sweetalert2's rules sit inside :where(), so none outranks a class here.
+ *
+ * Two kinds of rule differ from 2.1.2's text: its spacing by :first-child / :last-child becomes the
+ * .iris-swal--icon / --title / --text / --buttons / --input classes the shim puts on the popup (sweetalert2 keeps
+ * its hidden parts in the popup, so those selectors would never match), and a few resets undo sweetalert2's own
+ * spacing. The icons are sweetalert2's.
+ */
+
+/* the overlay: above every IRIS layer, as 2.1.2's (z-index 10000) was */
+.swal2-container.iris-swal { z-index: 10000; padding: 0; }
+.swal2-container.iris-swal.swal2-backdrop-show { background-color: rgba(0, 0, 0, .4); }
+/* closing: 2.1.2's overlay let clicks through the moment it closed, while sweetalert2 keeps its container and popup
+   in place for the hide animation (~150 ms) - they would swallow the next click (a row ticked right after a "please
+   wait" dialog closes) */
+.swal2-container.iris-swal.swal2-backdrop-hide,
+.swal2-container.iris-swal.swal2-backdrop-hide .swal2-popup { pointer-events: none; }
+
+/* the motion, 2.1.2's: its overlay faded in and out over .3s (opacity; the background stayed rgba(0,0,0,.4)), the
+   dialog popped in (showSweetAlert, .3s: scale 1, .5, 1.05, .95, 1) while its opacity rose over .2s, and on close
+   faded over .2s inside the overlay's .3s fade. sweetalert2 removes its container when the popup's hide animation
+   ends, so that animation runs the overlay's .3s (fading over its first .2s). */
+@keyframes iris-swal-pop { 0% { transform: scale(1); } 1% { transform: scale(.5); } 45% { transform: scale(1.05); }
+                           80% { transform: scale(.95); } 100% { transform: scale(1); } }
+@keyframes iris-swal-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes iris-swal-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes iris-swal-popup-out { 0% { opacity: 1; } 66.667% { opacity: 0; } 100% { opacity: 0; } }
+.swal2-container.iris-swal {
+    --swal2-show-animation: iris-swal-pop .3s, iris-swal-fade-in .2s ease;
+    --swal2-hide-animation: iris-swal-popup-out .3s ease forwards;
+    --swal2-backdrop-transition: none;
+}
+.swal2-container.iris-swal.swal2-backdrop-show { animation: iris-swal-fade-in .3s ease; }
+/* sweetalert2 clears the backdrop at once on close (`background: transparent !important`); 2.1.2's faded with its
+   overlay */
+.swal2-container.iris-swal.swal2-backdrop-hide { animation: iris-swal-fade-out .3s ease forwards; background-color: rgba(0, 0, 0, .4) !important; }
+
+/* the popup */
+.swal-modal { width: 478px; background-color: #fff; text-align: center; border-radius: 5px; margin: 20px auto; }
+.iris-swal .swal-modal { max-width: calc(100% - 20px); padding: 0; }
+
+/* the icon (sweetalert2's) and a custom image where 2.1.2 put its icon */
+.iris-swal .swal-modal .swal2-icon { margin: 32px auto 20px; }
+.iris-swal .swal-modal .swal2-image { margin: 32px auto 20px; max-width: 100%; }
+
+/* the title */
+.swal-title { color: rgba(0, 0, 0, .65); font-weight: 600; text-transform: none; position: relative; display: block;
+              padding: 13px 16px; font-size: 27px; line-height: normal; text-align: center; margin: 0; }
+.iris-swal .swal-modal:not(.iris-swal--icon) .swal-title { margin-top: 26px; }
+.iris-swal .swal-modal.iris-swal--icon .swal-title { padding-bottom: 0; }
+.iris-swal .swal-modal.iris-swal--text .swal-title,
+.iris-swal .swal-modal.iris-swal--buttons .swal-title,
+.iris-swal .swal-modal.iris-swal--input .swal-title { margin-bottom: 13px; }
+
+/* the text */
+.swal-text { font-size: 16px; position: relative; float: none; line-height: normal; vertical-align: top; text-align: left;
+             display: inline-block; margin: 0; padding: 0 10px; font-weight: 400; color: rgba(0, 0, 0, .64);
+             max-width: calc(100% - 20px); overflow-wrap: break-word; box-sizing: border-box; }
+.iris-swal .swal-modal .swal-text { overflow: visible; }
+.iris-swal .swal-modal:not(.iris-swal--icon):not(.iris-swal--title) .swal-text { margin-top: 45px; }
+.iris-swal .swal-modal:not(.iris-swal--buttons):not(.iris-swal--input) .swal-text { margin-bottom: 45px; }
+
+/* the input */
+.swal-content__input { -webkit-appearance: none; background-color: #fff; border: none; font-size: 14px; display: block;
+                       box-sizing: border-box; width: 100%; border: 1px solid rgba(0, 0, 0, .14); padding: 10px 13px;
+                       border-radius: 2px; transition: border-color .2s; }
+.swal-content__input:focus { outline: none; border-color: #6db8ff; }
+/* sweetalert2 sets the field's height and padding with `div:where(.swal2-container) .swal2-input` (0,1,1): 2.1.2's
+   padding goes here, where it outranks that */
+.iris-swal .swal-modal .swal-content__input { width: calc(100% - 40px); height: auto; padding: 10px 13px; margin: 20px 20px 0; box-shadow: none; }
+.iris-swal .swal-modal.iris-swal--input:not(.iris-swal--buttons) .swal-content__input { margin-bottom: 20px; }
+
+/* the button row */
+.swal-footer { text-align: right; padding: 13px 16px; margin-top: 13px; border-radius: inherit;
+               border-top-left-radius: 0; border-top-right-radius: 0; }
+.iris-swal .swal-modal .swal-footer { width: auto; justify-content: center; }
+
+/* the buttons. No hover colours: IRIS's copy of 2.1.2 wrote its three hover rules as `.swal-button[not:disabled]:hover`
+   (an attribute no button has) where npm's 2.1.2 has `:not([disabled]):hover`, so a button never changed colour under
+   the mouse in IRIS; their :active colours did apply. */
+.swal-button { background-color: #7cd1f9; color: #fff; border: none; box-shadow: none; border-radius: 5px; font-weight: 600;
+               font-size: 14px; padding: 10px 24px; margin: 5px; cursor: pointer; }
+.swal-button:active { background-color: #70bce0; }
+.swal-button:focus { outline: none; box-shadow: 0 0 0 1px #fff, 0 0 0 3px rgba(43, 114, 165, .29); }
+.swal-button[disabled] { opacity: .5; cursor: default; }
+.swal-button::-moz-focus-inner { border: 0; }
+.swal-button--cancel { color: #555; background-color: #efefef; }
+.swal-button--cancel:active { background-color: #d7d7d7; }
+.swal-button--cancel:focus { box-shadow: 0 0 0 1px #fff, 0 0 0 3px rgba(116, 136, 150, .29); }
+.swal-button--danger { background-color: #e64942; }
+.swal-button--danger:active { background-color: #cf423b; }
+.swal-button--danger:focus { box-shadow: 0 0 0 1px #fff, 0 0 0 3px rgba(165, 43, 43, .29); }

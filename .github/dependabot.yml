@@ -146,6 +146,16 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "vis-timeline"
         update-types: ["version-update:semver-major"]
+      # A sweetalert2 major is a migration, not a bump: every dialog IRIS shows goes
+      # through iris/swal_compat.js, which maps sweetalert 2.1.2's swal() onto
+      # sweetalert2's options, result object, button places and class names, and
+      # css/swal_compat.css restyles its popup; a major that renames any of them
+      # breaks every confirm at once, and a release that moves dist/ drops the
+      # library from the build without failing it. Minors and patches update
+      # normally; a major moves with its own slice, each dialog compared before /
+      # after.
+      - dependency-name: "sweetalert2"
+        update-types: ["version-update:semver-major"]
       # Bootstrap 5 is a migration, not a bump: vite.config.js copies its
       # bootstrap.min.js into every page, and 5 reads only data-bs-* attributes
       # (the templates carry ~119 data-toggle, ~140 data-dismiss, ~51
