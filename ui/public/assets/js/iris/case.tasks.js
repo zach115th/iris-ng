@@ -1272,7 +1272,7 @@ function get_tasks() {
     get_request_api('/case/tasks/list')
     .done((data) => {
         if (data.status == 'success') {
-                Table.MakeCellsEditable("destroy");
+                IrisCellEdit.detach(Table);
                 tasks_list = data.data.tasks;
 
                 options_l = data.data.tasks_status;
@@ -1285,26 +1285,17 @@ function get_tasks() {
                 }
                 Table.clear();
                 Table.rows.add(tasks_list);
-                Table.MakeCellsEditable({
-                    "onUpdate": callBackEditTaskStatus,
-                    "inputCss": 'form-control col-12',
-                    "columns": [2],
-                    "allowNulls": {
-                      "columns": [2],
-                      "errorClass": 'error'
-                    },
-                    "confirmationButton": {
-                      "confirmCss": 'my-confirm-class',
-                      "cancelCss": 'my-cancel-class'
-                    },
-                    "inputTypes": [
-                      {
-                        "column": 2,
-                        "type": "list",
-                        "options": options
-                      }
-                    ]
-                  });
+                // the status column is edited in place: a select, then Confirm / Cancel (iris/dt_cell_edit.js)
+                IrisCellEdit.attach(Table, {
+                    onUpdate: callBackEditTaskStatus,
+                    inputCss: 'form-control col-12',
+                    columns: [2],
+                    allowNull: true,
+                    errorClass: 'error',
+                    confirmCss: 'my-confirm-class',
+                    cancelCss: 'my-cancel-class',
+                    options: options
+                });
 
                 Table.columns.adjust().draw();
                 load_menu_mod_options('task', Table, delete_task);

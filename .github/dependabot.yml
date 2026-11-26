@@ -156,6 +156,17 @@ updates:
       # after.
       - dependency-name: "sweetalert2"
         update-types: ["version-update:semver-major"]
+      # A DataTables major is a migration, not a bump: every table IRIS shows goes
+      # through iris/datatables_compat.js, which gives DataTables 3 1.10.16's class
+      # names, layout, texts, ordering and column widths through its settings object
+      # and patches Responsive's _resize, RowGroup's group row and Buttons' exports;
+      # css/datatables_compat.*.css restyle Select, Responsive and RowGroup for
+      # their markup. A major of any of these renames what the layer reaches, and a
+      # release that moves a copied file drops it from the build without failing it.
+      # Minors and patches update normally; a major moves with its own slice, each
+      # table compared before / after.
+      - dependency-name: "datatables.net*"
+        update-types: ["version-update:semver-major"]
       # Bootstrap 5 is a migration, not a bump: vite.config.js copies its
       # bootstrap.min.js into every page, and 5 reads only data-bs-* attributes
       # (the templates carry ~119 data-toggle, ~140 data-dismiss, ~51

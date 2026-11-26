@@ -107,6 +107,43 @@ export default defineConfig(({ mode }) => {
                         dest: 'assets/js/plugin/ace/',
                         rename: 'src-noconflict',
                     },
+                    // DataTables 3 (since slice 3.5; 1.10.16 hand-vendored before it): the core with its Bootstrap 4
+                    // integration (the paging markup and classes; 1.10.16's Bootstrap 4 stylesheet is part of
+                    // atlantis.css, so the integration's own stylesheet is not copied) and the extensions. Buttons keeps
+                    // its Bootstrap 4 stylesheet, as before (its scripts stay the default ones, so a button is a
+                    // dt-button with the page's own btn classes); Select 4, Responsive 4 and RowGroup 2 redrew their
+                    // look, so css/datatables_compat.{select,responsive,rowgroup}.css carry their 1.10.16-era
+                    // stylesheets instead. iris/datatables_compat.js gives the pages 1.10.16's class names, layout,
+                    // texts, ordering and column widths.
+                    {
+                        src: 'node_modules/datatables.net/js/dataTables.min.js',
+                        dest: 'assets/js/plugin/datatables/',
+                    },
+                    {
+                        src: 'node_modules/datatables.net-bs4/js/dataTables.bootstrap4.min.js',
+                        dest: 'assets/js/plugin/datatables/',
+                    },
+                    {
+                        // Buttons 4 carries the copy / CSV / column-visibility buttons itself
+                        src: 'node_modules/datatables.net-buttons/js/dataTables.buttons.min.js',
+                        dest: 'assets/js/plugin/datatables/',
+                    },
+                    {
+                        src: 'node_modules/datatables.net-responsive/js/dataTables.responsive.min.js',
+                        dest: 'assets/js/plugin/datatables/',
+                    },
+                    {
+                        src: 'node_modules/datatables.net-select/js/dataTables.select.min.js',
+                        dest: 'assets/js/plugin/datatables/',
+                    },
+                    {
+                        src: 'node_modules/datatables.net-rowgroup/js/dataTables.rowGroup.min.js',
+                        dest: 'assets/js/plugin/datatables/',
+                    },
+                    {
+                        src: 'node_modules/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css',
+                        dest: 'assets/css/',
+                    },
                     {
                         // dropzone 6 dropped dist/min/; its browser build is
                         // dist/dropzone-min.js. Shipped under the name the

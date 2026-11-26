@@ -1,1 +1,10 @@
+/*
+ * IRIS compatibility stylesheet (backlog #44 slice 3.5): DataTables 1.10.16's era look for the 3.x-era extension.
+ *
+ * RowGroup 1.1.4's default stylesheet (datatables.net-rowgroup-dt 1.1.4, css/rowGroup.dataTables.min.css),
+ * Copyright SpryMedia Ltd, MIT licence (datatables.net/license) - served by IRIS until slice 3.5, kept here
+ * byte for byte below; the rules after it fit it to the newer extension's markup.
+ *
+ * RowGroup 2 writes a group row's cell as a th, styled by its own stylesheet; iris/datatables_compat.js has it write 1.1.4's td again, which these rules and the dark theme's style.
+ */
 table.dataTable tr.dtrg-group td{background-color:#e0e0e0}table.dataTable tr.dtrg-group.dtrg-level-0 td{font-weight:bold}table.dataTable tr.dtrg-group.dtrg-level-1 td,table.dataTable tr.dtrg-group.dtrg-level-2 td,table.dataTable tr.dtrg-group.dtrg-level-3 td,table.dataTable tr.dtrg-group.dtrg-level-4 td,table.dataTable tr.dtrg-group.dtrg-level-5 td{background-color:#f0f0f0;padding-top:.25em;padding-bottom:.25em;padding-left:2em;font-size:.9em}table.dataTable tr.dtrg-group.dtrg-level-2 td{background-color:#f3f3f3;padding-left:2.5em}table.dataTable tr.dtrg-group.dtrg-level-3 td{background-color:#f3f3f3;padding-left:3em}table.dataTable tr.dtrg-group.dtrg-level-4 td{background-color:#f3f3f3;padding-left:3.5em}table.dataTable tr.dtrg-group.dtrg-level-5 td{background-color:#f3f3f3;padding-left:4em}
