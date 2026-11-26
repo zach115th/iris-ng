@@ -16,7 +16,7 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 Every table moves from DataTables 1.10.16 (2017) to DataTables 3.1.6, with its Buttons, Responsive, Select and RowGroup
 extensions, and looks and behaves as it did; the Tasks page's status editor no longer needs the CellEdit plug-in. **No
 migration.** The app image changes (the page layouts, the templates of the pages with tables, their scripts and
-stylesheets); the database and nginx images and the guest-portal tunnel agent do not.
+stylesheets); the guest-portal tunnel agent gets a newer cloudflared; the database and nginx images do not change.
 
 ### Changed
 - **DataTables 1.10.16 → 3.1.6** with its Bootstrap 4 integration, **Buttons 1.6.1 → 4.1.4**, **Responsive 2.2.9 →
@@ -38,6 +38,12 @@ stylesheets); the database and nginx images and the guest-portal tunnel agent do
 - On the Manage Cases page's legacy table (**Show legacy table**), when a narrow window hides a column, the other
   columns fill the table instead of leaving the hidden column's space empty.
 - DataTables' own warning when a list cannot be loaded may read "Invalid JSON response" where it read "Ajax error".
+- **cloudflared 2026.11.1 → 2026.11.2** in the guest-portal tunnel agent. cloudflared now reads the protocol version
+  at the start of each QUIC tunnel stream in full: when a stream's first bytes arrived apart, the request or response
+  it carried could fail to decode. A quick tunnel uses QUIC wherever UDP reaches Cloudflare's edge. cloudflared also
+  updates its `golang.org/x/net` and `golang.org/x/crypto` libraries; the findings that update closes are in
+  packages the cloudflared binary does not contain. The agent starts, and restarts cloudflared after a crash, as
+  before.
 
 ### Fixed
 - **The users list on the Access tab of a case's information dialog never sorted:** 1.10.16 put its sorting on the
@@ -53,10 +59,10 @@ stylesheets); the database and nginx images and the guest-portal tunnel agent do
 
 ### Compatibility
 - A template or module of your own that loads one of the removed files gets a 404. Every page layout but the guest
-  portal's loads `js/plugin/datatables/dataTables.min.js`, `dataTables.bootstrap4.min.js` and `js/iris/datatables_compat.js`; a page
-  that uses an extension loads `dataTables.buttons.min.js` (copy, CSV and column visibility included),
-  `dataTables.responsive.min.js`, `dataTables.select.min.js` or `dataTables.rowGroup.min.js`, with
-  `css/buttons.bootstrap4.min.css` or the matching `css/datatables_compat.*.css`.
+  portal's loads `js/plugin/datatables/dataTables.min.js`, `dataTables.bootstrap4.min.js` and
+  `js/iris/datatables_compat.js`; a page that uses an extension loads `dataTables.buttons.min.js` (copy, CSV and
+  column visibility included), `dataTables.responsive.min.js`, `dataTables.select.min.js` or
+  `dataTables.rowGroup.min.js`, with `css/buttons.bootstrap4.min.css` or the matching `css/datatables_compat.*.css`.
 - A table of your own runs on DataTables 3: `.DataTable({...})` and `.dataTable()` work as before, with 1.10.16's
   defaults. The `error` event is now `dt-error` (`on('dt-error.dt', ...)`); for the rest, see DataTables' upgrade
   notes for 2.0 and 3.0. CellEdit's `MakeCellsEditable()` no longer exists.
@@ -65,6 +71,10 @@ stylesheets); the database and nginx images and the guest-portal tunnel agent do
 ### Upgrading
 - `scripts/update.sh --ref IRIS-NG-v2.24.0`, the 2.24.0 images, or chart 1.24.0. No migration. Static files are
   served with `no-cache`, so a browser picks up the new scripts on its next page load.
+- **With the guest portal enabled, `scripts/update.sh` rebuilds the tunnel agent** and so picks up cloudflared
+  2026.11.2 (Settings → Guest Portal shows the version it reports). To rebuild the agent alone, from the clone:
+  `docker compose -f docker-compose.dev.yml -f docker-compose.portal.yml build --pull tunnel`, then the same with
+  `up -d tunnel`. A quick tunnel gets a new hostname whenever it restarts.
 
 ---
 
