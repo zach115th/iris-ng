@@ -11,6 +11,49 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.23.0] — 2026-11-25
+
+The Process button of the Add Evidence and Edit evidence dialogs hashes the selected file with spark-md5 instead of
+CryptoJS, about 2.5 times faster, and fills in a hash only for the file it read: a large file's hash could be saved with
+another file's name and size, and a file removed after it was selected was recorded as an empty file. **No
+migration.** The app image changes (the Evidence page, its script, the help text); the database and nginx images and
+the guest-portal tunnel agent do not.
+
+### Changed
+- **CryptoJS 3.1.2 → spark-md5 3.0.2** for the MD5 the Process button computes in the browser (the file is still not
+  uploaded). The file is read in 4 MiB pieces; a 600 MiB file hashes in about 6.5 s instead of 16 s, a 4 GiB file in
+  about 46 s instead of 110 s (measured in Chrome).
+- The Process button's help text says what **Could not read the file** means.
+
+### Fixed
+- **A hash saved with another file's name and size.** The dialog took the name and size when the hash finished, from
+  whichever file was selected then: selecting another file while a large one was hashing, with or without pressing
+  Process again, filled in the first file's hash with the second file's name and size; pressing Process twice ran two
+  hashes, the slower one winning; and a hash still running when the dialog was closed filled in the next dialog
+  opened. A hash now fills in the hash, name and size of the file it read, and only while it is the latest one:
+  pressing Process again, selecting another file or closing the dialog stops it, and it fills in nothing.
+- **A file removed after it was selected was recorded as an empty file**, with size 0 and the empty file's MD5
+  (`d41d8cd98f00b204e9800998ecf8427e`), and no error: the browser reports a vanished file as 0 bytes. A file removed
+  or changed between selecting it and Process now shows **Could not read the file** on the button and fills in
+  nothing; select it again. A changed file failed before too, but only in the browser console.
+- An empty file's progress read "Processing NaN%".
+
+### Removed
+- `js/core/crypto.core.js` and `js/core/crypto.md5.js` (CryptoJS 3.1.2) are no longer served (under
+  `/static/assets/`). The Evidence page loads `js/plugin/spark-md5/spark-md5.min.js` instead.
+
+### Compatibility
+- A template or module of your own that loads `crypto.core.js` or `crypto.md5.js` gets a 404, and `CryptoJS` is no
+  longer defined on the Evidence page (since 2.20.0 it was defined there only). The page's `getMD5(blob[, progress])`
+  works as before and resolves with the same lower-case hex.
+- No API change; an evidence record's hash is the same MD5 as before.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.23.0`, the 2.23.0 images, or chart 1.23.0. No migration. Static files are
+  served with `no-cache`, so a browser picks up the new script on its next page load.
+
+---
+
 ## [IRIS-NG-v2.22.0] — 2026-11-25
 
 Every confirmation, alert and "please wait" dialog moves from sweetalert 2.1.2 (unmaintained since 2018) to sweetalert2
