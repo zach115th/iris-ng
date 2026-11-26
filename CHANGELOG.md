@@ -11,6 +11,59 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.25.0] — 2026-11-26
+
+The select widgets, jQuery UI and the PNG export move to current releases installed from npm, and look and behave
+as before; a search in the alerts page's *Merge into existing case* dialog no longer opens the *Switch case* dialog
+over it. **No migration.** The app image changes (the page layouts, four page templates, three scripts and the copied
+libraries); the database and nginx images and the guest-portal tunnel agent do not.
+
+### Changed
+- **select2 4.1.0-beta.1 → 4.1.0** (the linked IOCs, assets and evidence of the asset and event dialogs, the evidence
+  dialog's *Created by*), **bootstrap-select 1.13.9 → 1.13.18** (the dropdowns of the case switcher, the case and
+  asset dialogs and the alerts merge dialog) and **ajax-bootstrap-select 1.4.5**, now installed from npm (they were
+  copied in by hand), under the same file names. select2 4.1 changes two things you may notice: a multiple select
+  searches in a text area and its box is 1 px shorter, and Tab picks the highlighted option instead of only closing
+  the list (its release notes).
+- **jQuery UI 1.12.1 → 1.14.2**: only draggable and resizable - moving a dialog by its header, resizing the comments
+  panel and the notes list - and the modules they need, joined into `js/plugin/jquery-ui/jquery-ui.js` when the image is
+  built. jQuery UI's full build would also replace Bootstrap's tooltips and buttons.
+- **html2canvas 1.4.1 → html2canvas-pro 2.6.4** for *Export page as PNG* (the quick sidebar): the image is the same
+  size; text can sit a pixel or two higher.
+- The socket.io browser client (4.8.4) comes from its own package (the same file), and jQuery (3.8.0) is served as
+  `js/core/jquery.min.js`.
+- bootstrap-select is loaded once on the case summary, Graph, visual timeline and Manage Cases pages (it was loaded a
+  second time there).
+- The case switcher's and the alerts merge dialogs' case searches only return the cases to show; the switcher's list
+  is no longer rebuilt during a search (with bootstrap-select 1.13.18 that raised an error in the browser on a case
+  page).
+
+### Fixed
+- **A search for a case in the alerts page's merge dialog** (several alerts selected, *Merge into existing case*)
+  opened the *Switch case* dialog over it.
+- **Five dropdowns had no button style** - the report template dialog's *Language* and *Report type*, the global task
+  dialog's *Assigned to* and *Status*, and *Add asset to graph*: they look like the other dropdowns now.
+
+### Removed
+- No longer served (under `/static/assets/`): `js/core/jquery.3.2.1.min.js` (now `js/core/jquery.min.js`),
+  `js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js` (now `js/plugin/jquery-ui/jquery-ui.js`) and
+  `js/plugin/html2canvas/html2canvas.min.js` (now `js/plugin/html2canvas-pro/html2canvas-pro.min.js`). jQuery UI's
+  sortable, droppable, selectable and slider, which nothing in IRIS used, are no longer on the page.
+
+### Compatibility
+- A template or module of your own that loads one of the removed files gets a 404: load the new name. One that calls
+  jQuery UI's `sortable`, `droppable`, `selectable` or `slider` finds them gone: add the module to the list in
+  `ui/vite.config.js` (`jqueryUiJoinPlugin`'s `entries`) and rebuild the app image. `html2canvas(...)` works as before.
+- select2 4.1 removed options a page of your own might pass (`containerCss`, `dropdownCss`, `initSelection`, `query`)
+  and renamed `containerCssClass` to `selectionCssClass` (its release notes).
+- No API change.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.25.0`, the 2.25.0 images, or chart 1.25.0. No migration. Static files are
+  served with `no-cache`, so a browser picks up the new scripts on its next page load.
+
+---
+
 ## [IRIS-NG-v2.24.1] — 2026-11-26
 
 A code scanning fix in the tables' compatibility layer; no table looks or behaves differently. **No migration** -

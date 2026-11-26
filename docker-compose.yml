@@ -29,19 +29,19 @@ services:
     extends:
       file: docker-compose.base.yml
       service: db
-    image: ${DB_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_db}:${DB_IMAGE_TAG:-IRIS-NG-v2.24.1}
+    image: ${DB_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_db}:${DB_IMAGE_TAG:-IRIS-NG-v2.25.0}
 
   app:
     extends:
       file: docker-compose.base.yml
       service: app
-    image: ${APP_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_app}:${APP_IMAGE_TAG:-IRIS-NG-v2.24.1}
+    image: ${APP_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_app}:${APP_IMAGE_TAG:-IRIS-NG-v2.25.0}
 
   worker:
     extends:
       file: docker-compose.base.yml
       service: worker
-    image: ${APP_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_app}:${APP_IMAGE_TAG:-IRIS-NG-v2.24.1}
+    image: ${APP_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_app}:${APP_IMAGE_TAG:-IRIS-NG-v2.25.0}
 
   # Async AI jobs (ai_queue), one at a time; the worker above takes only the
   # default queue, so without this service AI jobs would never run.
@@ -49,7 +49,7 @@ services:
     extends:
       file: docker-compose.base.yml
       service: worker
-    image: ${APP_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_app}:${APP_IMAGE_TAG:-IRIS-NG-v2.24.1}
+    image: ${APP_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_app}:${APP_IMAGE_TAG:-IRIS-NG-v2.25.0}
     container_name: iriswebapp_ai_worker
     command:
       [
@@ -63,7 +63,7 @@ services:
     extends:
       file: docker-compose.base.yml
       service: nginx
-    image: ${NGINX_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_nginx}:${NGINX_IMAGE_TAG:-IRIS-NG-v2.24.1}
+    image: ${NGINX_IMAGE_NAME:-ghcr.io/zach115th/iriswebapp_nginx}:${NGINX_IMAGE_TAG:-IRIS-NG-v2.25.0}
 
 
 volumes:
