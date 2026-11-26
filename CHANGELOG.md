@@ -54,8 +54,9 @@ libraries); the database and nginx images and the guest-portal tunnel agent do n
 - A template or module of your own that loads one of the removed files gets a 404: load the new name. One that calls
   jQuery UI's `sortable`, `droppable`, `selectable` or `slider` finds them gone: add the module to the list in
   `ui/vite.config.js` (`jqueryUiJoinPlugin`'s `entries`) and rebuild the app image. `html2canvas(...)` works as before.
-- select2 4.1 removed options a page of your own might pass (`containerCss`, `dropdownCss`, `initSelection`, `query`)
-  and renamed `containerCssClass` to `selectionCssClass` (its release notes).
+- select2's options removed in the 4.1 line (`containerCss`, `dropdownCss`, `initSelection`, `query`;
+  `containerCssClass` renamed to `selectionCssClass`) went in 4.1.0-beta.0, before the copy IRIS had (4.1.0-beta.1): a
+  page of your own that works with 2.24.1 needs no change for them.
 - No API change.
 
 ### Upgrading
