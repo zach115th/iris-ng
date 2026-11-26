@@ -301,9 +301,8 @@
 {% endblock content %}
 {% block javascripts %}
 {% include 'includes/footer_case.html' %}
-{# CryptoJS: getMD5() in case.rfiles.js hashes a file in the browser - the only caller, so it loads here only. #}
-<script src="/static/assets/js/core/crypto.core.js"></script>
-<script src="/static/assets/js/core/crypto.md5.js"></script>
+{# spark-md5: getMD5() in case.rfiles.js hashes a file in the browser - the only caller, so it loads here only. #}
+<script src="/static/assets/js/plugin/spark-md5/spark-md5.min.js"></script>
 <script src="/static/assets/js/iris/case.rfiles.js"></script>
 <script>
 </script>

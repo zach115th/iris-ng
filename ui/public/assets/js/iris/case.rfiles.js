@@ -20,25 +20,53 @@ function edit_in_evidence_desc() {
     }
 }
 
+/* Local file information (the Process button): the browser reads the picked file in 4 MiB pieces and hashes it
+ * with spark-md5; nothing is uploaded. A run writes the hash, name and size of the file it read, and only while it is
+ * the latest run on that file in that modal: pressing Process again, picking another file, closing the modal (its
+ * form reset empties the file input) or loading it again stops it, and it writes nothing. */
+var g_rfile_hash_run = 0;
+
 function get_hash() {
-    if (document.getElementById("input_autofill").files[0] === undefined) {
+    var input = document.getElementById("input_autofill");
+    var file = input ? input.files[0] : undefined;
+    var run = ++g_rfile_hash_run;
+    if (file === undefined) {
         $('#btn_rfile_proc').text("Please select a file");
         return;
     }
+    var current = function () {
+        return run === g_rfile_hash_run && document.getElementById("input_autofill") === input && input.files[0] === file;
+    };
     getMD5(
-        document.getElementById("input_autofill").files[0],
-        prog => $('#btn_rfile_proc').text("Processing "+ (prog * 100).toFixed(2) + "%")
+        file,
+        prog => { if (current()) { $('#btn_rfile_proc').text("Processing " + (prog * 100).toFixed(2) + "%"); } },
+        () => !current()
     ).then(
-        res => on_done_hash(res),
-        err => console.error(err)
+        res => { if (current()) { on_done_hash(res, file); } },
+        err => {
+            if (!current()) { return; }
+            $('#btn_rfile_proc').text("Could not read the file");
+            console.warn('Evidence hash: the file could not be read', err && err.name);
+        }
     );
 }
 
-function on_done_hash(result) {
+function on_done_hash(result, file) {
     $('#btn_rfile_proc').text('Done processing');
     $('form#form_edit_rfile #file_hash').val(result);
-    $('form#form_edit_rfile #filename').val(document.getElementById("input_autofill").files[0].name);
-    $('form#form_edit_rfile #file_size').val(document.getElementById("input_autofill").files[0].size);
+    $('form#form_edit_rfile #filename').val(file.name);
+    $('form#form_edit_rfile #file_size').val(file.size);
+}
+
+/* A picked file's size is read at once: Chrome then holds the file to that state, so a file deleted or changed
+ * before it is hashed fails to read instead of reading as an empty file (a deleted file otherwise reports size 0).
+ * The button goes back to Process: a run on the previous file stops at its next piece (get_hash's current()). */
+function on_pick_rfile(input) {
+    var file = input.files[0];
+    if (file !== undefined) {
+        input.setAttribute('data-picked-size', String(file.size));
+    }
+    $('#btn_rfile_proc').text('Process');
 }
 
 function add_modal_rfile() {
@@ -109,57 +137,60 @@ function add_rfile() {
     return false;
 }
 
-function readChunked(file, chunkCallback, endCallback) {
+/* Reads a file or blob in 4 MiB pieces as ArrayBuffers. shouldStop(), when given, is asked before each piece; a
+ * stopped read ends with an AbortError. A read error, or a file that ends before its size, ends with an error. */
+function readChunked(file, chunkCallback, endCallback, shouldStop) {
   var fileSize   = file.size;
-  var chunkSize  = 4 * 1024 * 1024; // 4MB
+  var chunkSize  = 4 * 1024 * 1024; // 4 MiB
   var offset     = 0;
 
   var reader = new FileReader();
   reader.onload = function() {
-    if (reader.error) {
-      endCallback(reader.error || {});
-      return;
-    }
-    offset += reader.result.length;
-    // callback for handling read chunk
-    // TODO: handle errors
+    var n = reader.result.byteLength;
+    offset += n;
     chunkCallback(reader.result, offset, fileSize);
     if (offset >= fileSize) {
       endCallback(null);
       return;
     }
+    if (n === 0) {
+      endCallback(new DOMException('The file ended before its size', 'NotReadableError'));
+      return;
+    }
     readNext();
   };
 
-  reader.onerror = function(err) {
-    endCallback(err || {});
+  reader.onerror = function() {
+    endCallback(reader.error || new DOMException('The file could not be read', 'NotReadableError'));
   };
 
   function readNext() {
-    var fileSlice = file.slice(offset, offset + chunkSize);
-    reader.readAsBinaryString(fileSlice);
+    if (shouldStop && shouldStop()) {
+      endCallback(new DOMException('Stopped', 'AbortError'));
+      return;
+    }
+    // an empty file is read whole, not as a slice: a file gone since it was picked then fails to read
+    reader.readAsArrayBuffer(fileSize === 0 ? file : file.slice(offset, offset + chunkSize));
   }
   readNext();
 }
 
-function getMD5(blob, cbProgress) {
+/* MD5 of a file or blob as lower-case hex (spark-md5, incremental). cbProgress(fraction) after each piece. */
+function getMD5(blob, cbProgress, shouldStop) {
   return new Promise((resolve, reject) => {
-    var md5 = CryptoJS.algo.MD5.create();
+    var md5 = new SparkMD5.ArrayBuffer();
     readChunked(blob, (chunk, offs, total) => {
-      md5.update(CryptoJS.enc.Latin1.parse(chunk));
+      md5.append(chunk);
       if (cbProgress) {
-        cbProgress(offs / total);
+        cbProgress(total ? offs / total : 1);
       }
     }, err => {
       if (err) {
         reject(err);
       } else {
-        // TODO: Handle errors
-        var hash = md5.finalize();
-        var hashHex = hash.toString(CryptoJS.enc.Hex);
-        resolve(hashHex);
+        resolve(md5.end());
       }
-    });
+    }, shouldStop);
   });
 }
 
@@ -503,6 +534,8 @@ $(document).ready(function(){
 
     get_case_rfiles();
     setInterval(function() { check_update('/case/evidences/state'); }, 3000);
+
+    $(document).off('change.irisHash').on('change.irisHash', '#input_autofill', function () { on_pick_rfile(this); });
 
     /* Modal to add rfiles is closed, clear its contents */
     $('.modal').on('hidden.bs.modal', function () {

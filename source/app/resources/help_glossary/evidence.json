@@ -24,7 +24,7 @@
     },
     "evidence.local_compute": {
       "title": "Compute file information locally",
-      "text": "Select the evidence file here and click Process: your browser reads it and fills in its name, its size and an MD5 hash. IRIS-NG does not upload or keep the file; a large file takes a while to hash.\n\nIf an AI backend is configured, the evidence-type suggestion runs at the same time and sends the first 4 KB of the file with its name and size.",
+      "text": "Select the evidence file here and click Process: your browser reads it and fills in its name, its size and an MD5 hash. IRIS-NG does not upload or keep the file; a large file takes a while to hash. If the file is changed or removed before it is read, the button says \"Could not read the file\": pick it again.\n\nIf an AI backend is configured, the evidence-type suggestion runs at the same time and sends the first 4 KB of the file with its name and size.",
       "aka": [
         "process",
         "md5",

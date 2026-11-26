@@ -148,6 +148,12 @@ export default defineConfig(({ mode }) => {
                         dest: 'assets/css/',
                     },
                     {
+                        // the Evidence page's in-browser MD5 (getMD5() in iris/case.rfiles.js; since slice 3.4,
+                        // CryptoJS 3.1.2 before it)
+                        src: 'node_modules/spark-md5/spark-md5.min.js',
+                        dest: 'assets/js/plugin/spark-md5/',
+                    },
+                    {
                         src: 'node_modules/vis-network/standalone/umd/vis-network.min.js',
                         dest: 'assets/js/plugin/vis/',
                     },
