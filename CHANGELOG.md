@@ -11,6 +11,27 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.24.1] — 2026-11-26
+
+A code scanning fix in the tables' compatibility layer; no table looks or behaves differently. **No migration** -
+the database head stays at `b3f7d1a9c5e2`. Only the app image changes (one browser script); the nginx and database
+images, and the guest-portal tunnel agent, do not change.
+
+### Security
+- **The tables' column-width measure no longer looks like an HTML filter** (code scanning alert #56, "Incomplete
+  multi-character sanitization"). `js/iris/datatables_compat.js` picks the longest cell of each column the way
+  DataTables 1.10.16 did, by the length of its display text with tags removed, and built that text with a pattern
+  that removes each `<...>` once - not enough to make HTML safe. The text was only measured: the cell that is sized
+  is the one DataTables drew, and the text never reached the page, so nothing could be injected. The length is now
+  counted directly, the same for every value, and the column widths do not change.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.24.1`, the 2.24.1 images, or chart 1.24.1. No migration. An install on 2.23.x
+  or earlier also takes 2.24.0's changes (its entry below), the guest-portal tunnel agent's cloudflared 2026.11.2
+  included.
+
+---
+
 ## [IRIS-NG-v2.24.0] — 2026-11-26
 
 Every table moves from DataTables 1.10.16 (2017) to DataTables 3.1.6, with its Buttons, Responsive, Select and RowGroup
