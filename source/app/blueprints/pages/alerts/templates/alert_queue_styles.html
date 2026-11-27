@@ -38,6 +38,8 @@
         .aq-chip { display: inline-flex; align-items: center; border: 1px solid rgba(255,255,255,0.16); border-radius: 6px; font-size: 0.72rem; color: #d8d8e2; padding: 0 5px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .aq-q-chips .aq-chip { padding: 0; font-family: monospace; background: rgba(84,100,216,0.14); border-color: rgba(84,100,216,0.45); max-width: none; }
         .aq-chip-text { border: 0; background: transparent; color: #dfe4ff; padding: 2px 3px 2px 7px; cursor: text; font: inherit; }
+        /* Bootstrap 4.6's reboot gives every enabled button `cursor: pointer`, more specific than .aq-chip-text */
+        button.aq-chip-text, [type="button"].aq-chip-text { cursor: text; }
         .aq-chip-x { border: 0; background: transparent; color: #9fb0ff; padding: 2px 7px 2px 3px; cursor: pointer; font: inherit; }
         .aq-chip--mono { font-family: monospace; }
         .aq-chip--cluster { border-color: rgba(84,100,216,0.6); color: #b4c0ff; }

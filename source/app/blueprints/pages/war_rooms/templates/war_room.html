@@ -378,9 +378,9 @@
     /* Notes / SitReps document bodies fill the window: iris_wroom_fit_doc()
        writes --iris-wr-doc-h on the body so the card ends at the window's
        bottom edge and the text scrolls INSIDE. The height goes through a
-       variable + id-scoped !important because atlantis declares
-       `.form-control { height: unset !important }`, which beats an inline
-       height on the textareas. rows="16" / min-height stay as the no-JS
+       variable + id-scoped !important (no stylesheet in the tree overrides an
+       inline height on these textareas - measured in slice 3.6b; an earlier
+       note blamed an atlantis rule that does not exist). rows="16" / min-height stay as the no-JS
        fallback (the variable is unset until the fit runs). resize is off
        because the fit would snap a hand-resized box back. */
     #iris-wr-nt-view, #iris-wr-nt-edit, #iris-wr-sr-content,

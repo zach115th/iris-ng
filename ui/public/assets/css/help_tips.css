@@ -24,6 +24,9 @@
     letter-spacing: 0;
     user-select: none;
 }
+/* Bootstrap 4.6's reboot gives every enabled button `cursor: pointer` - button:not(:disabled) and
+   [type="button"]:not(:disabled), both more specific than .iris-help; these tie them and win by loading later (3.6b) */
+button.iris-help, [type="button"].iris-help { cursor: help; }
 .iris-help::before { content: "i"; display: block; line-height: 1; margin-top: 0.5px; pointer-events: none; }
 .iris-help:hover,
 .iris-help[aria-expanded="true"] { color: #d6dcff; background: rgba(120, 140, 255, 0.16); }

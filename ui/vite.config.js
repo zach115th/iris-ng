@@ -82,6 +82,12 @@ export default defineConfig(({ mode }) => {
                         dest: 'assets/js/core',
                     },
                     {
+                        // Bootstrap's stylesheet from the same package as its script since slice 3.6b (a hand-copied
+                        // 4.1.3 before it); css/bootstrap_compat.css, linked right after it, keeps 4.1.3's look
+                        src: 'node_modules/bootstrap/dist/css/bootstrap.min.css',
+                        dest: 'assets/css',
+                    },
+                    {
                         // served as jquery.min.js since slice 3.6 (it was named jquery.3.2.1.min.js whatever
                         // version it held)
                         src: 'node_modules/jquery/dist/jquery.min.js',

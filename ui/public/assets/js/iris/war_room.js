@@ -2327,9 +2327,10 @@ function iris_wroom_nt_flush_save() {
    as an unscrolled one. Hidden bodies (the other pane, the other mode) are
    skipped — a hidden element measures 0 at the top of the viewport, not
    where it will land. The height is written as the --iris-wr-doc-h custom
-   property, consumed by an id-scoped !important rule in the template:
-   atlantis's `.form-control { height: unset !important }` beats an inline
-   height on the textareas. rows="16" / min-height are the no-JS fallback. */
+   property, consumed by an id-scoped !important rule in the template (no
+   stylesheet in the tree overrides an inline height on these textareas -
+   measured in slice 3.6b; an earlier note blamed an atlantis rule that does
+   not exist). rows="16" / min-height are the no-JS fallback. */
 var IRIS_WROOM_DOC_GAP = 16;
 var IRIS_WROOM_DOC_MIN = 300;
 var IRIS_WROOM_DOC_BODIES = [
