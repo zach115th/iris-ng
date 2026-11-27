@@ -11,6 +11,73 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.27.0] — 2026-11-27
+
+OpenID Connect sign-in moves to Authlib (from oic, which is unmaintained), checks every ID token in full, and works
+again on a Compose install. **No migration** - the database head stays at `b3f7d1a9c5e2`. The app and nginx images
+change; the database image and the guest-portal tunnel agent do not. An install that signs in with local accounts or
+LDAP sees no change but the logout fix below.
+
+### Security
+- **An OIDC ID token is checked in full:** its signature against the keys the provider publishes, its issuer, its
+  audience (it must include `OIDC_CLIENT_ID`), its expiry (two minutes of clock skew allowed) and the nonce of the
+  sign-in it answers. Until now an ID token without a signature (`alg: none`) was accepted, and its nonce was not
+  compared with the one IRIS sent. IRIS takes the ID token from the provider's token endpoint over TLS, so making use
+  of either needed control of that reply.
+- **The authorization request carries PKCE** (`S256`): an authorization code can be redeemed only with the verifier
+  kept in the session that asked for it.
+
+### Changed
+- **oic 1.7.0 → Authlib 1.9.10**, with joserfc 1.8.0, its JOSE library. oic leaves the image with the ten packages
+  only it needed: pyjwkest, pycryptodomex, defusedxml, future, pydantic, pydantic-core, pydantic-settings,
+  python-dotenv, annotated-types and typing-inspection. No other package moves.
+- **The provider's discovery document is required:** `<OIDC_ISSUER_URL>/.well-known/openid-configuration`, whose
+  `issuer` must be `OIDC_ISSUER_URL` (a trailing `/` aside). IRIS reads it at the first sign-in and again at each
+  sign-in until it answers, so a provider that is down while IRIS starts no longer stops OIDC sign-in until the next
+  restart. While it cannot be read, or names another issuer, the sign-in page says "The identity provider is not
+  available. Try again later." `OIDC_AUTH_ENDPOINT` and `OIDC_TOKEN_ENDPOINT` are no longer read, and a warning is
+  logged when they are set: without discovery there was no key to check a signed ID token against, so a sign-in
+  through them failed. `OIDC_END_SESSION_ENDPOINT` is still read, for a provider whose discovery document names no
+  `end_session_endpoint`.
+- **A refused OIDC sign-in goes back to the sign-in page with a message** instead of an error page: "The identity
+  provider did not sign you in." when the provider answered with an error, "Sign-in with the identity provider
+  failed." for a callback that is not this browser's sign-in (replayed, stale or without its state) or an ID token
+  that fails a check. The reason is in the app's log.
+- **Logout ends the provider's session after a restart too:** the ID token is kept in the session and sent as
+  `id_token_hint`. Before, once IRIS had restarted, logout signed out of IRIS only.
+- A user created at its first OIDC sign-in gets the email claim (`OIDC_MAPPING_EMAIL`, `email` by default) as its
+  email address; it got the login. Users created before keep theirs.
+
+### Fixed
+- **OIDC sign-in works again on a Compose install** (broken since IRIS-NG-v2.4.0). nginx passed the app the address
+  it reaches the app at as the Host, so a sign-in sent the provider `redirect_uri=https://app:8000/oidc-authorize` - an
+  address no browser reaches and no provider has registered - and the app took nginx's address for every client's.
+  nginx passes the browser's Host, `X-Real-IP` and `X-Forwarded-For` again. A Helm install runs without this nginx,
+  and the guest portal's links were not affected.
+- `/logout` without a signed-in session (an expired one) goes to the sign-in page; it answered 500, whatever the
+  authentication type.
+
+### Compatibility
+- A provider must publish its discovery document at its issuer URL, naming that issuer. Microsoft Entra ID's
+  multi-tenant `common` and `organizations` addresses name a template issuer (`{tenantid}`) and are refused: use the
+  tenant's own issuer, `https://login.microsoftonline.com/<tenant id>/v2.0`.
+- The provider receives `code_challenge` and `code_challenge_method=S256` on the authorization request and
+  `code_verifier` on the token request; a provider that refuses PKCE refuses the sign-in.
+- Unchanged: the redirect URL `https://<IRIS_SERVER_NAME>/oidc-authorize`, the client's authentication at the token
+  endpoint (`client_secret_basic`), the scopes (`OIDC_SCOPES`), the claim mapping and the replies for an inactive
+  user or one that may not be created.
+- A session signed in through OIDC before the update stays signed in; its logout signs out of IRIS only (it holds no
+  ID token).
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.27.0`, the 2.27.0 images, or chart 1.27.0. No migration. `scripts/update.sh`
+  rebuilds nginx with the app; with the published images, pull nginx too.
+- With OIDC: remove `OIDC_AUTH_ENDPOINT` and `OIDC_TOKEN_ENDPOINT` from `.env` if they are set (they are ignored, with
+  a warning in the log), and check that the app container reaches
+  `<OIDC_ISSUER_URL>/.well-known/openid-configuration`.
+
+---
+
 ## [IRIS-NG-v2.26.1] — 2026-11-27
 
 A fix for 2.26.0: form fields marked invalid or valid look as they did before it. **No migration** - the database
