@@ -31,7 +31,10 @@ Flask-SocketIO==5.7.2
 alembic==1.20.1
 setuptools>=84.2.1
 python-dateutil==2.9.0.post0
-pyminizip~=0.2.6
+# the datastore's password zips (AES-256; pyminizip before IRIS-NG-v2.28.0); pycryptodomex is its AES library,
+# pinned here so it is tracked
+pyzipper==0.4.0
+pycryptodomex==3.24.2
 # ICS form export: fills the bundled FEMA PDFs (business/war_room_ics_pdf.py)
 pypdf==7.1.1
 # Vulnerability catalogue: CVSS 2.0 / 3.x / 4.0 base scores from a vector (business/vulnerabilities.py)

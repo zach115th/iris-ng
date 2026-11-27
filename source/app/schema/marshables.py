@@ -20,10 +20,9 @@ import datetime
 import dateutil.parser
 import marshmallow
 import os
-import pyminizip
+import pyzipper
 import random
 import re
-import shutil
 import string
 import tempfile
 from flask_login import current_user
@@ -1514,16 +1513,25 @@ class DSFileSchema(IrisAutoSchema):
 
                         fn = tmp
 
-                    file_hash = file_sha256sum(fn.name)
-                    file_size = os.stat(fn.name).st_size
+                    try:
+                        file_hash = file_sha256sum(fn.name)
+                        file_size = os.stat(fn.name).st_size
 
-                    file_path = location.as_posix() + '.zip'
+                        file_path = location.as_posix() + '.zip'
 
-                    shutil.copyfile(fn.name, Path(fn.name).parent / file_hash)
-
-                    pyminizip.compress((Path(fn.name).parent / file_hash).as_posix(), None, file_path, passwd, 0)
-                    os.unlink(Path(tmp.name).parent / file_hash)
-                    os.unlink(fn.name)
+                        # iris-ng: one entry named by the file's SHA-256, deflate at level 0 (nothing compressed) -
+                        # the layout pyminizip wrote - encrypted with AES-256 (WinZip AES) where pyminizip wrote
+                        # ZipCrypto. 7-Zip, WinRAR and PeaZip open it; Windows Explorer, macOS Archive Utility and
+                        # Info-ZIP unzip do not. Archives stored before keep their ZipCrypto.
+                        with pyzipper.AESZipFile(file_path, 'w', compression=pyzipper.ZIP_DEFLATED, compresslevel=0,
+                                                 encryption=pyzipper.WZ_AES,
+                                                 encryption_kwargs={'nbits': 256}) as archive:
+                            archive.setpassword(passwd.encode('utf-8'))
+                            archive.write(fn.name, arcname=file_hash)
+                    finally:
+                        # the upload's temp copy goes whether the archive was written or not (it stayed behind when
+                        # writing failed)
+                        os.unlink(fn.name)
 
                 except Exception as e:
                     log.exception(e)
