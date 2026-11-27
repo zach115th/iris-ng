@@ -19,13 +19,13 @@ images, and the guest-portal tunnel agent, do not change.
 
 ### Fixed
 - **A field a form marks invalid looks as before 2.26.0: only its border turns red.** When the server rejects a save,
-  the fields its reply names are marked invalid; so is Profile → Change password's password field when the two
-  passwords differ. Since 2.26.0 (Bootstrap 4.6.2's validation styles) the text in such a field ended 17 to 40 px
+  the fields its reply names are marked invalid; so is My settings → Change password's password field when the
+  two passwords differ. Since 2.26.0 (Bootstrap 4.6.2's validation styles) the text in such a field ended 17 to 40 px
   sooner, and a text area showed a red circle in its corner. `css/bootstrap_compat.css` keeps each field's own
   padding and draws no icon - for a field marked valid (`.is-valid`) and inside a `.was-validated` form too.
 - A `.custom-select` (IRIS draws one for a custom attribute of type `input_select`) takes the text size around it
   again, as before 2.26.0 (4.6.2 sets 16 px).
-- Profile → Change password no longer raises a script error in the browser when the two passwords differ.
+- My settings → Change password no longer raises a script error in the browser when the two passwords differ.
 
 ### Upgrading
 - `scripts/update.sh --ref IRIS-NG-v2.26.1`, the 2.26.1 images, or chart 1.26.1. No migration. An install on 2.25.x
@@ -986,8 +986,8 @@ guest-portal tunnel agent gets a newer cloudflared; the nginx and database image
 - **A password alone could replace an account's authenticator.** The MFA setup page was reachable right after the
   password step, before the second factor was checked. It asked for the password again but not for the current second
   factor, so anyone with the password could enrol an authenticator of their own over the user's and finish signing in
-  with it. An account whose MFA is set up now replaces its secret only from a session that is fully signed in (Profile
-  → Reset MFA); a first setup is still offered right after the password, as before.
+  with it. An account whose MFA is set up now replaces its secret only from a session that is fully signed in (My
+  settings → Reset MFA); a first setup is still offered right after the password, as before.
 - **Second-factor codes could be guessed without limit, and reused.** Every code entered on the setup and verification
   pages now counts against the account: after 10 failures the second factor is locked for 15 minutes. A correct code
   clears the count, signing in again does not, and an administrator's Reset MFA clears the count and the lock. A code
@@ -1037,7 +1037,7 @@ guest-portal tunnel agent gets a newer cloudflared; the nginx and database image
   cleared with Reset MFA.
 - **MFA:** each code works once, so the verification right after a setup asks for the next code; a user who enters
   ten wrong codes waits 15 minutes or asks an administrator for Reset MFA; replacing an authenticator needs a signed-in
-  session (Profile → Reset MFA). Accounts that do not sign in with MFA, and the exempt ones, are unaffected.
+  session (My settings → Reset MFA). Accounts that do not sign in with MFA, and the exempt ones, are unaffected.
 
 ### Upgrading
 - **Docker Compose with `docker-compose.dev.yml` or `scripts/update.sh`:** `bash scripts/update.sh --ref
