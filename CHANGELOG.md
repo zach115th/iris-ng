@@ -11,6 +11,34 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.27.1] — 2026-11-27
+
+A fix for 2.27.0's OpenID Connect sign-in with the local fallback off. **No migration** - the database head stays at
+`b3f7d1a9c5e2` - and no requirement changes. Only the app image changes: the published nginx image is built from
+`nginx.conf`, which does not change, and the database image and the guest-portal tunnel agent do not change either.
+Nothing changes for an install that signs in with local accounts or LDAP, or with OIDC and the fallback on (the
+default).
+
+### Fixed
+- **With `IRIS_AUTHENTICATION_LOCAL_FALLBACK=False`, a refused OIDC sign-in no longer redirects in a loop.** Since
+  2.27.0 a refused sign-in - the provider answered with an error, an ID token failed a check, a callback was not this
+  browser's sign-in, or the provider's discovery document could not be read yet - returns to the sign-in page with a
+  message. With the fallback off, `/login` then sent the browser straight back to the provider, round and round until
+  the browser gave up, and the message never showed. The sign-in page is now shown once, with the *OIDC Sign In*
+  button and the message; the next visit to `/login` goes to the provider as before.
+- **With the fallback off, a logout stays logged out.** A logout that does not go through the provider's end-session
+  endpoint (a provider without one, or a session from before 2.27.0), and `/logout` without a session, landed on
+  `/login` and signed straight back in through a provider that still had a session; this was so before 2.27.0 too.
+  The sign-in page is now shown once after it.
+- `nginx-newui.conf` (the configuration for the new UI, chosen with `NGINX_CONF_FILE`) passes the app the browser's
+  `Host`, `X-Real-IP` and `X-Forwarded-For` on `/api/v2/`, as `nginx.conf` has since 2.27.0.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.27.1`, the 2.27.1 images, or chart 1.27.1. No migration. An install on 2.26.x
+  or earlier also takes 2.27.0's changes (its entry below): with OIDC, the provider's discovery document is required.
+
+---
+
 ## [IRIS-NG-v2.27.0] — 2026-11-27
 
 OpenID Connect sign-in moves to Authlib (from oic, which is unmaintained), checks every ID token in full, and works
