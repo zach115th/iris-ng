@@ -30,7 +30,7 @@ function save_user_password() {
         $('#user_password').addClass('is-invalid');
         $('#user_password').after("<div class='invalid-feedback' id='user_password-invalid-msg'>Password and verification are not the same</div>");
         $('#user_password').show();
-        return False;
+        return false;
     }
 
     var data_sent = $('#form_update_pwd').serializeObject();
