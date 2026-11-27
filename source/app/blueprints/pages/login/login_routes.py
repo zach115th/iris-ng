@@ -47,6 +47,8 @@ from app.iris_engine.access_control.oidc_handler import ID_TOKEN_SESSION_KEY
 from app.iris_engine.access_control.oidc_handler import OidcProviderUnavailable
 from app.iris_engine.access_control.oidc_handler import oidc_id_token_checks
 from app.iris_engine.access_control.oidc_handler import oidc_metadata
+from app.iris_engine.access_control.oidc_handler import show_sign_in_once
+from app.iris_engine.access_control.oidc_handler import take_show_sign_in_once
 from app.iris_engine.utils.tracker import track_activity
 
 login_blueprint = Blueprint(
@@ -117,8 +119,11 @@ if app.config.get("AUTHENTICATION_TYPE") in ["local", "ldap", "oidc"]:
         if current_user.is_authenticated:
             return redirect(url_for('index.index'))
 
-        if is_authentication_oidc() and app.config.get('AUTHENTICATION_LOCAL_FALLBACK') is False:
-            return redirect(url_for('login.oidc_login'))
+        if is_authentication_oidc():
+            # after a refused sign-in or a local logout the sign-in page is shown once, the fallback off or not
+            show_once = take_show_sign_in_once()
+            if app.config.get('AUTHENTICATION_LOCAL_FALLBACK') is False and not show_once:
+                return redirect(url_for('login.oidc_login'))
 
         form = LoginForm(request.form)
 
@@ -149,6 +154,8 @@ def _oidc_refused(reason, message='Sign-in with the identity provider failed.'):
     log.warning(f'OIDC sign-in refused: {reason}')
     track_activity(f'OIDC sign-in refused: {reason}', ctx_less=True, display_in_ui=False)
     flash(message, 'danger')
+    # shown even with the local fallback off, where /login would send the browser to the provider again
+    show_sign_in_once()
     return redirect(url_for('login.login'))
 
 

@@ -35,6 +35,11 @@ ID_TOKEN_LEEWAY_S = 120
 # no longer read since IRIS-NG-v2.27.0: they described a provider without discovery, whose ID tokens had no key to be
 # checked against
 UNUSED_FALLBACK_KEYS = ('OIDC_AUTH_ENDPOINT', 'OIDC_TOKEN_ENDPOINT')
+# With IRIS_AUTHENTICATION_LOCAL_FALLBACK off, /login sends the browser straight to the provider. After a refused
+# sign-in or a local logout it shows the sign-in page once instead (since IRIS-NG-v2.27.1): a refusal redirected to
+# /login, which redirected to the provider again, in a loop; a logout landed on /login and signed straight back in
+# through a provider that still had a session. The marker lives in the session and is taken by the next /login.
+SHOW_SIGN_IN_ONCE_KEY = 'oidc_show_sign_in'
 
 
 class OidcProviderUnavailable(Exception):
@@ -82,6 +87,16 @@ def oidc_id_token_checks(metadata, app):
         "iss": {"essential": True, "values": [metadata['issuer']]},
         "aud": {"essential": True, "values": [app.config.get("OIDC_CLIENT_ID")]},
     }
+
+
+def show_sign_in_once():
+    """Have the next /login show the sign-in page instead of sending the browser to the provider."""
+    session[SHOW_SIGN_IN_ONCE_KEY] = True
+
+
+def take_show_sign_in_once():
+    """Whether the sign-in page is to be shown this once; the marker is removed."""
+    return bool(session.pop(SHOW_SIGN_IN_ONCE_KEY, False))
 
 
 def oidc_logout_url(client, app):

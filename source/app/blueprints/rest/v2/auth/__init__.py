@@ -25,6 +25,7 @@ from app import app
 from app import db
 from app import oidc_client
 from app.iris_engine.access_control.oidc_handler import oidc_logout_url
+from app.iris_engine.access_control.oidc_handler import show_sign_in_once
 from app.blueprints.access_controls import is_authentication_ldap
 from app.blueprints.access_controls import is_authentication_oidc
 from app.blueprints.access_controls import not_authenticated_redirection_url
@@ -78,6 +79,8 @@ def logout():
     # iris-ng: a visitor who is not signed in (an expired session) has nothing to log out of - it answered 500
     if not current_user.is_authenticated:
         session.clear()
+        if is_authentication_oidc():
+            show_sign_in_once()
         return redirect(not_authenticated_redirection_url('/'))
 
     if session.get('current_case'):
@@ -105,6 +108,9 @@ def logout():
                    ctx_less=True, display_in_ui=False)
     logout_user()
     session.clear()
+    if is_authentication_oidc():
+        # the sign-in page, not straight back to a provider that may still have a session (the fallback off)
+        show_sign_in_once()
 
     return redirect(not_authenticated_redirection_url('/'))
 
