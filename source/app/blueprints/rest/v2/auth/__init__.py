@@ -20,11 +20,11 @@ from flask import Blueprint, session
 from flask import redirect, url_for
 from flask import request
 from flask_login import current_user, logout_user
-from oic.oauth2.exception import GrantError
 
 from app import app
 from app import db
 from app import oidc_client
+from app.iris_engine.access_control.oidc_handler import oidc_logout_url
 from app.blueprints.access_controls import is_authentication_ldap
 from app.blueprints.access_controls import is_authentication_oidc
 from app.blueprints.access_controls import not_authenticated_redirection_url
@@ -75,29 +75,31 @@ def logout():
     :return: Page
     """
 
-    if session['current_case']:
+    # iris-ng: a visitor who is not signed in (an expired session) has nothing to log out of - it answered 500
+    if not current_user.is_authenticated:
+        session.clear()
+        return redirect(not_authenticated_redirection_url('/'))
+
+    if session.get('current_case'):
         current_user.ctx_case = session['current_case']['case_id']
         current_user.ctx_human_case = session['current_case']['case_name']
         db.session.commit()
 
     if is_authentication_oidc():
-        if oidc_client.provider_info.get("end_session_endpoint"):
-            try:
-                logout_request = oidc_client.construct_EndSessionRequest(
-                    state=session["oidc_state"])
-                logout_url = logout_request.request(
-                    oidc_client.provider_info["end_session_endpoint"])
-                track_activity("user '{}' has been logged-out".format(
-                    current_user.user), ctx_less=True, display_in_ui=False)
-                logout_user()
-                session.clear()
-                return redirect(logout_url)
-            except GrantError:
-                track_activity(
-                    f"no oidc session found for user '{current_user.user}', skipping oidc provider logout and continuing to logout local user",
-                    ctx_less=True,
-                    display_in_ui=False
-                )
+        # the provider's end-session request when this session signed in through it (its ID token is in the
+        # session) and the provider has an end-session endpoint; a local logout otherwise
+        logout_url = oidc_logout_url(oidc_client, app)
+        if logout_url:
+            track_activity("user '{}' has been logged-out".format(
+                current_user.user), ctx_less=True, display_in_ui=False)
+            logout_user()
+            session.clear()
+            return redirect(logout_url)
+        track_activity(
+            f"no oidc session found for user '{current_user.user}', skipping oidc provider logout and continuing to logout local user",
+            ctx_less=True,
+            display_in_ui=False
+        )
 
     track_activity("user '{}' has been logged-out".format(current_user.user),
                    ctx_less=True, display_in_ui=False)

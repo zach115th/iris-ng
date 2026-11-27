@@ -45,7 +45,10 @@ graphene==3.4.3
 graphql-core==3.2.14
 qrcode[pil]==8.2
 dictdiffer==0.10.0
-oic==1.7.0
+# OpenID Connect sign-in (since IRIS-NG-v2.27.0; oic 1.7.0 before it); joserfc is Authlib's JOSE library,
+# pinned here so it is tracked
+Authlib==1.9.10
+joserfc==1.8.0
 # The newest release; there is no 3.0.0 final yet
 graphene-sqlalchemy==3.0.0rc2
 

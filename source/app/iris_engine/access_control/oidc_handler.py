@@ -15,36 +15,87 @@
 #  along with this program; if not, write to the Free Software Foundation,
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-# OIDC Configuration
-from oic.oic import Client
-from oic.utils.authn.client import CLIENT_AUTHN_METHOD
-from oic.oic.message import RegistrationResponse
-from oic.oic.message import ProviderConfigurationResponse
+# OpenID Connect sign-in through Authlib's Flask client (iris-ng, since IRIS-NG-v2.27.0; oic before it).
+#
+# The provider's discovery document (OIDC_ISSUER_URL + /.well-known/openid-configuration) is required: it is read at
+# the first sign-in and again at every sign-in until it answers, and nobody signs in while it cannot be read - an ID
+# token is never checked against no key. Its `issuer` must be OIDC_ISSUER_URL. The ID token's signature (against the
+# provider's JWKS), issuer, audience, expiry and nonce are checked by Authlib - the issuer and the audience named by
+# IRIS (oidc_id_token_checks: Authlib's default checks the audience only through `azp`); the authorization request
+# carries PKCE (S256); state, nonce and the PKCE verifier live in the session, and so does the ID token, for the
+# provider's end-session request at logout (`id_token_hint`), so no state is kept in the process.
+from urllib.parse import urlencode
+
+from authlib.integrations.flask_client import OAuth
+from flask import session
+
+ID_TOKEN_SESSION_KEY = 'oidc_id_token'
+# the clock skew allowed on the ID token's exp / iat (Authlib's default, named so it is one place)
+ID_TOKEN_LEEWAY_S = 120
+# no longer read since IRIS-NG-v2.27.0: they described a provider without discovery, whose ID tokens had no key to be
+# checked against
+UNUSED_FALLBACK_KEYS = ('OIDC_AUTH_ENDPOINT', 'OIDC_TOKEN_ENDPOINT')
 
 
-def get_oidc_client(app) -> Client:
-    client = Client(client_authn_method=CLIENT_AUTHN_METHOD)
+class OidcProviderUnavailable(Exception):
+    """The provider's discovery document cannot be read, or names another issuer: nobody signs in until it can."""
 
-    # retrieve provider configuration dynamically from metadata
-    # or fall back to env vars
+
+def get_oidc_client(app):
+    """Register the provider with Authlib; nothing is fetched until the first sign-in."""
+    issuer = (app.config.get("OIDC_ISSUER_URL") or "").rstrip('/')
+    unused = [k for k in UNUSED_FALLBACK_KEYS if app.config.get(k)]
+    if unused:
+        app.logger.warning(f"OIDC: {', '.join(unused)} are no longer used - the provider's discovery document "
+                           f"({issuer}/.well-known/openid-configuration) is required")
+    oauth = OAuth(app)
+    # registered as `iris_oidc`: Authlib also reads `<NAME>_*` keys from app.config, and IRIS's own OIDC_* settings
+    # must not be picked up that way
+    return oauth.register(
+        name='iris_oidc',
+        client_id=app.config.get("OIDC_CLIENT_ID"),
+        client_secret=app.config.get("OIDC_CLIENT_SECRET"),
+        server_metadata_url=f"{issuer}/.well-known/openid-configuration",
+        client_kwargs={'scope': app.config.get("OIDC_SCOPES"), 'code_challenge_method': 'S256'},
+    )
+
+
+def oidc_metadata(client, app):
+    """The provider's discovery document; raises OidcProviderUnavailable when it cannot be read (it is fetched again
+    at the next call) or when its issuer is not OIDC_ISSUER_URL."""
     try:
-        client.provider_config(app.config.get("OIDC_ISSUER_URL"))
-    except Exception as e:
-        app.logger.warning(f"Could not read OIDC metadata, using environment variables - error {e}")
-        op_info = ProviderConfigurationResponse(
-            issuer=app.config.get("OIDC_ISSUER_URL"),
-            authorization_endpoint=app.config.get("OIDC_AUTH_ENDPOINT"),
-            token_endpoint=app.config.get("OIDC_TOKEN_ENDPOINT"),
-            end_session_endpoint=app.config.get("OIDC_END_SESSION_ENDPOINT"),
-        )
+        metadata = client.load_server_metadata()
+    except Exception as exc:
+        raise OidcProviderUnavailable(f"discovery failed: {type(exc).__name__}") from exc
+    expected = (app.config.get("OIDC_ISSUER_URL") or "").rstrip('/')
+    if (metadata.get('issuer') or '').rstrip('/') != expected:
+        client.server_metadata.clear()
+        raise OidcProviderUnavailable(f"discovery names the issuer {metadata.get('issuer')!r}, not {expected!r}")
+    return metadata
 
-        client.handle_provider_config(op_info, op_info['issuer'])
 
-    info = {
-        "client_id": app.config.get("OIDC_CLIENT_ID"),
-        "client_secret": app.config.get("OIDC_CLIENT_SECRET")
+def oidc_id_token_checks(metadata, app):
+    """The claims the ID token must carry, passed to Authlib explicitly. By default Authlib 1.9 names only the issuer:
+    the audience is then checked through `azp` alone, and a token issued to another client whose `azp` names ours is
+    accepted. OpenID Connect requires `aud` to contain our client id."""
+    return {
+        "iss": {"essential": True, "values": [metadata['issuer']]},
+        "aud": {"essential": True, "values": [app.config.get("OIDC_CLIENT_ID")]},
     }
-    client_reg = RegistrationResponse(**info)
-    client.store_registration_info(client_reg)
 
-    return client
+
+def oidc_logout_url(client, app):
+    """The provider's end-session URL for this session (its ID token as `id_token_hint`), or None when there is no
+    end-session endpoint (discovery, else OIDC_END_SESSION_ENDPOINT) or no ID token in the session (a password
+    sign-in, or a session from before IRIS-NG-v2.27.0)."""
+    id_token = session.get(ID_TOKEN_SESSION_KEY)
+    if not id_token:
+        return None
+    try:
+        endpoint = oidc_metadata(client, app).get('end_session_endpoint')
+    except OidcProviderUnavailable:
+        endpoint = None
+    endpoint = endpoint or app.config.get("OIDC_END_SESSION_ENDPOINT")
+    if not endpoint:
+        return None
+    return endpoint + ('&' if '?' in endpoint else '?') + urlencode({'id_token_hint': id_token})

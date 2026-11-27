@@ -27,6 +27,11 @@
 
             {% if auth_type == "oidc" %}
                 <a href="{{ url_for('login.oidc_login') }}" class="btn btn-primary login__submit_button login__form_title">OIDC Sign In</a>
+                {# iris-ng: why the last OIDC sign-in was refused (the provider unreachable, its error, a token that
+                   failed its checks) #}
+                {% for category, message in get_flashed_messages(with_categories=true) %}
+                    <div class="alert alert-danger mt-3">{{ message }}</div>
+                {% endfor %}
             {% else %}
                 <form method="post" action="" class="login__form">
                     {{ form.hidden_tag() }}

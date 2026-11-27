@@ -20,8 +20,8 @@ import base64
 import io
 import pyotp
 import qrcode
-import random
-import string
+import secrets
+from authlib.integrations.base_client.errors import MismatchingStateError
 from flask import Blueprint, flash
 from flask import redirect
 from flask import render_template
@@ -29,8 +29,6 @@ from flask import request
 from flask import session
 from flask import url_for
 from flask_login import current_user
-from oic import rndstr
-from oic.oic.message import AuthorizationResponse
 
 from app import app
 from app import bc
@@ -44,6 +42,11 @@ from app.business.mfa_attempts import accept_code, attempt_failed, begin_attempt
 from app.datamgmt.manage.manage_users_db import create_user
 from app.datamgmt.manage.manage_users_db import get_user
 from app.forms import LoginForm, MFASetupForm
+from app.iris_engine.access_control.oidc_handler import ID_TOKEN_LEEWAY_S
+from app.iris_engine.access_control.oidc_handler import ID_TOKEN_SESSION_KEY
+from app.iris_engine.access_control.oidc_handler import OidcProviderUnavailable
+from app.iris_engine.access_control.oidc_handler import oidc_id_token_checks
+from app.iris_engine.access_control.oidc_handler import oidc_metadata
 from app.iris_engine.utils.tracker import track_activity
 
 login_blueprint = Blueprint(
@@ -141,57 +144,62 @@ if app.config.get("AUTHENTICATION_TYPE") in ["local", "ldap", "oidc"]:
 
         return _authenticate_password(form, username, password)
 
+def _oidc_refused(reason, message='Sign-in with the identity provider failed.'):
+    # a refused OIDC sign-in goes back to the sign-in page with a message (the reason is logged, never shown)
+    log.warning(f'OIDC sign-in refused: {reason}')
+    track_activity(f'OIDC sign-in refused: {reason}', ctx_less=True, display_in_ui=False)
+    flash(message, 'danger')
+    return redirect(url_for('login.login'))
+
+
 if is_authentication_oidc():
     @login_blueprint.route('/oidc-login')
     def oidc_login():
         if current_user.is_authenticated:
             return redirect(url_for('index.index'))
 
-        session["oidc_state"] = rndstr()
-        session["oidc_nonce"] = rndstr()
+        # the provider's discovery document is required, read again at every sign-in until it answers
+        try:
+            oidc_metadata(oidc_client, app)
+        except OidcProviderUnavailable as exc:
+            return _oidc_refused(str(exc), 'The identity provider is not available. Try again later.')
 
-        args = {
-            "client_id": oidc_client.client_id,
-            "response_type": "code",
-            "scope": app.config.get("OIDC_SCOPES"),
-            "nonce": session["oidc_nonce"],
-            "redirect_uri": url_for("login.oidc_authorise", _external=True),
-            "state": session["oidc_state"]
-        }
-
-        auth_req = oidc_client.construct_AuthorizationRequest(request_args=args)
-        login_url = auth_req.request(oidc_client.authorization_endpoint)
-
-        return redirect(login_url)
+        # Authlib keeps state, nonce and the PKCE verifier in the session
+        return oidc_client.authorize_redirect(url_for('login.oidc_authorise', _external=True))
 
 if is_authentication_oidc():
 
     @login_blueprint.route('/oidc-authorize')
     def oidc_authorise():
-        auth_resp = oidc_client.parse_response(AuthorizationResponse, info=request.args,
-                                    sformat="dict")
+        error = request.args.get('error')
+        if error:
+            return _oidc_refused(f"the provider answered '{error[:64]}'", 'The identity provider did not sign you in.')
 
-        if auth_resp["state"] != session["oidc_state"]:
-            track_activity(
-                f"OIDC session state '{auth_resp['state']}' does not match authorization state '{session['oidc_state']}'",
-                ctx_less=True,
-                display_in_ui=False,
-            )
-            return redirect(url_for("login.login"))
+        try:
+            metadata = oidc_metadata(oidc_client, app)
+            # the code exchange; the ID token's signature, issuer, audience, expiry and nonce are checked
+            token = oidc_client.authorize_access_token(claims_options=oidc_id_token_checks(metadata, app),
+                                                       leeway=ID_TOKEN_LEEWAY_S)
+        except MismatchingStateError:
+            return _oidc_refused('the authorization state is not this session\'s (a replayed or a stale sign-in)')
+        except OidcProviderUnavailable as exc:
+            return _oidc_refused(str(exc), 'The identity provider is not available. Try again later.')
+        except Exception as exc:
+            return _oidc_refused(f'{type(exc).__name__}: {str(exc)[:160]}')
 
-        args = {
-            "code": auth_resp["code"],
-        }
-
-        access_token_resp = oidc_client.do_access_token_request(state=auth_resp["state"], request_args=args)
+        claims = token.get('userinfo')
+        if not claims:
+            return _oidc_refused('the reply carries no checked ID token')
 
         # not all providers set email by default, use preferred_username where it's missing
         # Use the mapping from the configuration or default to email or preferred_username if not set
         email_field = app.config.get("OIDC_MAPPING_EMAIL")
         username_field = app.config.get("OIDC_MAPPING_USERNAME")
 
-        user_login = access_token_resp['id_token'].get(username_field) or access_token_resp['id_token'].get(email_field)
-        user_name = access_token_resp['id_token'].get(email_field) or access_token_resp['id_token'].get(username_field)
+        user_login = claims.get(username_field) or claims.get(email_field)
+        user_name = claims.get(email_field) or claims.get(username_field)
+        if not user_login:
+            return _oidc_refused(f'the ID token has neither the {username_field!r} nor the {email_field!r} claim')
 
         user = get_user(user_login, 'user')
 
@@ -213,13 +221,13 @@ if is_authentication_oidc():
                 display_in_ui=False,
             )
 
-            # generate random password
-            password = ''.join(random.choices(string.printable[:-6], k=16))
+            # a random password nobody knows: the account signs in through the provider
+            password = secrets.token_urlsafe(32)
 
             user = create_user(
                         user_name=user_name,
                         user_login=user_login,
-                        user_email=user_login,
+                        user_email=claims.get(email_field) or user_login,
                         user_password=bc.generate_password_hash(password.encode('utf8')).decode('utf8'),
                         user_active=True,
                         user_is_service_account=False
@@ -228,7 +236,10 @@ if is_authentication_oidc():
         if user and not user.active:
             return response_error("User not active in IRIS", 403)
 
-        return wrap_login_user(user, is_oidc=True)
+        response = wrap_login_user(user, is_oidc=True)
+        # kept for the provider's end-session request at logout (id_token_hint)
+        session[ID_TOKEN_SESSION_KEY] = token.get('id_token')
+        return response
 
 
 @app.route('/auth/mfa-setup', methods=['GET', 'POST'])
