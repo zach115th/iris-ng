@@ -30,7 +30,9 @@ LDAP sees no change but the logout fix below.
 ### Changed
 - **oic 1.7.0 → Authlib 1.9.10**, with joserfc 1.8.0, its JOSE library. oic leaves the image with the ten packages
   only it needed: pyjwkest, pycryptodomex, defusedxml, future, pydantic, pydantic-core, pydantic-settings,
-  python-dotenv, annotated-types and typing-inspection. No other package moves.
+  python-dotenv, annotated-types and typing-inspection. No other requirement changes; the release build also picked
+  up lxml 6.2.0 (from 6.1.3), published hours before it, which the `.docx` report libraries require - case reports
+  render the same with either version.
 - **The provider's discovery document is required:** `<OIDC_ISSUER_URL>/.well-known/openid-configuration`, whose
   `issuer` must be `OIDC_ISSUER_URL` (a trailing `/` aside). IRIS reads it at the first sign-in and again at each
   sign-in until it answers, so a provider that is down while IRIS starts no longer stops OIDC sign-in until the next
