@@ -11,6 +11,33 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.28.0] — 2026-11-27
+
+The datastore's password-protected archives are written with AES-256 instead of ZipCrypto. **No migration** - the
+database head stays at `b3f7d1a9c5e2`. Only the app image changes; the nginx and database images and the guest-portal
+tunnel agent do not.
+
+### Changed
+- **pyminizip 0.2.6 → pyzipper 0.4.0**, with pycryptodomex 3.24.2, its AES library. A datastore file marked as an IOC
+  (password `infected` when none is given) or given a password is stored, and downloaded, as a zip. pyminizip -
+  unmaintained since 2021, published as source only and compiled into every image - wrote it with ZipCrypto; pyzipper
+  writes it with AES-256 (WinZip AES). The archive still holds one entry named by the file's SHA-256, with nothing
+  compressed. No other requirement changes.
+- When writing the archive fails, the upload's temporary copy no longer stays in the app container's temp directory.
+
+### Compatibility
+- **A new archive opens in 7-Zip, not in Info-ZIP `unzip`** (`unsupported compression method 99`) nor with Python's
+  `zipfile`. By their documentation WinRAR and PeaZip read WinZip AES, and Windows Explorer's built-in zip folders and
+  macOS Archive Utility do not. Open files downloaded from the datastore with 7-Zip or another tool that reads WinZip
+  AES.
+- Archives stored before the update keep ZipCrypto and download and open exactly as before; nothing is re-encrypted.
+- The passwords, the download names (`<name>.zip`) and the routes are unchanged.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.28.0`, the 2.28.0 images, or chart 1.28.0. No migration.
+
+---
+
 ## [IRIS-NG-v2.27.1] — 2026-11-27
 
 A fix for 2.27.0's OpenID Connect sign-in with the local fallback off. **No migration** - the database head stays at
