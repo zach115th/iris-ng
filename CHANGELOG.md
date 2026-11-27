@@ -11,6 +11,29 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.26.1] — 2026-11-27
+
+A fix for 2.26.0: form fields marked invalid or valid look as they did before it. **No migration** - the database
+head stays at `b3f7d1a9c5e2`. Only the app image changes (one stylesheet and one script); the nginx and database
+images, and the guest-portal tunnel agent, do not change.
+
+### Fixed
+- **A field a form marks invalid looks as before 2.26.0: only its border turns red.** When the server rejects a save,
+  the fields its reply names are marked invalid; so is Profile → Change password's password field when the two
+  passwords differ. Since 2.26.0 (Bootstrap 4.6.2's validation styles) the text in such a field ended 17 to 40 px
+  sooner, and a text area showed a red circle in its corner. `css/bootstrap_compat.css` keeps each field's own
+  padding and draws no icon - for a field marked valid (`.is-valid`) and inside a `.was-validated` form too.
+- A `.custom-select` (IRIS draws one for a custom attribute of type `input_select`) takes the text size around it
+  again, as before 2.26.0 (4.6.2 sets 16 px).
+- Profile → Change password no longer raises a script error in the browser when the two passwords differ.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.26.1`, the 2.26.1 images, or chart 1.26.1. No migration. An install on 2.25.x
+  or earlier also takes 2.26.0's changes (its entry below). Static files are served with `no-cache`, so a browser
+  picks up the stylesheet on its next page load.
+
+---
+
 ## [IRIS-NG-v2.26.0] — 2026-11-27
 
 Bootstrap's stylesheet moves to 4.6.2, the release its script already came from, installed from npm, and pages look
