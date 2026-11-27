@@ -11,6 +11,43 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.26.0] — 2026-11-27
+
+Bootstrap's stylesheet moves to 4.6.2, the release its script already came from, installed from npm, and pages look
+as before. **No migration.** The app image changes (the page layouts, seven page templates, two stylesheets, a script
+comment and the copied stylesheet); the database and nginx images and the guest-portal tunnel agent do not.
+
+### Changed
+- **Bootstrap's CSS 4.1.3 → 4.6.2** (`css/bootstrap.min.css`, the same file name), copied from the npm package
+  `bootstrap` that `js/core/bootstrap.min.js` already came from (the stylesheet was copied in by hand). A new
+  `css/bootstrap_compat.css`, linked right after it wherever it loads, keeps 4.1.3's look: tables take the text colour
+  around them (4.6.2 makes table text dark, unreadable on the dark theme), buttons stay on one line, text fields and
+  selects stay 38 px high, inline code still breaks inside long words, date and time fields keep their look, and the
+  dialogs' slide, header and footer, checkboxes, tabs, dropdown items and list groups are drawn as before.
+- What 4.1.3 did not draw, 4.6.2 now does: the loading spinners of *Analyzing cluster with AI* (the correlation page)
+  and *Loading cross-case context* (an empty space before), the *Requires a reason* and *Requires a
+  decision* switches of Settings → Asset Flags (a grey square before), and Manage → Modules' module and parameter
+  dialogs, which now fit the window and scroll inside.
+- Buttons and other clickable controls show the hand cursor under the pointer (Bootstrap 4.6's own rule); the help
+  icons keep their help cursor, also inside the war room's toolbars, and the alert query bar's chips their text
+  cursor. A link-styled button keeps its own text colour while it has the focus (4.1.3 turned it to the link colour).
+- The login, MFA and 404 pages load Bootstrap's stylesheet once (they loaded it twice).
+
+### Compatibility
+- A template or module of your own that uses Bootstrap's classes gets 4.6.2 with 4.1.3's look kept for what IRIS
+  uses; a class IRIS does not use draws as 4.6.2 draws it, and classes new in 4.6 (`spinner-border`, `spinner-grow`,
+  `custom-switch`, `modal-dialog-scrollable`, `text-wrap`, ...) now work.
+- A rule of your own that sets a cursor on a `<button>` with a single class loses to Bootstrap 4.6's
+  `button:not(:disabled)` and `[type="button"]:not(:disabled)` (`cursor: pointer`): write it as
+  `button.my-class, [type="button"].my-class`.
+- No API change.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.26.0`, the 2.26.0 images, or chart 1.26.0. No migration. Static files are
+  served with `no-cache`, so a browser picks up the new stylesheets on its next page load.
+
+---
+
 ## [IRIS-NG-v2.25.0] — 2026-11-26
 
 The select widgets, jQuery UI and the PNG export move to current releases installed from npm, and look and behave
