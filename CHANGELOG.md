@@ -11,6 +11,39 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.29.0] — 2026-11-28
+
+The PostgreSQL driver moves from psycopg2 to psycopg 3. **No migration** - the database head stays at
+`b3f7d1a9c5e2`. Only the app image changes; the nginx and database images and the guest-portal tunnel agent do not.
+
+### Changed
+- **psycopg2-binary 2.9.13 → psycopg 3.3.9** (`psycopg[binary]`, which installs psycopg-binary 3.3.9), the driver of
+  the app, both workers, the database migrations and celery's result backend; the database URLs name
+  `postgresql+psycopg`. No other requirement changes.
+- **Statements are not prepared on the server**, as with psycopg2: psycopg 3 would prepare one after its fifth run on
+  a connection, and IRIS turns that off on every database engine it opens (`prepare_threshold=None`).
+- **A value sent as text keeps working against a number or date column.** The case pages' legacy dialogs (Add asset,
+  Add IOC, Add task, and the other forms sent field by field) send every id as text, such as `"3"`. psycopg 3 sends a
+  query's values with their types, and PostgreSQL does not compare an integer column with text, so on psycopg 3 alone
+  these requests would answer with an Internal Server Error. IRIS gives text compared with an integer, numeric or
+  date / time column that column's type, and the request validators and the alert filters convert such ids themselves.
+- Found and fixed with the move (no effect on psycopg2, where the values were stored correctly): a new case held its
+  name, SOC id, customer and state as one-element tuples until it was saved, and a case template's title prefix read
+  the title from that tuple; the default server settings of a new install gave the minimum password length as text.
+
+### Compatibility
+- The API is unchanged: replies are the same, and an id sent as text is accepted when it is a whole number and
+  refused otherwise, as before.
+- For a custom module or script using IRIS's database session: `psycopg2` is no longer installed (`import psycopg`);
+  a raw SQL query (`text()`) returns `bytea` as `bytes` (it was a `memoryview`) and `inet` as an `ipaddress` address
+  (it was a `str`); a text value compared with a **boolean** column is refused (`operator does not exist: boolean =
+  character varying`) - pass `True` / `False`.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.29.0`, the 2.29.0 images, or chart 1.29.0. No migration.
+
+---
+
 ## [IRIS-NG-v2.28.0] — 2026-11-27
 
 The datastore's password-protected archives are written with AES-256 instead of ZipCrypto. **No migration** - the
