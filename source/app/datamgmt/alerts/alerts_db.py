@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 from flask_login import current_user
 from sqlalchemy import desc, asc, func, tuple_, or_, not_, and_
 from sqlalchemy.orm import aliased, make_transient, selectinload
+from sqlalchemy.sql import sqltypes
 from typing import List, Tuple
 
 import app
@@ -57,6 +58,8 @@ from app.models.alerts import AlertCaseAssociation
 from app.models.alerts import SimilarAlertsCache
 from app.models.alerts import AlertResolutionStatus
 from app.models.alerts import AlertSimilarity
+from app.iris_engine.utils.text_comparisons import bool_value
+from app.iris_engine.utils.text_comparisons import id_value
 from app.models.alerts import Severity
 from app.models.authorization import CaseAccessLevel
 from app.models.authorization import Permissions
@@ -122,6 +125,11 @@ def build_condition(column, operator, value):
                 "Non-in operators on relationships require specifying a related model column, e.g., owner.id or assets.asset_name.")
 
     # If we get here, 'column' should be an actual column, not a relationship.
+    # A custom condition's JSON may carry an id or a flag as text ("37", "false"): compared as what the column holds.
+    column_type = getattr(column, 'type', None)
+    if isinstance(column_type, (sqltypes.Integer, sqltypes.Boolean)):
+        as_value = id_value if isinstance(column_type, sqltypes.Integer) else bool_value
+        value = [as_value(v) for v in value] if isinstance(value, list) else as_value(value)
     if operator == 'not':
         return column != value
     elif operator == 'in':
@@ -261,7 +269,8 @@ def build_alert_filter(
         conditions.append(Alert.alert_tags.ilike(f"%{tags}%"))
 
     if client is not None:
-        conditions.append(Alert.alert_customer_id == client)
+        # the legacy and v2 /alerts/filter routes pass the query's text ("37"); the alert queue passes an int
+        conditions.append(Alert.alert_customer_id == id_value(client))
 
     if alert_ids is not None:
         if isinstance(alert_ids, list):

@@ -107,6 +107,9 @@ from app.models.cases import CaseProtagonist
 from app.util import file_sha256sum
 from app.util import str_to_bool
 from app.util import assert_type_mml
+# the legacy forms send ids as text ("3"), and assert_type_mml() accepts a string that converts without converting
+# it: the validators compare the integer columns with id_value() of the request's value
+from app.iris_engine.utils.text_comparisons import id_value as _id_value
 from app.util import stream_sha256sum
 
 ALLOWED_EXTENSIONS = {'png', 'svg'}
@@ -519,7 +522,7 @@ class CaseNoteSchema(IrisAutoSchema):
                         type=int)
 
         directory = NoteDirectory.query.filter(
-            NoteDirectory.id == data.get('directory_id'),
+            NoteDirectory.id == _id_value(data.get('directory_id')),
             NoteDirectory.case_id == kwargs.get('caseid')
         ).first()
         if directory:
@@ -592,7 +595,7 @@ class CaseAddNoteSchema(ma.Schema):
                         type=int)
 
         directory = NoteDirectory.query.filter(
-            NoteDirectory.id == data.get('directory_id'),
+            NoteDirectory.id == _id_value(data.get('directory_id')),
             NoteDirectory.case_id == kwargs.get('caseid')
         ).first()
         if directory:
@@ -775,8 +778,8 @@ class CaseAssetsSchema(IrisAutoSchema):
             case_alias, asset_alias.case_id == case_alias.case_id
         ).filter(
             func.lower(asset_alias.asset_name) == request_data.get('asset_name').lower(),
-            asset_alias.asset_type_id == request_data.get('asset_type_id'),
-            asset_alias.asset_id != request_data.get('asset_id'),
+            asset_alias.asset_type_id == _id_value(request_data.get('asset_type_id')),
+            asset_alias.asset_id != _id_value(request_data.get('asset_id')),
             case_alias.client_id == customer_id
         ).first()
         if asset is not None:
@@ -806,7 +809,7 @@ class CaseAssetsSchema(IrisAutoSchema):
                         field_name="asset_type_id",
                         type=int)
 
-        asset_type = AssetsType.query.filter(AssetsType.asset_id == data.get('asset_type_id')).count()
+        asset_type = AssetsType.query.filter(AssetsType.asset_id == _id_value(data.get('asset_type_id'))).count()
         if not asset_type:
             raise marshmallow.exceptions.ValidationError("Invalid asset type ID",
                                                          field_name="asset_type_id")
@@ -816,7 +819,7 @@ class CaseAssetsSchema(IrisAutoSchema):
                         allow_none=True)
 
         if data.get('analysis_status_id'):
-            status = AnalysisStatus.query.filter(AnalysisStatus.id == data.get('analysis_status_id')).count()
+            status = AnalysisStatus.query.filter(AnalysisStatus.id == _id_value(data.get('analysis_status_id'))).count()
             if not status:
                 raise marshmallow.exceptions.ValidationError("Invalid analysis status ID",
                                                              field_name="analysis_status_id")
@@ -1047,7 +1050,7 @@ class IocSchemaForAPIV2(IrisAutoSchema):
         """
         if data.get('ioc_type_id'):
             assert_type_mml(input_var=data.get('ioc_type_id'), field_name="ioc_type_id", type=int)
-            ioc_type = IocType.query.filter(IocType.type_id == data.get('ioc_type_id')).first()
+            ioc_type = IocType.query.filter(IocType.type_id == _id_value(data.get('ioc_type_id'))).first()
             if not ioc_type:
                 raise marshmallow.exceptions.ValidationError("Invalid IOC type ID", field_name="ioc_type_id")
 
@@ -1061,7 +1064,7 @@ class IocSchemaForAPIV2(IrisAutoSchema):
             assert_type_mml(input_var=data.get('ioc_tlp_id'), field_name="ioc_tlp_id", type=int,
                             max_val=POSTGRES_INT_MAX)
 
-            Tlp.query.filter(Tlp.tlp_id == data.get('ioc_tlp_id')).count()
+            Tlp.query.filter(Tlp.tlp_id == _id_value(data.get('ioc_tlp_id'))).count()
 
         if data.get('ioc_tags'):
             for tag in data.get('ioc_tags').split(','):
@@ -1139,7 +1142,7 @@ class IocSchema(IrisAutoSchema):
         """
         if data.get('ioc_type_id'):
             assert_type_mml(input_var=data.get('ioc_type_id'), field_name='ioc_type_id', type=int)
-            ioc_type = IocType.query.filter(IocType.type_id == data.get('ioc_type_id')).first()
+            ioc_type = IocType.query.filter(IocType.type_id == _id_value(data.get('ioc_type_id'))).first()
             if not ioc_type:
                 raise marshmallow.exceptions.ValidationError('Invalid IOC type ID', field_name='ioc_type_id')
 
@@ -1153,7 +1156,7 @@ class IocSchema(IrisAutoSchema):
             assert_type_mml(input_var=data.get('ioc_tlp_id'), field_name='ioc_tlp_id', type=int,
                             max_val=POSTGRES_INT_MAX)
 
-            Tlp.query.filter(Tlp.tlp_id == data.get('ioc_tlp_id')).count()
+            Tlp.query.filter(Tlp.tlp_id == _id_value(data.get('ioc_tlp_id'))).count()
 
         if data.get('ioc_tags'):
             for tag in data.get('ioc_tags').split(','):
@@ -1912,7 +1915,7 @@ class CaseSchema(IrisAutoSchema):
                         type=int,
                         allow_none=True)
 
-        client = Client.query.filter(Client.client_id == data.get('case_customer')).first()
+        client = Client.query.filter(Client.client_id == _id_value(data.get('case_customer'))).first()
         if client:
             return data
 
@@ -2010,7 +2013,7 @@ class GlobalTasksSchema(IrisAutoSchema):
                         field_name='task_assignee_id',
                         type=int)
 
-        user = User.query.filter(User.id == data.get('task_assignee_id')).count()
+        user = User.query.filter(User.id == _id_value(data.get('task_assignee_id'))).count()
         if not user:
             raise marshmallow.exceptions.ValidationError("Invalid user id for assignee",
                                                          field_name="task_assignees_id")
@@ -2018,7 +2021,7 @@ class GlobalTasksSchema(IrisAutoSchema):
         assert_type_mml(input_var=data.get('task_status_id'),
                         field_name='task_status_id',
                         type=int)
-        status = TaskStatus.query.filter(TaskStatus.id == data.get('task_status_id')).count()
+        status = TaskStatus.query.filter(TaskStatus.id == _id_value(data.get('task_status_id'))).count()
         if not status:
             raise marshmallow.exceptions.ValidationError("Invalid task status ID",
                                                          field_name="task_status_id")
@@ -2201,7 +2204,7 @@ class CaseTaskSchema(IrisAutoSchema):
                         field_name='task_status_id',
                         type=int)
 
-        status = TaskStatus.query.filter(TaskStatus.id == data.get('task_status_id')).count()
+        status = TaskStatus.query.filter(TaskStatus.id == _id_value(data.get('task_status_id'))).count()
         if not status:
             raise marshmallow.exceptions.ValidationError("Invalid task status ID",
                                                          field_name="task_status_id")
@@ -2768,7 +2771,7 @@ class CaseSchemaForAPIV2(IrisAutoSchema):
                         type=int,
                         allow_none=True)
 
-        client = Client.query.filter(Client.client_id == data.get('case_customer')).first()
+        client = Client.query.filter(Client.client_id == _id_value(data.get('case_customer'))).first()
         if client:
             return data
 
