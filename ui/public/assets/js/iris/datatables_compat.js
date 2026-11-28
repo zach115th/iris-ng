@@ -6,7 +6,7 @@
  * $.fn.DataTable, events through jQuery), so the pages keep their code; what changed since 1.10.16 is put back here:
  *
  * - class names: each generated element keeps DataTables 3's class (Select and Buttons look for `dt-container`,
- *   RowGroup for `dt-scroll-body`) and gets 1.10.16's beside it - the theme (atlantis.css carries 1.10.16's
+ *   RowGroup for `dt-scroll-body`) and gets 1.10.16's beside it - the theme (iris-theme.css carries 1.10.16's
  *   Bootstrap 4 stylesheet), the dark theme and IRIS's own rules are written against dataTables_wrapper /
  *   _length / _filter / _info / _paginate; the header cells get only 1.10.16's sorting / sorting_asc / ...
  * - the layout: 1.10.16's Bootstrap 4 `dom` (the length and search row, the table, the info and paging row);

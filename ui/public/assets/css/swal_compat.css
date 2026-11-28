@@ -3,10 +3,10 @@
  *
  * swal_compat.js puts 2.1.2's class names on sweetalert2's popup (.swal-modal), title (.swal-title), text
  * (.swal-text), button row (.swal-footer), buttons (.swal-button, .swal-button--<key>, .swal-button--danger) and
- * input (.swal-content__input), so IRIS's theme rules for them in atlantis.css and dark-theme.css apply as before.
+ * input (.swal-content__input), so IRIS's theme rules for them in iris-theme.css and dark-theme.css apply as before.
  * This file is what 2.1.2's own stylesheet gave those classes, with its rules as 2.1.2 wrote them. 2.1.2 put that
  * stylesheet first in <head> (its <style> was the head's first child, measured on 2.21.0), so IRIS's rules came
- * after it and won every tie - atlantis.css's `.swal-text {display: block; text-align: center}` over 2.1.2's
+ * after it and won every tie - iris-theme.css's `.swal-text {display: block; text-align: center}` over 2.1.2's
  * inline-block, left-aligned text, for one. Every layout links this file (after sweetalert2.min.css) before its
  * first stylesheet, which keeps that cascade. sweetalert2's rules sit inside :where(), so none outranks a class here.
  *

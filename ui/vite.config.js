@@ -128,7 +128,7 @@ export default defineConfig(({ mode }) => {
                     },
                     // DataTables 3 (since slice 3.5; 1.10.16 hand-vendored before it): the core with its Bootstrap 4
                     // integration (the paging markup and classes; 1.10.16's Bootstrap 4 stylesheet is part of
-                    // atlantis.css, so the integration's own stylesheet is not copied) and the extensions. Buttons keeps
+                    // iris-theme.css, so the integration's own stylesheet is not copied) and the extensions. Buttons keeps
                     // its Bootstrap 4 stylesheet, as before (its scripts stay the default ones, so a button is a
                     // dt-button with the page's own btn classes); Select 4, Responsive 4 and RowGroup 2 redrew their
                     // look, so css/datatables_compat.{select,responsive,rowgroup}.css carry their 1.10.16-era
@@ -209,10 +209,6 @@ export default defineConfig(({ mode }) => {
                         src: 'node_modules/ajax-bootstrap-select/dist/js/ajax-bootstrap-select.min.js',
                         dest: 'assets/js/plugin/select/',
                         rename: 'ajax-bootstrap-picker.js',
-                    },
-                    {
-                        src: 'node_modules/jquery.scrollbar/jquery.scrollbar.min.js',
-                        dest: 'assets/js/plugin/jquery-scrollbar/',
                     },
                     {
                         src: 'node_modules/jquery-ui-touch-punch/jquery.ui.touch-punch.min.js',

@@ -1,3 +1,6 @@
+/* IRIS-NG: the dark theme (IRIS is dark only). Cut on 2026-11-28 to the rules that can style what IRIS renders, as
+   css/iris-theme.css was (see its header); every rule kept is the old text, in the old order. */
+
 body {
 	background: rgba(0,0,0,1);
 	background: #121622
@@ -13,10 +16,6 @@ body {
   border-color: #004eb3;
   color: #ffffff;
   background: #004eb3;
-}
-
-.text-link {
-    color: #66aaff;
 }
 
 .btn-success {
@@ -54,31 +53,6 @@ body .main-panel {
     background: #1f283e;
 }
 
-@-webkit-keyframes yellow-fade {
-  from {
-    background: #f96;
-  }
-  to {
-    background: #010409;
-  }
-}
-@-moz-keyframes yellow-fade {
-  from {
-    background: #f96;
-  }
-  to {
-    background: #010409;
-  }
-}
-@keyframes yellow-fade {
-  from {
-    background: #f96;
-  }
-  to {
-    background: #010409;
-  }
-}
-
 body .card,
 body .row-card-no-pd,
 body .list-group-item,
@@ -88,16 +62,8 @@ body .timeline>li>.timeline-panel {
     border: #004079b0 1px solid
 }
 
-body .card-pricing2 {
-    background: #202940 !important;
-}
-
 body .row-card-no-pd [class*=col] .card:before {
     background: rgba(181, 181, 181, 0.1) !important;
-}
-
-.kanban-item {
-    box-shadow: 0 0 0 1px rgba(122, 128, 134, 0.2);
 }
 
 body .card .card-header,
@@ -142,10 +108,6 @@ body .timeline>li>.timeline-panel:after {
 body .page-title,
 body .breadcrumbs li a {
     color: rgba(169, 175, 187, 0.82);
-}
-
-body .page-category {
-    color: #828282;
 }
 
 body a {
@@ -214,10 +176,6 @@ body table.dataTable tr.dtrg-group td {
 	background-color: #ffffff21;
 }
 
-body .card-pricing .specification-list li {
-    border-color: #373d4c;
-}
-
 body .input-group-text {
     border-color: #2f374b !important;
     background-color: #1f283e;
@@ -248,11 +206,6 @@ body .input-solid {
     border-color: #363b4c !important;
 }
 
-body .list-group-messages .list-group-item-title a,
-body .list-group .list-group-item-text {
-    color: inherit;
-}
-
 body .footer {
     border-top: 1px solid #293247;
     background: #1f283e;
@@ -270,30 +223,8 @@ body .select2-container--bootstrap .select2-selection {
     border-color: #2f374b;
 }
 
-body .bootstrap-tagsinput {
-    background: transparent;
-}
-
 body .selectgroup-button {
     border: 1px solid #2f374b;
-}
-
-body .conversations .message-header {
-    background: #1a2035;
-    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.07);
-}
-
-body .conversations .conversations-content {
-    color: #575962;
-    border-color: #2e364a;
-}
-
-body .mail-wrapper .mail-content .inbox-body .email-list .email-list-item.unread {
-    background: #1f283e !important;
-}
-
-body .mail-wrapper .mail-content .inbox-body .email-list .email-list-item:hover {
-    background: #171e2f !important;
 }
 
 body .page-with-aside .page-aside .aside-nav .nav>li:hover,
@@ -393,23 +324,6 @@ body .dropdown-item:hover {
 
 body .vis-network {
      background: #202940 !important;
-}
-
-.bg-primary {
-  background-color: #1f283e !important;
-}
-
-body .kanban-board {
-  background: #4c5366 !important;
-}
-
-.kanban-title-button button {
-  background: transparent;
-  border: 0;
-  color: #fff;
-  padding: 0;
-  font-size: 16px;
-  cursor: pointer;
 }
 
 body .btn-light,
@@ -656,11 +570,6 @@ body .modal-header .justify-right button {
     color: #ffffff;
 }
 
-
-.main-header .navbar-header .nav-search .input-group {
-    background: rgba(185, 185, 185, 0.18) !important;
-}
-
 .main-header .navbar-header .navbar-nav .nav-item .nav-link:hover,
 .main-header .navbar-header .navbar-nav .nav-item .nav-link:focus {
     background: rgba(185, 185, 185, 0.18) !important;
@@ -731,15 +640,6 @@ body .modal-header .justify-right button {
     color: #1a2035 !important;
 }
 
-.sidebar .scrollbar-inner>.scroll-element .scroll-bar {
-    background-color: #f7f7f7;
-}
-
-.sidebar .scrollbar-inner>.scroll-element.scroll-draggable .scroll-bar,
-.sidebar .scrollbar-inner>.scroll-element:hover .scroll-bar {
-    background-color: #dcdbdb;
-}
-
 .sidebar {
     background: #1f283e !important;
 }
@@ -794,15 +694,6 @@ body label,
 .sidebar.sidebar-style-2 .nav .nav-item.active>a[data-toggle=collapse][aria-expanded=true] i,
 .sidebar.sidebar-style-2 .nav .nav-item.active>a[data-toggle=collapse][aria-expanded=true] .caret {
     color: #1f283e !important;
-}
-
-.sidebar .scrollbar-inner>.scroll-element .scroll-bar {
-    background-color: #f7f7f7;
-}
-
-.sidebar .scrollbar-inner>.scroll-element.scroll-draggable .scroll-bar,
-.sidebar .scrollbar-inner>.scroll-element:hover .scroll-bar {
-    background-color: #dcdbdb;
 }
 
 
@@ -958,11 +849,6 @@ table.dataTable.order-column.stripe tbody>tr.odd.selected>.sorting_1 {
     border-color: #c62828 !important;
 }
 
-.btn-alert-success {
-    background: #43a047 !important;
-    border-color: #43a047 !important;
-}
-
 .bg-warning-gradient {
     background: linear-gradient(-45deg, #FFAD46, #FFAD4630) !important;
 }
@@ -1036,7 +922,6 @@ body .timeline > li > .timeline-panel {
     border: 1px solid rgba(255, 255, 255, 0.10) !important;
     box-shadow: none !important;
 }
-body .card-pricing2             { background: #15151a !important; }
 body .timeline > li > .timeline-panel {
     border-color: rgba(255, 255, 255, 0.10) !important;
 }
@@ -1097,7 +982,6 @@ body .page-with-aside .page-content {
     color: #fafafa;
 }
 body .bg-grey1                  { background: #15151a !important; color: #fafafa; }
-body .bg-grey2                  { background: #15151a !important; color: #fafafa; }
 
 /* Modals: upstream sets `.modal-content` to navy `#202940` (line ~318),
  * inputs/selects to navy `rgb(6,14,40)` (~line 418), select2 chip border
@@ -1139,7 +1023,6 @@ body .amsify-select-tag {
  * `.text-light`, `.text-white`, `.text-dark`, `.text-muted`, sidebar nav,
  * and button-styled anchors all have higher-specificity rules and stay. */
 body a                          { color: #a78bfa; }
-.text-link                      { color: #a78bfa !important; }
 body a.text-info,
 body .text-info                 { color: #a78bfa !important; }
 

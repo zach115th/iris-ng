@@ -10,7 +10,7 @@
    compute against the viewport (not the content width). Upstream relied on
    `.login__logo { max-width: 35% }` keeping the LHS narrow which masked this;
    the IRIS-NG text wordmark exposes the wrapper-collapses-to-content bug,
-   leaving the body's `#f9fbfd` (atlantis.css) showing as a wide white band
+   leaving the body's `#f9fbfd` (iris-theme.css) showing as a wide white band
    behind a squished sign-in column. */
 .login__wrapper {
     display: flex;
