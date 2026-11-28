@@ -34,9 +34,15 @@ from functools import partial
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from app.configuration import PG_CONNECT_ARGS
 from app.iris_engine.tasker.celery import make_celery
 from app.iris_engine.access_control.oidc_handler import get_oidc_client
 from app.iris_engine.access_control.password_hash import PasswordHasher
+from app.iris_engine.utils.text_comparisons import keep_column_type_for_text
+
+# Text compared with an integer, numeric or date / time column keeps the column's type, as psycopg2 let PostgreSQL
+# read it: the legacy forms send every id as text (iris_engine/utils/text_comparisons.py).
+keep_column_type_for_text()
 
 
 class ReverseProxied(object):
@@ -111,17 +117,19 @@ cache = Cache(app)
 
 SQLALCHEMY_ENGINE_OPTIONS = {
     "json_deserializer": partial(json.loads, object_pairs_hook=collections.OrderedDict),
-    "pool_pre_ping": True
+    "pool_pre_ping": True,
+    "connect_args": dict(PG_CONNECT_ARGS),
 }
 
 # Fork-safety for celery prefork workers (load-bearing). Celery's default
 # prefork pool fork()s N children that all inherit the parent process's
-# SQLAlchemy QueuePool — and the live psycopg2 connection fds inside it.
+# SQLAlchemy QueuePool — and the live database connection fds inside it.
 # Postgres connections are NOT fork-safe: when sibling children run tasks
 # concurrently they corrupt each other's protocol state on a shared fd, and a
 # commit (even core task_hook_wrapper's own at module_handler.py:465) fails with
 # `(psycopg2.DatabaseError) error with status PGRES_TUPLES_OK and no message
-# from the libpq`. `pool_pre_ping` does NOT save this — the ping's own SELECT 1
+# from the libpq` (psycopg2's message; the driver is psycopg 3 now, and the fork hazard
+# is the same). `pool_pre_ping` does NOT save this — the ping's own SELECT 1
 # trips the same corruption — and a per-fork `engine.dispose()` is racy under
 # concurrency because the children still share one QueuePool object.
 # The robust, canonical fix is NullPool in worker processes: every checkout

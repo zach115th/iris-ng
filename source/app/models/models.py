@@ -44,6 +44,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
 
+from app.configuration import PG_CONNECT_ARGS
+
 from app import app
 from app import db
 
@@ -2467,7 +2469,7 @@ class IrisReport(db.Model):
         # Create an engine and a session because this method
         # will be called from Celery thread and might cause
         # error if it uses the session context of the app
-        engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+        engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'], connect_args=dict(PG_CONNECT_ARGS))
         Session = sessionmaker(bind=engine)
         session = Session()
 

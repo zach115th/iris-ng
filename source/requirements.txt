@@ -13,7 +13,7 @@ Flask-Caching==2.5.1
 marshmallow==4.4.0
 marshmallow-sqlalchemy==1.6.0
 gunicorn==27.0.1
-psycopg2-binary==2.9.13
+psycopg[binary]==3.3.9
 packaging==26.3
 requests==2.34.2
 # Pinned here so it is tracked (requests and email-validator depend on it)

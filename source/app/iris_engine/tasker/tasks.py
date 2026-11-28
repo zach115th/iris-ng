@@ -42,12 +42,13 @@ def on_worker_process_init(*args, **kwargs):
     # after fork(), before any task runs.
     #
     # Celery's default prefork pool fork()s N worker children that all inherit
-    # the SAME live psycopg2 connection fd from the parent. Postgres connections
+    # the SAME live database connection fd from the parent. Postgres connections
     # are NOT fork-safe, and worse, sibling children sharing one inherited fd
     # corrupt each other's protocol state when they run concurrently — so a
     # commit in core task_hook_wrapper (module_handler.py:465) crashes with
     # `(psycopg2.DatabaseError) error with status PGRES_TUPLES_OK and no message
-    # from the libpq`. This manifested as one hook task succeeding and a sibling
+    # from the libpq` (psycopg2's message; the driver is psycopg 3 now). This
+    # manifested as one hook task succeeding and a sibling
     # task on the SAME hook failing, ~40ms apart, because they landed in two
     # children racing on the inherited connection.
     #

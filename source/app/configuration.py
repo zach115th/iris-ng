@@ -32,6 +32,7 @@ import requests
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
+from celery.app.defaults import DEFAULTS as _CELERY_DEFAULTS
 
 
 class IrisConfigException(Exception):
@@ -178,24 +179,30 @@ CELERY_BROKER_ = config.load('CELERY', 'BROKER',
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Build of SQLAlchemy connectors. One is admin and the other is only for iris. Admin is needed to create new DB
-SQLALCHEMY_BASE_URI = "postgresql+psycopg2://{user}:{passwd}@{server}:{port}/".format(
+SQLALCHEMY_BASE_URI = "postgresql+psycopg://{user}:{passwd}@{server}:{port}/".format(
     user=PG_ACCOUNT_,
     passwd=PG_PASSWD_,
     server=PG_SERVER_,
     port=PG_PORT_
 )
 
-SQLALCHEMY_BASEA_URI = "postgresql+psycopg2://{user}:{passwd}@{server}:{port}/".format(
+SQLALCHEMY_BASEA_URI = "postgresql+psycopg://{user}:{passwd}@{server}:{port}/".format(
     user=PGA_ACCOUNT_,
     passwd=PGA_PASSWD_,
     server=PG_SERVER_,
     port=PG_PORT_
 )
 
-SQLALCHEMY_BASE_ADMIN_URI = "postgresql+psycopg2://{user}:{passwd}@{server}:{port}/".format(user=PGA_ACCOUNT_,
-                                                                                            passwd=PGA_PASSWD_,
-                                                                                            server=PG_SERVER_,
-                                                                                            port=PG_PORT_)
+SQLALCHEMY_BASE_ADMIN_URI = "postgresql+psycopg://{user}:{passwd}@{server}:{port}/".format(user=PGA_ACCOUNT_,
+                                                                                           passwd=PGA_PASSWD_,
+                                                                                           server=PG_SERVER_,
+                                                                                           port=PG_PORT_)
+
+# The driver is psycopg 3. It prepares a statement on the server once the statement has run five times on one
+# connection, which psycopg2 never did; prepare_threshold=None keeps every statement unprepared, as before. Every
+# engine IRIS builds takes these arguments: the app's (and the iris_tasks bind), alembic's, celery's result
+# backend and the two one-off engines in post_init.create_safe_db() and IrisReport.save().
+PG_CONNECT_ARGS = {"prepare_threshold": None}
 
 
 class AuthenticationType(Enum):
@@ -259,6 +266,9 @@ class CeleryConfig:
     # result (app/iris_engine/tasker/result_backend.py); celery reads the class from the part before the first '+'.
     result_backend = ("app.iris_engine.tasker.result_backend:IrisDatabaseBackend+" + SQLALCHEMY_BASE_URI
                       + "iris_tasks")
+    # The setting replaces celery's own default (pool_pre_ping, pool_recycle), so it starts from that default.
+    database_engine_options = dict(_CELERY_DEFAULTS.get("database_engine_options") or {},
+                                   connect_args=dict(PG_CONNECT_ARGS))
     broker_url = CELERY_BROKER_
     result_extended = True
     result_serializer = "json"

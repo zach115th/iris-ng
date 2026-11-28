@@ -14,7 +14,7 @@ fileConfig(config.config_file_name)
 import os
 os.environ["ALEMBIC"] = "1"
 
-from app.configuration import SQLALCHEMY_BASE_ADMIN_URI, PG_DB_
+from app.configuration import SQLALCHEMY_BASE_ADMIN_URI, PG_DB_, PG_CONNECT_ARGS
 
 config.set_main_option('sqlalchemy.url', SQLALCHEMY_BASE_ADMIN_URI + PG_DB_)
 
@@ -65,6 +65,7 @@ def run_migrations_online():
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=dict(PG_CONNECT_ARGS),
     )
 
     with connectable.connect() as connection:

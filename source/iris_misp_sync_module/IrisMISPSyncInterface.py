@@ -664,7 +664,7 @@ class IrisMISPSyncInterface(IrisModuleInterface):
         self.log.info(f"Received {hook_name}")
 
         # NOTE on fork-safety: celery prefork workers fork() children that
-        # inherit the parent's live psycopg2 connection, which is NOT fork-safe
+        # inherit the parent's live database connection, which is NOT fork-safe
         # (first commit crashes with `PGRES_TUPLES_OK ... no message from the
         # libpq`). That is now handled CENTRALLY in
         # app/iris_engine/tasker/tasks.py::on_task_init (a `task_prerun` signal

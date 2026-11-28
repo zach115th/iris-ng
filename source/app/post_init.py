@@ -35,6 +35,7 @@ from sqlalchemy_utils import database_exists
 
 from app import app
 from app import bc
+from app.configuration import PG_CONNECT_ARGS
 from app import celery
 from app import db
 from app.datamgmt.iris_engine.modules_db import iris_module_disable_by_id
@@ -373,7 +374,7 @@ def create_safe_db(db_name):
         db_name: A string representing the name of the database to create.
     """
     # Create a new engine object for the specified database
-    engine = create_engine(app.config["SQALCHEMY_PIGGER_URI"] + db_name)
+    engine = create_engine(app.config["SQALCHEMY_PIGGER_URI"] + db_name, connect_args=dict(PG_CONNECT_ARGS))
 
     # Check if the database already exists
     if not database_exists(engine.url):
