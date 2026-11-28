@@ -11,6 +11,41 @@ notes: <https://github.com/dfir-iris/iris-web/releases>.
 
 ---
 
+## [IRIS-NG-v2.30.0] — 2026-11-28
+
+IRIS's own theme: the Atlantis theme's stylesheet and script are cut to what IRIS uses, the sidebar scrolls natively,
+and keyboard focus is visible again. Pages look as before. **No migration** - the database head stays at
+`b3f7d1a9c5e2`. Only the app image changes; the nginx and database images and the guest-portal tunnel agent do not.
+
+### Changed
+- **The theme's stylesheet is IRIS's own.** `css/atlantis.css` (the Atlantis theme, 384 KB) is replaced by
+  `css/iris-theme.css` (166 KB): the same rules in the same order, minus the ones that cannot style anything IRIS
+  renders - the theme's demo widgets, colour variants and animations IRIS never used, and jquery.scrollbar's styles.
+  `css/dark-theme.css` is trimmed the same way. Pages look as they did (compared element by element on 55 pages and
+  68 dialogs).
+- **The theme's script is IRIS's own.** `js/atlantis.min.js` is replaced by `js/iris/theme.js`, which keeps the
+  handlers that act on IRIS's pages: the navigation, top bar and quick sidebar togglers, the minimized sidebar
+  opening under the mouse, and the submenu marker.
+- **The sidebar scrolls natively.** jquery.scrollbar 0.2.11 is removed. The sidebar's own scrollbar sits where
+  jquery.scrollbar's bar sat, in its colours, and on a desktop shows while the mouse is over the sidebar; the
+  sidebar keeps its width. The quick sidebar's actions list scrolls natively where a short window limits its height.
+- **Keyboard focus is visible.** The theme hid every focus indicator; a control reached with the keyboard (Tab) now
+  shows a violet ring. Mouse use looks as before: a text field or a select clicked keeps its own focus border.
+- No Python requirement changes.
+
+### Compatibility
+- For a custom page, template or module: `css/atlantis.css`, `js/atlantis.min.js` and
+  `js/plugin/jquery-scrollbar/jquery.scrollbar.min.js` are gone (a 404) - link `css/iris-theme.css` and
+  `js/iris/theme.js` instead; `$.fn.scrollbar` no longer exists; an Atlantis class IRIS itself never used (its
+  pricing cards, mail and kanban widgets, colour variants and animate.css effects, for instance) no longer has a
+  style.
+- The API is unchanged.
+
+### Upgrading
+- `scripts/update.sh --ref IRIS-NG-v2.30.0`, the 2.30.0 images, or chart 1.30.0. No migration.
+
+---
+
 ## [IRIS-NG-v2.29.0] — 2026-11-28
 
 The PostgreSQL driver moves from psycopg2 to psycopg 3. **No migration** - the database head stays at
