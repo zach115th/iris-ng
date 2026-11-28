@@ -185,7 +185,7 @@ def case_template_pre_modifier(case_schema: CaseSchema, case_template_id: str):
     if not case_template:
         return None
     if case_template.title_prefix:
-        case_schema.name = case_template.title_prefix + " " + case_schema.name[0]
+        case_schema.name = case_template.title_prefix + " " + case_schema.name
 
     case_classification = get_case_classification_by_name(case_template.classification)
     if case_classification:

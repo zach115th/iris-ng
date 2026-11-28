@@ -98,10 +98,9 @@ class Cases(db.Model):
                  state_id=None,
                  severity_id=None
                  ):
-        self.name = name[:200] if name else None,
-        self.soc_id = soc_id,
-        self.client_id = client_id,
-        self.description = description,
+        self.name = name[:200] if name else None
+        self.soc_id = soc_id
+        self.client_id = client_id
         self.user_id = current_user.id if current_user else user.id
         self.owner_id = self.user_id
         self.author = current_user.user if current_user else user.user
@@ -113,7 +112,7 @@ class Cases(db.Model):
         self.case_uuid = uuid.uuid4()
         self.status_id = 0
         self.classification_id = classification_id
-        self.state_id = state_id,
+        self.state_id = state_id
         self.severity_id = severity_id
 
     def save(self):
